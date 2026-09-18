@@ -25,3 +25,21 @@ replay_pid*
 
 # Kotlin Gradle plugin data, see https://kotlinlang.org/docs/whatsnew20.html#new-directory-for-kotlin-data-in-gradle-projects
 .kotlin/
+# Gradle
+.gradle/
+build/
+local.properties
+
+# Android
+*.apk
+*.aab
+*.aar
+captures/
+.cxx/
+
+# El .aar de rclone se construye, no se versiona (ver PLAN.md).
+rclone/build/
+
+# El jar del wrapper SÍ va al repositorio: es lo que fija la versión de Gradle
+# para todo el mundo. Lo excluía el `*.jar` de arriba.
+!gradle/wrapper/gradle-wrapper.jar

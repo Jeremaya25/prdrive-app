@@ -1,0 +1,941 @@
+{
+  "_generado_por": "herramientas/vectores.py",
+  "_no_editar": "Se regenera desde el prdrive citado en 'prdrive'.",
+  "prdrive": {
+    "version": "0.2.0",
+    "commit": "0111cbb65be9d1479c281946ae44b14296bd90a7"
+  },
+  "raiz_dispositivo": "/volumen",
+  "base_flags": {
+    "verbose": true,
+    "create-empty-src-dirs": true,
+    "stats": "2s",
+    "stats-one-line": true
+  },
+  "constantes": {
+    "DEFAULT_REMOTE": "remote",
+    "DEFAULT_MODE": "bisync",
+    "DEFAULT_DEVICE_REMOTE": "disp",
+    "RAIZ_UPSTREAM": "raiz",
+    "PATH1_SUFFIX": ".path1.lst",
+    "PATH2_SUFFIX": ".path2.lst",
+    "ERR_SUFFIX": ".lst-err",
+    "MISSING_LISTINGS": "cannot find prior Path1 or Path2 listings",
+    "FILTERS_HEADER": "# Generado por sync.py desde sync_config.toml. No editar a mano:\n# se regenera en cada ejecución. Cambiar los patrones exige --resync."
+  },
+  "flags_to_args": [
+    {
+      "flags": {
+        "verbose": true
+      },
+      "args": [
+        "--verbose"
+      ]
+    },
+    {
+      "flags": {
+        "dry-run": false
+      },
+      "args": []
+    },
+    {
+      "flags": {
+        "max-delete": null
+      },
+      "args": []
+    },
+    {
+      "flags": {
+        "transfers": 4
+      },
+      "args": [
+        "--transfers",
+        "4"
+      ]
+    },
+    {
+      "flags": {
+        "max-lock": "2m"
+      },
+      "args": [
+        "--max-lock",
+        "2m"
+      ]
+    },
+    {
+      "flags": {
+        "stats_one_line": true
+      },
+      "args": [
+        "--stats-one-line"
+      ]
+    },
+    {
+      "flags": {
+        "exclude": [
+          "*.tmp",
+          "*.bak"
+        ]
+      },
+      "args": [
+        "--exclude",
+        "*.tmp",
+        "--exclude",
+        "*.bak"
+      ]
+    },
+    {
+      "flags": {
+        "include": [
+          "uno"
+        ]
+      },
+      "args": [
+        "--include",
+        "uno"
+      ]
+    },
+    {
+      "flags": {
+        "a": true,
+        "b": 1,
+        "c": false,
+        "d": "x"
+      },
+      "args": [
+        "--a",
+        "--b",
+        "1",
+        "--d",
+        "x"
+      ]
+    },
+    {
+      "flags": {},
+      "args": []
+    }
+  ],
+  "modos": {
+    "bisync": {
+      "verb": "bisync",
+      "source": "local",
+      "dest": "remote",
+      "flags_propios": {
+        "conflict-resolve": "newer",
+        "conflict-suffix": "conflicto-dispositivo,conflicto-remoto",
+        "max-delete": 25,
+        "resilient": true,
+        "recover": true,
+        "max-lock": "2m"
+      },
+      "flags_con_base": {
+        "verbose": true,
+        "create-empty-src-dirs": true,
+        "stats": "2s",
+        "stats-one-line": true,
+        "conflict-resolve": "newer",
+        "conflict-suffix": "conflicto-dispositivo,conflicto-remoto",
+        "max-delete": 25,
+        "resilient": true,
+        "recover": true,
+        "max-lock": "2m"
+      }
+    },
+    "up": {
+      "verb": "copy",
+      "source": "local",
+      "dest": "remote",
+      "flags_propios": {},
+      "flags_con_base": {
+        "verbose": true,
+        "create-empty-src-dirs": true,
+        "stats": "2s",
+        "stats-one-line": true
+      }
+    },
+    "down": {
+      "verb": "copy",
+      "source": "remote",
+      "dest": "local",
+      "flags_propios": {},
+      "flags_con_base": {
+        "verbose": true,
+        "create-empty-src-dirs": true,
+        "stats": "2s",
+        "stats-one-line": true
+      }
+    },
+    "up-mirror": {
+      "verb": "sync",
+      "source": "local",
+      "dest": "remote",
+      "flags_propios": {
+        "max-delete": 50
+      },
+      "flags_con_base": {
+        "verbose": true,
+        "create-empty-src-dirs": true,
+        "stats": "2s",
+        "stats-one-line": true,
+        "max-delete": 50
+      }
+    },
+    "down-mirror": {
+      "verb": "sync",
+      "source": "remote",
+      "dest": "local",
+      "flags_propios": {
+        "max-delete": 50
+      },
+      "flags_con_base": {
+        "verbose": true,
+        "create-empty-src-dirs": true,
+        "stats": "2s",
+        "stats-one-line": true,
+        "max-delete": 50
+      }
+    }
+  },
+  "canonical": {
+    "canonical_path": [
+      {
+        "entrada": "disp:sync-data/notas/",
+        "salida": "disp_sync-data_notas"
+      },
+      {
+        "entrada": "/volumen/sync-data/notas/",
+        "salida": "volumen_sync-data_notas"
+      },
+      {
+        "entrada": "nas:/copia/notas/",
+        "salida": "nas__copia_notas"
+      },
+      {
+        "entrada": "  con espacios  ",
+        "salida": "__con_espacios__"
+      },
+      {
+        "entrada": "raro:?*\\/x",
+        "salida": "raro_____x"
+      },
+      {
+        "entrada": "nas{deadbeef}:/copia/",
+        "salida": "nas{deadbeef}__copia"
+      },
+      {
+        "entrada": "sin llaves",
+        "salida": "sin_llaves"
+      },
+      {
+        "entrada": "{solo abre",
+        "salida": "{solo_abre"
+      }
+    ],
+    "strip_hex_string": [
+      {
+        "entrada": "disp:sync-data/notas/",
+        "salida": "disp:sync-data/notas/"
+      },
+      {
+        "entrada": "/volumen/sync-data/notas/",
+        "salida": "/volumen/sync-data/notas/"
+      },
+      {
+        "entrada": "nas:/copia/notas/",
+        "salida": "nas:/copia/notas/"
+      },
+      {
+        "entrada": "  con espacios  ",
+        "salida": "  con espacios  "
+      },
+      {
+        "entrada": "raro:?*\\/x",
+        "salida": "raro:?*\\/x"
+      },
+      {
+        "entrada": "nas{deadbeef}:/copia/",
+        "salida": "nas:/copia/"
+      },
+      {
+        "entrada": "sin llaves",
+        "salida": "sin llaves"
+      },
+      {
+        "entrada": "{solo abre",
+        "salida": "{solo abre"
+      }
+    ],
+    "fs_path_remote": [
+      {
+        "entrada": "nas:/copia",
+        "salida": "nas:/copia/"
+      },
+      {
+        "entrada": "nas:/copia/",
+        "salida": "nas:/copia/"
+      },
+      {
+        "entrada": "disp:x",
+        "salida": "disp:x/"
+      }
+    ],
+    "session_name": [
+      {
+        "path1": "disp:sync-data/notas/",
+        "path2": "nas:/copia/notas/",
+        "salida": "disp_sync-data_notas..nas__copia_notas"
+      },
+      {
+        "path1": "nas{beef}:/a/",
+        "path2": "disp:b/",
+        "salida": "nas__a..disp_b"
+      }
+    ]
+  },
+  "upstream": [
+    {
+      "nombre": "raiz",
+      "ruta": "/volumen",
+      "salida": "\"raiz=/volumen\""
+    },
+    {
+      "nombre": "sync-data",
+      "ruta": "/volumen/sync-data",
+      "salida": "\"sync-data=/volumen/sync-data\""
+    },
+    {
+      "nombre": "con espacios",
+      "ruta": "/volumen/con espacios",
+      "salida": "\"con espacios=/volumen/con espacios\""
+    },
+    {
+      "nombre": "raiz",
+      "ruta": "F:\\",
+      "salida": "\"raiz=F:\\\""
+    },
+    {
+      "nombre": "datos",
+      "ruta": "F:\\datos",
+      "salida": "\"datos=F:\\datos\""
+    },
+    {
+      "nombre": "comilla",
+      "ruta": "F:\\di\"cho",
+      "salida": "\"comilla=F:\\di\"\"cho\""
+    }
+  ],
+  "resueltas": {
+    "config": {
+      "defaults": {
+        "remote": "nas",
+        "device_remote": "disp",
+        "catalog_path": "/prdrive-catalog/pairs.toml",
+        "exclude": [
+          "*.tmp"
+        ],
+        "flags": {
+          "transfers": 4
+        }
+      },
+      "daemon": {
+        "pairs": [
+          "notas"
+        ],
+        "interval_minutes": 15
+      },
+      "pair": [
+        {
+          "name": "notas",
+          "local": "sync-data/notas",
+          "remote_path": "/copia/notas"
+        },
+        {
+          "name": "fotos",
+          "local": "sync-data/media/fotos",
+          "remote_path": "/copia/fotos",
+          "include": [
+            "*.jpg",
+            "*.raw"
+          ],
+          "flags": {
+            "max-delete": 5,
+            "checkers": 2
+          }
+        },
+        {
+          "name": "todo",
+          "local": ".",
+          "remote_path": "/copia/volumen"
+        },
+        {
+          "name": "subida",
+          "local": "sync-data/salida",
+          "remote_path": "/copia/salida",
+          "mode": "up"
+        },
+        {
+          "name": "espejo",
+          "local": "sync-data/espejo",
+          "remote_path": "/copia/espejo",
+          "mode": "up-mirror",
+          "use_filters_file": false
+        }
+      ]
+    },
+    "device_remote": "disp",
+    "keep_logs": false,
+    "names": [
+      "notas",
+      "fotos",
+      "todo",
+      "subida",
+      "espejo"
+    ],
+    "pen_environment": {
+      "RCLONE_CONFIG_DISP_TYPE": "combine",
+      "RCLONE_CONFIG_DISP_UPSTREAMS": "\"raiz=/volumen\" \"sync-data=/volumen/sync-data\""
+    },
+    "parejas": [
+      {
+        "name": "notas",
+        "mode": "bisync",
+        "local": "sync-data/notas",
+        "remote_path": "/copia/notas",
+        "remote_name": "nas",
+        "includes": [],
+        "excludes": [
+          "*.tmp"
+        ],
+        "flags": {
+          "verbose": true,
+          "create-empty-src-dirs": true,
+          "stats": "2s",
+          "stats-one-line": true,
+          "conflict-resolve": "newer",
+          "conflict-suffix": "conflicto-dispositivo,conflicto-remoto",
+          "max-delete": 25,
+          "resilient": true,
+          "recover": true,
+          "max-lock": "2m",
+          "transfers": 4
+        },
+        "extra_flags": [],
+        "use_filters_file": true,
+        "wants_filters_file": true,
+        "device_remote": "disp",
+        "is_bisync": true,
+        "tramos_locales": [
+          "sync-data",
+          "notas"
+        ],
+        "top_level_dir": "sync-data",
+        "top_level_abs": "/volumen/sync-data",
+        "ruta_en_combine": "sync-data/notas",
+        "local_abs": "/volumen/sync-data/notas",
+        "local_endpoint": "disp:sync-data/notas",
+        "remote_endpoint": "nas:/copia/notas",
+        "source": "disp:sync-data/notas",
+        "dest": "nas:/copia/notas",
+        "workdir": "notas",
+        "expected_prefix": "disp_sync-data_notas..nas__copia_notas",
+        "filters_content": "# Generado por sync.py desde sync_config.toml. No editar a mano:\n# se regenera en cada ejecución. Cambiar los patrones exige --resync.\n- *.tmp\n"
+      },
+      {
+        "name": "fotos",
+        "mode": "bisync",
+        "local": "sync-data/media/fotos",
+        "remote_path": "/copia/fotos",
+        "remote_name": "nas",
+        "includes": [
+          "*.jpg",
+          "*.raw"
+        ],
+        "excludes": [
+          "*.tmp"
+        ],
+        "flags": {
+          "verbose": true,
+          "create-empty-src-dirs": true,
+          "stats": "2s",
+          "stats-one-line": true,
+          "conflict-resolve": "newer",
+          "conflict-suffix": "conflicto-dispositivo,conflicto-remoto",
+          "max-delete": 5,
+          "resilient": true,
+          "recover": true,
+          "max-lock": "2m",
+          "transfers": 4,
+          "checkers": 2
+        },
+        "extra_flags": [],
+        "use_filters_file": true,
+        "wants_filters_file": true,
+        "device_remote": "disp",
+        "is_bisync": true,
+        "tramos_locales": [
+          "sync-data",
+          "media",
+          "fotos"
+        ],
+        "top_level_dir": "sync-data",
+        "top_level_abs": "/volumen/sync-data",
+        "ruta_en_combine": "sync-data/media/fotos",
+        "local_abs": "/volumen/sync-data/media/fotos",
+        "local_endpoint": "disp:sync-data/media/fotos",
+        "remote_endpoint": "nas:/copia/fotos",
+        "source": "disp:sync-data/media/fotos",
+        "dest": "nas:/copia/fotos",
+        "workdir": "fotos",
+        "expected_prefix": "disp_sync-data_media_fotos..nas__copia_fotos",
+        "filters_content": "# Generado por sync.py desde sync_config.toml. No editar a mano:\n# se regenera en cada ejecución. Cambiar los patrones exige --resync.\n+ *.jpg\n+ *.raw\n- *.tmp\n- **\n"
+      },
+      {
+        "name": "todo",
+        "mode": "bisync",
+        "local": ".",
+        "remote_path": "/copia/volumen",
+        "remote_name": "nas",
+        "includes": [],
+        "excludes": [
+          "*.tmp"
+        ],
+        "flags": {
+          "verbose": true,
+          "create-empty-src-dirs": true,
+          "stats": "2s",
+          "stats-one-line": true,
+          "conflict-resolve": "newer",
+          "conflict-suffix": "conflicto-dispositivo,conflicto-remoto",
+          "max-delete": 25,
+          "resilient": true,
+          "recover": true,
+          "max-lock": "2m",
+          "transfers": 4
+        },
+        "extra_flags": [],
+        "use_filters_file": true,
+        "wants_filters_file": true,
+        "device_remote": "disp",
+        "is_bisync": true,
+        "tramos_locales": [],
+        "top_level_dir": "raiz",
+        "top_level_abs": "/volumen",
+        "ruta_en_combine": "raiz",
+        "local_abs": "/volumen",
+        "local_endpoint": "disp:raiz",
+        "remote_endpoint": "nas:/copia/volumen",
+        "source": "disp:raiz",
+        "dest": "nas:/copia/volumen",
+        "workdir": "todo",
+        "expected_prefix": "disp_raiz..nas__copia_volumen",
+        "filters_content": "# Generado por sync.py desde sync_config.toml. No editar a mano:\n# se regenera en cada ejecución. Cambiar los patrones exige --resync.\n- *.tmp\n"
+      },
+      {
+        "name": "subida",
+        "mode": "up",
+        "local": "sync-data/salida",
+        "remote_path": "/copia/salida",
+        "remote_name": "nas",
+        "includes": [],
+        "excludes": [
+          "*.tmp"
+        ],
+        "flags": {
+          "verbose": true,
+          "create-empty-src-dirs": true,
+          "stats": "2s",
+          "stats-one-line": true,
+          "transfers": 4
+        },
+        "extra_flags": [],
+        "use_filters_file": true,
+        "wants_filters_file": false,
+        "device_remote": "disp",
+        "is_bisync": false,
+        "tramos_locales": [
+          "sync-data",
+          "salida"
+        ],
+        "top_level_dir": "sync-data",
+        "top_level_abs": "/volumen/sync-data",
+        "ruta_en_combine": "sync-data/salida",
+        "local_abs": "/volumen/sync-data/salida",
+        "local_endpoint": "disp:sync-data/salida",
+        "remote_endpoint": "nas:/copia/salida",
+        "source": "disp:sync-data/salida",
+        "dest": "nas:/copia/salida",
+        "workdir": "subida",
+        "expected_prefix": "disp_sync-data_salida..nas__copia_salida",
+        "filters_content": "# Generado por sync.py desde sync_config.toml. No editar a mano:\n# se regenera en cada ejecución. Cambiar los patrones exige --resync.\n- *.tmp\n"
+      },
+      {
+        "name": "espejo",
+        "mode": "up-mirror",
+        "local": "sync-data/espejo",
+        "remote_path": "/copia/espejo",
+        "remote_name": "nas",
+        "includes": [],
+        "excludes": [
+          "*.tmp"
+        ],
+        "flags": {
+          "verbose": true,
+          "create-empty-src-dirs": true,
+          "stats": "2s",
+          "stats-one-line": true,
+          "max-delete": 50,
+          "transfers": 4
+        },
+        "extra_flags": [],
+        "use_filters_file": false,
+        "wants_filters_file": false,
+        "device_remote": "disp",
+        "is_bisync": false,
+        "tramos_locales": [
+          "sync-data",
+          "espejo"
+        ],
+        "top_level_dir": "sync-data",
+        "top_level_abs": "/volumen/sync-data",
+        "ruta_en_combine": "sync-data/espejo",
+        "local_abs": "/volumen/sync-data/espejo",
+        "local_endpoint": "disp:sync-data/espejo",
+        "remote_endpoint": "nas:/copia/espejo",
+        "source": "disp:sync-data/espejo",
+        "dest": "nas:/copia/espejo",
+        "workdir": "espejo",
+        "expected_prefix": "disp_sync-data_espejo..nas__copia_espejo",
+        "filters_content": "# Generado por sync.py desde sync_config.toml. No editar a mano:\n# se regenera en cada ejecución. Cambiar los patrones exige --resync.\n- *.tmp\n"
+      }
+    ]
+  },
+  "toml": {
+    "dumps": [
+      {
+        "raw": {
+          "defaults": {
+            "remote": "nas",
+            "device_remote": "disp",
+            "catalog_path": "/prdrive-catalog/pairs.toml",
+            "exclude": [
+              "*.tmp"
+            ],
+            "flags": {
+              "transfers": 4
+            }
+          },
+          "daemon": {
+            "pairs": [
+              "notas"
+            ],
+            "interval_minutes": 15
+          },
+          "pair": [
+            {
+              "name": "notas",
+              "local": "sync-data/notas",
+              "remote_path": "/copia/notas"
+            },
+            {
+              "name": "fotos",
+              "local": "sync-data/media/fotos",
+              "remote_path": "/copia/fotos",
+              "include": [
+                "*.jpg",
+                "*.raw"
+              ],
+              "flags": {
+                "max-delete": 5,
+                "checkers": 2
+              }
+            },
+            {
+              "name": "todo",
+              "local": ".",
+              "remote_path": "/copia/volumen"
+            },
+            {
+              "name": "subida",
+              "local": "sync-data/salida",
+              "remote_path": "/copia/salida",
+              "mode": "up"
+            },
+            {
+              "name": "espejo",
+              "local": "sync-data/espejo",
+              "remote_path": "/copia/espejo",
+              "mode": "up-mirror",
+              "use_filters_file": false
+            }
+          ]
+        },
+        "head": "",
+        "texto": "[defaults]\nremote = \"nas\"\ndevice_remote = \"disp\"\ncatalog_path = \"/prdrive-catalog/pairs.toml\"\nexclude = [\"*.tmp\"]\n\n[defaults.flags]\ntransfers = 4\n\n[daemon]\npairs = [\"notas\"]\ninterval_minutes = 15\n\n[[pair]]\nname = \"notas\"\nlocal = \"sync-data/notas\"\nremote_path = \"/copia/notas\"\n\n[[pair]]\nname = \"fotos\"\nlocal = \"sync-data/media/fotos\"\nremote_path = \"/copia/fotos\"\ninclude = [\n    \"*.jpg\",\n    \"*.raw\",\n]\n\n[pair.flags]\ncheckers = 2\nmax-delete = 5\n\n[[pair]]\nname = \"todo\"\nlocal = \".\"\nremote_path = \"/copia/volumen\"\n\n[[pair]]\nname = \"subida\"\nlocal = \"sync-data/salida\"\nremote_path = \"/copia/salida\"\nmode = \"up\"\n\n[[pair]]\nname = \"espejo\"\nlocal = \"sync-data/espejo\"\nremote_path = \"/copia/espejo\"\nmode = \"up-mirror\"\nuse_filters_file = false\n"
+      },
+      {
+        "raw": {
+          "defaults": {
+            "remote": "nas",
+            "device_remote": "disp",
+            "catalog_path": "/prdrive-catalog/pairs.toml",
+            "exclude": [
+              "*.tmp"
+            ],
+            "flags": {
+              "transfers": 4
+            }
+          },
+          "daemon": {
+            "pairs": [
+              "notas"
+            ],
+            "interval_minutes": 15
+          },
+          "pair": [
+            {
+              "name": "notas",
+              "local": "sync-data/notas",
+              "remote_path": "/copia/notas"
+            },
+            {
+              "name": "fotos",
+              "local": "sync-data/media/fotos",
+              "remote_path": "/copia/fotos",
+              "include": [
+                "*.jpg",
+                "*.raw"
+              ],
+              "flags": {
+                "max-delete": 5,
+                "checkers": 2
+              }
+            },
+            {
+              "name": "todo",
+              "local": ".",
+              "remote_path": "/copia/volumen"
+            },
+            {
+              "name": "subida",
+              "local": "sync-data/salida",
+              "remote_path": "/copia/salida",
+              "mode": "up"
+            },
+            {
+              "name": "espejo",
+              "local": "sync-data/espejo",
+              "remote_path": "/copia/espejo",
+              "mode": "up-mirror",
+              "use_filters_file": false
+            }
+          ]
+        },
+        "head": "# Generado para los tests.\n# Dos líneas, para probar que sobrevive.\n",
+        "texto": "# Generado para los tests.\n# Dos líneas, para probar que sobrevive.\n\n[defaults]\nremote = \"nas\"\ndevice_remote = \"disp\"\ncatalog_path = \"/prdrive-catalog/pairs.toml\"\nexclude = [\"*.tmp\"]\n\n[defaults.flags]\ntransfers = 4\n\n[daemon]\npairs = [\"notas\"]\ninterval_minutes = 15\n\n[[pair]]\nname = \"notas\"\nlocal = \"sync-data/notas\"\nremote_path = \"/copia/notas\"\n\n[[pair]]\nname = \"fotos\"\nlocal = \"sync-data/media/fotos\"\nremote_path = \"/copia/fotos\"\ninclude = [\n    \"*.jpg\",\n    \"*.raw\",\n]\n\n[pair.flags]\ncheckers = 2\nmax-delete = 5\n\n[[pair]]\nname = \"todo\"\nlocal = \".\"\nremote_path = \"/copia/volumen\"\n\n[[pair]]\nname = \"subida\"\nlocal = \"sync-data/salida\"\nremote_path = \"/copia/salida\"\nmode = \"up\"\n\n[[pair]]\nname = \"espejo\"\nlocal = \"sync-data/espejo\"\nremote_path = \"/copia/espejo\"\nmode = \"up-mirror\"\nuse_filters_file = false\n"
+      },
+      {
+        "raw": {
+          "remote": {
+            "name": "nas",
+            "type": "sftp",
+            "host": "ejemplo.invalid",
+            "port": "22",
+            "user": "usuario"
+          },
+          "defaults": {
+            "remote": "nas",
+            "device_remote": "disp",
+            "catalog_path": "/prdrive-catalog/pairs.toml",
+            "exclude": [
+              "*.tmp"
+            ],
+            "flags": {
+              "transfers": 4
+            }
+          },
+          "daemon": {
+            "pairs": [
+              "notas"
+            ],
+            "interval_minutes": 15
+          },
+          "pair": [
+            {
+              "name": "notas",
+              "local": "sync-data/notas",
+              "remote_path": "/copia/notas"
+            },
+            {
+              "name": "fotos",
+              "local": "sync-data/media/fotos",
+              "remote_path": "/copia/fotos",
+              "include": [
+                "*.jpg",
+                "*.raw"
+              ],
+              "flags": {
+                "max-delete": 5,
+                "checkers": 2
+              }
+            },
+            {
+              "name": "todo",
+              "local": ".",
+              "remote_path": "/copia/volumen"
+            },
+            {
+              "name": "subida",
+              "local": "sync-data/salida",
+              "remote_path": "/copia/salida",
+              "mode": "up"
+            },
+            {
+              "name": "espejo",
+              "local": "sync-data/espejo",
+              "remote_path": "/copia/espejo",
+              "mode": "up-mirror",
+              "use_filters_file": false
+            }
+          ]
+        },
+        "head": "",
+        "texto": "[remote]\nname = \"nas\"\ntype = \"sftp\"\nhost = \"ejemplo.invalid\"\nport = \"22\"\nuser = \"usuario\"\n\n[defaults]\nremote = \"nas\"\ndevice_remote = \"disp\"\ncatalog_path = \"/prdrive-catalog/pairs.toml\"\nexclude = [\"*.tmp\"]\n\n[defaults.flags]\ntransfers = 4\n\n[daemon]\npairs = [\"notas\"]\ninterval_minutes = 15\n\n[[pair]]\nname = \"notas\"\nlocal = \"sync-data/notas\"\nremote_path = \"/copia/notas\"\n\n[[pair]]\nname = \"fotos\"\nlocal = \"sync-data/media/fotos\"\nremote_path = \"/copia/fotos\"\ninclude = [\n    \"*.jpg\",\n    \"*.raw\",\n]\n\n[pair.flags]\ncheckers = 2\nmax-delete = 5\n\n[[pair]]\nname = \"todo\"\nlocal = \".\"\nremote_path = \"/copia/volumen\"\n\n[[pair]]\nname = \"subida\"\nlocal = \"sync-data/salida\"\nremote_path = \"/copia/salida\"\nmode = \"up\"\n\n[[pair]]\nname = \"espejo\"\nlocal = \"sync-data/espejo\"\nremote_path = \"/copia/espejo\"\nmode = \"up-mirror\"\nuse_filters_file = false\n"
+      }
+    ],
+    "dumps_table": [
+      {
+        "tabla": {
+          "max-delete": 25,
+          "resilient": true,
+          "max-lock": "2m"
+        },
+        "texto": "max-delete = 25\nmax-lock = \"2m\"\nresilient = true"
+      },
+      {
+        "tabla": {
+          "exclude": [
+            "*.tmp"
+          ],
+          "transfers": 4
+        },
+        "texto": "exclude = [\"*.tmp\"]\ntransfers = 4"
+      },
+      {
+        "tabla": {
+          "raro clave": "x"
+        },
+        "texto": "\"raro clave\" = \"x\""
+      },
+      {
+        "tabla": {},
+        "texto": ""
+      }
+    ],
+    "header_of": [
+      {
+        "entrada": "# uno\n# dos\nclave = 1\n",
+        "salida": "# uno\n# dos\n"
+      },
+      {
+        "entrada": "clave = 1\n",
+        "salida": ""
+      },
+      {
+        "entrada": "\n# tras un hueco\nclave = 1\n",
+        "salida": "\n# tras un hueco\n"
+      },
+      {
+        "entrada": "",
+        "salida": ""
+      }
+    ],
+    "pair_key_order": [
+      "name",
+      "local",
+      "remote_path",
+      "remote",
+      "mode"
+    ]
+  },
+  "pairing": {
+    "marca": "prdrive",
+    "formato": 1,
+    "rutas_derivadas": [
+      "key_file",
+      "known_hosts_file"
+    ],
+    "con_clave": {
+      "texto": "catalog_path = \"/prdrive-catalog/pairs.toml\"\nkey_name = \"id_ed25519\"\nknown_hosts = \"ejemplo.invalid ssh-ed25519 AAAA...\\n\"\nprdrive = 1\nprivate_key_b64 = \"LS0tLS1CRUdJTiBPUEVOU1NIIFBSSVZBVEUgS0VZLS0tLS0KQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUEKLS0tLS1FTkQgT1BFTlNTSCBQUklWQVRFIEtFWS0tLS0tCg==\"\nremote_name = \"nas\"\n[options]\nhost = \"ejemplo.invalid\"\nport = \"22\"\ntype = \"sftp\"\nuser = \"usuario\"",
+      "private_key_len": 451,
+      "leido": {
+        "remote_name": "nas",
+        "known_hosts": "ejemplo.invalid ssh-ed25519 AAAA...\n",
+        "private_key_len": 451
+      }
+    },
+    "sin_clave": {
+      "texto": "catalog_path = \"/prdrive-catalog/pairs.toml\"\nkey_name = \"id_ed25519\"\nprdrive = 1\nremote_name = \"nas\"\n[options]\nhost = \"ejemplo.invalid\"\nport = \"22\"\ntype = \"sftp\"\nuser = \"usuario\""
+    },
+    "rechazos": [
+      {
+        "caso": "no es toml",
+        "texto": "esto no { es toml",
+        "rechaza": true
+      },
+      {
+        "caso": "sin marca",
+        "texto": "remote_name = \"nas\"\n",
+        "rechaza": true
+      },
+      {
+        "caso": "otro formato",
+        "texto": "prdrive = 99\nremote_name = \"nas\"\n",
+        "rechaza": true
+      },
+      {
+        "caso": "base64 malo",
+        "texto": "prdrive = 1\nprivate_key_b64 = \"no es base64!!\"\n",
+        "rechaza": true
+      }
+    ],
+    "rclone_conf": [
+      {
+        "texto": "[nas]\ntype = sftp\nhost = ejemplo.invalid\n",
+        "remotes": {
+          "nas": {
+            "type": "sftp",
+            "host": "ejemplo.invalid"
+          }
+        }
+      },
+      {
+        "texto": "[nas]\ntype = sftp\n\n[otro]\ntype = webdav\nurl = https://x/%y\n",
+        "remotes": {
+          "nas": {
+            "type": "sftp"
+          },
+          "otro": {
+            "type": "webdav",
+            "url": "https://x/%y"
+          }
+        }
+      },
+      {
+        "texto": "# comentario\n; otro\n[nas]\ntype = sftp\nsin_igual\n",
+        "remotes": {
+          "nas": {
+            "type": "sftp"
+          }
+        }
+      },
+      {
+        "texto": "clave = suelta\n[nas]\ntype = sftp\n",
+        "remotes": {
+          "nas": {
+            "type": "sftp"
+          }
+        }
+      }
+    ]
+  }
+}
