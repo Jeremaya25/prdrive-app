@@ -28,12 +28,18 @@ engine/       Kotlin puro (JVM), SIN una línea de Android
 ├── Toml.kt     espejo de common/config_file.py: leer Y escribir, con el
 │               round-trip verificado
 └── Pairing.kt  la mitad que LEE de common/pairing.py: la carga del QR
+rclone/       módulo Go: rclone como biblioteca
+├── gobind/     lo que empaqueta `gomobile bind` en el .aar: librclone con los
+│               métodos que hacen falta registrados, el sumidero del log y el
+│               orden del rclone.conf
+└── spike/      arnés que EJECUTA rclone y comprueba las afirmaciones del PLAN;
+                genera engine/src/test/resources/sesiones.json
 herramientas/
 └── vectores.py genera los valores esperados desde el prdrive de verdad
 ```
 
-Pendiente (ver `PLAN.md`): `engine/Catalog.kt`, `engine/Results.kt`, el paquete
-Go que construye el `.aar`, su envoltorio Kotlin, y el módulo `app/`.
+Pendiente (ver `PLAN.md`): `engine/Catalog.kt`, `engine/Results.kt`, el
+envoltorio Kotlin del RPC, medir el `.aar` y el módulo `app/`.
 
 ## Reglas que no se cruzan
 
@@ -57,6 +63,17 @@ Go que construye el `.aar`, su envoltorio Kotlin, y el módulo `app/`.
   al reinstalar la app, así que un config sin él rompería los baselines de
   bisync más adelante.
 
+## Dos fuentes de verdad, y no son intercambiables
+
+`vectores.json` sale del **Python de prdrive** y responde «¿la traducción es
+fiel?». `sesiones.json` sale de **rclone ejecutándose** (`rclone/spike`) y
+responde la que la otra deja abierta: «¿y si los dos se equivocan igual?». El
+nombre de los listados de bisync lo decide rclone, así que hay que
+preguntárselo a rclone.
+
+Si tocas algo del prefijo, de los extremos o del fichero de filtros, se
+regeneran **los dos** y los dos tienen que seguir cuadrando.
+
 ## Los valores esperados no se escriben a mano
 
 Las constantes de prdrive existen ahora **dos veces**, y dos copias se separan.
@@ -71,6 +88,7 @@ caso al generador y regenera; no escribas el número.
 
 ```bash
 python herramientas/vectores.py ../prdrive
+cd rclone && go run ./spike -json ../engine/src/test/resources/sesiones.json
 ```
 
 ## Órdenes
@@ -78,8 +96,18 @@ python herramientas/vectores.py ../prdrive
 ```bash
 ./gradlew :engine:test     # todo el motor; no necesita SDK ni dispositivo
 ./gradlew :engine:test --tests 'prdrive.engine.BisyncTest'
-python herramientas/vectores.py ../prdrive   # regenerar los vectores
+python herramientas/vectores.py ../prdrive   # regenerar los vectores de prdrive
+
+cd rclone
+go run ./spike                               # comprobar rclone, sin escribir
+go run ./spike -json ../engine/src/test/resources/sesiones.json
+go build ./gobind/ && go build -tags rclone_todos ./gobind/   # los dos juegos
 ```
+
+El spike no necesita NDK, emulador ni red: `gomobile bind` solo añade el JNI
+encima de `librclone.RPC`, y el nombre de sesión sale de `FsPath`, que no mira
+el tipo de backend. Falla con un mensaje concreto si alguna afirmación del
+`PLAN.md` sobre rclone deja de ser cierta.
 
 `engine/` compila con cualquier JDK 17 o posterior y genera bytecode 17, que es
 lo que consume AGP 8.x. Los avisos del compilador son errores
@@ -108,3 +136,20 @@ lo que consume AGP 8.x. Los avisos del compilador son errores
   documentación de rclone: `librclone.RPC()` rechaza los métodos que necesitan
   request/response, y su implementación lanza un proceso hijo. La ruta es
   `sync/bisync`. Los detalles y las líneas exactas están en `PLAN.md`.
+
+## Y con estas cuatro, que no avisan
+
+Las cuatro están comprobadas en `rclone/spike` y explicadas con sus líneas en
+`PLAN.md`. Lo que tienen en común es que equivocarse **no da error**: el
+síntoma aparece después y en otro sitio.
+
+- **`RcloneSetConfigPath` va ANTES de `RcloneInitialize`.** Al revés, rclone
+  arranca con una configuración vacía en memoria y el fallo sale más tarde
+  diciendo «unknown remote».
+- **`sync/bisync` necesita `_async`.** Sin él, una pasada fallida pierde su
+  log, que es justo cuando se necesita.
+- **El nivel de log no se pide por llamada.** Es global y son dos sitios
+  (`RcloneLogNivel`). Con uno solo no se ve nada.
+- **Los colores ANSI tampoco.** El `_config` ignora `color` sin quejarse, y
+  bisync guarda la decisión en una global que solo se enciende. Se apagan en
+  `RcloneInitialize`.

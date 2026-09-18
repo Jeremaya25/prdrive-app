@@ -1,0 +1,50 @@
+# El spike ejecuta rclone como biblioteca y comprueba, una por una, las
+# afirmaciones sobre rclone en las que se apoya el diseño (PLAN.md): que
+# `sync/bisync` está registrado, que `core/command` no sirve, que `maxDelete`
+# es un porcentaje, de dónde sale el log de una pasada, y que el nombre de
+# sesión que calcula el motor es el que rclone usa de verdad.
+#
+# Correrlo aquí es lo que hace que subir la versión de rclone no pueda romper
+# el diseño en silencio: si alguna deja de cumplirse, el spike falla y dice
+# cuál. No necesita NDK, SDK ni red — el remoto es de tipo local.
+name: rclone
+
+on:
+  push:
+    branches: ["**"]
+    paths: ["rclone/**", "engine/**", ".github/workflows/rclone.yml"]
+  pull_request:
+    paths: ["rclone/**", "engine/**", ".github/workflows/rclone.yml"]
+
+jobs:
+  spike:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: rclone
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: rclone/go.mod
+          cache-dependency-path: rclone/go.sum
+
+      - name: gofmt
+        run: test -z "$(gofmt -l .)" || { gofmt -l .; exit 1; }
+
+      - run: go vet ./...
+
+      # Los dos juegos de backends tienen que compilar: es la pregunta abierta
+      # del plan, y se decide midiendo estas dos.
+      - run: go build ./gobind/
+      - run: go build -tags rclone_todos ./gobind/
+
+      - run: go run ./spike -json ../engine/src/test/resources/sesiones.json
+
+      # Y el fichero que consumen los tests de Kotlin tiene que ser el que ya
+      # está en el repositorio: si el spike genera otro, lo que se probó en
+      # `engine` no es lo que hace rclone hoy.
+      - name: sesiones.json al día
+        working-directory: .
+        run: git diff --exit-code -- engine/src/test/resources/sesiones.json

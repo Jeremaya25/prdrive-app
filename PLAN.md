@@ -128,16 +128,15 @@ devuelve                output    <- la salida capturada de la pasada
 
 Tres consecuencias que cambian el diseño:
 
-- **`output` es el log.** Es lo que alimenta el `KNOWN_ERRORS` de `sync.py` y lo
-  que se enseña cuando una pareja falla. No hace falta ni `--log-file` ni leer
-  ficheros.
 - **`session` la calcula rclone.** El motor sigue sabiendo calcular el prefijo
   por su cuenta (hay que saberlo **antes** de ejecutar, para decidir si el
   baseline sirve), pero ahora se puede **comprobar contra la verdad** después de
-  cada pasada. Es una red que el escritorio no tiene.
+  cada pasada. Es una red que el escritorio no tiene, y es lo que hace
+  `SesionesTest`.
 - **`bilib.CaptureOutput` redirige la salida del proceso entero**, así que dos
   pasadas a la vez se robarían el log. **Las parejas se ejecutan de una en una**,
   igual que `sync.py`.
+- **`_async: true` es obligatorio**, no una opción para el progreso. Ver abajo.
 
 Lo que el plan sí tenía bien: `_async: true` y `_group` funcionan (los maneja
 `jobs.NewJob`, que es por donde pasa todo `librclone.RPC`), así que el progreso
@@ -145,41 +144,86 @@ en vivo sale de `core/stats` con `{"group": "job/<id>"}`
 (`fs/accounting/stats_groups.go:71`) — **progreso como datos**, y eso sí es
 mejor que leer las líneas del log como hace `common/progress.py`.
 
+### El log de una pasada: cuatro cosas comprobadas ejecutándolas
+
+El plan decía «`output` es el log, no hace falta ni `--log-file` ni leer
+ficheros». Es verdad a medias, y las medias verdades aquí se pagan cuando algo
+falla, que es justo cuando hace falta el log. Todo esto lo comprueba
+`rclone/spike` ejecutándolo, no leyéndolo:
+
+1. **`_async` es obligatorio.** `librclone.RPC` **descarta el `out` de la
+   llamada cuando esta devuelve error** (`writeError`,
+   `librclone/librclone/librclone.go`): una pasada fallida por la vía síncrona
+   devuelve `{"error": …}` y ningún `output`. Con `_async` sobrevive, porque
+   `job.finish()` asigna `job.Output` **antes** de mirar el error
+   (`fs/rc/jobs/job.go`), así que `job/status` trae las dos cosas.
+2. **El error del job no explica nada.** Es un «bisync aborted». El
+   diagnóstico —«cannot find prior Path1 or Path2 listings…», el que
+   `KNOWN_ERRORS` traduce— está en `output`, que **es el log entero de la
+   pasada**: `bilib.CaptureOutput` instala un `SetOutput` en el handler del log
+   y le sube el nivel a INFO mientras dura (`cmd/bisync/bilib/output.go`).
+3. **Pero eso solo vale para bisync.** Los otros cuatro modos de prdrive son
+   `copy` y `sync`, y `rcSyncCopyMove` devuelve `nil` (`fs/sync/rc.go`): ni log
+   ni nada. Así que el log sale de un **sumidero en memoria**
+   (`fs/log.Handler.AddOutput`, `fs/log/slog.go`), que vale para los cinco
+   modos y no cuesta un fichero — ni los ciclos de escritura que
+   `dispose_log()` cuida en prdrive. Es `RcloneLogTexto()`.
+4. **Y hay dos cosas que NO se pueden pedir por llamada**, aunque lo parezca:
+   - **El nivel de log.** `fs.Infof` y compañía se guardan contra
+     `GetConfig(context.TODO())` (`fs/log.go`), o sea la configuración
+     **global**, no la del contexto de la llamada. Y hay que mover dos: el
+     nivel global, que decide si el mensaje se emite, y el del handler, que
+     decide si se escribe. Con una sola no se ve nada y no avisa. Es
+     `RcloneLogNivel()`, y el `verbose = true` de `BASE_FLAGS` es `INFO`.
+   - **Los colores ANSI.** `TerminalColorMode` es un `fs.Enum` y el `_config`
+     del RPC **lo ignora sin quejarse** (un `transfers` inválido da 400; un
+     `color` inválido pasa de largo). Y una vez encendidos no se apagan:
+     bisync guarda la decisión en `Colors`, una global de paquete que solo se
+     pone a `true` (`cmd/bisync/operations.go`), así que la primera pasada del
+     proceso decide para toda la vida de la app. Se apagan en la
+     configuración global, dentro de `RcloneInitialize`.
+
+Y una quinta, del mismo orden: **`RcloneSetConfigPath` va antes de
+`RcloneInitialize`**. `librclone.Initialize()` llama a `configfile.Install()`,
+que es `config.SetData()`, y esa función **se va de vacío si el path está sin
+fijar** (*«If no config file, use in-memory config»*, `fs/config/config.go`).
+Al revés del orden bueno rclone arranca con una configuración vacía en memoria
+y el fallo no sale ahí: sale después, diciendo «unknown remote».
+
 ### Hay que construir el `.aar`; el de serie no vale
 
 `librclone/gomobile/gomobile.go` importa **solo** `backend/all` y `lib/plugin`.
 No importa `cmd/bisync`, ni `fs/sync`, ni `fs/operations`, así que en el `.aar`
 de serie **`sync/bisync` no está registrado** (los métodos rc se registran en el
-`init()` de su paquete). Se construye uno propio: un paquete Go de diez líneas
-que reexporte `librclone` y añada los *blank imports* que faltan.
-
-```go
-package prdrive
-import (
-    _ "github.com/rclone/rclone/cmd/bisync"    // registra sync/bisync
-    _ "github.com/rclone/rclone/fs/sync"       // sync/copy, sync/move, sync/sync
-    _ "github.com/rclone/rclone/fs/operations" // operations/*
-    _ "github.com/rclone/rclone/backend/..."   // cuáles: ver abajo
-)
-```
+`init()` de su paquete). Se construye uno propio, y ya está: `rclone/gobind/`, que
+reexporta `librclone` y añade los *blank imports* que faltan
+(`cmd/bisync`, `fs/sync`, `fs/operations`) más lo que se ha visto que hace
+falta encima — el log y el orden del `rclone.conf`. Comprobado registrándose:
+`rc/list` los lista.
 
 **Pregunta abierta, a decidir midiendo:** qué backends entran. `backend/all` son
 ~50 y se lleva la mayor parte del tamaño del `.aar`; una lista corta
 (local + combine + sftp + webdav + crypt) da un APK mucho menor a cambio de
-rechazar con un mensaje un `[remote]` del catálogo de otro tipo. Se construye de
-las dos formas, se mide y se elige con el número delante. `combine` y `local`
-no son negociables.
+rechazar con un mensaje un `[remote]` del catálogo de otro tipo. Están las dos, elegidas con una etiqueta de
+compilación (`backends_curados.go` por defecto, `-tags rclone_todos` la otra),
+y las dos compilan en CI. Falta **medirlas**, que es lo que decide, y eso pide
+`gomobile bind` con un NDK. `combine` y `local` no son negociables.
 
 **Otras dos cosas que exige el `.aar`** y que el plan no mencionaba:
 
-- `_config` y `_filter` son parámetros genéricos del RPC (`fs/rc/context.go`):
-  `_config` pisa el `fs.ConfigInfo` de esa llamada (`--transfers`, `--checkers`,
-  `--dry-run`, y el `--max-delete` **como cuenta** de los modos `*-mirror`) y
-  `_filter` los include/exclude de los modos que no son bisync. Es por ahí por
-  donde pasan los flags de `BASE_FLAGS` que no son parámetros de `sync/bisync`.
-- `librclone.Initialize()` llama a `configfile.Install()`, así que rclone lee su
-  config del sitio de siempre: hay que apuntarlo al `rclone.conf` del volumen
-  **antes** de la primera llamada.
+- `_config` y `_filter` son parámetros genéricos del RPC (`fs/rc/context.go`),
+  y los aplica `jobs.NewJob`, así que funcionan también por librclone.
+  `_config` pisa el `fs.ConfigInfo` de esa llamada (`--transfers`,
+  `--checkers`, `--dry-run`, y el `--max-delete` **como cuenta** de los modos
+  `*-mirror`) y `_filter` los include/exclude de los modos que no son bisync.
+  Es por ahí por donde pasan los flags de `BASE_FLAGS` que no son parámetros
+  de `sync/bisync`. **Los nombres son los de las etiquetas `config:"…"`**, en
+  snake_case: `transfers`, `checkers`, `dry_run`, `max_delete`,
+  `stats_one_line`. Y **no todo pasa por ahí**: lo que no, y por qué, está en
+  la sección del log.
+- `librclone.Initialize()` llama a `configfile.Install()`, así que hay que
+  apuntar rclone al `rclone.conf` del volumen **antes** de esa llamada, no
+  después. Los detalles, en la sección del log: equivocarse no da error.
 
 ### `max-delete` no significa lo mismo en los dos modos
 
@@ -272,23 +316,53 @@ dibuja y llama; nada de `engine/` sabe que existe Android.**
 
 ## Cómo se comprueba
 
-- **Este repositorio, sin dispositivo:** `./gradlew :engine:test`. Hoy 58 tests,
-  todos contra los vectores generados desde prdrive: fusión de flags, la cadena
-  `upstreams` (incluida la pareja de la raíz y el caso `raiz` y las comillas de
-  Windows), el nombre de sesión de bisync, `fresh|ok|broken` sobre `.lst` de
+Dos niveles, y la diferencia entre ellos importa: uno comprueba que la
+traducción es fiel, el otro que el original acertaba.
+
+- **El motor contra prdrive:** `./gradlew :engine:test`, sin SDK ni
+  dispositivo. Hoy **67 tests**, ninguno con un valor esperado escrito a mano.
+  Contra `vectores.json`, generado del Python de prdrive: fusión de flags, la
+  cadena `upstreams` (con la pareja de la raíz, el caso `raiz` y las comillas
+  de Windows), el nombre de sesión de bisync, `fresh|ok|broken` sobre `.lst` de
   mentira, el round-trip del TOML y la vuelta del payload del QR.
-- **Spike del `.aar`, antes de escribir la app:** construirlo con `gomobile
-  bind`, llamar a `RcloneRPC("rc/noop", …)` para ver que arranca, y a
-  `RcloneRPC("sync/bisync", …)` entre **dos carpetas locales** — sin red — para
-  ver que el método está registrado y que devuelve `output` y `session`.
-  Comparar ese `session` con el `expectedPrefix()` del motor: si no coinciden,
-  el problema está aquí y se ve antes de tocar el remoto.
-- **En un teléfono:** una pareja de verdad contra el remoto: sincronizar, editar
-  un fichero en el móvil, sincronizar, y confirmarlo en el PC. Comprobar que el
-  baseline sobrevive a una segunda pasada (un prefijo que se mueve aparece como
-  «necesita resync» todas las veces).
-- Confirmar que el volumen sale en la app de Archivos y que un fichero guardado
-  ahí desde otra app se sincroniza en la pasada siguiente.
+- **El motor contra rclone:** `cd rclone && go run ./spike`. Esto es lo que
+  responde la pregunta que lo anterior deja abierta —*¿y si los dos se
+  equivocan igual?*—, porque el nombre de los listados lo decide rclone y
+  hasta aquí nadie se lo había preguntado a rclone.
+
+  El spike arranca rclone **como biblioteca**, con el mismo paquete que
+  empaqueta el `.aar`, monta un volumen de mentira con la distribución de
+  verdad y sincroniza tres parejas: una normal, la de la **raíz** (`local =
+  "."`, la que necesita el upstream con nombre) y una con un **espacio** en la
+  ruta. De cada una hace el `--resync` y después una segunda pasada, que es la
+  que prueba que el baseline sirve.
+
+  No necesita NDK, ni emulador, ni red: `gomobile bind` solo añade el JNI
+  encima de `librclone.RPC`, y `FsPath` —de donde sale el nombre de sesión—
+  solo mira el nombre y la raíz del `Fs`, **no el tipo de backend**
+  (`cmd/bisync/bilib/canonical.go`). Así que un remoto de tipo `local` llamado
+  `nas` recorre el mismo código que un sftp llamado `nas`.
+
+  Escribe `engine/src/test/resources/sesiones.json`, y `SesionesTest` compara
+  eso con lo que calcula el motor: el prefijo pareja por pareja, los extremos,
+  la sección `[disp]` con su entrecomillado, dónde caen los `.lst`, y el md5
+  que bisync escribió junto al fichero de filtros. Y **falla** si alguna
+  afirmación de este documento sobre rclone deja de ser cierta, así que subir
+  la versión de rclone no puede romper el diseño en silencio. Corre en CI
+  (`.github/workflows/rclone.yml`), que además comprueba que el JSON del
+  repositorio es el que el spike genera hoy.
+
+Lo que sigue pendiente, y por qué:
+
+- **Medir el `.aar`.** Los dos juegos de backends compilan; falta el tamaño
+  real de cada uno, que es lo que decide cuál entra. Pide `gomobile bind` con
+  un NDK de Android.
+- **En un teléfono:** una pareja de verdad contra el remoto: sincronizar,
+  editar un fichero en el móvil, sincronizar, y confirmarlo en el PC.
+  Comprobar que el baseline sobrevive a una segunda pasada (un prefijo que se
+  mueve aparece como «necesita resync» todas las veces).
+- Confirmar que el volumen sale en la app de Archivos y que un fichero
+  guardado ahí desde otra app se sincroniza en la pasada siguiente.
 
 ## Fuera del paso 1, explícitamente
 

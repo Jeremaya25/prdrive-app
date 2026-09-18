@@ -73,7 +73,7 @@ object Vectores {
  * que es justo lo que devuelve [loadRaw] para el TOML: así un valor del JSON y
  * el mismo valor leído de un TOML se comparan sin convertir nada.
  */
-private class Json(private val texto: String) {
+internal class Json(private val texto: String) {
     private var i = 0
 
     fun leerDocumento(): Any? {

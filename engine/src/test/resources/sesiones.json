@@ -1,0 +1,48 @@
+{
+  "rclone": "v1.75.1",
+  "generado_por": "rclone/spike — no editar a mano",
+  "base": "/tmp/prdrive-spike",
+  "raiz_volumen": "/tmp/prdrive-spike/volumen",
+  "config_toml": "# Generado por rclone/spike. No editar a mano.\n\n[defaults]\nremote = \"nas\"\ndevice_remote = \"disp\"\n\n[[pair]]\nname = \"documentos\"\nlocal = \"Documentos\"\nremote_path = \"/tmp/prdrive-spike/remoto/documentos\"\nmode = \"bisync\"\n\n[[pair]]\nname = \"todo\"\nlocal = \".\"\nremote_path = \"/tmp/prdrive-spike/remoto/todo\"\nmode = \"bisync\"\nexclude = [\".prdrive/**\"]\n\n[[pair]]\nname = \"espacios\"\nlocal = \"Con espacios\"\nremote_path = \"/tmp/prdrive-spike/remoto/espacios\"\nmode = \"bisync\"\n",
+  "rclone_conf": "[nas]\ntype = local\n\n[disp]\ntype = combine\nupstreams = \"Con espacios=/tmp/prdrive-spike/volumen/Con espacios\" \"Documentos=/tmp/prdrive-spike/volumen/Documentos\" \"raiz=/tmp/prdrive-spike/volumen\"\n",
+  "seccion_disp": "[disp]\ntype = combine\nupstreams = \"Con espacios=/tmp/prdrive-spike/volumen/Con espacios\" \"Documentos=/tmp/prdrive-spike/volumen/Documentos\" \"raiz=/tmp/prdrive-spike/volumen\"\n",
+  "casos": [
+    {
+      "pareja": "documentos",
+      "path1": "disp:Documentos",
+      "path2": "nas:/tmp/prdrive-spike/remoto/documentos",
+      "session": "disp_Documentos..nas__tmp_prdrive-spike_remoto_documentos",
+      "workDir": "/tmp/prdrive-spike/volumen/.prdrive/state/documentos",
+      "basePath": "/tmp/prdrive-spike/volumen/.prdrive/state/documentos/disp_Documentos..nas__tmp_prdrive-spike_remoto_documentos",
+      "listing1": "/tmp/prdrive-spike/volumen/.prdrive/state/documentos/disp_Documentos..nas__tmp_prdrive-spike_remoto_documentos.path1.lst",
+      "listing2": "/tmp/prdrive-spike/volumen/.prdrive/state/documentos/disp_Documentos..nas__tmp_prdrive-spike_remoto_documentos.path2.lst"
+    },
+    {
+      "pareja": "todo",
+      "path1": "disp:raiz",
+      "path2": "nas:/tmp/prdrive-spike/remoto/todo",
+      "session": "disp_raiz..nas__tmp_prdrive-spike_remoto_todo",
+      "workDir": "/tmp/prdrive-spike/volumen/.prdrive/state/todo",
+      "basePath": "/tmp/prdrive-spike/volumen/.prdrive/state/todo/disp_raiz..nas__tmp_prdrive-spike_remoto_todo",
+      "listing1": "/tmp/prdrive-spike/volumen/.prdrive/state/todo/disp_raiz..nas__tmp_prdrive-spike_remoto_todo.path1.lst",
+      "listing2": "/tmp/prdrive-spike/volumen/.prdrive/state/todo/disp_raiz..nas__tmp_prdrive-spike_remoto_todo.path2.lst"
+    },
+    {
+      "pareja": "espacios",
+      "path1": "disp:Con espacios",
+      "path2": "nas:/tmp/prdrive-spike/remoto/espacios",
+      "session": "disp_Con_espacios..nas__tmp_prdrive-spike_remoto_espacios",
+      "workDir": "/tmp/prdrive-spike/volumen/.prdrive/state/espacios",
+      "basePath": "/tmp/prdrive-spike/volumen/.prdrive/state/espacios/disp_Con_espacios..nas__tmp_prdrive-spike_remoto_espacios",
+      "listing1": "/tmp/prdrive-spike/volumen/.prdrive/state/espacios/disp_Con_espacios..nas__tmp_prdrive-spike_remoto_espacios.path1.lst",
+      "listing2": "/tmp/prdrive-spike/volumen/.prdrive/state/espacios/disp_Con_espacios..nas__tmp_prdrive-spike_remoto_espacios.path2.lst"
+    }
+  ],
+  "filtros": [
+    {
+      "pareja": "todo",
+      "contenido": "# Generado por sync.py desde sync_config.toml. No editar a mano:\n# se regenera en cada ejecución. Cambiar los patrones exige --resync.\n- .prdrive/**\n",
+      "md5": "3ce163566cb616084f29905637aa22b2"
+    }
+  ]
+}

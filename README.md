@@ -21,15 +21,23 @@ En construcción. El plan del paso 1 —con todo lo que se ha comprobado contra 
 código de rclone v1.75.1, que es la versión que prdrive fija— está en
 [`PLAN.md`](PLAN.md).
 
-Hecho: el **motor** (`engine/`), que es Kotlin puro y sin nada de Android — las
-capas de flags, el `upstreams` del remote `combine`, el nombre de sesión de
-bisync, el estado del baseline, el TOML y la lectura del payload del QR.
+Hecho:
+
+- El **motor** (`engine/`), Kotlin puro y sin nada de Android — las capas de
+  flags, el `upstreams` del remote `combine`, el nombre de sesión de bisync, el
+  estado del baseline, el TOML y la lectura del payload del QR.
+- El paquete **Go** que construye el `.aar` (`rclone/gobind/`): rclone como
+  biblioteca, con los métodos que la app necesita registrados.
+- Un **spike** (`rclone/spike/`) que ejecuta rclone de verdad y comprueba, una
+  por una, las afirmaciones sobre rclone en las que se apoya el diseño.
 
 ```bash
-./gradlew :engine:test
+./gradlew :engine:test            # el motor
+cd rclone && go run ./spike       # rclone de verdad
 ```
 
-No necesita SDK de Android, ni emulador, ni teléfono.
+Ninguno de los dos necesita SDK de Android, ni NDK, ni emulador, ni teléfono,
+ni red.
 
 ## Por qué el motor se prueba contra prdrive y no contra sí mismo
 
@@ -47,6 +55,19 @@ Cuando prdrive mueva una constante, falla el test que la nombra.
 ```bash
 python herramientas/vectores.py ../prdrive
 ```
+
+Eso deja una pregunta abierta: **¿y si las dos copias se equivocan igual?** El
+nombre de los listados lo decide rclone, no prdrive. Así que el spike arranca
+rclone como biblioteca, sincroniza tres parejas —una normal, la de la raíz del
+volumen y una con un espacio en la ruta—, y apunta lo que rclone devolvió.
+`SesionesTest` compara eso con lo que calcula el motor.
+
+```bash
+cd rclone && go run ./spike -json ../engine/src/test/resources/sesiones.json
+```
+
+Y corre en CI, así que subir la versión de rclone no puede romper el diseño en
+silencio.
 
 ## Licencia
 
