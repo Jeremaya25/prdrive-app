@@ -29,7 +29,9 @@ Hecho:
   flag hasta el RPC de rclone, la traducción de un fallo a algo accionable y la
   línea de progreso.
 - El paquete **Go** que construye el `.aar` (`rclone/gobind/`): rclone como
-  biblioteca, con los métodos que la app necesita registrados.
+  biblioteca, con los métodos que la app necesita registrados, y con la lista
+  de backends ya decidida midiendo las dos (`rclone/aar.sh`): 12,6 MB con los
+  cinco que hacen falta contra 43,9 MB con los cincuenta de `backend/all`.
 - Un **spike** (`rclone/spike/`) que ejecuta rclone de verdad y comprueba, una
   por una, las afirmaciones sobre rclone en las que se apoya el diseño.
 

@@ -1,0 +1,37 @@
+# Medir el .aar. A mano y no en cada push, porque bajarse el NDK son 2 GB y la
+# pregunta que contesta —qué juego de backends entra— ya está contestada
+# (PLAN.md). Está aquí para poder volver a medirla cuando suba la versión de
+# rclone o cuando cambie la lista de backends curados, sin tener que recordar
+# los detalles que no son evidentes: están en rclone/aar.sh.
+#
+# Que las dos variantes COMPILEN se comprueba en cada push, en rclone.yml, que
+# no necesita NDK.
+name: aar
+
+on:
+  workflow_dispatch:
+
+jobs:
+  medir:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: rclone/go.mod
+          cache-dependency-path: rclone/go.sum
+
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: "platforms;android-35 build-tools;35.0.0 ndk;27.2.12479018"
+
+      - name: construir y medir
+        env:
+          ANDROID_NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/27.2.12479018
+        run: sh rclone/aar.sh "$RUNNER_TEMP"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: aar
+          path: ${{ runner.temp }}/prdrive-*.aar

@@ -264,13 +264,30 @@ reexporta `librclone` y añade los *blank imports* que faltan
 falta encima — el log y el orden del `rclone.conf`. Comprobado registrándose:
 `rc/list` los lista.
 
-**Pregunta abierta, a decidir midiendo:** qué backends entran. `backend/all` son
-~50 y se lleva la mayor parte del tamaño del `.aar`; una lista corta
-(local + combine + sftp + webdav + crypt) da un APK mucho menor a cambio de
-rechazar con un mensaje un `[remote]` del catálogo de otro tipo. Están las dos, elegidas con una etiqueta de
-compilación (`backends_curados.go` por defecto, `-tags rclone_todos` la otra),
-y las dos compilan en CI. Falta **medirlas**, que es lo que decide, y eso pide
-`gomobile bind` con un NDK. `combine` y `local` no son negociables.
+**Qué backends entran: medido, y decidido.** La pregunta era si merecía la pena
+`backend/all` (~50 backends) o una lista corta que rechace con un mensaje un
+`[remote]` del catálogo de otro tipo. Las dos están, elegidas con una etiqueta
+de compilación (`backends_curados.go` por defecto, `-tags rclone_todos` la
+otra), y las dos compilan en CI. Construidas con `gomobile bind` para
+`android/arm64` y la API 26:
+
+| juego de backends | el `.aar` | el `.so` sin comprimir |
+|---|---|---|
+| curados (local · combine · crypt · sftp · webdav) | **12,6 MB** | 26,1 MB |
+| `backend/all` | **43,9 MB** | 103,0 MB |
+
+**Entran los curados.** `backend/all` cuesta 31 MB más de descarga y **cuatro
+veces** el tamaño instalado, porque el `.so` va sin comprimir en el APK. No es
+una diferencia de matiz que se pueda dejar para más adelante: es la diferencia
+entre una app de 13 MB y una de 44 MB, y lo que compra son backends que este
+proyecto no usa —el catálogo dice de qué tipo es el remoto, y en prdrive es
+sftp o webdav—. Un `[remote]` de otro tipo se rechaza con una frase que dice
+qué pasa, que es mucho mejor que 31 MB por si acaso. `combine` y `local` no son
+negociables: sin ellos no hay lado del dispositivo.
+
+Se vuelve a medir con `sh rclone/aar.sh` (pide un NDK y un SDK; los detalles
+que no son evidentes están comentados dentro), o a mano desde la pestaña
+Actions con el flujo `aar`.
 
 **Otras dos cosas que exige el `.aar`** y que el plan no mencionaba:
 
@@ -427,9 +444,6 @@ traducción es fiel, el otro que el original acertaba.
 
 Lo que sigue pendiente, y por qué:
 
-- **Medir el `.aar`.** Los dos juegos de backends compilan; falta el tamaño
-  real de cada uno, que es lo que decide cuál entra. Pide `gomobile bind` con
-  un NDK de Android.
 - **En un teléfono:** una pareja de verdad contra el remoto: sincronizar,
   editar un fichero en el móvil, sincronizar, y confirmarlo en el PC.
   Comprobar que el baseline sobrevive a una segunda pasada (un prefijo que se

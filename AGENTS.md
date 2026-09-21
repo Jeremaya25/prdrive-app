@@ -119,6 +119,11 @@ cd rclone
 go run ./spike                               # comprobar rclone, sin escribir
 go run ./spike -json ../engine/src/test/resources/sesiones.json
 go build ./gobind/ && go build -tags rclone_todos ./gobind/   # los dos juegos
+
+# y medir el .aar, que es lo que decidió qué backends entran. Pide NDK y SDK;
+# lo que no es evidente está comentado dentro. En cada push solo se comprueba
+# que los dos juegos COMPILAN, que para eso no hace falta NDK.
+ANDROID_HOME=... ANDROID_NDK_HOME=... sh rclone/aar.sh
 ```
 
 El spike no necesita NDK, emulador ni red: `gomobile bind` solo añade el JNI
@@ -153,6 +158,11 @@ lo que consume AGP 8.x. Los avisos del compilador son errores
   documentación de rclone: `librclone.RPC()` rechaza los métodos que necesitan
   request/response, y su implementación lanza un proceso hijo. La ruta es
   `sync/bisync`. Los detalles y las líneas exactas están en `PLAN.md`.
+- Y una que es al revés, de las que la documentación **no** dice: el parámetro
+  `maxDelete` de `sync/bisync` funciona —`rcBisync` lo lee y valida que esté
+  entre 0 y 100— pero **no está en la ayuda del método**, porque
+  `--max-delete` es un flag global. Leyendo `rc.md` se concluiría que el rc de
+  bisync no puede limitar los borrados.
 
 ## Y con estas seis, que no avisan
 
