@@ -34,15 +34,19 @@ jobs:
           ANDROID_NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/27.2.12479018
         run: sh rclone/aar.sh app/libs
 
+      # El APK de DEPURACIÓN y no el de release, y no es un descuido: el de
+      # release sale sin firmar, así que no se puede instalar en un teléfono.
+      # El de depuración lo firma Gradle con su clave de siempre, y es el que
+      # hay que poder descargar de aquí y probar.
       - name: y con él, el APK
         run: |
           cp app/libs/prdrive-curados.aar app/libs/prdrive-rclone.aar
-          ./gradlew :app:assembleRelease
-          ls -l app/build/outputs/apk/release/
+          ./gradlew :app:assembleDebug
+          ls -l app/build/outputs/apk/debug/
 
       - uses: actions/upload-artifact@v4
         with:
           name: prdrive
           path: |
             app/libs/prdrive-*.aar
-            app/build/outputs/apk/release/*.apk
+            app/build/outputs/apk/debug/*.apk
