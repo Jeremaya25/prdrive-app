@@ -76,6 +76,7 @@ cómo ha ido**. Los ficheros de Python siguen siendo la especificación.
 | (nuevo aquí) | `engine/Json.kt` | **hecho** — leer y escribir el JSON del RPC, sin dependencias |
 | `common/catalog.py` | `engine/Catalog.kt` | **hecho** — **solo lectura**, así que nada de la ceremonia de `push()` |
 | `install/deploy.py` (`device_config`, `write_device_remote`, `make_local_dirs`) | `engine/Volumen.kt` | **hecho** |
+| (nada: es Android) | `app/` — las dos pantallas, el `DocumentsProvider` y las cuatro funciones del canal | **hecho**, sin probar en un teléfono |
 | `common/conflicts.py` | `engine/Conflictos.kt` | **hecho** — en el paso 1 los conflictos solo se **detectan y avisan** |
 
 ### El riesgo que esto crea, y qué lo tapa
@@ -430,6 +431,31 @@ que permite probar en CI, en segundos, la parte cuyo error sería caro, sin
 emulador. La regla equivalente a la de `tk_*` en el otro repo: **`app/` solo
 dibuja y llama; nada de `engine/` sabe que existe Android.**
 
+### Lo que hay en `app/`, y lo que NO hay
+
+`app/` **solo dibuja y llama**, que es la regla equivalente a la de `tk_*` en
+prdrive. Lo que aporta, entero:
+
+| Fichero | Qué es |
+|---|---|
+| `RcloneAar.kt` | las cuatro funciones del canal sobre el `.aar`, una línea cada una, y el orden de arranque —que es lo único que decide, porque equivocarse no da error |
+| `Aplicacion.kt` | lo único que la app sabe y el motor no: que el volumen está en `filesDir` |
+| `Modelo.kt` | el estado de la pantalla. Cada función es una llamada a `engine/` y un `update`; nada corre en el hilo principal |
+| `Principal.kt` | la única Activity: elige pantalla y conecta botones. El escáner de ML Kit, que Play Services ejecuta en su proceso — de ahí que la app no pida permiso de cámara |
+| `Archivos.kt` | el `DocumentsProvider`: la raíz del volumen en la app de Archivos, con `.prdrive/` escondido |
+| `ui/` | el tema (un solo sitio con los colores, como `ui/theme.py`), las dos pantallas y el diario de una pasada |
+
+**El APK, medido:** 39 MB en depuración y 35 MB en `release` sin minificar, de
+los que **27 MB son rclone** (el `.so`, que va sin comprimir a propósito: así
+Android lo mapea del APK en vez de extraerlo y no ocupa el doble). Con
+`backend/all` serían 103 MB solo de `.so`, que es la decisión de la sección
+anterior vista desde el otro lado.
+
+Y **el manifiesto no pide un solo permiso.** No es casualidad, es lo que define
+la app: el volumen es almacenamiento privado, el escáner corre en otro proceso,
+y las otras apps escriben en el volumen a través del `DocumentsProvider` sin que
+esta tenga acceso a nada suyo.
+
 ### Pantallas del paso 1
 
 1. *Primer arranque*: crear el volumen → «Escanear código» (el escáner de
@@ -488,12 +514,6 @@ traducción es fiel, el otro que el original acertaba.
 
 Lo que sigue pendiente, y por qué:
 
-- **El módulo `app/`.** El motor está entero: crear el volumen, leer el QR,
-  leer el catálogo, escribir el config, ejecutar las parejas con su progreso,
-  apuntar cómo fueron y avisar de los conflictos. Lo que falta es la parte que
-  **solo dibuja y llama** — las dos pantallas en Compose, el
-  `DocumentsProvider` y las tres funciones del [Rclone] sobre el `.aar`— y la
-  que no se puede probar sin un teléfono: el escáner de códigos.
 - **En un teléfono:** una pareja de verdad contra el remoto: sincronizar,
   editar un fichero en el móvil, sincronizar, y confirmarlo en el PC.
   Comprobar que el baseline sobrevive a una segunda pasada (un prefijo que se

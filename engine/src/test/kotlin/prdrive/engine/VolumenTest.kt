@@ -108,6 +108,32 @@ class VolumenTest {
     }
 
     @Test
+    fun `la conexión se guarda tal cual y se relee con el mismo lector`() {
+        // El rclone.conf es derivado, así que la conexión tiene que estar en
+        // algún sitio del que se pueda volver a generar. Se guarda la carga
+        // ENTERA y se relee con `Pairing.leer`, que es el mismo lector del
+        // formato que usa el PC: reconstruirla leyendo el rclone.conf sería un
+        // segundo parser, y la regla del proyecto es que hay uno.
+        conVolumen { v ->
+            v.escribirClaves(carga())
+            val releida = v.emparejamientoActual()
+            assertNotNull(releida)
+            assertEquals(carga(), releida, "la carga releída tiene que ser la misma")
+            // Y con eso solo ya se puede regenerar el rclone.conf.
+            v.escribirRcloneConf(releida)
+            assertTrue("[${releida.remoteName}]" in v.rcloneConf.readText())
+        }
+    }
+
+    @Test
+    fun `sin emparejar no hay conexión, y no es un error`() {
+        conVolumen { v ->
+            v.crear()
+            assertEquals(null, v.emparejamientoActual())
+        }
+    }
+
+    @Test
     fun `sin parejas todavía el rclone conf ya sirve para comprobar la conexión`() {
         // El primer arranque comprueba la conexión y lee el catálogo ANTES de
         // que exista ninguna pareja, así que la sección [disp] no puede ser

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  El tema del sistema solo tiene que hacer una cosa: no pintar nada antes de
+  que Compose tome el control. Los colores están en ui/Tema.kt, que es el
+  equivalente de `ui/theme.py` en prdrive: un solo sitio donde viven.
+-->
+<resources>
+    <style name="Theme.Prdrive" parent="android:Theme.Material.Light.NoActionBar" />
+</resources>

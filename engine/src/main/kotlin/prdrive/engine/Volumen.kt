@@ -52,6 +52,22 @@ class Volumen(
     val prdrive: File get() = File(raiz, APP_SUBDIR)
 
     val rcloneConf: File get() = File(prdrive, "rclone.conf")
+
+    /**
+     * La carga del QR, tal y como venía.
+     *
+     * Se guarda entera y sin tocar, y es a propósito: el `rclone.conf` es
+     * **derivado** (ver arriba), así que la conexión tiene que estar en algún
+     * sitio del que se pueda volver a generar cuando la raíz cambie.
+     * Reconstruirla leyendo el `rclone.conf` sería un segundo lector del
+     * formato, y la regla de prdrive es que hay **uno** ([Pairing.leer]) — el
+     * mismo texto que en el PC recibe `profile.loads()`.
+     *
+     * Lleva la clave privada dentro, igual que `keys/`. No es un sitio peor:
+     * es el almacenamiento privado de la app, que Android cifra, y es el mismo
+     * donde tiene que estar la clave para que rclone la lea.
+     */
+    val emparejamiento: File get() = File(prdrive, "emparejamiento.toml")
     val syncConfig: File get() = File(prdrive, "sync_config.toml")
     val keys: File get() = File(prdrive, "keys")
     val state: File get() = File(prdrive, "state")
@@ -102,14 +118,8 @@ class Volumen(
      */
     fun escribirClaves(carga: Pairing.Carga) {
         crear()
-        carga.privateKey?.let { clave ->
-            val fichero = File(keys, carga.keyName)
-            fichero.writeBytes(clave)
-            fichero.setReadable(false, false)
-            fichero.setReadable(true, true)
-            fichero.setWritable(false, false)
-            fichero.setWritable(true, true)
-        }
+        escribirTextoPrivado(emparejamiento, carga.texto.toByteArray())
+        carga.privateKey?.let { escribirTextoPrivado(File(keys, carga.keyName), it) }
         if (carga.knownHosts.isNotBlank()) {
             File(keys, "known_hosts").writeText(carga.knownHosts)
         }
@@ -141,6 +151,23 @@ class Volumen(
     fun escribirConfig(raw: Map<String, Any?>, cabecera: String = CABECERA) {
         crear()
         syncConfig.writeText(dumpsChecked(raw, cabecera))
+    }
+
+    /** La conexión que hay guardada, releída. Null si el móvil no está emparejado. */
+    fun emparejamientoActual(): Pairing.Carga? {
+        val texto = runCatching { emparejamiento.readText() }.getOrNull() ?: return null
+        return runCatching { Pairing.leer(texto) }.getOrNull()
+    }
+
+    private fun escribirTextoPrivado(fichero: File, datos: ByteArray) {
+        fichero.writeBytes(datos)
+        // En Android sobra —el almacenamiento privado de la app ya lo es— pero
+        // el motor no sabe dónde corre, y un volumen de pruebas en un PC sí lo
+        // necesita.
+        fichero.setReadable(false, false)
+        fichero.setReadable(true, true)
+        fichero.setWritable(false, false)
+        fichero.setWritable(true, true)
     }
 
     /** El `sync_config.toml` que hay, ya resuelto. Null si no hay ninguno. */

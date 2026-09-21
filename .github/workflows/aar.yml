@@ -4,8 +4,11 @@
 # rclone o cuando cambie la lista de backends curados, sin tener que recordar
 # los detalles que no son evidentes: están en rclone/aar.sh.
 #
-# Que las dos variantes COMPILEN se comprueba en cada push, en rclone.yml, que
-# no necesita NDK.
+# Y con el .aar construido, de paso sale el APK: es la única forma de comprobar
+# que el módulo `app` compila, porque necesita el .aar y el SDK.
+#
+# Que las dos variantes de backends COMPILEN se comprueba en cada push, en
+# rclone.yml, que no necesita NDK.
 name: aar
 
 on:
@@ -29,9 +32,17 @@ jobs:
       - name: construir y medir
         env:
           ANDROID_NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/27.2.12479018
-        run: sh rclone/aar.sh "$RUNNER_TEMP"
+        run: sh rclone/aar.sh app/libs
+
+      - name: y con él, el APK
+        run: |
+          cp app/libs/prdrive-curados.aar app/libs/prdrive-rclone.aar
+          ./gradlew :app:assembleRelease
+          ls -l app/build/outputs/apk/release/
 
       - uses: actions/upload-artifact@v4
         with:
-          name: aar
-          path: ${{ runner.temp }}/prdrive-*.aar
+          name: prdrive
+          path: |
+            app/libs/prdrive-*.aar
+            app/build/outputs/apk/release/*.apk

@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Sin un solo permiso, y eso no es una casualidad: es la decisión que define la
+  app. El «disco» es una carpeta del almacenamiento privado (`filesDir`), que
+  Android cifra y que no necesita permiso; el escáner de códigos lo ejecuta
+  Play Services en su proceso, así que la cámara tampoco; y el volumen se
+  publica en la app de Archivos con un DocumentsProvider, que es lo que permite
+  que otras apps guarden ahí sin darle a esta acceso a nada suyo.
+
+  Usar una SD o un USB de verdad pediría «acceso a todos los archivos», y por
+  eso está fuera del paso 1 (PLAN.md).
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application
+        android:name=".Aplicacion"
+        android:allowBackup="false"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.Prdrive">
+
+        <activity
+            android:name=".Principal"
+            android:exported="true"
+            android:label="@string/app_name">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!--
+          El volumen, visible en la app de Archivos del sistema y en los
+          diálogos de abrir/guardar de otras apps. `exported` y el permiso de
+          firma son lo que exige el sistema para poder llamarlo; el permiso es
+          del sistema, no de la app.
+        -->
+        <provider
+            android:name=".Archivos"
+            android:authorities="prdrive.app.archivos"
+            android:exported="true"
+            android:grantUriPermissions="true"
+            android:permission="android.permission.MANAGE_DOCUMENTS">
+            <intent-filter>
+                <action android:name="android.content.action.DOCUMENTS_PROVIDER" />
+            </intent-filter>
+        </provider>
+    </application>
+</manifest>

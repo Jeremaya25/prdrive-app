@@ -51,11 +51,20 @@ rclone/       módulo Go: rclone como biblioteca
 │               orden del rclone.conf
 └── spike/      arnés que EJECUTA rclone y comprueba las afirmaciones del PLAN;
                 genera engine/src/test/resources/sesiones.json
+app/          Android: SOLO dibuja y llama
+├── RcloneAar.kt   las cuatro funciones del canal sobre el .aar, y el orden
+│                  de arranque (que es lo único que decide)
+├── Aplicacion.kt  lo único que la app sabe y el motor no: filesDir
+├── Modelo.kt      el estado de la pantalla; nada en el hilo principal
+├── Principal.kt   la única Activity, y el escáner de ML Kit
+├── Archivos.kt    el DocumentsProvider, con .prdrive/ escondido
+└── ui/            tema, las dos pantallas y el diario de una pasada
 herramientas/
 └── vectores.py genera los valores esperados desde el prdrive de verdad
 ```
 
-Pendiente (ver `PLAN.md`): el módulo `app/`, que solo dibuja y llama.
+Pendiente (ver `PLAN.md`): probarlo en un teléfono de verdad, que es lo único
+que no se puede hacer aquí.
 
 El envoltorio del RPC está en `engine/` y no en `rclone/` como decía el plan,
 porque cabe entero ahí: la superficie de `librclone` es
@@ -129,6 +138,13 @@ cd rclone && go run ./spike -json ../engine/src/test/resources/sesiones.json
 ./gradlew :engine:test --tests 'prdrive.engine.BisyncTest'
 python herramientas/vectores.py ../prdrive   # regenerar los vectores de prdrive
 
+# El APK. Necesita el SDK (ANDROID_HOME o local.properties) y el .aar en
+# app/libs/, que NO está en el repositorio: si falta, el build lo dice con la
+# orden que lo construye.
+ANDROID_HOME=... ANDROID_NDK_HOME=... sh rclone/aar.sh app/libs
+cp app/libs/prdrive-curados.aar app/libs/prdrive-rclone.aar
+./gradlew :app:assembleDebug
+
 cd rclone
 go run ./spike                               # comprobar rclone, sin escribir
 go run ./spike -json ../engine/src/test/resources/sesiones.json
@@ -144,6 +160,9 @@ El spike no necesita NDK, emulador ni red: `gomobile bind` solo añade el JNI
 encima de `librclone.RPC`, y el nombre de sesión sale de `FsPath`, que no mira
 el tipo de backend. Falla con un mensaje concreto si alguna afirmación del
 `PLAN.md` sobre rclone deja de ser cierta.
+
+Y `:engine:test` sigue funcionando **sin SDK y sin el `.aar`**: es lo que
+permite trabajar en el motor con nada instalado, y lo que corre en CI.
 
 `engine/` compila con cualquier JDK 17 o posterior y genera bytecode 17, que es
 lo que consume AGP 8.x. Los avisos del compilador son errores

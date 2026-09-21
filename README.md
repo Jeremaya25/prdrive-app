@@ -35,10 +35,23 @@ Hecho:
   cinco que hacen falta contra 43,9 MB con los cincuenta de `backend/all`.
 - Un **spike** (`rclone/spike/`) que ejecuta rclone de verdad y comprueba, una
   por una, las afirmaciones sobre rclone en las que se apoya el diseño.
+- La **app** (`app/`): las dos pantallas del paso 1, el `DocumentsProvider` que
+  publica el volumen en la app de Archivos, y el canal con el `.aar`. Compila y
+  genera un APK de 35 MB, de los que 27 son rclone. **Sin probar en un teléfono
+  todavía**, que es lo que queda.
 
 ```bash
 ./gradlew :engine:test            # el motor
 cd rclone && go run ./spike       # rclone de verdad
+```
+
+El APK necesita el SDK de Android y el `.aar` de rclone, que se construye
+—no se versiona— con `sh rclone/aar.sh app/libs`:
+
+```bash
+ANDROID_HOME=... ANDROID_NDK_HOME=... sh rclone/aar.sh app/libs
+cp app/libs/prdrive-curados.aar app/libs/prdrive-rclone.aar
+./gradlew :app:assembleDebug
 ```
 
 Ninguno de los dos necesita SDK de Android, ni NDK, ni emulador, ni teléfono,
