@@ -199,16 +199,19 @@ require (
 	go.opentelemetry.io/otel/metric v1.44.0 // indirect
 	go.opentelemetry.io/otel/trace v1.44.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.4 // indirect
-	golang.org/x/crypto v0.56.0 // indirect
+	golang.org/x/crypto v0.57.0 // indirect
 	golang.org/x/exp v0.0.0-20260709172345-9ea1abe57597 // indirect
-	golang.org/x/image v0.45.0 // indirect
-	golang.org/x/net v0.57.0 // indirect
+	golang.org/x/image v0.46.0 // indirect
+	golang.org/x/mobile v0.0.0-20260908204917-8b95e45f8d3e // indirect
+	golang.org/x/mod v0.41.0 // indirect
+	golang.org/x/net v0.59.0 // indirect
 	golang.org/x/oauth2 v0.36.0 // indirect
-	golang.org/x/sync v0.22.0 // indirect
-	golang.org/x/sys v0.47.0 // indirect
-	golang.org/x/term v0.45.0 // indirect
-	golang.org/x/text v0.41.0 // indirect
+	golang.org/x/sync v0.23.0 // indirect
+	golang.org/x/sys v0.48.0 // indirect
+	golang.org/x/term v0.46.0 // indirect
+	golang.org/x/text v0.42.0 // indirect
 	golang.org/x/time v0.15.0 // indirect
+	golang.org/x/tools v0.50.0 // indirect
 	google.golang.org/api v0.279.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260715232425-e75dac1f907d // indirect
 	google.golang.org/grpc v1.84.0-dev.0.20260723093437-b6eac429d7b6 // indirect
@@ -226,3 +229,5 @@ require (
 	storj.io/picobuf v0.0.4 // indirect
 	storj.io/uplink v1.14.3 // indirect
 )
+
+tool golang.org/x/mobile/cmd/gobind

@@ -15,7 +15,10 @@
       "workDir": "/tmp/prdrive-spike/volumen/.prdrive/state/documentos",
       "basePath": "/tmp/prdrive-spike/volumen/.prdrive/state/documentos/disp_Documentos..nas__tmp_prdrive-spike_remoto_documentos",
       "listing1": "/tmp/prdrive-spike/volumen/.prdrive/state/documentos/disp_Documentos..nas__tmp_prdrive-spike_remoto_documentos.path1.lst",
-      "listing2": "/tmp/prdrive-spike/volumen/.prdrive/state/documentos/disp_Documentos..nas__tmp_prdrive-spike_remoto_documentos.path2.lst"
+      "listing2": "/tmp/prdrive-spike/volumen/.prdrive/state/documentos/disp_Documentos..nas__tmp_prdrive-spike_remoto_documentos.path2.lst",
+      "rpc_resync": "{\"_async\":true,\"_group\":\"spike\",\"conflictResolve\":\"newer\",\"conflictSuffix\":\"conflicto-dispositivo,conflicto-remoto\",\"createEmptySrcDirs\":true,\"filtersFile\":\"/tmp/prdrive-spike/volumen/.prdrive/filters/documentos.txt\",\"maxDelete\":25,\"maxLock\":\"2m\",\"path1\":\"disp:Documentos\",\"path2\":\"nas:/tmp/prdrive-spike/remoto/documentos\",\"recover\":true,\"resilient\":true,\"resync\":true,\"workdir\":\"/tmp/prdrive-spike/volumen/.prdrive/state/documentos\"}",
+      "rpc_pasada": "{\"_async\":true,\"_group\":\"spike\",\"conflictResolve\":\"newer\",\"conflictSuffix\":\"conflicto-dispositivo,conflicto-remoto\",\"createEmptySrcDirs\":true,\"filtersFile\":\"/tmp/prdrive-spike/volumen/.prdrive/filters/documentos.txt\",\"maxDelete\":25,\"maxLock\":\"2m\",\"path1\":\"disp:Documentos\",\"path2\":\"nas:/tmp/prdrive-spike/remoto/documentos\",\"recover\":true,\"resilient\":true,\"workdir\":\"/tmp/prdrive-spike/volumen/.prdrive/state/documentos\"}",
+      "filters_file": "/tmp/prdrive-spike/volumen/.prdrive/filters/documentos.txt"
     },
     {
       "pareja": "todo",
@@ -25,7 +28,10 @@
       "workDir": "/tmp/prdrive-spike/volumen/.prdrive/state/todo",
       "basePath": "/tmp/prdrive-spike/volumen/.prdrive/state/todo/disp_raiz..nas__tmp_prdrive-spike_remoto_todo",
       "listing1": "/tmp/prdrive-spike/volumen/.prdrive/state/todo/disp_raiz..nas__tmp_prdrive-spike_remoto_todo.path1.lst",
-      "listing2": "/tmp/prdrive-spike/volumen/.prdrive/state/todo/disp_raiz..nas__tmp_prdrive-spike_remoto_todo.path2.lst"
+      "listing2": "/tmp/prdrive-spike/volumen/.prdrive/state/todo/disp_raiz..nas__tmp_prdrive-spike_remoto_todo.path2.lst",
+      "rpc_resync": "{\"_async\":true,\"_group\":\"spike\",\"conflictResolve\":\"newer\",\"conflictSuffix\":\"conflicto-dispositivo,conflicto-remoto\",\"createEmptySrcDirs\":true,\"filtersFile\":\"/tmp/prdrive-spike/volumen/.prdrive/filters/todo.txt\",\"maxDelete\":25,\"maxLock\":\"2m\",\"path1\":\"disp:raiz\",\"path2\":\"nas:/tmp/prdrive-spike/remoto/todo\",\"recover\":true,\"resilient\":true,\"resync\":true,\"workdir\":\"/tmp/prdrive-spike/volumen/.prdrive/state/todo\"}",
+      "rpc_pasada": "{\"_async\":true,\"_group\":\"spike\",\"conflictResolve\":\"newer\",\"conflictSuffix\":\"conflicto-dispositivo,conflicto-remoto\",\"createEmptySrcDirs\":true,\"filtersFile\":\"/tmp/prdrive-spike/volumen/.prdrive/filters/todo.txt\",\"maxDelete\":25,\"maxLock\":\"2m\",\"path1\":\"disp:raiz\",\"path2\":\"nas:/tmp/prdrive-spike/remoto/todo\",\"recover\":true,\"resilient\":true,\"workdir\":\"/tmp/prdrive-spike/volumen/.prdrive/state/todo\"}",
+      "filters_file": "/tmp/prdrive-spike/volumen/.prdrive/filters/todo.txt"
     },
     {
       "pareja": "espacios",
@@ -35,14 +41,272 @@
       "workDir": "/tmp/prdrive-spike/volumen/.prdrive/state/espacios",
       "basePath": "/tmp/prdrive-spike/volumen/.prdrive/state/espacios/disp_Con_espacios..nas__tmp_prdrive-spike_remoto_espacios",
       "listing1": "/tmp/prdrive-spike/volumen/.prdrive/state/espacios/disp_Con_espacios..nas__tmp_prdrive-spike_remoto_espacios.path1.lst",
-      "listing2": "/tmp/prdrive-spike/volumen/.prdrive/state/espacios/disp_Con_espacios..nas__tmp_prdrive-spike_remoto_espacios.path2.lst"
+      "listing2": "/tmp/prdrive-spike/volumen/.prdrive/state/espacios/disp_Con_espacios..nas__tmp_prdrive-spike_remoto_espacios.path2.lst",
+      "rpc_resync": "{\"_async\":true,\"_group\":\"spike\",\"conflictResolve\":\"newer\",\"conflictSuffix\":\"conflicto-dispositivo,conflicto-remoto\",\"createEmptySrcDirs\":true,\"filtersFile\":\"/tmp/prdrive-spike/volumen/.prdrive/filters/espacios.txt\",\"maxDelete\":25,\"maxLock\":\"2m\",\"path1\":\"disp:Con espacios\",\"path2\":\"nas:/tmp/prdrive-spike/remoto/espacios\",\"recover\":true,\"resilient\":true,\"resync\":true,\"workdir\":\"/tmp/prdrive-spike/volumen/.prdrive/state/espacios\"}",
+      "rpc_pasada": "{\"_async\":true,\"_group\":\"spike\",\"conflictResolve\":\"newer\",\"conflictSuffix\":\"conflicto-dispositivo,conflicto-remoto\",\"createEmptySrcDirs\":true,\"filtersFile\":\"/tmp/prdrive-spike/volumen/.prdrive/filters/espacios.txt\",\"maxDelete\":25,\"maxLock\":\"2m\",\"path1\":\"disp:Con espacios\",\"path2\":\"nas:/tmp/prdrive-spike/remoto/espacios\",\"recover\":true,\"resilient\":true,\"workdir\":\"/tmp/prdrive-spike/volumen/.prdrive/state/espacios\"}",
+      "filters_file": "/tmp/prdrive-spike/volumen/.prdrive/filters/espacios.txt"
     }
   ],
   "filtros": [
     {
+      "pareja": "documentos",
+      "contenido": "# Generado por sync.py desde sync_config.toml. No editar a mano:\n# se regenera en cada ejecución. Cambiar los patrones exige --resync.\n",
+      "md5": "6ff4f340c4048d3edde47c9a818da10c"
+    },
+    {
       "pareja": "todo",
       "contenido": "# Generado por sync.py desde sync_config.toml. No editar a mano:\n# se regenera en cada ejecución. Cambiar los patrones exige --resync.\n- .prdrive/**\n",
       "md5": "3ce163566cb616084f29905637aa22b2"
+    },
+    {
+      "pareja": "espacios",
+      "contenido": "# Generado por sync.py desde sync_config.toml. No editar a mano:\n# se regenera en cada ejecución. Cambiar los patrones exige --resync.\n",
+      "md5": "6ff4f340c4048d3edde47c9a818da10c"
     }
+  ],
+  "parametros_bisync": [
+    {
+      "nombre": "backupDir1",
+      "tipo": "string"
+    },
+    {
+      "nombre": "backupDir2",
+      "tipo": "string"
+    },
+    {
+      "nombre": "checkAccess",
+      "tipo": "bool"
+    },
+    {
+      "nombre": "checkFilename",
+      "tipo": "string"
+    },
+    {
+      "nombre": "checkSync",
+      "tipo": "string"
+    },
+    {
+      "nombre": "compare",
+      "tipo": "string"
+    },
+    {
+      "nombre": "conflictLoser",
+      "tipo": "ConflictLoserAction"
+    },
+    {
+      "nombre": "conflictResolve",
+      "tipo": "string"
+    },
+    {
+      "nombre": "conflictSuffix",
+      "tipo": "string"
+    },
+    {
+      "nombre": "createEmptySrcDirs",
+      "tipo": "bool"
+    },
+    {
+      "nombre": "downloadHash",
+      "tipo": "bool"
+    },
+    {
+      "nombre": "dryRun",
+      "tipo": "bool"
+    },
+    {
+      "nombre": "filtersFile",
+      "tipo": "string"
+    },
+    {
+      "nombre": "force",
+      "tipo": "bool"
+    },
+    {
+      "nombre": "ignoreListingChecksum",
+      "tipo": "bool"
+    },
+    {
+      "nombre": "maxLock",
+      "tipo": "Duration"
+    },
+    {
+      "nombre": "noCleanup",
+      "tipo": "bool"
+    },
+    {
+      "nombre": "noSlowHash",
+      "tipo": "bool"
+    },
+    {
+      "nombre": "path1",
+      "tipo": "string"
+    },
+    {
+      "nombre": "path2",
+      "tipo": "string"
+    },
+    {
+      "nombre": "recover",
+      "tipo": "bool"
+    },
+    {
+      "nombre": "removeEmptyDirs",
+      "tipo": "bool"
+    },
+    {
+      "nombre": "resilient",
+      "tipo": "bool"
+    },
+    {
+      "nombre": "resync",
+      "tipo": "bool"
+    },
+    {
+      "nombre": "resyncMode",
+      "tipo": "string"
+    },
+    {
+      "nombre": "slowHashSyncOnly",
+      "tipo": "bool"
+    },
+    {
+      "nombre": "workdir",
+      "tipo": "string"
+    }
+  ],
+  "opciones_sueltas": [
+    "ask_password",
+    "auto_confirm",
+    "backup_dir",
+    "bind_addr",
+    "buffer_size",
+    "bwlimit",
+    "bwlimit_file",
+    "ca_cert",
+    "check_first",
+    "checkers",
+    "checksum",
+    "client_cert",
+    "client_key",
+    "client_pass",
+    "color",
+    "compare_dest",
+    "contimeout",
+    "copy_dest",
+    "cutoff_mode",
+    "default_time",
+    "delete_excluded",
+    "delete_mode",
+    "disable",
+    "disable_http2",
+    "disable_http_keep_alives",
+    "download_headers",
+    "dry_run",
+    "dump",
+    "error_on_no_transfer",
+    "exclude",
+    "exclude_from",
+    "exclude_if_present",
+    "expect_continue_timeout",
+    "fast_list",
+    "files_from",
+    "files_from0",
+    "files_from_raw",
+    "filter",
+    "filter_from",
+    "fix_case",
+    "fs_cache_expire_duration",
+    "fs_cache_expire_interval",
+    "hash_filter",
+    "headers",
+    "http_proxy",
+    "human_readable",
+    "ignore_case",
+    "ignore_case_sync",
+    "ignore_checksum",
+    "ignore_errors",
+    "ignore_existing",
+    "ignore_size",
+    "ignore_times",
+    "immutable",
+    "include",
+    "include_from",
+    "inplace",
+    "interactive",
+    "kv_lock_time",
+    "links",
+    "list_cutoff",
+    "log_level",
+    "low_level_retries",
+    "max_age",
+    "max_backlog",
+    "max_buffer_memory",
+    "max_connections",
+    "max_delete",
+    "max_delete_size",
+    "max_depth",
+    "max_duration",
+    "max_size",
+    "max_stats_groups",
+    "max_transfer",
+    "metadata",
+    "metadata_exclude",
+    "metadata_exclude_from",
+    "metadata_filter",
+    "metadata_filter_from",
+    "metadata_include",
+    "metadata_include_from",
+    "metadata_mapper",
+    "metadata_set",
+    "min_age",
+    "min_size",
+    "modify_window",
+    "multi_thread_chunk_size",
+    "multi_thread_cutoff",
+    "multi_thread_set",
+    "multi_thread_streams",
+    "multi_thread_write_buffer_size",
+    "name_transform",
+    "no_check_certificate",
+    "no_check_dest",
+    "no_console",
+    "no_gzip_encoding",
+    "no_traverse",
+    "no_unicode_normalization",
+    "no_update_dir_modtime",
+    "no_update_modtime",
+    "order_by",
+    "partial_suffix",
+    "password_command",
+    "progress",
+    "progress_terminal_title",
+    "refresh_times",
+    "retries",
+    "retries_sleep",
+    "server_side_across_configs",
+    "size_only",
+    "stats_file_name_length",
+    "stats_log_level",
+    "stats_one_line",
+    "stats_one_line_date",
+    "stats_one_line_date_format",
+    "stats_unit",
+    "streaming_upload_cutoff",
+    "suffix",
+    "suffix_keep_extension",
+    "timeout",
+    "tpslimit",
+    "tpslimit_burst",
+    "track_renames",
+    "track_renames_strategy",
+    "traffic_class",
+    "transfers",
+    "update",
+    "upload_headers",
+    "use_cookies",
+    "use_json_log",
+    "use_mmap",
+    "use_server_modtime",
+    "user_agent"
   ]
 }

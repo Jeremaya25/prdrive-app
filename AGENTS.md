@@ -27,7 +27,14 @@ engine/       Kotlin puro (JVM), SIN una línea de Android
 │               del baseline, apartar y renombrar
 ├── Toml.kt     espejo de common/config_file.py: leer Y escribir, con el
 │               round-trip verificado
-└── Pairing.kt  la mitad que LEE de common/pairing.py: la carga del QR
+├── Pairing.kt  la mitad que LEE de common/pairing.py: la carga del QR
+├── Json.kt     leer y escribir el JSON del RPC; escribe como lo hace Go
+├── Pasada.kt   espejo de sync.py: cómo viaja cada flag hasta el RPC, el
+│               interfaz Rclone y la traducción de KNOWN_ERRORS
+├── Progreso.kt espejo de common/progress.py: la misma frase, sacada de
+│               core/stats en vez de del log
+└── Results.kt  espejo de common/results.py: state/last_run.json y qué log
+                se guarda
 rclone/       módulo Go: rclone como biblioteca
 ├── gobind/     lo que empaqueta `gomobile bind` en el .aar: librclone con los
 │               métodos que hacen falta registrados, el sumidero del log y el
@@ -38,8 +45,14 @@ herramientas/
 └── vectores.py genera los valores esperados desde el prdrive de verdad
 ```
 
-Pendiente (ver `PLAN.md`): `engine/Catalog.kt`, `engine/Results.kt`, el
-envoltorio Kotlin del RPC, medir el `.aar` y el módulo `app/`.
+Pendiente (ver `PLAN.md`): `engine/Catalog.kt`, `engine/Conflictos.kt`,
+`engine/Volumen.kt` y el módulo `app/`.
+
+El envoltorio del RPC está en `engine/` y no en `rclone/` como decía el plan,
+porque cabe entero ahí: la superficie de `librclone` es
+`rpc(método, entrada) -> (salida, estado)`, así que lo que decide *qué* se
+manda se prueba sin JNI contra un doble de tres funciones (`Rclone`). Lo que
+queda para `app/` son esas tres líneas sobre el `.aar`.
 
 ## Reglas que no se cruzan
 
@@ -56,8 +69,12 @@ envoltorio Kotlin del RPC, medir el `.aar` y el módulo `app/`.
   igual que `common/bisync.py`. Si se toca algo de ahí, es contra esas fuentes
   contra lo que se contrasta, no contra lo que parezca razonable.
 - **Ni una dependencia**, como en prdrive, y eso incluye las de test: el lector
-  de JSON de `Vectores.kt` está escrito a mano por esa razón, y solo se compila
-  en los tests.
+  de JSON está escrito a mano por esa razón (`Json.kt`), y es **uno solo** para
+  el RPC y para los vectores — la misma regla que el único lector de
+  rclone.conf de prdrive.
+- **Todo lo que toca rclone pasa por el interfaz `Rclone`** (`Pasada.kt`), que
+  es el punto de indirección que en prdrive es `catalog.run()`: ningún test
+  necesita un rclone, y la app implementa tres funciones sobre el `.aar`.
 - **`device_remote` es obligatorio** (diferencia deliberada con prdrive, donde es
   un valor por defecto): la ruta absoluta del volumen es `filesDir`, que cambia
   al reinstalar la app, así que un config sin él rompería los baselines de
@@ -137,12 +154,24 @@ lo que consume AGP 8.x. Los avisos del compilador son errores
   request/response, y su implementación lanza un proceso hijo. La ruta es
   `sync/bisync`. Los detalles y las líneas exactas están en `PLAN.md`.
 
-## Y con estas cuatro, que no avisan
+## Y con estas seis, que no avisan
 
-Las cuatro están comprobadas en `rclone/spike` y explicadas con sus líneas en
+Las seis están comprobadas en `rclone/spike` y explicadas con sus líneas en
 `PLAN.md`. Lo que tienen en común es que equivocarse **no da error**: el
 síntoma aparece después y en otro sitio.
 
+- **Los flags van SUELTOS, no dentro de `_config` ni de `_filter`.** Es la
+  peor de las seis. `rc.ParseOptions` lee los sueltos con `configstruct` (los
+  nombres son las etiquetas `config:`, en snake_case) y los de dentro de
+  `_config` con un `json.Unmarshal` sobre una estructura **sin etiquetas
+  `json`**, así que ahí solo casa el nombre del CAMPO de Go. Medido:
+  `{"_config":{"dry_run":true}}` copió los dos ficheros; o sea que un
+  «Simular» escrito así **sincroniza de verdad**.
+- **Y los tipos también.** Los cuatro enumerados de bisync (`checkSync`,
+  `resyncMode`, `conflictResolve`, `conflictLoser`) pasan por `setEnum`, que
+  trata «no es una cadena» igual que «no está»: un `check-sync = false` como
+  booleano se ignora. Por eso `Pasada.PARAMETROS_BISYNC` lleva el tipo de cada
+  uno y `SesionesTest` lo compara con el que rclone declara en su ayuda.
 - **`RcloneSetConfigPath` va ANTES de `RcloneInitialize`.** Al revés, rclone
   arranca con una configuración vacía en memoria y el fallo sale más tarde
   diciendo «unknown remote».
@@ -150,6 +179,7 @@ síntoma aparece después y en otro sitio.
   log, que es justo cuando se necesita.
 - **El nivel de log no se pide por llamada.** Es global y son dos sitios
   (`RcloneLogNivel`). Con uno solo no se ve nada.
-- **Los colores ANSI tampoco.** El `_config` ignora `color` sin quejarse, y
-  bisync guarda la decisión en una global que solo se enciende. Se apagan en
-  `RcloneInitialize`.
+- **Los colores ANSI tampoco.** El `_config` ignora `color` —por lo de la
+  primera viñeta: la etiqueta es `color` y el campo se llama
+  `TerminalColorMode`— y bisync guarda la decisión en una global que solo se
+  enciende. Se apagan en `RcloneInitialize`.

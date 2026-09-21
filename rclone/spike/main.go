@@ -39,6 +39,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 	"time"
@@ -53,6 +54,9 @@ import (
 	// Solo para leer `bisync.Colors`, que es la evidencia de que los colores
 	// se deciden una vez por proceso. El paquete del .aar no lo necesita.
 	"github.com/rclone/rclone/cmd/bisync"
+	"github.com/rclone/rclone/fs"
+	"github.com/rclone/rclone/fs/config/configstruct"
+	"github.com/rclone/rclone/fs/filter"
 )
 
 // pareja es lo que necesita una entrada del sync_config.toml para este spike.
@@ -84,6 +88,15 @@ type caso struct {
 	BasePath string `json:"basePath"`
 	Listing1 string `json:"listing1"`
 	Listing2 string `json:"listing2"`
+	// El JSON EXACTO que se le pasó a rclone en cada una de las dos pasadas,
+	// que es lo que `SesionesTest` compara con el que monta `Pasada.kt`. Que
+	// rclone lo aceptara y saliera de ahí esta sesión es la garantía de que
+	// los nombres y los tipos de los parámetros son los buenos.
+	RpcResync string `json:"rpc_resync"`
+	RpcPasada string `json:"rpc_pasada"`
+	// Y las dos rutas que la app le da a rclone, para que el test las pueda
+	// poner en las Opciones sin tener que saberse la distribución del volumen.
+	FiltersFile string `json:"filters_file"`
 }
 
 // salida es lo que se escribe en sesiones.json. A propósito NO lleva las
@@ -101,6 +114,18 @@ type salida struct {
 	SeccionDisp string   `json:"seccion_disp"`
 	Casos       []caso   `json:"casos"`
 	Filtros     []filtro `json:"filtros"`
+	// Lo que rclone declara, para que la tabla de traducción de `Pasada.kt` se
+	// compruebe contra rclone y no contra lo que leyó quien la escribió.
+	ParametrosBisync []parametro `json:"parametros_bisync"`
+	OpcionesSueltas  []string    `json:"opciones_sueltas"`
+}
+
+// parametro es un parámetro de `sync/bisync` tal y como lo declara la ayuda
+// que rclone registra con el método (`cmd/bisync/rc.md`, generada de su
+// propio código con `go generate`).
+type parametro struct {
+	Nombre string `json:"nombre"`
+	Tipo   string `json:"tipo"`
 }
 
 type nota struct {
@@ -213,8 +238,22 @@ func correr(base, destino string) error {
 		RcloneConf:  confTexto,
 		SeccionDisp: seccionDisp(raizVolumen),
 	}
+	if out.ParametrosBisync, err = parametrosDeBisync(); err != nil {
+		return err
+	}
+	if out.OpcionesSueltas, err = opcionesSueltas(); err != nil {
+		return err
+	}
+	apuntar("parámetros que declara sync/bisync", "los de rc.md",
+		fmt.Sprintf("%d", len(out.ParametrosBisync)))
+	apuntar("opciones que rclone acepta sueltas", "ConfigInfo + filter.Options",
+		fmt.Sprintf("%d", len(out.OpcionesSueltas)))
 
 	if err := comprobarElLog(prdriveDir, remotoDir); err != nil {
+		return err
+	}
+
+	if err := comprobarLosGenericos(base); err != nil {
 		return err
 	}
 
@@ -324,24 +363,27 @@ func pasadaCompleta(p pareja, raizVolumen, remotoDir, prdriveDir string) (caso, 
 		"maxLock":            "2m",
 	}
 
-	var f *filtro
-	if len(p.includes) > 0 || len(p.excludes) > 0 {
-		ffile := filepath.Join(prdriveDir, "filters", p.nombre+".txt")
-		contenido := contenidoFiltros(p)
-		if err := os.WriteFile(ffile, []byte(contenido), 0o644); err != nil {
-			return caso{}, nil, err
-		}
-		params["filtersFile"] = ffile
-		f = &filtro{Pareja: p.nombre, Contenido: contenido}
-		defer func() {
-			// bisync escribe el md5 JUNTO al fichero, y solo durante el
-			// --resync (cmd/bisync/cmd.go, applyFilters). El motor lo compara
-			// antes de ejecutar para no toparse con un error crítico.
-			if datos, err := os.ReadFile(ffile + ".md5"); err == nil {
-				f.Md5 = strings.TrimSpace(string(datos))
-			}
-		}()
+	// El fichero de filtros va en TODA pareja de bisync, también en las que no
+	// tienen ningún patrón: `filters_file_for()` de prdrive solo mira
+	// `wants_filters_file` (o sea, bisync + `use_filters_file`), así que
+	// escribe un fichero con la cabecera y nada más y pasa `--filters-file`
+	// igual. Hacerlo solo cuando hay patrones —como hacía este spike— dejaba
+	// sin comprobar justo el caso más común.
+	ffile := filepath.Join(prdriveDir, "filters", p.nombre+".txt")
+	contenido := contenidoFiltros(p)
+	if err := os.WriteFile(ffile, []byte(contenido), 0o644); err != nil {
+		return caso{}, nil, err
 	}
+	params["filtersFile"] = ffile
+	f := &filtro{Pareja: p.nombre, Contenido: contenido}
+	defer func() {
+		// bisync escribe el md5 JUNTO al fichero, y solo durante el --resync
+		// (cmd/bisync/cmd.go, applyFilters). El motor lo compara antes de
+		// ejecutar para no toparse con un error crítico.
+		if datos, err := os.ReadFile(ffile + ".md5"); err == nil {
+			f.Md5 = strings.TrimSpace(string(datos))
+		}
+	}()
 
 	res, err := bisyncAsync(params)
 	if err != nil {
@@ -383,6 +425,8 @@ func pasadaCompleta(p pareja, raizVolumen, remotoDir, prdriveDir string) (caso, 
 		Pareja: p.nombre, Path1: path1, Path2: path2,
 		Session: res.session, WorkDir: res.workDir, BasePath: res.basePath,
 		Listing1: res.listing1, Listing2: res.listing2,
+		RpcResync: res.entrada, RpcPasada: res2.entrada,
+		FiltersFile: ffile,
 	}, f, nil
 }
 
@@ -518,11 +562,146 @@ func comprobarElLogDeLosOtrosModos(remotoDir string) error {
 }
 
 // ---------------------------------------------------------------------------
+// Los parámetros genéricos: `_config` y `_filter`
+// ---------------------------------------------------------------------------
+
+// comprobarLosGenericos resuelve CÓMO se pasan los flags de prdrive que no son
+// parámetros del método, y la respuesta no es la que parecía.
+//
+// `jobs.NewJob` llama a `rc.AddConfig(ctx, in)` y a `rc.AddFilter(ctx, in)`
+// (fs/rc/jobs/job.go), y las dos van a `rc.ParseOptions` (fs/rc/context.go),
+// que admite los valores por DOS caminos distintos y NO son equivalentes:
+//
+//   - **Sueltos, en el primer nivel de la llamada**, por
+//     `configstruct.SetAny`: los nombres son las etiquetas `config:"…"`, o sea
+//     snake_case (`dry_run`, `max_delete`, `include`).
+//   - **Dentro de `_config` / `_filter`**, por `GetStructMissingOK` →
+//     `rc.Reshape`, que es `json.Marshal` + `json.Unmarshal` sobre
+//     `fs.ConfigInfo`. Y esa estructura **no tiene etiquetas `json`**: el
+//     nombre que casa es el del CAMPO de Go (`DryRun`, `MaxDelete`,
+//     `IncludeRule`), no el de la etiqueta. `encoding/json` ignora el guión
+//     bajo y descarta sin decir nada lo que no encuentra.
+//
+// O sea que `{"_config":{"dry_run":true}}` —la forma que parecía la buena— no
+// pone ningún dry-run: **sincroniza de verdad**. Un «Simular» que sincroniza
+// es el peor fallo posible en este proyecto, y no da ni un aviso.
+//
+// De paso, la misma trampa con otro sombrero: los cuatro parámetros de bisync
+// que son enumerados (`checkSync`, `resyncMode`, `conflictResolve`,
+// `conflictLoser`) se leen con `in.GetString` y `setEnum` (cmd/bisync/rc.go)
+// trata «no es una cadena» igual que «no está»: pasar un booleano o un número
+// se ignora en silencio, y solo una cadena con un valor inválido da 400.
+func comprobarLosGenericos(base string) error {
+	origen := filepath.Join(base, "generico", "origen")
+	if err := os.MkdirAll(origen, 0o755); err != nil {
+		return err
+	}
+	for _, n := range []string{"a.txt", "b.bin"} {
+		if err := os.WriteFile(filepath.Join(origen, n), []byte("x\n"), 0o644); err != nil {
+			return err
+		}
+	}
+
+	casos := []struct {
+		nombre   string
+		extra    string // lo que se añade a la llamada
+		esperado int    // ficheros que deben quedar en el destino
+		porque   string
+	}{
+		{"dry_run suelto", `"dry_run":true`, 0,
+			"suelto va por configstruct, que lee las etiquetas config:"},
+		{"_config dry_run", `"_config":{"dry_run":true}`, 2,
+			"dentro de _config el nombre es el del campo de Go: dry_run no casa con DryRun"},
+		{"_config DryRun", `"_config":{"DryRun":true}`, 0,
+			"con el nombre del campo sí"},
+		{"include suelto", `"include":["*.txt"]`, 1,
+			"filter.Options lleva RulesOpt incrustado, así que 'include' es un item suelto"},
+		{"_filter IncludeRule", `"_filter":{"IncludeRule":["*.txt"]}`, 1,
+			"el campo de Go de --include"},
+		{"_filter include", `"_filter":{"include":["*.txt"]}`, 2,
+			"y la etiqueta no vale: se descarta y se copia todo"},
+	}
+
+	for i, c := range casos {
+		destino := filepath.Join(base, "generico", fmt.Sprintf("destino%d", i))
+		if err := os.MkdirAll(destino, 0o755); err != nil {
+			return err
+		}
+		entrada := fmt.Sprintf(`{"_async":true,"srcFs":%q,"dstFs":%q,%s}`,
+			"nas:"+filepath.ToSlash(origen), "nas:"+filepath.ToSlash(destino), c.extra)
+		prdrive.RcloneLogReiniciar()
+		lanzado, _, err := llamar("sync/copy", entrada)
+		if err != nil {
+			return fmt.Errorf("%s: %w", c.nombre, err)
+		}
+		jobid, ok := lanzado["jobid"].(float64)
+		if !ok {
+			return fmt.Errorf("%s: sin jobid: %v", c.nombre, lanzado)
+		}
+		estado, err := esperarElJob(int64(jobid))
+		if err != nil {
+			return err
+		}
+		if fallo := cadena(estado, "error"); fallo != "" {
+			return fmt.Errorf("%s: la copia falló: %s\n%s", c.nombre, fallo, prdrive.RcloneLogTexto())
+		}
+		entradas, err := os.ReadDir(destino)
+		if err != nil {
+			return err
+		}
+		apuntar("copiados con "+c.nombre, fmt.Sprintf("%d", c.esperado), fmt.Sprintf("%d", len(entradas)))
+		if len(entradas) != c.esperado {
+			return fmt.Errorf("con %s se copiaron %d ficheros y se esperaban %d (%s).\n"+
+				"Si esto ha cambiado, hay que revisar cómo pasa Pasada.kt los flags: "+
+				"la forma que no funciona NO da error",
+				c.nombre, len(entradas), c.esperado, c.porque)
+		}
+	}
+
+	// Y los enumerados de bisync: solo una cadena inválida se queja.
+	scratch := filepath.Join(base, "generico", "enum")
+	if err := os.MkdirAll(filepath.Join(scratch, "lado2"), 0o755); err != nil {
+		return err
+	}
+	base1 := "nas:" + filepath.ToSlash(filepath.Join(base, "generico", "origen"))
+	base2 := "nas:" + filepath.ToSlash(filepath.Join(scratch, "lado2"))
+	plantilla := `{"path1":%q,"path2":%q,"workdir":%q,"resync":true,"conflictResolve":%s}`
+
+	_, estado, fallo := llamar("sync/bisync",
+		fmt.Sprintf(plantilla, base1, base2, filepath.Join(scratch, "wd1"), `"tonteria"`))
+	apuntar("conflictResolve inválido como cadena", "la llamada falla", fmt.Sprintf("%d: %v", estado, fallo))
+	if estado == 200 {
+		return errors.New("una cadena inválida en conflictResolve ya no falla: " +
+			"si rclone deja de validarla, el motor no puede fiarse de que le avise")
+	}
+	// Y el estado NO es 400, aunque sea un parámetro inválido: solo los que
+	// rclone envuelve en `rc.NewErrParamInvalid` lo son (el `maxDelete` fuera
+	// de 0..100 lo es; este sale de `setEnum` como un error pelado). Así que
+	// el motor no puede leer el código: tiene que leer el mensaje.
+	apuntar("…y no con un 400, que es de NewErrParamInvalid", "500", fmt.Sprintf("%d", estado))
+
+	if err := os.MkdirAll(filepath.Join(scratch, "wd2"), 0o755); err != nil {
+		return err
+	}
+	_, estado2, err := llamar("sync/bisync",
+		fmt.Sprintf(plantilla, base1, base2, filepath.Join(scratch, "wd2"), `5`))
+	apuntar("conflictResolve como número", "se ignora y la pasada va", fmt.Sprintf("%d", estado2))
+	if estado2 != 200 {
+		return fmt.Errorf("un número en conflictResolve ya no se ignora (%d: %v): mejor, "+
+			"pero el motor está escrito suponiendo que NO avisa", estado2, err)
+	}
+	return nil
+}
+
+// ---------------------------------------------------------------------------
 // Hablar con la biblioteca
 // ---------------------------------------------------------------------------
 
 type resultado struct {
 	output, session, workDir, basePath, listing1, listing2 string
+	// entrada es el JSON tal y como se envió, que es lo que se apunta en
+	// sesiones.json para comparar con el que monta el motor.
+	entrada string
 	// log es lo que rclone registró durante la pasada, recogido del sumidero
 	// del paquete del .aar. Es donde está el diagnóstico de un fallo.
 	log string
@@ -536,14 +715,14 @@ func bisyncAsync(params map[string]any) (resultado, error) {
 	for k, v := range params {
 		con[k] = v
 	}
-	entrada, err := json.Marshal(con)
+	entrada, err := comoJSON(con)
 	if err != nil {
 		return resultado{}, err
 	}
 	prdrive.RcloneLogReiniciar()
-	lanzado, _, err := llamar("sync/bisync", string(entrada))
+	lanzado, _, err := llamar("sync/bisync", entrada)
 	if err != nil {
-		return resultado{}, err
+		return resultado{entrada: entrada}, err
 	}
 	jobid, ok := lanzado["jobid"].(float64)
 	if !ok {
@@ -557,6 +736,7 @@ func bisyncAsync(params map[string]any) (resultado, error) {
 	{
 		salida, _ := estado["output"].(map[string]any)
 		res := resultado{
+			entrada:  entrada,
 			log:      prdrive.RcloneLogTexto(),
 			output:   cadena(salida, "output"),
 			session:  cadena(salida, "session"),
@@ -570,6 +750,82 @@ func bisyncAsync(params map[string]any) (resultado, error) {
 		}
 		return res, nil
 	}
+}
+
+// comoJSON escribe el JSON de una llamada **sin escapar el HTML**.
+//
+// `json.Marshal` convierte `<`, `>` y `&` en `\u003c` y compañía, y el JSON que
+// escribe `engine/Json.kt` no lo hace: como los dos textos se comparan en
+// `SesionesTest`, un `&` en una ruta los separaría por un detalle que no tiene
+// nada que ver con lo que se está comprobando. Las claves siguen saliendo
+// ordenadas, que es lo que hace `encoding/json` con un mapa y lo que el motor
+// copia a propósito.
+func comoJSON(v any) (string, error) {
+	var b strings.Builder
+	enc := json.NewEncoder(&b)
+	enc.SetEscapeHTML(false)
+	if err := enc.Encode(v); err != nil {
+		return "", err
+	}
+	return strings.TrimSuffix(b.String(), "\n"), nil
+}
+
+// parametrosDeBisync saca de la ayuda que rclone registra los nombres y los
+// tipos de los parámetros de `sync/bisync`.
+//
+// No es documentación suelta: `cmd/bisync/rc.md` se genera del propio código
+// con `go generate`, y es lo que `rc/list` devuelve. Así que preguntárselo a
+// la biblioteca en marcha es preguntárselo a rclone — y cuando rclone
+// renombre un parámetro o le cambie el tipo, lo que falla es un test y no un
+// flag que deja de aplicarse en silencio.
+func parametrosDeBisync() ([]parametro, error) {
+	lista, _, err := llamar("rc/list", "{}")
+	if err != nil {
+		return nil, err
+	}
+	comandos, _ := lista["commands"].([]any)
+	var ayuda string
+	for _, c := range comandos {
+		m, _ := c.(map[string]any)
+		if cadena(m, "Path") == "sync/bisync" {
+			ayuda = cadena(m, "Help")
+			break
+		}
+	}
+	if ayuda == "" {
+		return nil, errors.New("rc/list no trae la ayuda de sync/bisync")
+	}
+	re := regexp.MustCompile(`(?m)^- ([A-Za-z0-9]+)(?: \(required\))? - \(([A-Za-z]+)\)`)
+	var salida []parametro
+	for _, m := range re.FindAllStringSubmatch(ayuda, -1) {
+		salida = append(salida, parametro{Nombre: m[1], Tipo: m[2]})
+	}
+	if len(salida) < 20 {
+		return nil, fmt.Errorf("solo se han reconocido %d parámetros en la ayuda de "+
+			"sync/bisync: ¿ha cambiado el formato?", len(salida))
+	}
+	sort.Slice(salida, func(i, j int) bool { return salida[i].Nombre < salida[j].Nombre })
+	return salida, nil
+}
+
+// opcionesSueltas son los nombres que rclone acepta en el primer nivel de una
+// llamada: las etiquetas `config:"…"` de `fs.ConfigInfo` y de
+// `filter.Options`, que es lo que lee `configstruct.SetAny` desde
+// `rc.ParseOptions`. Con esto, el motor no puede mandar un flag suelto que
+// rclone vaya a descartar sin decir nada.
+func opcionesSueltas() ([]string, error) {
+	var nombres []string
+	for _, opt := range []any{&fs.ConfigInfo{}, &filter.Opt} {
+		items, err := configstruct.Items(opt)
+		if err != nil {
+			return nil, err
+		}
+		for _, it := range items {
+			nombres = append(nombres, it.Name)
+		}
+	}
+	sort.Strings(nombres)
+	return nombres, nil
 }
 
 // esperarElJob espera a que un job asíncrono acabe y devuelve su estado.

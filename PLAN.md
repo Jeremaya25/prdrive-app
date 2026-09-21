@@ -69,10 +69,13 @@ cómo ha ido**. Los ficheros de Python siguen siendo la especificación.
 | `common/bisync.py` | `engine/Bisync.kt` | **hecho** |
 | `common/config_file.py` | `engine/Toml.kt` | **hecho** |
 | `common/pairing.py` (la mitad que lee) | `engine/Pairing.kt` | **hecho** |
+| `sync.py` (`build_command`, `KNOWN_ERRORS`, `explain_failure`) | `engine/Pasada.kt` | **hecho** — y **no es una línea de órdenes**: ver más abajo |
+| `common/progress.py` | `engine/Progreso.kt` | **hecho** — el canal cambia, el texto no |
+| `common/results.py` | `engine/Results.kt` | **hecho** |
+| (nuevo aquí) | `engine/Json.kt` | **hecho** — leer y escribir el JSON del RPC, sin dependencias |
 | `common/catalog.py` | `engine/Catalog.kt` | pendiente — **solo lectura** en el paso 1, así que nada de la ceremonia de `push()` |
-| `common/results.py`, `common/conflicts.py` | `engine/Results.kt` | pendiente — en el paso 1 los conflictos solo se **detectan y avisan** |
-| `install/deploy.py` (`device_config`, `make_local_dirs`) | `setup/Volumen.kt` | pendiente |
-| `sync.py` (`build_command`, `KNOWN_ERRORS`, `explain_failure`) | `rclone/Pasada.kt` | pendiente — y **no es una línea de órdenes**: ver más abajo |
+| `common/conflicts.py` | `engine/Conflictos.kt` | pendiente — en el paso 1 los conflictos solo se **detectan y avisan** |
+| `install/deploy.py` (`device_config`, `make_local_dirs`) | `engine/Volumen.kt` | pendiente |
 
 ### El riesgo que esto crea, y qué lo tapa
 
@@ -87,7 +90,7 @@ dentro. Los tests de Kotlin **no llevan ni un valor esperado escrito a mano**.
 
 ```bash
 python herramientas/vectores.py ../prdrive   # regenerar
-./gradlew :engine:test                       # 58 tests, sin SDK ni dispositivo
+./gradlew :engine:test                       # 111 tests, sin SDK ni dispositivo
 ```
 
 Cuando prdrive mueva una constante, falla el test que la nombra y dice cuál.
@@ -190,6 +193,66 @@ fijar** (*«If no config file, use in-memory config»*, `fs/config/config.go`).
 Al revés del orden bueno rclone arranca con una configuración vacía en memoria
 y el fallo no sale ahí: sale después, diciendo «unknown remote».
 
+### Cómo viaja un flag, que no es como parecía
+
+`jobs.NewJob` llama a `rc.AddConfig(ctx, in)` y a `rc.AddFilter(ctx, in)`
+(`fs/rc/jobs/job.go`), así que los parámetros genéricos funcionan también por
+librclone: eso el plan lo tenía bien. Lo que no tenía bien es **por dónde**.
+Las dos acaban en `rc.ParseOptions` (`fs/rc/context.go`), que admite los
+valores por dos caminos que **no son equivalentes**:
+
+- **Sueltos, en el primer nivel de la llamada.** Los recoge
+  `configstruct.SetAny`, y los nombres son las etiquetas `config:"…"` de
+  `fs.ConfigInfo` y de `filter.Options`, o sea snake_case: `dry_run`,
+  `max_delete`, `transfers`, `include`, `exclude`.
+- **Dentro de `_config` / `_filter`.** Los recoge `GetStructMissingOK` →
+  `rc.Reshape`, que es `json.Marshal` + `json.Unmarshal`. Y esas estructuras
+  **no llevan etiquetas `json`**, así que lo que casa es el nombre del **campo
+  de Go** (`DryRun`, `MaxDelete`, `IncludeRule`), no el de la etiqueta.
+  `encoding/json` ignora el guión bajo y **descarta sin decir nada** lo que no
+  encuentra.
+
+O sea que `{"_config":{"dry_run":true}}` —la forma que este plan daba por
+hecha— no pone ningún dry-run: **sincroniza de verdad**. Medido en el spike,
+copiando dos ficheros:
+
+| cómo se manda | ficheros copiados | |
+|---|---|---|
+| `"dry_run":true` suelto | 0 | funciona |
+| `"_config":{"dry_run":true}` | **2** | se descarta en silencio |
+| `"_config":{"DryRun":true}` | 0 | funciona, con el nombre del campo |
+| `"include":["*.txt"]` suelto | 1 | funciona |
+| `"_filter":{"IncludeRule":["*.txt"]}` | 1 | funciona |
+| `"_filter":{"include":["*.txt"]}` | **2** | se descarta en silencio |
+
+Un «Simular» que sincroniza es el peor fallo que puede tener este proyecto, y
+esta es la línea que lo separaba de ocurrir. De paso explica mejor lo del
+`color` de la sección anterior: no es que rclone ignore los `fs.Enum`, es que
+`TerminalColorMode` tiene la etiqueta `color` y el campo se llama de otra
+manera.
+
+**Y los tipos, por lo mismo.** Los parámetros propios de `sync/bisync` sí se
+leen uno a uno, pero los cuatro enumerados (`checkSync`, `resyncMode`,
+`conflictResolve`, `conflictLoser`) pasan por `setEnum`, que trata «no es una
+cadena» igual que «no está»: un `check-sync = false` escrito como booleano en
+el TOML **se ignora**. Solo una cadena con un valor inválido se queja — y ni
+siquiera con un 400, porque `setEnum` devuelve un error pelado y el 400 es de
+`rc.NewErrParamInvalid`. Comprobado: `"tonteria"` → 500 con el mensaje bueno;
+`5` → 200, pasada hecha, parámetro olvidado.
+
+Por eso `Pasada.kt` lleva una tabla con el **tipo** de cada parámetro y
+convierte antes de escribir el JSON, en vez de confiar en que rclone avise. Y
+por eso el spike apunta en `sesiones.json` los nombres y los tipos que rclone
+**declara** en la ayuda que registra con el método (`cmd/bisync/rc.md`, que
+genera su propio `go generate`): así la tabla se compara contra rclone y no
+contra lo que leyó quien la escribió.
+
+Un detalle que salió de ahí: **`maxDelete` no está en esa ayuda.** `rcBisync`
+lo lee, y encima valida que esté entre 0 y 100 porque en bisync es un
+porcentaje, pero `--max-delete` es un flag global y no uno de bisync, así que
+`rc.md` no lo lista. Quien lea la documentación concluirá que el rc de bisync
+no puede limitar los borrados. Sí puede.
+
 ### Hay que construir el `.aar`; el de serie no vale
 
 `librclone/gomobile/gomobile.go` importa **solo** `backend/all` y `lib/plugin`.
@@ -211,16 +274,10 @@ y las dos compilan en CI. Falta **medirlas**, que es lo que decide, y eso pide
 
 **Otras dos cosas que exige el `.aar`** y que el plan no mencionaba:
 
-- `_config` y `_filter` son parámetros genéricos del RPC (`fs/rc/context.go`),
-  y los aplica `jobs.NewJob`, así que funcionan también por librclone.
-  `_config` pisa el `fs.ConfigInfo` de esa llamada (`--transfers`,
-  `--checkers`, `--dry-run`, y el `--max-delete` **como cuenta** de los modos
-  `*-mirror`) y `_filter` los include/exclude de los modos que no son bisync.
-  Es por ahí por donde pasan los flags de `BASE_FLAGS` que no son parámetros
-  de `sync/bisync`. **Los nombres son los de las etiquetas `config:"…"`**, en
-  snake_case: `transfers`, `checkers`, `dry_run`, `max_delete`,
-  `stats_one_line`. Y **no todo pasa por ahí**: lo que no, y por qué, está en
-  la sección del log.
+- Los flags que no son parámetros del método van **sueltos en el primer nivel
+  de la llamada, y NO dentro de `_config` ni de `_filter`**. Esto es un
+  hallazgo, y de los caros: la sección siguiente lo explica con los números
+  medidos.
 - `librclone.Initialize()` llama a `configfile.Install()`, así que hay que
   apuntar rclone al `rclone.conf` del volumen **antes** de esa llamada, no
   después. Los detalles, en la sección del log: equivocarse no da error.
@@ -289,14 +346,23 @@ atómicas de fichero que usan `store.py` y el editor de conflictos).
 Comentarios y texto para el usuario en **español**, como el resto del proyecto.
 
 ```
-engine/     Kotlin puro, sin Android: Model, Bisync, Toml, Pairing (+ Catalog,
-            Results). Se prueba con `./gradlew :engine:test`, sin SDK ni
-            dispositivo, y es donde viven las constantes copiadas de prdrive.
-rclone/     el paquete Go que construye el .aar, y el envoltorio Kotlin del RPC
+engine/     Kotlin puro, sin Android: Model, Bisync, Toml, Pairing, Json,
+            Pasada, Progreso, Results (+ Catalog, Conflictos, Volumen). Se
+            prueba con `./gradlew :engine:test`, sin SDK ni dispositivo, y es
+            donde viven las constantes copiadas de prdrive.
+rclone/     el paquete Go que construye el .aar, y el spike que lo comprueba
 app/        Android: volumen + DocumentsProvider, setup (QR, perfil,
             rclone.conf, elegir parejas, resync inicial) y ui (Compose)
 herramientas/ vectores.py — saca de prdrive lo que el motor debe reproducir
 ```
+
+**Una corrección sobre el reparto:** el plan ponía el envoltorio del RPC en
+`rclone/`, junto al paquete Go. Está en `engine/` porque **cabe entero ahí**:
+la superficie de `librclone` es `rpc(método, entrada) -> (salida, estado)`, así
+que la parte que decide *qué* se le manda —que es toda la traducción de
+`sync.py`, y la que se puede equivocar en silencio— se prueba sin JNI, sin NDK
+y sin dispositivo, contra un doble de tres funciones ([Rclone]). Lo que queda
+para `app/` es el doble de verdad, que son tres líneas sobre el `.aar`.
 
 `engine/` es un módulo aparte y sin una línea de Android **a propósito**: es lo
 que permite probar en CI, en segundos, la parte cuyo error sería caro, sin
@@ -320,11 +386,13 @@ Dos niveles, y la diferencia entre ellos importa: uno comprueba que la
 traducción es fiel, el otro que el original acertaba.
 
 - **El motor contra prdrive:** `./gradlew :engine:test`, sin SDK ni
-  dispositivo. Hoy **67 tests**, ninguno con un valor esperado escrito a mano.
-  Contra `vectores.json`, generado del Python de prdrive: fusión de flags, la
-  cadena `upstreams` (con la pareja de la raíz, el caso `raiz` y las comillas
-  de Windows), el nombre de sesión de bisync, `fresh|ok|broken` sobre `.lst` de
-  mentira, el round-trip del TOML y la vuelta del payload del QR.
+  dispositivo. Hoy **111 tests**, ninguno con un valor esperado escrito a
+  mano. Contra `vectores.json`, generado del Python de prdrive: fusión de
+  flags, la cadena `upstreams` (con la pareja de la raíz, el caso `raiz` y las
+  comillas de Windows), el nombre de sesión de bisync, `fresh|ok|broken` sobre
+  `.lst` de mentira, el round-trip del TOML, la vuelta del payload del QR, las
+  agujas de `KNOWN_ERRORS`, los flags que el motor se reserva y la frase del
+  progreso con sus redondeos.
 - **El motor contra rclone:** `cd rclone && go run ./spike`. Esto es lo que
   responde la pregunta que lo anterior deja abierta —*¿y si los dos se
   equivocan igual?*—, porque el nombre de los listados lo decide rclone y
@@ -345,8 +413,13 @@ traducción es fiel, el otro que el original acertaba.
 
   Escribe `engine/src/test/resources/sesiones.json`, y `SesionesTest` compara
   eso con lo que calcula el motor: el prefijo pareja por pareja, los extremos,
-  la sección `[disp]` con su entrecomillado, dónde caen los `.lst`, y el md5
-  que bisync escribió junto al fichero de filtros. Y **falla** si alguna
+  la sección `[disp]` con su entrecomillado, dónde caen los `.lst`, el md5 que
+  bisync escribió junto al fichero de filtros, y —lo más fuerte— **el JSON
+  exacto de cada llamada**: el que sale de `Pasada.kt` contra el que el spike
+  le pasó a `librclone.RPC` y del que salieron esas sesiones. Si coinciden
+  carácter por carácter, los nombres y los tipos de los parámetros son los que
+  rclone acepta de verdad. Es la única forma de comprobarlo, porque
+  equivocarse ahí no da error. Y **falla** si alguna
   afirmación de este documento sobre rclone deja de ser cierta, así que subir
   la versión de rclone no puede romper el diseño en silencio. Corre en CI
   (`.github/workflows/rclone.yml`), que además comprueba que el JSON del

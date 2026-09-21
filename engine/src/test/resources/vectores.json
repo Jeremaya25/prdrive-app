@@ -937,5 +937,212 @@
         }
       }
     ]
+  },
+  "ejecucion": {
+    "known_errors": [
+      {
+        "aguja": "cannot find prior Path1 or Path2 listings",
+        "explicacion": "No hay baseline: primera vez, listados en otro sitio (¿cambió la ruta?) o un fallo crítico previo los invalidó. Solución: --resync."
+      },
+      {
+        "aguja": "filters file has changed",
+        "explicacion": "Han cambiado los filtros. Solución: --resync (bisync no puede saber qué ficheros excluidos existían antes)."
+      },
+      {
+        "aguja": "filters file md5 hash not found",
+        "explicacion": "Primer uso de este fichero de filtros. Solución: --resync."
+      },
+      {
+        "aguja": "must run --resync",
+        "explicacion": "bisync ha invalidado el baseline y exige rehacerlo. Solución: --resync."
+      },
+      {
+        "aguja": "--max-delete",
+        "explicacion": "Se han superado los borrados permitidos. Comprueba que la ruta local NO esté vacía o desmontada antes de forzar nada."
+      },
+      {
+        "aguja": "Access is denied",
+        "explicacion": "Fichero bloqueado por otro proceso (Obsidian, KeePass, antivirus)."
+      },
+      {
+        "aguja": "prior lock file found",
+        "explicacion": "Hay un lock de otra ejecución. Si no hay ninguna corriendo, borra el .lck del workdir de la pareja."
+      },
+      {
+        "aguja": "known_hosts_file",
+        "explicacion": "rclone no encuentra el fichero de known_hosts indicado en rclone.conf. Las rutas relativas de rclone.conf se resuelven contra rclone-sync/; comprueba que keys/known_hosts existe ahí."
+      },
+      {
+        "aguja": "Failed to create file system",
+        "explicacion": "rclone no ha podido montar uno de los dos extremos. Suele ser una ruta o credencial mal resuelta en rclone.conf (revisa key_file y known_hosts_file), o el remoto inalcanzable."
+      },
+      {
+        "aguja": "unknown flag",
+        "explicacion": "rclone no conoce uno de los flags. Está escrito en sync_config.toml (o en el editor de flags de la ventana de parejas): rclone lo rechaza antes de empezar, por eso no hay más log que este."
+      },
+      {
+        "aguja": "invalid argument",
+        "explicacion": "rclone rechaza el VALOR de un flag: no es de los que admite (por ejemplo conflict-resolve = \"new\" cuando lo válido es \"newer\"). El mensaje de arriba enumera los buenos. Se corrige en sync_config.toml."
+      }
+    ],
+    "reservados": {
+      "config": "lo pone sync.py: es el rclone.conf del dispositivo",
+      "log-file": "lo pone sync.py: cada pasada escribe en su propio log",
+      "dry-run": "es --dry-run de sync.py, para que valga en todas las parejas",
+      "workdir": "lo pone sync.py: state/<pareja>/, y cambiarlo mueve el baseline",
+      "resync": "es --resync de sync.py, que además pregunta antes",
+      "filters-file": "sale de los patrones incluir/excluir de la pareja",
+      "filter": "usa los patrones incluir/excluir; mezclarlos rompe el filtrado",
+      "filter-from": "usa los patrones incluir/excluir; mezclarlos rompe el filtrado",
+      "include": "usa el cuadro «Incluir»",
+      "exclude": "usa el cuadro «Excluir»"
+    },
+    "saltada": -1,
+    "lineas_de_cola": 15,
+    "conflictos_mostrados": 5,
+    "direct_output_header": "--- salida directa de rclone (no pasó por --log-file) ---"
+  },
+  "progreso": {
+    "etiqueta": "progreso:",
+    "tamanos": [
+      {
+        "octetos": 0,
+        "texto": "0 B"
+      },
+      {
+        "octetos": 1,
+        "texto": "1 B"
+      },
+      {
+        "octetos": 512,
+        "texto": "512 B"
+      },
+      {
+        "octetos": 1023,
+        "texto": "1023 B"
+      },
+      {
+        "octetos": 1024,
+        "texto": "1,0 KB"
+      },
+      {
+        "octetos": 1280,
+        "texto": "1,2 KB"
+      },
+      {
+        "octetos": 1382,
+        "texto": "1,3 KB"
+      },
+      {
+        "octetos": 1536,
+        "texto": "1,5 KB"
+      },
+      {
+        "octetos": 1048576,
+        "texto": "1,0 MB"
+      },
+      {
+        "octetos": 1100000,
+        "texto": "1,0 MB"
+      },
+      {
+        "octetos": 1073741824,
+        "texto": "1,0 GB"
+      },
+      {
+        "octetos": 1610612736,
+        "texto": "1,5 GB"
+      },
+      {
+        "octetos": 1099511627776,
+        "texto": "1,0 TB"
+      },
+      {
+        "octetos": 1649267441664,
+        "texto": "1,5 TB"
+      }
+    ],
+    "textos": [
+      {
+        "hecho": 2200000,
+        "total": 3500000,
+        "porcentaje": 61,
+        "velocidad": 1100000.0,
+        "texto": "2,1 MB de 3,3 MB · 61 % · 1,0 MB/s"
+      },
+      {
+        "hecho": 0,
+        "total": 0,
+        "porcentaje": null,
+        "velocidad": 0.0,
+        "texto": "0 B de 0 B · 0 B/s"
+      },
+      {
+        "hecho": 1024,
+        "total": 2048,
+        "porcentaje": 50,
+        "velocidad": 512.0,
+        "texto": "1,0 KB de 2,0 KB · 50 % · 512 B/s"
+      },
+      {
+        "hecho": 1099511627776,
+        "total": 1099511627776,
+        "porcentaje": 100,
+        "velocidad": 1048576.0,
+        "texto": "1,0 TB de 1,0 TB · 100 % · 1,0 MB/s"
+      },
+      {
+        "hecho": 512,
+        "total": 0,
+        "porcentaje": null,
+        "velocidad": 1.0,
+        "texto": "512 B de 0 B · 1 B/s"
+      }
+    ],
+    "lineas": [
+      {
+        "linea": "2026/09/21 07:56:16 INFO  : Transferred:   \t  1.086 MiB / 2.500 MiB, 43%, 512 KiB/s, ETA 3s",
+        "leido": {
+          "hecho": 1138754,
+          "total": 2621440,
+          "porcentaje": 43,
+          "velocidad": 524288.0
+        }
+      },
+      {
+        "linea": "2026/09/21 07:56:16 INFO  : Transferred:   \t  1.086 MiB / 2.500 MiB, 43%, 512 Ki",
+        "leido": null
+      },
+      {
+        "linea": "2026/09/21 07:56:16 INFO  : Transferred:   \t            0 / 3, 0%",
+        "leido": null
+      },
+      {
+        "linea": "2026/09/21 07:56:16 INFO  : a.bin: 23% /1.431 MiB, 0 B/s, -",
+        "leido": null
+      },
+      {
+        "linea": "2026/09/21 07:56:16 ERROR : Bisync critical error: cannot find prior Path1 or Path2 listings",
+        "leido": null
+      },
+      {
+        "linea": "0 B / 0 B, -, 0 B/s, ETA -",
+        "leido": {
+          "hecho": 0,
+          "total": 0,
+          "porcentaje": null,
+          "velocidad": 0.0
+        }
+      }
+    ],
+    "ultimo": {
+      "texto": "2026/09/21 07:56:16 INFO  : Transferred:   \t  1.086 MiB / 2.500 MiB, 43%, 512 KiB/s, ETA 3s\n2026/09/21 07:56:16 INFO  : Transferred:   \t  1.086 MiB / 2.500 MiB, 43%, 512 Ki\n2026/09/21 07:56:16 INFO  : Transferred:   \t            0 / 3, 0%\n2026/09/21 07:56:16 INFO  : a.bin: 23% /1.431 MiB, 0 B/s, -\n2026/09/21 07:56:16 ERROR : Bisync critical error: cannot find prior Path1 or Path2 listings\n0 B / 0 B, -, 0 B/s, ETA -",
+      "leido": {
+        "hecho": 0,
+        "total": 0,
+        "porcentaje": null,
+        "velocidad": 0.0
+      }
+    }
   }
 }

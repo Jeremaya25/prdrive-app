@@ -25,7 +25,9 @@ Hecho:
 
 - El **motor** (`engine/`), Kotlin puro y sin nada de Android — las capas de
   flags, el `upstreams` del remote `combine`, el nombre de sesión de bisync, el
-  estado del baseline, el TOML y la lectura del payload del QR.
+  estado del baseline, el TOML, la lectura del payload del QR, cómo viaja cada
+  flag hasta el RPC de rclone, la traducción de un fallo a algo accionable y la
+  línea de progreso.
 - El paquete **Go** que construye el `.aar` (`rclone/gobind/`): rclone como
   biblioteca, con los métodos que la app necesita registrados.
 - Un **spike** (`rclone/spike/`) que ejecuta rclone de verdad y comprueba, una
@@ -37,7 +39,8 @@ cd rclone && go run ./spike       # rclone de verdad
 ```
 
 Ninguno de los dos necesita SDK de Android, ni NDK, ni emulador, ni teléfono,
-ni red.
+ni red. Hoy son **111 tests** y ninguno lleva un valor esperado escrito a
+mano.
 
 ## Por qué el motor se prueba contra prdrive y no contra sí mismo
 

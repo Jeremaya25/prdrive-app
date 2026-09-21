@@ -162,4 +162,128 @@ class SesionesTest {
         assertTrue(version.startsWith("v"), "versión de rclone rara: $version")
         println("sesiones generadas con rclone $version")
     }
+
+    // -----------------------------------------------------------------------
+    // La llamada: lo que rclone aceptó de verdad
+    // -----------------------------------------------------------------------
+
+    @Test
+    fun `el JSON que monta el motor es el que rclone aceptó`() {
+        // El test más fuerte del fichero. Estas cadenas no son un valor
+        // esperado que escribiera nadie: son el JSON EXACTO que el spike le
+        // pasó a `librclone.RPC`, y de esas llamadas salieron las sesiones y
+        // los listados que los tests de arriba comprueban. Así que si lo que
+        // monta `Pasada` sale carácter por carácter igual, entonces sus
+        // nombres, sus tipos y su forma son los que rclone acepta — no los que
+        // parecían.
+        //
+        // Y es la única manera de comprobarlo, porque equivocarse aquí no da
+        // error: un parámetro con el nombre mal escrito, o con el tipo
+        // cambiado, se descarta en silencio.
+        for (caso in Sesiones.casos) {
+            val p = pareja(Sesiones.texto(caso, "pareja"))
+            val op = Opciones(
+                workdir = Sesiones.texto(caso, "workDir"),
+                filtersFile = Sesiones.texto(caso, "filters_file"),
+                grupo = GRUPO_DEL_SPIKE,
+            )
+            assertEquals(
+                Sesiones.texto(caso, "rpc_resync"),
+                Pasada.peticion(p, op.copy(resync = true)).json,
+                "[${p.name}] la llamada del --resync",
+            )
+            assertEquals(
+                Sesiones.texto(caso, "rpc_pasada"),
+                Pasada.peticion(p, op).json,
+                "[${p.name}] la llamada de una pasada normal",
+            )
+        }
+    }
+
+    @Test
+    fun `los parámetros de la tabla son los que rclone declara, con su tipo`() {
+        // `parametros_bisync` sale de la ayuda que rclone REGISTRA con el
+        // método, y esa ayuda la genera su propio código (`go generate` sobre
+        // `cmd/bisync/rc.md`). O sea que esto compara la tabla de `Pasada` con
+        // lo que dice rclone, no con lo que leyó quien la escribió: cuando
+        // rclone renombre un parámetro o le cambie el tipo, falla aquí en vez
+        // de dejar de aplicarse un flag.
+        val declarados = Sesiones.parametrosBisync.associate {
+            Sesiones.texto(it, "nombre") to Sesiones.texto(it, "tipo")
+        }
+        assertTrue(declarados.size > 20, "la ayuda de sync/bisync trae $declarados")
+        for ((flag, tipo) in Pasada.PARAMETROS_BISYNC) {
+            val nombre = Pasada.aCamello(flag)
+            if (nombre in NO_DECLARADOS) continue
+            val declarado = declarados[nombre]
+            assertTrue(
+                declarado != null,
+                "rclone no declara el parámetro '$nombre' (del flag --$flag). " +
+                    "Los que declara: ${declarados.keys.sorted()}",
+            )
+            // Los tipos de rclone son los de su ayuda: `bool`, `int`, y para
+            // todo lo demás una cadena — también `Duration` y los enumerados,
+            // que se leen con GetString y se ignoran si no lo son.
+            val esperado = when (declarado) {
+                "bool" -> TipoRpc.BOOL
+                "int" -> TipoRpc.ENTERO
+                else -> TipoRpc.CADENA
+            }
+            assertEquals(esperado, tipo, "el tipo de '$nombre', que rclone declara ($declarado)")
+        }
+    }
+
+    @Test
+    fun `los flags sueltos que manda el motor son opciones que rclone conoce`() {
+        // Un flag suelto que rclone no conozca lo descarta sin decir nada
+        // (`configstruct.SetAny` recorre SUS items, no los de la llamada), así
+        // que no hay error que esperar: o se comprueba aquí o no se comprueba.
+        // `opciones_sueltas` son las etiquetas `config:` de `fs.ConfigInfo` y
+        // de `filter.Options`, preguntadas a rclone en marcha.
+        // Es el único test que necesita las dos fuentes: la lista de opciones
+        // la da rclone, y las parejas salen del config de los vectores de
+        // prdrive, que es el que trae flags de todo tipo —`transfers` en los
+        // [defaults], el `max-delete` de un modo espejo, include y exclude—.
+        // El config del spike solo lleva los del modo bisync, que son todos
+        // parámetros del método, así que no probaría nada.
+        val conocidas = Sesiones.opcionesSueltas.toSet()
+        assertTrue(conocidas.size > 100, "solo ${conocidas.size} opciones: ¿se leyeron bien?")
+        val deVectores = parseConfig(Vectores.objeto(Vectores.seccion("resueltas"), "config"))
+        var comprobadas = 0
+        for (p in deVectores.pairs) {
+            val op = Opciones(workdir = "/da/igual", filtersFile = "/da/igual.txt")
+            for ((clave, _) in Pasada.traducir(p, op.copy(dryRun = true)).params) {
+                if (clave in DEL_METODO || clave.startsWith("_")) continue
+                assertTrue(
+                    clave in conocidas,
+                    "[${p.name}] rclone no conoce la opción suelta '$clave', así que la " +
+                        "descartaría sin avisar",
+                )
+                comprobadas++
+            }
+        }
+        assertTrue(comprobadas > 0, "ninguna pareja del spike manda flags sueltos")
+    }
+
+    private companion object {
+        /** El `_group` con el que el spike lanzó las pasadas. */
+        const val GRUPO_DEL_SPIKE = "spike"
+
+        /**
+         * `maxDelete` lo LEE `rcBisync` —y encima valida que esté entre 0 y
+         * 100, porque en bisync es un porcentaje— pero **no lo declara** en su
+         * ayuda: `--max-delete` es un flag global, no uno de bisync, así que
+         * `rc.md` no lo lista. Que funciona lo prueba el test de arriba: va en
+         * el JSON que rclone aceptó.
+         */
+        val NO_DECLARADOS = setOf("maxDelete")
+
+        /**
+         * Los nombres que son parámetros del método y no opciones de rclone,
+         * así que no tienen por qué estar en la lista de opciones sueltas.
+         */
+        val DEL_METODO = setOf(
+            "path1", "path2", "srcFs", "dstFs", "workdir", "filtersFile", "resync", "dryRun",
+        ) + Pasada.PARAMETROS_BISYNC.keys.map { Pasada.aCamello(it) }
+    }
 }

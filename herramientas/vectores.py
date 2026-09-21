@@ -80,13 +80,20 @@ OPCIONES_REMOTE = {
 def cargar(prdrive: Path):
     """Importa el prdrive de ese checkout y le fija la raíz del dispositivo."""
     sys.path.insert(0, str(prdrive))
-    from common import bisync, config_file, model, pairing   # noqa: PLC0415
+    from common import bisync, config_file, model, pairing, progress   # noqa: PLC0415
+
+    # `sync.py` está en la raíz y `flags_editor` en `ui/`; los dos se importan
+    # sin ejecutar nada (el `main()` de sync va detrás de su guarda, y
+    # flags_editor no toca Tk). De ahí salen KNOWN_ERRORS y RESERVED, que el
+    # motor replica y que nadie debería volver a escribir a mano.
+    import sync as sync_py                                   # noqa: PLC0415
+    from ui import flags_editor                               # noqa: PLC0415
 
     # `model.DEVICE_ROOT` sale de `__file__`, así que apunta al checkout. Se
     # reengancha para que `local_abs` y `top_level_abs` —y con ellos el
     # `upstreams` del remote 'combine'— no dependan de dónde esté esto.
     model.DEVICE_ROOT = Path(RAIZ_FALSA)
-    return bisync, config_file, model, pairing
+    return bisync, config_file, model, pairing, progress, sync_py, flags_editor
 
 
 def procedencia(prdrive: Path) -> dict:
@@ -320,6 +327,86 @@ def _rclone_conf(pairing) -> list[dict]:
     return [{"texto": t, "remotes": pairing.parse_rclone_conf(t)} for t in casos]
 
 
+def vectores_ejecucion(sync_py, flags_editor) -> dict:
+    """Lo que `sync.py` sabe de una pasada y el motor tiene que repetir.
+
+    Las **agujas** de `KNOWN_ERRORS` son lo que importa aquí: son las cadenas
+    que rclone escribe, así que si prdrive corrige una y el motor se queda con
+    la vieja, el diagnóstico desaparece sin que nada falle. Las explicaciones
+    NO se comparan letra a letra —la app habla de «la carpeta del volumen»
+    donde el PC habla de «la ruta local»—, pero el orden sí: las de arranque
+    van al final a propósito.
+    """
+    return {
+        "known_errors": [{"aguja": aguja, "explicacion": texto}
+                         for aguja, texto in sync_py.KNOWN_ERRORS],
+        "reservados": dict(flags_editor.RESERVED),
+        "saltada": sync_py.SKIPPED,
+        "lineas_de_cola": sync_py.LOG_TAIL_LINES,
+        "conflictos_mostrados": sync_py.CONFLICTS_SHOWN,
+        "direct_output_header": sync_py.DIRECT_OUTPUT_HEADER,
+    }
+
+
+# Tamaños elegidos para pillar los saltos de unidad y, sobre todo, los empates
+# del redondeo: 1280 octetos son 1,25 KB exactos, y ahí Python redondea a la
+# cifra par («1,2») mientras que un `String.format` de Java redondea hacia
+# arriba («1,3»). Sin este caso, el móvil y el PC dirían números distintos de
+# la misma pasada y nadie lo vería venir.
+TAMANOS = [0, 1, 512, 1023, 1024, 1280, 1382, 1536, 1048576, 1100000,
+           1073741824, 1610612736, 1099511627776, 1649267441664]
+
+# Las líneas: una estadística de verdad, la misma cortada a media escritura
+# —que es lo normal leyendo un log que se está escribiendo—, la cuenta de
+# ficheros y la línea de un fichero suelto, que NO son progreso, y un error.
+LINEAS_DE_LOG = [
+    "2026/09/21 07:56:16 INFO  : Transferred:   \t  1.086 MiB / 2.500 MiB, 43%, 512 KiB/s, ETA 3s",
+    "2026/09/21 07:56:16 INFO  : Transferred:   \t  1.086 MiB / 2.500 MiB, 43%, 512 Ki",
+    "2026/09/21 07:56:16 INFO  : Transferred:   \t            0 / 3, 0%",
+    "2026/09/21 07:56:16 INFO  : a.bin: 23% /1.431 MiB, 0 B/s, -",
+    "2026/09/21 07:56:16 ERROR : Bisync critical error: cannot find prior Path1 or Path2 listings",
+    "0 B / 0 B, -, 0 B/s, ETA -",
+]
+
+
+def vectores_progreso(progress) -> dict:
+    """El progreso: el texto que lee el usuario y el lector de líneas.
+
+    En la app el progreso sale de `core/stats` como datos, no de leer el log,
+    pero el **texto** es el mismo y el lector se conserva para quitar las
+    estadísticas de la cola del log que se enseña cuando algo falla.
+    """
+    casos = [
+        (2200000, 3500000, 61, 1100000.0),
+        (0, 0, None, 0.0),
+        (1024, 2048, 50, 512.0),
+        (1099511627776, 1099511627776, 100, 1048576.0),
+        (512, 0, None, 1.0),
+    ]
+    return {
+        "etiqueta": progress.ETIQUETA,
+        "tamanos": [{"octetos": o, "texto": progress._tamano(o)} for o in TAMANOS],
+        "textos": [
+            {"hecho": h, "total": t, "porcentaje": p, "velocidad": v,
+             "texto": progress.Progreso(h, t, p, v).texto()}
+            for h, t, p, v in casos
+        ],
+        "lineas": [
+            {"linea": linea,
+             "leido": None if (leido := progress.leer(linea)) is None else {
+                 "hecho": leido.hecho, "total": leido.total,
+                 "porcentaje": leido.porcentaje, "velocidad": leido.velocidad}}
+            for linea in LINEAS_DE_LOG
+        ],
+        "ultimo": {
+            "texto": "\n".join(LINEAS_DE_LOG),
+            "leido": None if (u := progress.ultimo("\n".join(LINEAS_DE_LOG))) is None else {
+                "hecho": u.hecho, "total": u.total,
+                "porcentaje": u.porcentaje, "velocidad": u.velocidad},
+        },
+    }
+
+
 def main() -> int:
     if len(sys.argv) != 2:
         print(__doc__.strip().splitlines()[0])
@@ -330,7 +417,7 @@ def main() -> int:
         print(f"No parece un checkout de prdrive: {prdrive}")
         return 2
 
-    bisync, config_file, model, pairing = cargar(prdrive)
+    bisync, config_file, model, pairing, progress, sync_py, flags_editor = cargar(prdrive)
     datos = {
         "_generado_por": "herramientas/vectores.py",
         "_no_editar": "Se regenera desde el prdrive citado en 'prdrive'.",
@@ -355,6 +442,8 @@ def main() -> int:
         "resueltas": vectores_parejas(bisync, model),
         "toml": vectores_toml(config_file),
         "pairing": vectores_pairing(pairing),
+        "ejecucion": vectores_ejecucion(sync_py, flags_editor),
+        "progreso": vectores_progreso(progress),
     }
 
     DESTINO.parent.mkdir(parents=True, exist_ok=True)

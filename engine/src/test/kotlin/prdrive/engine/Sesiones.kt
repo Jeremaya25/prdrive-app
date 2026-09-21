@@ -8,8 +8,7 @@ package prdrive.engine
  * genera `rclone/spike` ejecutando rclone como biblioteca. Uno comprueba que
  * la traducción es fiel, el otro que el original acertaba.
  *
- * Reutiliza el lector de JSON de [Vectores]: no hay dependencias, tampoco de
- * test.
+ * El JSON lo lee [leerJson], el mismo del motor.
  */
 object Sesiones {
 
@@ -34,15 +33,32 @@ object Sesiones {
     /** Los ficheros de filtros y el md5 que bisync escribió junto a cada uno. */
     val filtros: List<Map<String, Any?>> by lazy { objetos("filtros") }
 
+    /**
+     * Los parámetros que rclone **declara** para `sync/bisync`, con su tipo,
+     * sacados de la ayuda que registra con el método. Es contra esto contra lo
+     * que se comprueba la tabla de [Pasada], no contra lo que leyó quien la
+     * escribió.
+     */
+    val parametrosBisync: List<Map<String, Any?>> by lazy { objetos("parametros_bisync") }
+
+    /**
+     * Los nombres que rclone acepta sueltos en el primer nivel de una llamada:
+     * las etiquetas `config:` de `fs.ConfigInfo` y `filter.Options`. Un flag
+     * suelto que no esté aquí lo descarta rclone sin decir nada.
+     */
+    val opcionesSueltas: List<String> by lazy {
+        @Suppress("UNCHECKED_CAST")
+        (raiz["opciones_sueltas"] as? List<Any?>
+            ?: error("sesiones.json: falta 'opciones_sueltas'")).map { it.toString() }
+    }
+
     private fun cargar(): Map<String, Any?> {
         val recurso = Sesiones::class.java.getResourceAsStream("/sesiones.json")
             ?: error(
                 "No hay sesiones.json en los recursos de test. Se genera con:\n" +
                     "    cd rclone && go run ./spike -json ../engine/src/test/resources/sesiones.json",
             )
-        val texto = recurso.bufferedReader().use { it.readText() }
-        @Suppress("UNCHECKED_CAST")
-        return Json(texto).leerDocumento() as Map<String, Any?>
+        return leerObjetoJson(recurso.bufferedReader().use { it.readText() })
     }
 
     @Suppress("UNCHECKED_CAST")
