@@ -265,6 +265,19 @@ class SesionesTest {
         assertTrue(comprobadas > 0, "ninguna pareja del spike manda flags sueltos")
     }
 
+    @Test
+    fun `los backends que el motor dice que hay son los que lleva el aar`() {
+        // `Catalogo.BACKENDS` es lo que el motor usa para avisar de que el
+        // catálogo define un remoto de un tipo que no viaja dentro. Esa lista
+        // no puede salir de leer `backends_curados.go`: sale del registro de
+        // rclone en marcha, o sea de lo que de verdad se compiló.
+        //
+        // Si alguien añade un backend al paquete y no lo añade aquí, la app
+        // seguiría rechazando un remoto que sí puede usar; si lo quita, la app
+        // lo aceptaría y fallaría al sincronizar.
+        assertEquals(Sesiones.backends.toSet(), Catalogo.BACKENDS)
+    }
+
     private companion object {
         /** El `_group` con el que el spike lanzó las pasadas. */
         const val GRUPO_DEL_SPIKE = "spike"

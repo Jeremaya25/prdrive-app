@@ -33,8 +33,14 @@ engine/       Kotlin puro (JVM), SIN una línea de Android
 │               interfaz Rclone y la traducción de KNOWN_ERRORS
 ├── Progreso.kt espejo de common/progress.py: la misma frase, sacada de
 │               core/stats en vez de del log
-└── Results.kt  espejo de common/results.py: state/last_run.json y qué log
-                se guarda
+├── Results.kt  espejo de common/results.py: state/last_run.json y qué log
+│               se guarda
+├── Catalog.kt  espejo de common/catalog.py, SIN la mitad de escribir: el
+│               catálogo del remoto, su copia local y el aviso de un backend
+│               que no viaja en el .aar
+└── Volumen.kt  la parte de install/deploy.py que un dispositivo necesita: la
+                distribución del volumen, el rclone.conf (que es DERIVADO) y
+                el sync_config.toml de las parejas elegidas
 rclone/       módulo Go: rclone como biblioteca
 ├── gobind/     lo que empaqueta `gomobile bind` en el .aar: librclone con los
 │               métodos que hacen falta registrados, el sumidero del log y el
@@ -45,8 +51,7 @@ herramientas/
 └── vectores.py genera los valores esperados desde el prdrive de verdad
 ```
 
-Pendiente (ver `PLAN.md`): `engine/Catalog.kt`, `engine/Conflictos.kt`,
-`engine/Volumen.kt` y el módulo `app/`.
+Pendiente (ver `PLAN.md`): `engine/Conflictos.kt` y el módulo `app/`.
 
 El envoltorio del RPC está en `engine/` y no en `rclone/` como decía el plan,
 porque cabe entero ahí: la superficie de `librclone` es
@@ -62,7 +67,12 @@ queda para `app/` son esas tres líneas sobre el `.aar`.
   `tk_*` en prdrive: ahí solo se dibuja, y aquí `app/` solo dibuja y llama.
 - **El motor habla de rutas relativas a la raíz del volumen**, que es lo que
   dice el TOML. La absoluta la sabe la app (`filesDir`), y no entra aquí: por
-  eso no hay `local_abs` como en `model.py`.
+  eso no hay `local_abs` como en `model.py`. `Volumen` es la excepción y la
+  regla a la vez: recibe la raíz por parámetro y resuelve contra ella, así que
+  sigue sin saber dónde está.
+- **El `rclone.conf` se reescribe en cada arranque.** Lleva rutas absolutas
+  —aquí no hay cwd que fijarle a rclone, que es una biblioteca dentro de la
+  app— y `filesDir` cambia al reinstalar. No se edita: se genera.
 - **Cada fichero de `engine/` nombra el fichero de Python que refleja.** Y los
   que replican a rclone conservan las citas a su código fuente
   (`cmd/bisync/bilib/canonical.go`, `fs/types.go`, `cmd/bisync/resolve.go`…),

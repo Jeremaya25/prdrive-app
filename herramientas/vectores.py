@@ -88,12 +88,15 @@ def cargar(prdrive: Path):
     # motor replica y que nadie debería volver a escribir a mano.
     import sync as sync_py                                   # noqa: PLC0415
     from ui import flags_editor                               # noqa: PLC0415
+    from common import catalog                                # noqa: PLC0415
+    from install import deploy, remote as install_remote      # noqa: PLC0415
 
     # `model.DEVICE_ROOT` sale de `__file__`, así que apunta al checkout. Se
     # reengancha para que `local_abs` y `top_level_abs` —y con ellos el
     # `upstreams` del remote 'combine'— no dependan de dónde esté esto.
     model.DEVICE_ROOT = Path(RAIZ_FALSA)
-    return bisync, config_file, model, pairing, progress, sync_py, flags_editor
+    return (bisync, config_file, model, pairing, progress, sync_py, flags_editor,
+            catalog, deploy, install_remote)
 
 
 def procedencia(prdrive: Path) -> dict:
@@ -407,6 +410,57 @@ def vectores_progreso(progress) -> dict:
     }
 
 
+def vectores_catalogo(catalog, config_file, deploy, install_remote) -> dict:
+    """El catálogo: dónde está, y el config que sale de elegir parejas de él.
+
+    `device_config()` es de `install/deploy.py`, o sea de lo que en el
+    escritorio hace el instalador: los `[defaults]` del catálogo, su `[daemon]`
+    recortado a las parejas elegidas, y solo esas parejas. En la app lo hace el
+    primer arranque, así que el valor esperado sale de aquí y no de lo que
+    parezca razonable.
+    """
+    catalogo_raw = {
+        "remote": {"name": "nas", "type": "sftp", "host": "ejemplo.invalid",
+                   "port": "22", "user": "usuario"},
+        **CONFIG,
+    }
+    texto = config_file.dumps(catalogo_raw)
+    # OJO: son DOS clases distintas con el mismo nombre. `device_config()` es
+    # del instalador y quiere `install/remote.Catalog` (el dict crudo y su
+    # cabecera); la del dispositivo es `common/catalog.Catalog` (con de dónde
+    # y de cuándo se leyó), y es la que refleja `engine/Catalog.kt`.
+    cat = install_remote.Catalog(raw=catalogo_raw, head=config_file.header_of(texto))
+    elegidas = ["notas", "fotos"]
+    ruta = "/otro/sitio/pairs.toml"
+    return {
+        "default_catalog_path": catalog.DEFAULT_CATALOG_PATH,
+        "net_flags": list(catalog.NET_FLAGS),
+        "endpoint": [
+            {"defaults": d, "salida": catalog.endpoint({"defaults": d})}
+            for d in ({},
+                      {"remote": "nas"},
+                      {"remote": "nas", "catalog_path": "/otra/ruta.toml"},
+                      {"remote": "nas", "catalog_remote": "otro"})
+        ],
+        "diff_keys": [
+            {"a": a, "b": b, "salida": list(catalog.diff_keys(a, b))}
+            for a, b in (({"x": 1}, {"x": 1}),
+                         ({"x": 1}, {"x": 2}),
+                         ({"x": 1}, {}),
+                         ({}, None),
+                         ({"a": 1, "b": 2}, {"b": 3, "c": 4}))
+        ],
+        "device_config": {
+            "catalogo": catalogo_raw,
+            "catalogo_texto": texto,
+            "elegidas": elegidas,
+            "catalog_path": ruta,
+            "raw": deploy.device_config(cat, elegidas, ruta),
+            "sin_ruta": deploy.device_config(cat, elegidas),
+        },
+    }
+
+
 def main() -> int:
     if len(sys.argv) != 2:
         print(__doc__.strip().splitlines()[0])
@@ -417,7 +471,8 @@ def main() -> int:
         print(f"No parece un checkout de prdrive: {prdrive}")
         return 2
 
-    bisync, config_file, model, pairing, progress, sync_py, flags_editor = cargar(prdrive)
+    (bisync, config_file, model, pairing, progress, sync_py, flags_editor,
+     catalog, deploy, install_remote) = cargar(prdrive)
     datos = {
         "_generado_por": "herramientas/vectores.py",
         "_no_editar": "Se regenera desde el prdrive citado en 'prdrive'.",
@@ -444,6 +499,7 @@ def main() -> int:
         "pairing": vectores_pairing(pairing),
         "ejecucion": vectores_ejecucion(sync_py, flags_editor),
         "progreso": vectores_progreso(progress),
+        "catalogo": vectores_catalogo(catalog, config_file, deploy, install_remote),
     }
 
     DESTINO.parent.mkdir(parents=True, exist_ok=True)

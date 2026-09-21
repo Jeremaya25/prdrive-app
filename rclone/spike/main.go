@@ -118,6 +118,11 @@ type salida struct {
 	// compruebe contra rclone y no contra lo que leyó quien la escribió.
 	ParametrosBisync []parametro `json:"parametros_bisync"`
 	OpcionesSueltas  []string    `json:"opciones_sueltas"`
+	// Los backends que lleva DENTRO el paquete que se compila, preguntados al
+	// registro de rclone. Es la respuesta de verdad a «qué remotos puede usar
+	// la app», y con eso `Catalogo.BACKENDS` no puede separarse del
+	// `backends_curados.go` sin que falle un test.
+	Backends []string `json:"backends"`
 }
 
 // parametro es un parámetro de `sync/bisync` tal y como lo declara la ayuda
@@ -244,6 +249,11 @@ func correr(base, destino string) error {
 	if out.OpcionesSueltas, err = opcionesSueltas(); err != nil {
 		return err
 	}
+	for _, reg := range fs.Registry {
+		out.Backends = append(out.Backends, reg.Name)
+	}
+	sort.Strings(out.Backends)
+	apuntar("backends compilados dentro", "los curados", strings.Join(out.Backends, " "))
 	apuntar("parámetros que declara sync/bisync", "los de rc.md",
 		fmt.Sprintf("%d", len(out.ParametrosBisync)))
 	apuntar("opciones que rclone acepta sueltas", "ConfigInfo + filter.Options",

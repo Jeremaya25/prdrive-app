@@ -46,6 +46,13 @@ object Sesiones {
      * las etiquetas `config:` de `fs.ConfigInfo` y `filter.Options`. Un flag
      * suelto que no esté aquí lo descarta rclone sin decir nada.
      */
+    /** Los backends que lleva DENTRO el paquete que se compila para el .aar. */
+    val backends: List<String> by lazy {
+        @Suppress("UNCHECKED_CAST")
+        (raiz["backends"] as? List<Any?>
+            ?: error("sesiones.json: falta 'backends'")).map { it.toString() }
+    }
+
     val opcionesSueltas: List<String> by lazy {
         @Suppress("UNCHECKED_CAST")
         (raiz["opciones_sueltas"] as? List<Any?>

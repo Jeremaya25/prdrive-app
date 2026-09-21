@@ -73,9 +73,9 @@ cómo ha ido**. Los ficheros de Python siguen siendo la especificación.
 | `common/progress.py` | `engine/Progreso.kt` | **hecho** — el canal cambia, el texto no |
 | `common/results.py` | `engine/Results.kt` | **hecho** |
 | (nuevo aquí) | `engine/Json.kt` | **hecho** — leer y escribir el JSON del RPC, sin dependencias |
-| `common/catalog.py` | `engine/Catalog.kt` | pendiente — **solo lectura** en el paso 1, así que nada de la ceremonia de `push()` |
+| `common/catalog.py` | `engine/Catalog.kt` | **hecho** — **solo lectura**, así que nada de la ceremonia de `push()` |
+| `install/deploy.py` (`device_config`, `write_device_remote`, `make_local_dirs`) | `engine/Volumen.kt` | **hecho** |
 | `common/conflicts.py` | `engine/Conflictos.kt` | pendiente — en el paso 1 los conflictos solo se **detectan y avisan** |
-| `install/deploy.py` (`device_config`, `make_local_dirs`) | `engine/Volumen.kt` | pendiente |
 
 ### El riesgo que esto crea, y qué lo tapa
 
@@ -90,7 +90,7 @@ dentro. Los tests de Kotlin **no llevan ni un valor esperado escrito a mano**.
 
 ```bash
 python herramientas/vectores.py ../prdrive   # regenerar
-./gradlew :engine:test                       # 111 tests, sin SDK ni dispositivo
+./gradlew :engine:test                       # 136 tests, sin SDK ni dispositivo
 ```
 
 Cuando prdrive mueva una constante, falla el test que la nombra y dice cuál.
@@ -325,6 +325,42 @@ prdrive, no sobre esta app**, y se arregla allí; aquí queda anotado en
 ficheros de estado siguen siendo legibles por el programa de escritorio y no hay
 que inventar nada.
 
+**Y el `rclone.conf` de la app es derivado, no guardado.** En el escritorio
+lleva rutas relativas (`key_file = keys/id_ed25519`) y eso es justo lo que hace
+que el disco funcione con cualquier letra de unidad, porque `sync.py` ejecuta
+rclone con `cwd = APP_DIR`. Aquí no hay proceso al que fijarle un cwd: rclone
+es una biblioteca dentro de la app, y el directorio de trabajo del proceso no
+es nuestro para cambiarlo. Así que las rutas van **absolutas** y el fichero se
+**reescribe en cada arranque**.
+
+No es una complicación añadida, es una regla que ya hacía falta: el `upstreams`
+del remote `combine` también es absoluto, así que ya había que regenerarlo
+cuando `filesDir` cambia —al reinstalar la app o al moverla de perfil—. Ahora
+la regla es una sola y vale para las dos cosas. rclone lo relee él solo, porque
+`Storage._check()` compara la fecha y el tamaño en cada lectura
+(`fs/config/config.go`). Lo único que no se regenera es la clave privada: eso
+llega una vez, con el QR.
+
+### Leer el catálogo sin línea de órdenes
+
+En el escritorio el catálogo se lee con `rclone cat nas:/prdrive-catalog/pairs.toml`.
+Aquí no hay `cat`: `core/command` no sirve (arriba), y el rc **no tiene ningún
+método que devuelva el contenido de un fichero**. Lo que sí hay es
+`operations/copyfile` (`fs/operations/rc.go`), que copia de un `Fs` a otro — y
+el backend `local` está compilado dentro, así que el destino es un fichero del
+volumen y después se lee con `File.readText()`.
+
+Sale gratis: ese fichero es justo la copia local que había que guardar de todas
+formas (`state/catalog.toml`), o sea lo que permite abrir la pantalla de
+parejas sin red. Y aquí `_async` **no** hace falta, al contrario que en una
+pasada: un error de `operations/copyfile` no trae ninguna salida que se pueda
+perder, solo su mensaje, y ese sí viaja en el JSON aunque el estado no sea 200.
+
+Los flags con los que se le habla son los de `catalog.NET_FLAGS` —10 s de
+conexión, 20 s de datos, un reintento—, y no son una optimización: con los
+valores de rclone por defecto (5 min de timeout, 3 reintentos) una wifi mala
+deja la pantalla colgada varios minutos en vez de caer a la copia.
+
 ### El remote `combine` va en el `rclone.conf`, no en el entorno
 
 En el escritorio, `Config.pen_environment()` pone `RCLONE_CONFIG_DISP_*` en cada
@@ -403,7 +439,7 @@ Dos niveles, y la diferencia entre ellos importa: uno comprueba que la
 traducción es fiel, el otro que el original acertaba.
 
 - **El motor contra prdrive:** `./gradlew :engine:test`, sin SDK ni
-  dispositivo. Hoy **111 tests**, ninguno con un valor esperado escrito a
+  dispositivo. Hoy **136 tests**, ninguno con un valor esperado escrito a
   mano. Contra `vectores.json`, generado del Python de prdrive: fusión de
   flags, la cadena `upstreams` (con la pareja de la raíz, el caso `raiz` y las
   comillas de Windows), el nombre de sesión de bisync, `fresh|ok|broken` sobre

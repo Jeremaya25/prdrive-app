@@ -1144,5 +1144,245 @@
         "velocidad": 0.0
       }
     }
+  },
+  "catalogo": {
+    "default_catalog_path": "/prdrive-catalog/pairs.toml",
+    "net_flags": [
+      "--contimeout",
+      "10s",
+      "--timeout",
+      "20s",
+      "--retries",
+      "1",
+      "--low-level-retries",
+      "2"
+    ],
+    "endpoint": [
+      {
+        "defaults": {},
+        "salida": "remote:/prdrive-catalog/pairs.toml"
+      },
+      {
+        "defaults": {
+          "remote": "nas"
+        },
+        "salida": "nas:/prdrive-catalog/pairs.toml"
+      },
+      {
+        "defaults": {
+          "remote": "nas",
+          "catalog_path": "/otra/ruta.toml"
+        },
+        "salida": "nas:/otra/ruta.toml"
+      },
+      {
+        "defaults": {
+          "remote": "nas",
+          "catalog_remote": "otro"
+        },
+        "salida": "otro:/prdrive-catalog/pairs.toml"
+      }
+    ],
+    "diff_keys": [
+      {
+        "a": {
+          "x": 1
+        },
+        "b": {
+          "x": 1
+        },
+        "salida": []
+      },
+      {
+        "a": {
+          "x": 1
+        },
+        "b": {
+          "x": 2
+        },
+        "salida": [
+          "x"
+        ]
+      },
+      {
+        "a": {
+          "x": 1
+        },
+        "b": {},
+        "salida": [
+          "x"
+        ]
+      },
+      {
+        "a": {},
+        "b": null,
+        "salida": []
+      },
+      {
+        "a": {
+          "a": 1,
+          "b": 2
+        },
+        "b": {
+          "b": 3,
+          "c": 4
+        },
+        "salida": [
+          "a",
+          "b",
+          "c"
+        ]
+      }
+    ],
+    "device_config": {
+      "catalogo": {
+        "remote": {
+          "name": "nas",
+          "type": "sftp",
+          "host": "ejemplo.invalid",
+          "port": "22",
+          "user": "usuario"
+        },
+        "defaults": {
+          "remote": "nas",
+          "device_remote": "disp",
+          "catalog_path": "/prdrive-catalog/pairs.toml",
+          "exclude": [
+            "*.tmp"
+          ],
+          "flags": {
+            "transfers": 4
+          }
+        },
+        "daemon": {
+          "pairs": [
+            "notas"
+          ],
+          "interval_minutes": 15
+        },
+        "pair": [
+          {
+            "name": "notas",
+            "local": "sync-data/notas",
+            "remote_path": "/copia/notas"
+          },
+          {
+            "name": "fotos",
+            "local": "sync-data/media/fotos",
+            "remote_path": "/copia/fotos",
+            "include": [
+              "*.jpg",
+              "*.raw"
+            ],
+            "flags": {
+              "max-delete": 5,
+              "checkers": 2
+            }
+          },
+          {
+            "name": "todo",
+            "local": ".",
+            "remote_path": "/copia/volumen"
+          },
+          {
+            "name": "subida",
+            "local": "sync-data/salida",
+            "remote_path": "/copia/salida",
+            "mode": "up"
+          },
+          {
+            "name": "espejo",
+            "local": "sync-data/espejo",
+            "remote_path": "/copia/espejo",
+            "mode": "up-mirror",
+            "use_filters_file": false
+          }
+        ]
+      },
+      "catalogo_texto": "[remote]\nname = \"nas\"\ntype = \"sftp\"\nhost = \"ejemplo.invalid\"\nport = \"22\"\nuser = \"usuario\"\n\n[defaults]\nremote = \"nas\"\ndevice_remote = \"disp\"\ncatalog_path = \"/prdrive-catalog/pairs.toml\"\nexclude = [\"*.tmp\"]\n\n[defaults.flags]\ntransfers = 4\n\n[daemon]\npairs = [\"notas\"]\ninterval_minutes = 15\n\n[[pair]]\nname = \"notas\"\nlocal = \"sync-data/notas\"\nremote_path = \"/copia/notas\"\n\n[[pair]]\nname = \"fotos\"\nlocal = \"sync-data/media/fotos\"\nremote_path = \"/copia/fotos\"\ninclude = [\n    \"*.jpg\",\n    \"*.raw\",\n]\n\n[pair.flags]\ncheckers = 2\nmax-delete = 5\n\n[[pair]]\nname = \"todo\"\nlocal = \".\"\nremote_path = \"/copia/volumen\"\n\n[[pair]]\nname = \"subida\"\nlocal = \"sync-data/salida\"\nremote_path = \"/copia/salida\"\nmode = \"up\"\n\n[[pair]]\nname = \"espejo\"\nlocal = \"sync-data/espejo\"\nremote_path = \"/copia/espejo\"\nmode = \"up-mirror\"\nuse_filters_file = false\n",
+      "elegidas": [
+        "notas",
+        "fotos"
+      ],
+      "catalog_path": "/otro/sitio/pairs.toml",
+      "raw": {
+        "defaults": {
+          "remote": "nas",
+          "device_remote": "disp",
+          "catalog_path": "/otro/sitio/pairs.toml",
+          "exclude": [
+            "*.tmp"
+          ],
+          "flags": {
+            "transfers": 4
+          }
+        },
+        "daemon": {
+          "pairs": [
+            "notas"
+          ],
+          "interval_minutes": 15
+        },
+        "pair": [
+          {
+            "name": "notas",
+            "local": "sync-data/notas",
+            "remote_path": "/copia/notas"
+          },
+          {
+            "name": "fotos",
+            "local": "sync-data/media/fotos",
+            "remote_path": "/copia/fotos",
+            "include": [
+              "*.jpg",
+              "*.raw"
+            ],
+            "flags": {
+              "max-delete": 5,
+              "checkers": 2
+            }
+          }
+        ]
+      },
+      "sin_ruta": {
+        "defaults": {
+          "remote": "nas",
+          "device_remote": "disp",
+          "catalog_path": "/prdrive-catalog/pairs.toml",
+          "exclude": [
+            "*.tmp"
+          ],
+          "flags": {
+            "transfers": 4
+          }
+        },
+        "daemon": {
+          "pairs": [
+            "notas"
+          ],
+          "interval_minutes": 15
+        },
+        "pair": [
+          {
+            "name": "notas",
+            "local": "sync-data/notas",
+            "remote_path": "/copia/notas"
+          },
+          {
+            "name": "fotos",
+            "local": "sync-data/media/fotos",
+            "remote_path": "/copia/fotos",
+            "include": [
+              "*.jpg",
+              "*.raw"
+            ],
+            "flags": {
+              "max-delete": 5,
+              "checkers": 2
+            }
+          }
+        ]
+      }
+    }
   }
 }

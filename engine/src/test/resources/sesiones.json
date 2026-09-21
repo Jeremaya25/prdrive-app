@@ -308,5 +308,12 @@
     "use_mmap",
     "use_server_modtime",
     "user_agent"
+  ],
+  "backends": [
+    "combine",
+    "crypt",
+    "local",
+    "sftp",
+    "webdav"
   ]
 }
