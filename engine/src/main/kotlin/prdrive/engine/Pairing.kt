@@ -203,19 +203,31 @@ object Pairing {
      * [seccionCombine] es la sección `[disp]` que en el escritorio viaja por
      * variables de entorno; se pasa hecha ([Config.seccionCombine]) porque
      * depende de las parejas y no de la conexión.
+     *
+     * [dirDeClaves] es el prefijo de `key_file` y `known_hosts_file`. Por
+     * defecto es `keys`, **relativo**, que es lo que escribe el escritorio y
+     * lo que hace portable un disco: allí rclone corre con
+     * `cwd = APP_DIR`. En la app no hay proceso al que fijarle un cwd —rclone
+     * es una biblioteca dentro de ella—, así que [Volumen] pasa la ruta
+     * absoluta y se encarga de reescribir el fichero cuando la raíz cambia.
      */
-    fun rcloneConf(carga: Carga, seccionCombine: String = ""): String {
+    fun rcloneConf(
+        carga: Carga,
+        seccionCombine: String = "",
+        dirDeClaves: String = "keys",
+    ): String {
         if (carga.remoteName.isEmpty()) {
             throw PairingError("La carga no dice cómo se llama el remote.")
         }
         val lineas = ArrayList<String>()
         lineas.add("[${carga.remoteName}]")
         carga.opciones.forEach { (k, v) -> lineas.add("$k = $v") }
-        if (carga.privateKey != null) lineas.add("key_file = keys/${carga.keyName}")
+        val claves = dirDeClaves.trimEnd('/')
+        if (carga.privateKey != null) lineas.add("key_file = $claves/${carga.keyName}")
         // Sin known_hosts se acepta la clave de host a la primera (TOFU). Es
         // peor, pero escribir la opción apuntando a un fichero vacío es peor
         // todavía: rclone falla en vez de avisar.
-        if (carga.knownHosts.isNotBlank()) lineas.add("known_hosts_file = keys/known_hosts")
+        if (carga.knownHosts.isNotBlank()) lineas.add("known_hosts_file = $claves/known_hosts")
         val texto = lineas.joinToString("\n") + "\n"
         return if (seccionCombine.isEmpty()) texto else texto + "\n" + seccionCombine
     }

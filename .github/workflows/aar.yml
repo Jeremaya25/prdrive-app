@@ -1,0 +1,52 @@
+# Medir el .aar. A mano y no en cada push, porque bajarse el NDK son 2 GB y la
+# pregunta que contesta —qué juego de backends entra— ya está contestada
+# (PLAN.md). Está aquí para poder volver a medirla cuando suba la versión de
+# rclone o cuando cambie la lista de backends curados, sin tener que recordar
+# los detalles que no son evidentes: están en rclone/aar.sh.
+#
+# Y con el .aar construido, de paso sale el APK: es la única forma de comprobar
+# que el módulo `app` compila, porque necesita el .aar y el SDK.
+#
+# Que las dos variantes de backends COMPILEN se comprueba en cada push, en
+# rclone.yml, que no necesita NDK.
+name: aar
+
+on:
+  workflow_dispatch:
+
+jobs:
+  medir:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: rclone/go.mod
+          cache-dependency-path: rclone/go.sum
+
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: "platforms;android-35 build-tools;35.0.0 ndk;27.2.12479018"
+
+      - name: construir y medir
+        env:
+          ANDROID_NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/27.2.12479018
+        run: sh rclone/aar.sh app/libs
+
+      # El APK de DEPURACIÓN y no el de release, y no es un descuido: el de
+      # release sale sin firmar, así que no se puede instalar en un teléfono.
+      # El de depuración lo firma Gradle con su clave de siempre, y es el que
+      # hay que poder descargar de aquí y probar.
+      - name: y con él, el APK
+        run: |
+          cp app/libs/prdrive-curados.aar app/libs/prdrive-rclone.aar
+          ./gradlew :app:assembleDebug
+          ls -l app/build/outputs/apk/debug/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: prdrive
+          path: |
+            app/libs/prdrive-*.aar
+            app/build/outputs/apk/debug/*.apk

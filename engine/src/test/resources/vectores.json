@@ -937,5 +937,817 @@
         }
       }
     ]
+  },
+  "ejecucion": {
+    "known_errors": [
+      {
+        "aguja": "cannot find prior Path1 or Path2 listings",
+        "explicacion": "No hay baseline: primera vez, listados en otro sitio (¿cambió la ruta?) o un fallo crítico previo los invalidó. Solución: --resync."
+      },
+      {
+        "aguja": "filters file has changed",
+        "explicacion": "Han cambiado los filtros. Solución: --resync (bisync no puede saber qué ficheros excluidos existían antes)."
+      },
+      {
+        "aguja": "filters file md5 hash not found",
+        "explicacion": "Primer uso de este fichero de filtros. Solución: --resync."
+      },
+      {
+        "aguja": "must run --resync",
+        "explicacion": "bisync ha invalidado el baseline y exige rehacerlo. Solución: --resync."
+      },
+      {
+        "aguja": "--max-delete",
+        "explicacion": "Se han superado los borrados permitidos. Comprueba que la ruta local NO esté vacía o desmontada antes de forzar nada."
+      },
+      {
+        "aguja": "Access is denied",
+        "explicacion": "Fichero bloqueado por otro proceso (Obsidian, KeePass, antivirus)."
+      },
+      {
+        "aguja": "prior lock file found",
+        "explicacion": "Hay un lock de otra ejecución. Si no hay ninguna corriendo, borra el .lck del workdir de la pareja."
+      },
+      {
+        "aguja": "known_hosts_file",
+        "explicacion": "rclone no encuentra el fichero de known_hosts indicado en rclone.conf. Las rutas relativas de rclone.conf se resuelven contra rclone-sync/; comprueba que keys/known_hosts existe ahí."
+      },
+      {
+        "aguja": "Failed to create file system",
+        "explicacion": "rclone no ha podido montar uno de los dos extremos. Suele ser una ruta o credencial mal resuelta en rclone.conf (revisa key_file y known_hosts_file), o el remoto inalcanzable."
+      },
+      {
+        "aguja": "unknown flag",
+        "explicacion": "rclone no conoce uno de los flags. Está escrito en sync_config.toml (o en el editor de flags de la ventana de parejas): rclone lo rechaza antes de empezar, por eso no hay más log que este."
+      },
+      {
+        "aguja": "invalid argument",
+        "explicacion": "rclone rechaza el VALOR de un flag: no es de los que admite (por ejemplo conflict-resolve = \"new\" cuando lo válido es \"newer\"). El mensaje de arriba enumera los buenos. Se corrige en sync_config.toml."
+      }
+    ],
+    "reservados": {
+      "config": "lo pone sync.py: es el rclone.conf del dispositivo",
+      "log-file": "lo pone sync.py: cada pasada escribe en su propio log",
+      "dry-run": "es --dry-run de sync.py, para que valga en todas las parejas",
+      "workdir": "lo pone sync.py: state/<pareja>/, y cambiarlo mueve el baseline",
+      "resync": "es --resync de sync.py, que además pregunta antes",
+      "filters-file": "sale de los patrones incluir/excluir de la pareja",
+      "filter": "usa los patrones incluir/excluir; mezclarlos rompe el filtrado",
+      "filter-from": "usa los patrones incluir/excluir; mezclarlos rompe el filtrado",
+      "include": "usa el cuadro «Incluir»",
+      "exclude": "usa el cuadro «Excluir»"
+    },
+    "saltada": -1,
+    "lineas_de_cola": 15,
+    "conflictos_mostrados": 5,
+    "direct_output_header": "--- salida directa de rclone (no pasó por --log-file) ---"
+  },
+  "progreso": {
+    "etiqueta": "progreso:",
+    "tamanos": [
+      {
+        "octetos": 0,
+        "texto": "0 B"
+      },
+      {
+        "octetos": 1,
+        "texto": "1 B"
+      },
+      {
+        "octetos": 512,
+        "texto": "512 B"
+      },
+      {
+        "octetos": 1023,
+        "texto": "1023 B"
+      },
+      {
+        "octetos": 1024,
+        "texto": "1,0 KB"
+      },
+      {
+        "octetos": 1280,
+        "texto": "1,2 KB"
+      },
+      {
+        "octetos": 1382,
+        "texto": "1,3 KB"
+      },
+      {
+        "octetos": 1536,
+        "texto": "1,5 KB"
+      },
+      {
+        "octetos": 1048576,
+        "texto": "1,0 MB"
+      },
+      {
+        "octetos": 1100000,
+        "texto": "1,0 MB"
+      },
+      {
+        "octetos": 1073741824,
+        "texto": "1,0 GB"
+      },
+      {
+        "octetos": 1610612736,
+        "texto": "1,5 GB"
+      },
+      {
+        "octetos": 1099511627776,
+        "texto": "1,0 TB"
+      },
+      {
+        "octetos": 1649267441664,
+        "texto": "1,5 TB"
+      }
+    ],
+    "textos": [
+      {
+        "hecho": 2200000,
+        "total": 3500000,
+        "porcentaje": 61,
+        "velocidad": 1100000.0,
+        "texto": "2,1 MB de 3,3 MB · 61 % · 1,0 MB/s"
+      },
+      {
+        "hecho": 0,
+        "total": 0,
+        "porcentaje": null,
+        "velocidad": 0.0,
+        "texto": "0 B de 0 B · 0 B/s"
+      },
+      {
+        "hecho": 1024,
+        "total": 2048,
+        "porcentaje": 50,
+        "velocidad": 512.0,
+        "texto": "1,0 KB de 2,0 KB · 50 % · 512 B/s"
+      },
+      {
+        "hecho": 1099511627776,
+        "total": 1099511627776,
+        "porcentaje": 100,
+        "velocidad": 1048576.0,
+        "texto": "1,0 TB de 1,0 TB · 100 % · 1,0 MB/s"
+      },
+      {
+        "hecho": 512,
+        "total": 0,
+        "porcentaje": null,
+        "velocidad": 1.0,
+        "texto": "512 B de 0 B · 1 B/s"
+      }
+    ],
+    "lineas": [
+      {
+        "linea": "2026/09/21 07:56:16 INFO  : Transferred:   \t  1.086 MiB / 2.500 MiB, 43%, 512 KiB/s, ETA 3s",
+        "leido": {
+          "hecho": 1138754,
+          "total": 2621440,
+          "porcentaje": 43,
+          "velocidad": 524288.0
+        }
+      },
+      {
+        "linea": "2026/09/21 07:56:16 INFO  : Transferred:   \t  1.086 MiB / 2.500 MiB, 43%, 512 Ki",
+        "leido": null
+      },
+      {
+        "linea": "2026/09/21 07:56:16 INFO  : Transferred:   \t            0 / 3, 0%",
+        "leido": null
+      },
+      {
+        "linea": "2026/09/21 07:56:16 INFO  : a.bin: 23% /1.431 MiB, 0 B/s, -",
+        "leido": null
+      },
+      {
+        "linea": "2026/09/21 07:56:16 ERROR : Bisync critical error: cannot find prior Path1 or Path2 listings",
+        "leido": null
+      },
+      {
+        "linea": "0 B / 0 B, -, 0 B/s, ETA -",
+        "leido": {
+          "hecho": 0,
+          "total": 0,
+          "porcentaje": null,
+          "velocidad": 0.0
+        }
+      }
+    ],
+    "ultimo": {
+      "texto": "2026/09/21 07:56:16 INFO  : Transferred:   \t  1.086 MiB / 2.500 MiB, 43%, 512 KiB/s, ETA 3s\n2026/09/21 07:56:16 INFO  : Transferred:   \t  1.086 MiB / 2.500 MiB, 43%, 512 Ki\n2026/09/21 07:56:16 INFO  : Transferred:   \t            0 / 3, 0%\n2026/09/21 07:56:16 INFO  : a.bin: 23% /1.431 MiB, 0 B/s, -\n2026/09/21 07:56:16 ERROR : Bisync critical error: cannot find prior Path1 or Path2 listings\n0 B / 0 B, -, 0 B/s, ETA -",
+      "leido": {
+        "hecho": 0,
+        "total": 0,
+        "porcentaje": null,
+        "velocidad": 0.0
+      }
+    }
+  },
+  "catalogo": {
+    "default_catalog_path": "/prdrive-catalog/pairs.toml",
+    "net_flags": [
+      "--contimeout",
+      "10s",
+      "--timeout",
+      "20s",
+      "--retries",
+      "1",
+      "--low-level-retries",
+      "2"
+    ],
+    "endpoint": [
+      {
+        "defaults": {},
+        "salida": "remote:/prdrive-catalog/pairs.toml"
+      },
+      {
+        "defaults": {
+          "remote": "nas"
+        },
+        "salida": "nas:/prdrive-catalog/pairs.toml"
+      },
+      {
+        "defaults": {
+          "remote": "nas",
+          "catalog_path": "/otra/ruta.toml"
+        },
+        "salida": "nas:/otra/ruta.toml"
+      },
+      {
+        "defaults": {
+          "remote": "nas",
+          "catalog_remote": "otro"
+        },
+        "salida": "otro:/prdrive-catalog/pairs.toml"
+      }
+    ],
+    "diff_keys": [
+      {
+        "a": {
+          "x": 1
+        },
+        "b": {
+          "x": 1
+        },
+        "salida": []
+      },
+      {
+        "a": {
+          "x": 1
+        },
+        "b": {
+          "x": 2
+        },
+        "salida": [
+          "x"
+        ]
+      },
+      {
+        "a": {
+          "x": 1
+        },
+        "b": {},
+        "salida": [
+          "x"
+        ]
+      },
+      {
+        "a": {},
+        "b": null,
+        "salida": []
+      },
+      {
+        "a": {
+          "a": 1,
+          "b": 2
+        },
+        "b": {
+          "b": 3,
+          "c": 4
+        },
+        "salida": [
+          "a",
+          "b",
+          "c"
+        ]
+      }
+    ],
+    "device_config": {
+      "catalogo": {
+        "remote": {
+          "name": "nas",
+          "type": "sftp",
+          "host": "ejemplo.invalid",
+          "port": "22",
+          "user": "usuario"
+        },
+        "defaults": {
+          "remote": "nas",
+          "device_remote": "disp",
+          "catalog_path": "/prdrive-catalog/pairs.toml",
+          "exclude": [
+            "*.tmp"
+          ],
+          "flags": {
+            "transfers": 4
+          }
+        },
+        "daemon": {
+          "pairs": [
+            "notas"
+          ],
+          "interval_minutes": 15
+        },
+        "pair": [
+          {
+            "name": "notas",
+            "local": "sync-data/notas",
+            "remote_path": "/copia/notas"
+          },
+          {
+            "name": "fotos",
+            "local": "sync-data/media/fotos",
+            "remote_path": "/copia/fotos",
+            "include": [
+              "*.jpg",
+              "*.raw"
+            ],
+            "flags": {
+              "max-delete": 5,
+              "checkers": 2
+            }
+          },
+          {
+            "name": "todo",
+            "local": ".",
+            "remote_path": "/copia/volumen"
+          },
+          {
+            "name": "subida",
+            "local": "sync-data/salida",
+            "remote_path": "/copia/salida",
+            "mode": "up"
+          },
+          {
+            "name": "espejo",
+            "local": "sync-data/espejo",
+            "remote_path": "/copia/espejo",
+            "mode": "up-mirror",
+            "use_filters_file": false
+          }
+        ]
+      },
+      "catalogo_texto": "[remote]\nname = \"nas\"\ntype = \"sftp\"\nhost = \"ejemplo.invalid\"\nport = \"22\"\nuser = \"usuario\"\n\n[defaults]\nremote = \"nas\"\ndevice_remote = \"disp\"\ncatalog_path = \"/prdrive-catalog/pairs.toml\"\nexclude = [\"*.tmp\"]\n\n[defaults.flags]\ntransfers = 4\n\n[daemon]\npairs = [\"notas\"]\ninterval_minutes = 15\n\n[[pair]]\nname = \"notas\"\nlocal = \"sync-data/notas\"\nremote_path = \"/copia/notas\"\n\n[[pair]]\nname = \"fotos\"\nlocal = \"sync-data/media/fotos\"\nremote_path = \"/copia/fotos\"\ninclude = [\n    \"*.jpg\",\n    \"*.raw\",\n]\n\n[pair.flags]\ncheckers = 2\nmax-delete = 5\n\n[[pair]]\nname = \"todo\"\nlocal = \".\"\nremote_path = \"/copia/volumen\"\n\n[[pair]]\nname = \"subida\"\nlocal = \"sync-data/salida\"\nremote_path = \"/copia/salida\"\nmode = \"up\"\n\n[[pair]]\nname = \"espejo\"\nlocal = \"sync-data/espejo\"\nremote_path = \"/copia/espejo\"\nmode = \"up-mirror\"\nuse_filters_file = false\n",
+      "elegidas": [
+        "notas",
+        "fotos"
+      ],
+      "catalog_path": "/otro/sitio/pairs.toml",
+      "raw": {
+        "defaults": {
+          "remote": "nas",
+          "device_remote": "disp",
+          "catalog_path": "/otro/sitio/pairs.toml",
+          "exclude": [
+            "*.tmp"
+          ],
+          "flags": {
+            "transfers": 4
+          }
+        },
+        "daemon": {
+          "pairs": [
+            "notas"
+          ],
+          "interval_minutes": 15
+        },
+        "pair": [
+          {
+            "name": "notas",
+            "local": "sync-data/notas",
+            "remote_path": "/copia/notas"
+          },
+          {
+            "name": "fotos",
+            "local": "sync-data/media/fotos",
+            "remote_path": "/copia/fotos",
+            "include": [
+              "*.jpg",
+              "*.raw"
+            ],
+            "flags": {
+              "max-delete": 5,
+              "checkers": 2
+            }
+          }
+        ]
+      },
+      "sin_ruta": {
+        "defaults": {
+          "remote": "nas",
+          "device_remote": "disp",
+          "catalog_path": "/prdrive-catalog/pairs.toml",
+          "exclude": [
+            "*.tmp"
+          ],
+          "flags": {
+            "transfers": 4
+          }
+        },
+        "daemon": {
+          "pairs": [
+            "notas"
+          ],
+          "interval_minutes": 15
+        },
+        "pair": [
+          {
+            "name": "notas",
+            "local": "sync-data/notas",
+            "remote_path": "/copia/notas"
+          },
+          {
+            "name": "fotos",
+            "local": "sync-data/media/fotos",
+            "remote_path": "/copia/fotos",
+            "include": [
+              "*.jpg",
+              "*.raw"
+            ],
+            "flags": {
+              "max-delete": 5,
+              "checkers": 2
+            }
+          }
+        ]
+      }
+    }
+  },
+  "conflictos": {
+    "dispositivo": "dispositivo",
+    "remoto": "remoto",
+    "sufijo_rclone": "conflict",
+    "perdedor_rclone": "num",
+    "casos": [
+      {
+        "caso": "dos sufijos",
+        "flags": {
+          "conflict-suffix": "conflicto-dispositivo,conflicto-remoto"
+        },
+        "esquema": {
+          "sufijo1": ".conflicto-dispositivo",
+          "sufijo2": ".conflicto-remoto",
+          "perdedor": "num",
+          "mantener_extension": false
+        },
+        "nombres": [
+          {
+            "nombre": "plan.md",
+            "leido": null
+          },
+          {
+            "nombre": "plan.md.conflicto-dispositivo",
+            "leido": {
+              "original": "plan.md",
+              "camino": "path1",
+              "numero": 0,
+              "lado": "dispositivo"
+            }
+          },
+          {
+            "nombre": "plan.md.conflicto-remoto1",
+            "leido": {
+              "original": "plan.md",
+              "camino": "path2",
+              "numero": 1,
+              "lado": "remoto"
+            }
+          },
+          {
+            "nombre": "plan.md.conflicto1",
+            "leido": null
+          },
+          {
+            "nombre": "plan.md.conflicto2",
+            "leido": null
+          },
+          {
+            "nombre": "plan.md.conflicto",
+            "leido": null
+          },
+          {
+            "nombre": "plan.conflicto-dispositivo1.md",
+            "leido": null
+          },
+          {
+            "nombre": "plan.md.conflict1",
+            "leido": {
+              "original": "plan.md",
+              "camino": null,
+              "numero": 1,
+              "lado": null
+            }
+          },
+          {
+            "nombre": "plan.md.conflict",
+            "leido": null
+          },
+          {
+            "nombre": "algo.tar.gz.conflicto-remoto3",
+            "leido": {
+              "original": "algo.tar.gz",
+              "camino": "path2",
+              "numero": 3,
+              "lado": "remoto"
+            }
+          }
+        ]
+      },
+      {
+        "caso": "un sufijo",
+        "flags": {
+          "conflict-suffix": "conflicto"
+        },
+        "esquema": {
+          "sufijo1": ".conflicto",
+          "sufijo2": ".conflicto",
+          "perdedor": "num",
+          "mantener_extension": false
+        },
+        "nombres": [
+          {
+            "nombre": "plan.md",
+            "leido": null
+          },
+          {
+            "nombre": "plan.md.conflicto-dispositivo",
+            "leido": null
+          },
+          {
+            "nombre": "plan.md.conflicto-remoto1",
+            "leido": null
+          },
+          {
+            "nombre": "plan.md.conflicto1",
+            "leido": {
+              "original": "plan.md",
+              "camino": null,
+              "numero": 1,
+              "lado": null
+            }
+          },
+          {
+            "nombre": "plan.md.conflicto2",
+            "leido": {
+              "original": "plan.md",
+              "camino": null,
+              "numero": 2,
+              "lado": null
+            }
+          },
+          {
+            "nombre": "plan.md.conflicto",
+            "leido": null
+          },
+          {
+            "nombre": "plan.conflicto-dispositivo1.md",
+            "leido": null
+          },
+          {
+            "nombre": "plan.md.conflict1",
+            "leido": {
+              "original": "plan.md",
+              "camino": null,
+              "numero": 1,
+              "lado": null
+            }
+          },
+          {
+            "nombre": "plan.md.conflict",
+            "leido": null
+          },
+          {
+            "nombre": "algo.tar.gz.conflicto-remoto3",
+            "leido": null
+          }
+        ]
+      },
+      {
+        "caso": "un sufijo pathname",
+        "flags": {
+          "conflict-suffix": "conflicto",
+          "conflict-loser": "pathname"
+        },
+        "esquema": {
+          "sufijo1": ".conflicto",
+          "sufijo2": ".conflicto",
+          "perdedor": "pathname",
+          "mantener_extension": false
+        },
+        "nombres": [
+          {
+            "nombre": "plan.md",
+            "leido": null
+          },
+          {
+            "nombre": "plan.md.conflicto-dispositivo",
+            "leido": null
+          },
+          {
+            "nombre": "plan.md.conflicto-remoto1",
+            "leido": null
+          },
+          {
+            "nombre": "plan.md.conflicto1",
+            "leido": {
+              "original": "plan.md",
+              "camino": "path1",
+              "numero": 1,
+              "lado": "dispositivo"
+            }
+          },
+          {
+            "nombre": "plan.md.conflicto2",
+            "leido": {
+              "original": "plan.md",
+              "camino": "path2",
+              "numero": 2,
+              "lado": "remoto"
+            }
+          },
+          {
+            "nombre": "plan.md.conflicto",
+            "leido": null
+          },
+          {
+            "nombre": "plan.conflicto-dispositivo1.md",
+            "leido": null
+          },
+          {
+            "nombre": "plan.md.conflict1",
+            "leido": {
+              "original": "plan.md",
+              "camino": null,
+              "numero": 1,
+              "lado": null
+            }
+          },
+          {
+            "nombre": "plan.md.conflict",
+            "leido": null
+          },
+          {
+            "nombre": "algo.tar.gz.conflicto-remoto3",
+            "leido": null
+          }
+        ]
+      },
+      {
+        "caso": "extension delante",
+        "flags": {
+          "conflict-suffix": "conflicto-dispositivo,conflicto-remoto",
+          "suffix-keep-extension": true
+        },
+        "esquema": {
+          "sufijo1": ".conflicto-dispositivo",
+          "sufijo2": ".conflicto-remoto",
+          "perdedor": "num",
+          "mantener_extension": true
+        },
+        "nombres": [
+          {
+            "nombre": "plan.md",
+            "leido": null
+          },
+          {
+            "nombre": "plan.md.conflicto-dispositivo",
+            "leido": null
+          },
+          {
+            "nombre": "plan.md.conflicto-remoto1",
+            "leido": null
+          },
+          {
+            "nombre": "plan.md.conflicto1",
+            "leido": null
+          },
+          {
+            "nombre": "plan.md.conflicto2",
+            "leido": null
+          },
+          {
+            "nombre": "plan.md.conflicto",
+            "leido": null
+          },
+          {
+            "nombre": "plan.conflicto-dispositivo1.md",
+            "leido": {
+              "original": "plan.md",
+              "camino": "path1",
+              "numero": 1,
+              "lado": "dispositivo"
+            }
+          },
+          {
+            "nombre": "plan.md.conflict1",
+            "leido": null
+          },
+          {
+            "nombre": "plan.md.conflict",
+            "leido": null
+          },
+          {
+            "nombre": "algo.tar.gz.conflicto-remoto3",
+            "leido": null
+          }
+        ]
+      },
+      {
+        "caso": "de fabrica",
+        "flags": {},
+        "esquema": {
+          "sufijo1": ".conflict",
+          "sufijo2": ".conflict",
+          "perdedor": "num",
+          "mantener_extension": false
+        },
+        "nombres": [
+          {
+            "nombre": "plan.md",
+            "leido": null
+          },
+          {
+            "nombre": "plan.md.conflicto-dispositivo",
+            "leido": null
+          },
+          {
+            "nombre": "plan.md.conflicto-remoto1",
+            "leido": null
+          },
+          {
+            "nombre": "plan.md.conflicto1",
+            "leido": null
+          },
+          {
+            "nombre": "plan.md.conflicto2",
+            "leido": null
+          },
+          {
+            "nombre": "plan.md.conflicto",
+            "leido": null
+          },
+          {
+            "nombre": "plan.conflicto-dispositivo1.md",
+            "leido": null
+          },
+          {
+            "nombre": "plan.md.conflict1",
+            "leido": {
+              "original": "plan.md",
+              "camino": null,
+              "numero": 1,
+              "lado": null
+            }
+          },
+          {
+            "nombre": "plan.md.conflict",
+            "leido": null
+          },
+          {
+            "nombre": "algo.tar.gz.conflicto-remoto3",
+            "leido": null
+          }
+        ]
+      }
+    ],
+    "lados": [
+      {
+        "modo": "bisync",
+        "path1": "dispositivo",
+        "path2": "remoto"
+      },
+      {
+        "modo": "up",
+        "path1": "dispositivo",
+        "path2": "remoto"
+      },
+      {
+        "modo": "down",
+        "path1": "remoto",
+        "path2": "dispositivo"
+      },
+      {
+        "modo": "up-mirror",
+        "path1": "dispositivo",
+        "path2": "remoto"
+      },
+      {
+        "modo": "down-mirror",
+        "path1": "remoto",
+        "path2": "dispositivo"
+      }
+    ]
   }
 }

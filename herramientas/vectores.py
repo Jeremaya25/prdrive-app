@@ -80,13 +80,23 @@ OPCIONES_REMOTE = {
 def cargar(prdrive: Path):
     """Importa el prdrive de ese checkout y le fija la raíz del dispositivo."""
     sys.path.insert(0, str(prdrive))
-    from common import bisync, config_file, model, pairing   # noqa: PLC0415
+    from common import bisync, config_file, model, pairing, progress   # noqa: PLC0415
+
+    # `sync.py` está en la raíz y `flags_editor` en `ui/`; los dos se importan
+    # sin ejecutar nada (el `main()` de sync va detrás de su guarda, y
+    # flags_editor no toca Tk). De ahí salen KNOWN_ERRORS y RESERVED, que el
+    # motor replica y que nadie debería volver a escribir a mano.
+    import sync as sync_py                                   # noqa: PLC0415
+    from ui import flags_editor                               # noqa: PLC0415
+    from common import catalog, conflicts                     # noqa: PLC0415
+    from install import deploy, remote as install_remote      # noqa: PLC0415
 
     # `model.DEVICE_ROOT` sale de `__file__`, así que apunta al checkout. Se
     # reengancha para que `local_abs` y `top_level_abs` —y con ellos el
     # `upstreams` del remote 'combine'— no dependan de dónde esté esto.
     model.DEVICE_ROOT = Path(RAIZ_FALSA)
-    return bisync, config_file, model, pairing
+    return (bisync, config_file, model, pairing, progress, sync_py, flags_editor,
+            catalog, deploy, install_remote, conflicts)
 
 
 def procedencia(prdrive: Path) -> dict:
@@ -320,6 +330,223 @@ def _rclone_conf(pairing) -> list[dict]:
     return [{"texto": t, "remotes": pairing.parse_rclone_conf(t)} for t in casos]
 
 
+def vectores_ejecucion(sync_py, flags_editor) -> dict:
+    """Lo que `sync.py` sabe de una pasada y el motor tiene que repetir.
+
+    Las **agujas** de `KNOWN_ERRORS` son lo que importa aquí: son las cadenas
+    que rclone escribe, así que si prdrive corrige una y el motor se queda con
+    la vieja, el diagnóstico desaparece sin que nada falle. Las explicaciones
+    NO se comparan letra a letra —la app habla de «la carpeta del volumen»
+    donde el PC habla de «la ruta local»—, pero el orden sí: las de arranque
+    van al final a propósito.
+    """
+    return {
+        "known_errors": [{"aguja": aguja, "explicacion": texto}
+                         for aguja, texto in sync_py.KNOWN_ERRORS],
+        "reservados": dict(flags_editor.RESERVED),
+        "saltada": sync_py.SKIPPED,
+        "lineas_de_cola": sync_py.LOG_TAIL_LINES,
+        "conflictos_mostrados": sync_py.CONFLICTS_SHOWN,
+        "direct_output_header": sync_py.DIRECT_OUTPUT_HEADER,
+    }
+
+
+# Tamaños elegidos para pillar los saltos de unidad y, sobre todo, los empates
+# del redondeo: 1280 octetos son 1,25 KB exactos, y ahí Python redondea a la
+# cifra par («1,2») mientras que un `String.format` de Java redondea hacia
+# arriba («1,3»). Sin este caso, el móvil y el PC dirían números distintos de
+# la misma pasada y nadie lo vería venir.
+TAMANOS = [0, 1, 512, 1023, 1024, 1280, 1382, 1536, 1048576, 1100000,
+           1073741824, 1610612736, 1099511627776, 1649267441664]
+
+# Las líneas: una estadística de verdad, la misma cortada a media escritura
+# —que es lo normal leyendo un log que se está escribiendo—, la cuenta de
+# ficheros y la línea de un fichero suelto, que NO son progreso, y un error.
+LINEAS_DE_LOG = [
+    "2026/09/21 07:56:16 INFO  : Transferred:   \t  1.086 MiB / 2.500 MiB, 43%, 512 KiB/s, ETA 3s",
+    "2026/09/21 07:56:16 INFO  : Transferred:   \t  1.086 MiB / 2.500 MiB, 43%, 512 Ki",
+    "2026/09/21 07:56:16 INFO  : Transferred:   \t            0 / 3, 0%",
+    "2026/09/21 07:56:16 INFO  : a.bin: 23% /1.431 MiB, 0 B/s, -",
+    "2026/09/21 07:56:16 ERROR : Bisync critical error: cannot find prior Path1 or Path2 listings",
+    "0 B / 0 B, -, 0 B/s, ETA -",
+]
+
+
+def vectores_progreso(progress) -> dict:
+    """El progreso: el texto que lee el usuario y el lector de líneas.
+
+    En la app el progreso sale de `core/stats` como datos, no de leer el log,
+    pero el **texto** es el mismo y el lector se conserva para quitar las
+    estadísticas de la cola del log que se enseña cuando algo falla.
+    """
+    casos = [
+        (2200000, 3500000, 61, 1100000.0),
+        (0, 0, None, 0.0),
+        (1024, 2048, 50, 512.0),
+        (1099511627776, 1099511627776, 100, 1048576.0),
+        (512, 0, None, 1.0),
+    ]
+    return {
+        "etiqueta": progress.ETIQUETA,
+        "tamanos": [{"octetos": o, "texto": progress._tamano(o)} for o in TAMANOS],
+        "textos": [
+            {"hecho": h, "total": t, "porcentaje": p, "velocidad": v,
+             "texto": progress.Progreso(h, t, p, v).texto()}
+            for h, t, p, v in casos
+        ],
+        "lineas": [
+            {"linea": linea,
+             "leido": None if (leido := progress.leer(linea)) is None else {
+                 "hecho": leido.hecho, "total": leido.total,
+                 "porcentaje": leido.porcentaje, "velocidad": leido.velocidad}}
+            for linea in LINEAS_DE_LOG
+        ],
+        "ultimo": {
+            "texto": "\n".join(LINEAS_DE_LOG),
+            "leido": None if (u := progress.ultimo("\n".join(LINEAS_DE_LOG))) is None else {
+                "hecho": u.hecho, "total": u.total,
+                "porcentaje": u.porcentaje, "velocidad": u.velocidad},
+        },
+    }
+
+
+def vectores_catalogo(catalog, config_file, deploy, install_remote) -> dict:
+    """El catálogo: dónde está, y el config que sale de elegir parejas de él.
+
+    `device_config()` es de `install/deploy.py`, o sea de lo que en el
+    escritorio hace el instalador: los `[defaults]` del catálogo, su `[daemon]`
+    recortado a las parejas elegidas, y solo esas parejas. En la app lo hace el
+    primer arranque, así que el valor esperado sale de aquí y no de lo que
+    parezca razonable.
+    """
+    catalogo_raw = {
+        "remote": {"name": "nas", "type": "sftp", "host": "ejemplo.invalid",
+                   "port": "22", "user": "usuario"},
+        **CONFIG,
+    }
+    texto = config_file.dumps(catalogo_raw)
+    # OJO: son DOS clases distintas con el mismo nombre. `device_config()` es
+    # del instalador y quiere `install/remote.Catalog` (el dict crudo y su
+    # cabecera); la del dispositivo es `common/catalog.Catalog` (con de dónde
+    # y de cuándo se leyó), y es la que refleja `engine/Catalog.kt`.
+    cat = install_remote.Catalog(raw=catalogo_raw, head=config_file.header_of(texto))
+    elegidas = ["notas", "fotos"]
+    ruta = "/otro/sitio/pairs.toml"
+    return {
+        "default_catalog_path": catalog.DEFAULT_CATALOG_PATH,
+        "net_flags": list(catalog.NET_FLAGS),
+        "endpoint": [
+            {"defaults": d, "salida": catalog.endpoint({"defaults": d})}
+            for d in ({},
+                      {"remote": "nas"},
+                      {"remote": "nas", "catalog_path": "/otra/ruta.toml"},
+                      {"remote": "nas", "catalog_remote": "otro"})
+        ],
+        "diff_keys": [
+            {"a": a, "b": b, "salida": list(catalog.diff_keys(a, b))}
+            for a, b in (({"x": 1}, {"x": 1}),
+                         ({"x": 1}, {"x": 2}),
+                         ({"x": 1}, {}),
+                         ({}, None),
+                         ({"a": 1, "b": 2}, {"b": 3, "c": 4}))
+        ],
+        "device_config": {
+            "catalogo": catalogo_raw,
+            "catalogo_texto": texto,
+            "elegidas": elegidas,
+            "catalog_path": ruta,
+            "raw": deploy.device_config(cat, elegidas, ruta),
+            "sin_ruta": deploy.device_config(cat, elegidas),
+        },
+    }
+
+
+# Los nombres que hay que reconocer, y los que no. `plan.md.conflicto` (un
+# sufijo sin número) NO lo escribe rclone, así que no es un conflicto; y
+# `plan.md.conflict1` sí, porque es el sufijo de fábrica y los conflictos de
+# antes de cambiarlo siguen ahí.
+NOMBRES_CONFLICTO = [
+    "plan.md",
+    "plan.md.conflicto-dispositivo",
+    "plan.md.conflicto-remoto1",
+    "plan.md.conflicto1",
+    "plan.md.conflicto2",
+    "plan.md.conflicto",
+    "plan.conflicto-dispositivo1.md",
+    "plan.md.conflict1",
+    "plan.md.conflict",
+    "algo.tar.gz.conflicto-remoto3",
+]
+
+
+def vectores_conflictos(conflicts, model) -> dict:
+    """El nombre que rclone le pone al perdedor de un conflicto.
+
+    Réplica de `cmd/bisync/resolve.go` (`setResolveDefaults`, `resolve`,
+    `SuffixName`) y de `lib/transform/transform.go` (`SuffixKeepExtension`),
+    leída de los flags YA FUNDIDOS de la pareja. Los casos cubren lo que cambia
+    el significado del número: dos sufijos (el sufijo ES el lado), uno con
+    `--conflict-loser pathname` (1 es path1, 2 es path2) y uno con `num` (el
+    número es el primero libre, así que el lado no se sabe).
+    """
+    import dataclasses                                        # noqa: PLC0415
+
+    config = model.parse_config(CONFIG)
+    base = {p.name: p for p in config.pairs}["notas"]
+
+    variantes = {
+        "dos sufijos": {},
+        "un sufijo": {"conflict-suffix": "conflicto"},
+        "un sufijo pathname": {"conflict-suffix": "conflicto",
+                               "conflict-loser": "pathname"},
+        "extension delante": {"suffix-keep-extension": True},
+        "de fabrica": {"conflict-suffix": None},
+    }
+
+    casos = []
+    for etiqueta, extra in variantes.items():
+        flags = dict(base.flags)
+        for clave, valor in extra.items():
+            if valor is None:
+                flags.pop(clave, None)
+            else:
+                flags[clave] = valor
+        pareja = dataclasses.replace(base, flags=flags)
+        esq = conflicts.esquema(pareja)
+        casos.append({
+            "caso": etiqueta,
+            "flags": {k: v for k, v in flags.items()
+                      if k in ("conflict-suffix", "conflict-loser",
+                               "suffix-keep-extension")},
+            "esquema": {"sufijo1": esq.sufijo1, "sufijo2": esq.sufijo2,
+                        "perdedor": esq.perdedor,
+                        "mantener_extension": esq.mantener_extension},
+            "nombres": [
+                {"nombre": n,
+                 "leido": None if (r := conflicts.leer_nombre(n, esq)) is None else {
+                     "original": r[0], "camino": r[1], "numero": r[2],
+                     "lado": conflicts.lado(pareja, r[1])}}
+                for n in NOMBRES_CONFLICTO
+            ],
+        })
+
+    return {
+        "dispositivo": conflicts.DISPOSITIVO,
+        "remoto": conflicts.REMOTO,
+        "sufijo_rclone": conflicts.SUFIJO_RCLONE,
+        "perdedor_rclone": conflicts.PERDEDOR_RCLONE,
+        "casos": casos,
+        # A qué lado corresponde path1/path2 en cada modo: en bisync path1 es el
+        # local, en un `down` es el remoto.
+        "lados": [
+            {"modo": nombre,
+             "path1": conflicts.lado(dataclasses.replace(base, mode=modo), "path1"),
+             "path2": conflicts.lado(dataclasses.replace(base, mode=modo), "path2")}
+            for nombre, modo in model.MODES.items()
+        ],
+    }
+
+
 def main() -> int:
     if len(sys.argv) != 2:
         print(__doc__.strip().splitlines()[0])
@@ -330,7 +557,8 @@ def main() -> int:
         print(f"No parece un checkout de prdrive: {prdrive}")
         return 2
 
-    bisync, config_file, model, pairing = cargar(prdrive)
+    (bisync, config_file, model, pairing, progress, sync_py, flags_editor,
+     catalog, deploy, install_remote, conflicts) = cargar(prdrive)
     datos = {
         "_generado_por": "herramientas/vectores.py",
         "_no_editar": "Se regenera desde el prdrive citado en 'prdrive'.",
@@ -355,6 +583,10 @@ def main() -> int:
         "resueltas": vectores_parejas(bisync, model),
         "toml": vectores_toml(config_file),
         "pairing": vectores_pairing(pairing),
+        "ejecucion": vectores_ejecucion(sync_py, flags_editor),
+        "progreso": vectores_progreso(progress),
+        "catalogo": vectores_catalogo(catalog, config_file, deploy, install_remote),
+        "conflictos": vectores_conflictos(conflicts, model),
     }
 
     DESTINO.parent.mkdir(parents=True, exist_ok=True)

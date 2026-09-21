@@ -27,13 +27,50 @@ engine/       Kotlin puro (JVM), SIN una línea de Android
 │               del baseline, apartar y renombrar
 ├── Toml.kt     espejo de common/config_file.py: leer Y escribir, con el
 │               round-trip verificado
-└── Pairing.kt  la mitad que LEE de common/pairing.py: la carga del QR
+├── Pairing.kt  la mitad que LEE de common/pairing.py: la carga del QR
+├── Json.kt     leer y escribir el JSON del RPC; escribe como lo hace Go
+├── Pasada.kt   espejo de sync.py: cómo viaja cada flag hasta el RPC, el
+│               interfaz Rclone y la traducción de KNOWN_ERRORS
+├── Progreso.kt espejo de common/progress.py: la misma frase, sacada de
+│               core/stats en vez de del log
+├── Results.kt  espejo de common/results.py: state/last_run.json y qué log
+│               se guarda
+├── Sincronizacion.kt  la otra mitad de sync.py (run_pair, run_all): el orden,
+│               lo que se salta, lo que se aborta y lo que se avisa
+├── Conflictos.kt espejo de common/conflicts.py: el nombre que rclone le pone
+│               al perdedor, y de qué lado viene
+├── Catalog.kt  espejo de common/catalog.py, SIN la mitad de escribir: el
+│               catálogo del remoto, su copia local y el aviso de un backend
+│               que no viaja en el .aar
+└── Volumen.kt  la parte de install/deploy.py que un dispositivo necesita: la
+                distribución del volumen, el rclone.conf (que es DERIVADO) y
+                el sync_config.toml de las parejas elegidas
+rclone/       módulo Go: rclone como biblioteca
+├── gobind/     lo que empaqueta `gomobile bind` en el .aar: librclone con los
+│               métodos que hacen falta registrados, el sumidero del log y el
+│               orden del rclone.conf
+└── spike/      arnés que EJECUTA rclone y comprueba las afirmaciones del PLAN;
+                genera engine/src/test/resources/sesiones.json
+app/          Android: SOLO dibuja y llama
+├── RcloneAar.kt   las cuatro funciones del canal sobre el .aar, y el orden
+│                  de arranque (que es lo único que decide)
+├── Aplicacion.kt  lo único que la app sabe y el motor no: filesDir
+├── Modelo.kt      el estado de la pantalla; nada en el hilo principal
+├── Principal.kt   la única Activity, y el escáner de ML Kit
+├── Archivos.kt    el DocumentsProvider, con .prdrive/ escondido
+└── ui/            tema, las dos pantallas y el diario de una pasada
 herramientas/
 └── vectores.py genera los valores esperados desde el prdrive de verdad
 ```
 
-Pendiente (ver `PLAN.md`): `engine/Catalog.kt`, `engine/Results.kt`, el paquete
-Go que construye el `.aar`, su envoltorio Kotlin, y el módulo `app/`.
+Pendiente (ver `PLAN.md`): probarlo en un teléfono de verdad, que es lo único
+que no se puede hacer aquí.
+
+El envoltorio del RPC está en `engine/` y no en `rclone/` como decía el plan,
+porque cabe entero ahí: la superficie de `librclone` es
+`rpc(método, entrada) -> (salida, estado)`, así que lo que decide *qué* se
+manda se prueba sin JNI contra un doble de tres funciones (`Rclone`). Lo que
+queda para `app/` son esas tres líneas sobre el `.aar`.
 
 ## Reglas que no se cruzan
 
@@ -43,19 +80,39 @@ Go que construye el `.aar`, su envoltorio Kotlin, y el módulo `app/`.
   `tk_*` en prdrive: ahí solo se dibuja, y aquí `app/` solo dibuja y llama.
 - **El motor habla de rutas relativas a la raíz del volumen**, que es lo que
   dice el TOML. La absoluta la sabe la app (`filesDir`), y no entra aquí: por
-  eso no hay `local_abs` como en `model.py`.
+  eso no hay `local_abs` como en `model.py`. `Volumen` es la excepción y la
+  regla a la vez: recibe la raíz por parámetro y resuelve contra ella, así que
+  sigue sin saber dónde está.
+- **El `rclone.conf` se reescribe en cada arranque.** Lleva rutas absolutas
+  —aquí no hay cwd que fijarle a rclone, que es una biblioteca dentro de la
+  app— y `filesDir` cambia al reinstalar. No se edita: se genera.
 - **Cada fichero de `engine/` nombra el fichero de Python que refleja.** Y los
   que replican a rclone conservan las citas a su código fuente
   (`cmd/bisync/bilib/canonical.go`, `fs/types.go`, `cmd/bisync/resolve.go`…),
   igual que `common/bisync.py`. Si se toca algo de ahí, es contra esas fuentes
   contra lo que se contrasta, no contra lo que parezca razonable.
 - **Ni una dependencia**, como en prdrive, y eso incluye las de test: el lector
-  de JSON de `Vectores.kt` está escrito a mano por esa razón, y solo se compila
-  en los tests.
+  de JSON está escrito a mano por esa razón (`Json.kt`), y es **uno solo** para
+  el RPC y para los vectores — la misma regla que el único lector de
+  rclone.conf de prdrive.
+- **Todo lo que toca rclone pasa por el interfaz `Rclone`** (`Pasada.kt`), que
+  es el punto de indirección que en prdrive es `catalog.run()`: ningún test
+  necesita un rclone, y la app implementa tres funciones sobre el `.aar`.
 - **`device_remote` es obligatorio** (diferencia deliberada con prdrive, donde es
   un valor por defecto): la ruta absoluta del volumen es `filesDir`, que cambia
   al reinstalar la app, así que un config sin él rompería los baselines de
   bisync más adelante.
+
+## Dos fuentes de verdad, y no son intercambiables
+
+`vectores.json` sale del **Python de prdrive** y responde «¿la traducción es
+fiel?». `sesiones.json` sale de **rclone ejecutándose** (`rclone/spike`) y
+responde la que la otra deja abierta: «¿y si los dos se equivocan igual?». El
+nombre de los listados de bisync lo decide rclone, así que hay que
+preguntárselo a rclone.
+
+Si tocas algo del prefijo, de los extremos o del fichero de filtros, se
+regeneran **los dos** y los dos tienen que seguir cuadrando.
 
 ## Los valores esperados no se escriben a mano
 
@@ -71,6 +128,7 @@ caso al generador y regenera; no escribas el número.
 
 ```bash
 python herramientas/vectores.py ../prdrive
+cd rclone && go run ./spike -json ../engine/src/test/resources/sesiones.json
 ```
 
 ## Órdenes
@@ -78,8 +136,33 @@ python herramientas/vectores.py ../prdrive
 ```bash
 ./gradlew :engine:test     # todo el motor; no necesita SDK ni dispositivo
 ./gradlew :engine:test --tests 'prdrive.engine.BisyncTest'
-python herramientas/vectores.py ../prdrive   # regenerar los vectores
+python herramientas/vectores.py ../prdrive   # regenerar los vectores de prdrive
+
+# El APK. Necesita el SDK (ANDROID_HOME o local.properties) y el .aar en
+# app/libs/, que NO está en el repositorio: si falta, el build lo dice con la
+# orden que lo construye.
+ANDROID_HOME=... ANDROID_NDK_HOME=... sh rclone/aar.sh app/libs
+cp app/libs/prdrive-curados.aar app/libs/prdrive-rclone.aar
+./gradlew :app:assembleDebug
+
+cd rclone
+go run ./spike                               # comprobar rclone, sin escribir
+go run ./spike -json ../engine/src/test/resources/sesiones.json
+go build ./gobind/ && go build -tags rclone_todos ./gobind/   # los dos juegos
+
+# y medir el .aar, que es lo que decidió qué backends entran. Pide NDK y SDK;
+# lo que no es evidente está comentado dentro. En cada push solo se comprueba
+# que los dos juegos COMPILAN, que para eso no hace falta NDK.
+ANDROID_HOME=... ANDROID_NDK_HOME=... sh rclone/aar.sh
 ```
+
+El spike no necesita NDK, emulador ni red: `gomobile bind` solo añade el JNI
+encima de `librclone.RPC`, y el nombre de sesión sale de `FsPath`, que no mira
+el tipo de backend. Falla con un mensaje concreto si alguna afirmación del
+`PLAN.md` sobre rclone deja de ser cierta.
+
+Y `:engine:test` sigue funcionando **sin SDK y sin el `.aar`**: es lo que
+permite trabajar en el motor con nada instalado, y lo que corre en CI.
 
 `engine/` compila con cualquier JDK 17 o posterior y genera bytecode 17, que es
 lo que consume AGP 8.x. Los avisos del compilador son errores
@@ -108,3 +191,38 @@ lo que consume AGP 8.x. Los avisos del compilador son errores
   documentación de rclone: `librclone.RPC()` rechaza los métodos que necesitan
   request/response, y su implementación lanza un proceso hijo. La ruta es
   `sync/bisync`. Los detalles y las líneas exactas están en `PLAN.md`.
+- Y una que es al revés, de las que la documentación **no** dice: el parámetro
+  `maxDelete` de `sync/bisync` funciona —`rcBisync` lo lee y valida que esté
+  entre 0 y 100— pero **no está en la ayuda del método**, porque
+  `--max-delete` es un flag global. Leyendo `rc.md` se concluiría que el rc de
+  bisync no puede limitar los borrados.
+
+## Y con estas seis, que no avisan
+
+Las seis están comprobadas en `rclone/spike` y explicadas con sus líneas en
+`PLAN.md`. Lo que tienen en común es que equivocarse **no da error**: el
+síntoma aparece después y en otro sitio.
+
+- **Los flags van SUELTOS, no dentro de `_config` ni de `_filter`.** Es la
+  peor de las seis. `rc.ParseOptions` lee los sueltos con `configstruct` (los
+  nombres son las etiquetas `config:`, en snake_case) y los de dentro de
+  `_config` con un `json.Unmarshal` sobre una estructura **sin etiquetas
+  `json`**, así que ahí solo casa el nombre del CAMPO de Go. Medido:
+  `{"_config":{"dry_run":true}}` copió los dos ficheros; o sea que un
+  «Simular» escrito así **sincroniza de verdad**.
+- **Y los tipos también.** Los cuatro enumerados de bisync (`checkSync`,
+  `resyncMode`, `conflictResolve`, `conflictLoser`) pasan por `setEnum`, que
+  trata «no es una cadena» igual que «no está»: un `check-sync = false` como
+  booleano se ignora. Por eso `Pasada.PARAMETROS_BISYNC` lleva el tipo de cada
+  uno y `SesionesTest` lo compara con el que rclone declara en su ayuda.
+- **`RcloneSetConfigPath` va ANTES de `RcloneInitialize`.** Al revés, rclone
+  arranca con una configuración vacía en memoria y el fallo sale más tarde
+  diciendo «unknown remote».
+- **`sync/bisync` necesita `_async`.** Sin él, una pasada fallida pierde su
+  log, que es justo cuando se necesita.
+- **El nivel de log no se pide por llamada.** Es global y son dos sitios
+  (`RcloneLogNivel`). Con uno solo no se ve nada.
+- **Los colores ANSI tampoco.** El `_config` ignora `color` —por lo de la
+  primera viñeta: la etiqueta es `color` y el campo se llama
+  `TerminalColorMode`— y bisync guarda la decisión en una global que solo se
+  enciende. Se apagan en `RcloneInitialize`.
