@@ -88,7 +88,7 @@ def cargar(prdrive: Path):
     # motor replica y que nadie debería volver a escribir a mano.
     import sync as sync_py                                   # noqa: PLC0415
     from ui import flags_editor                               # noqa: PLC0415
-    from common import catalog                                # noqa: PLC0415
+    from common import catalog, conflicts                     # noqa: PLC0415
     from install import deploy, remote as install_remote      # noqa: PLC0415
 
     # `model.DEVICE_ROOT` sale de `__file__`, así que apunta al checkout. Se
@@ -96,7 +96,7 @@ def cargar(prdrive: Path):
     # `upstreams` del remote 'combine'— no dependan de dónde esté esto.
     model.DEVICE_ROOT = Path(RAIZ_FALSA)
     return (bisync, config_file, model, pairing, progress, sync_py, flags_editor,
-            catalog, deploy, install_remote)
+            catalog, deploy, install_remote, conflicts)
 
 
 def procedencia(prdrive: Path) -> dict:
@@ -461,6 +461,92 @@ def vectores_catalogo(catalog, config_file, deploy, install_remote) -> dict:
     }
 
 
+# Los nombres que hay que reconocer, y los que no. `plan.md.conflicto` (un
+# sufijo sin número) NO lo escribe rclone, así que no es un conflicto; y
+# `plan.md.conflict1` sí, porque es el sufijo de fábrica y los conflictos de
+# antes de cambiarlo siguen ahí.
+NOMBRES_CONFLICTO = [
+    "plan.md",
+    "plan.md.conflicto-dispositivo",
+    "plan.md.conflicto-remoto1",
+    "plan.md.conflicto1",
+    "plan.md.conflicto2",
+    "plan.md.conflicto",
+    "plan.conflicto-dispositivo1.md",
+    "plan.md.conflict1",
+    "plan.md.conflict",
+    "algo.tar.gz.conflicto-remoto3",
+]
+
+
+def vectores_conflictos(conflicts, model) -> dict:
+    """El nombre que rclone le pone al perdedor de un conflicto.
+
+    Réplica de `cmd/bisync/resolve.go` (`setResolveDefaults`, `resolve`,
+    `SuffixName`) y de `lib/transform/transform.go` (`SuffixKeepExtension`),
+    leída de los flags YA FUNDIDOS de la pareja. Los casos cubren lo que cambia
+    el significado del número: dos sufijos (el sufijo ES el lado), uno con
+    `--conflict-loser pathname` (1 es path1, 2 es path2) y uno con `num` (el
+    número es el primero libre, así que el lado no se sabe).
+    """
+    import dataclasses                                        # noqa: PLC0415
+
+    config = model.parse_config(CONFIG)
+    base = {p.name: p for p in config.pairs}["notas"]
+
+    variantes = {
+        "dos sufijos": {},
+        "un sufijo": {"conflict-suffix": "conflicto"},
+        "un sufijo pathname": {"conflict-suffix": "conflicto",
+                               "conflict-loser": "pathname"},
+        "extension delante": {"suffix-keep-extension": True},
+        "de fabrica": {"conflict-suffix": None},
+    }
+
+    casos = []
+    for etiqueta, extra in variantes.items():
+        flags = dict(base.flags)
+        for clave, valor in extra.items():
+            if valor is None:
+                flags.pop(clave, None)
+            else:
+                flags[clave] = valor
+        pareja = dataclasses.replace(base, flags=flags)
+        esq = conflicts.esquema(pareja)
+        casos.append({
+            "caso": etiqueta,
+            "flags": {k: v for k, v in flags.items()
+                      if k in ("conflict-suffix", "conflict-loser",
+                               "suffix-keep-extension")},
+            "esquema": {"sufijo1": esq.sufijo1, "sufijo2": esq.sufijo2,
+                        "perdedor": esq.perdedor,
+                        "mantener_extension": esq.mantener_extension},
+            "nombres": [
+                {"nombre": n,
+                 "leido": None if (r := conflicts.leer_nombre(n, esq)) is None else {
+                     "original": r[0], "camino": r[1], "numero": r[2],
+                     "lado": conflicts.lado(pareja, r[1])}}
+                for n in NOMBRES_CONFLICTO
+            ],
+        })
+
+    return {
+        "dispositivo": conflicts.DISPOSITIVO,
+        "remoto": conflicts.REMOTO,
+        "sufijo_rclone": conflicts.SUFIJO_RCLONE,
+        "perdedor_rclone": conflicts.PERDEDOR_RCLONE,
+        "casos": casos,
+        # A qué lado corresponde path1/path2 en cada modo: en bisync path1 es el
+        # local, en un `down` es el remoto.
+        "lados": [
+            {"modo": nombre,
+             "path1": conflicts.lado(dataclasses.replace(base, mode=modo), "path1"),
+             "path2": conflicts.lado(dataclasses.replace(base, mode=modo), "path2")}
+            for nombre, modo in model.MODES.items()
+        ],
+    }
+
+
 def main() -> int:
     if len(sys.argv) != 2:
         print(__doc__.strip().splitlines()[0])
@@ -472,7 +558,7 @@ def main() -> int:
         return 2
 
     (bisync, config_file, model, pairing, progress, sync_py, flags_editor,
-     catalog, deploy, install_remote) = cargar(prdrive)
+     catalog, deploy, install_remote, conflicts) = cargar(prdrive)
     datos = {
         "_generado_por": "herramientas/vectores.py",
         "_no_editar": "Se regenera desde el prdrive citado en 'prdrive'.",
@@ -500,6 +586,7 @@ def main() -> int:
         "ejecucion": vectores_ejecucion(sync_py, flags_editor),
         "progreso": vectores_progreso(progress),
         "catalogo": vectores_catalogo(catalog, config_file, deploy, install_remote),
+        "conflictos": vectores_conflictos(conflicts, model),
     }
 
     DESTINO.parent.mkdir(parents=True, exist_ok=True)

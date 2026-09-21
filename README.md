@@ -27,7 +27,8 @@ Hecho:
   flags, el `upstreams` del remote `combine`, el nombre de sesión de bisync, el
   estado del baseline, el TOML, la lectura del payload del QR, cómo viaja cada
   flag hasta el RPC de rclone, la traducción de un fallo a algo accionable, la
-  línea de progreso, el catálogo del remoto y la distribución del volumen.
+  línea de progreso, el catálogo del remoto, la distribución del volumen, los
+  conflictos que deja bisync y el orden en el que se ejecuta una pareja.
 - El paquete **Go** que construye el `.aar` (`rclone/gobind/`): rclone como
   biblioteca, con los métodos que la app necesita registrados, y con la lista
   de backends ya decidida midiendo las dos (`rclone/aar.sh`): 12,6 MB con los
@@ -41,7 +42,7 @@ cd rclone && go run ./spike       # rclone de verdad
 ```
 
 Ninguno de los dos necesita SDK de Android, ni NDK, ni emulador, ni teléfono,
-ni red. Hoy son **136 tests** y ninguno lleva un valor esperado escrito a
+ni red. Hoy son **161 tests** y ninguno lleva un valor esperado escrito a
 mano.
 
 ## Por qué el motor se prueba contra prdrive y no contra sí mismo

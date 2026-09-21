@@ -51,6 +51,7 @@ class CatalogTest {
 
         override fun logReiniciar() = Unit
         override fun logTexto(): String = ""
+        override fun nivelDeLog(nombre: String) = Unit
     }
 
     private fun conDirectorio(prueba: (File) -> Unit) {

@@ -70,12 +70,13 @@ cómo ha ido**. Los ficheros de Python siguen siendo la especificación.
 | `common/config_file.py` | `engine/Toml.kt` | **hecho** |
 | `common/pairing.py` (la mitad que lee) | `engine/Pairing.kt` | **hecho** |
 | `sync.py` (`build_command`, `KNOWN_ERRORS`, `explain_failure`) | `engine/Pasada.kt` | **hecho** — y **no es una línea de órdenes**: ver más abajo |
+| `sync.py` (`run_pair`, `run_all`, `resolve_resync_approval`) | `engine/Sincronizacion.kt` | **hecho** |
 | `common/progress.py` | `engine/Progreso.kt` | **hecho** — el canal cambia, el texto no |
 | `common/results.py` | `engine/Results.kt` | **hecho** |
 | (nuevo aquí) | `engine/Json.kt` | **hecho** — leer y escribir el JSON del RPC, sin dependencias |
 | `common/catalog.py` | `engine/Catalog.kt` | **hecho** — **solo lectura**, así que nada de la ceremonia de `push()` |
 | `install/deploy.py` (`device_config`, `write_device_remote`, `make_local_dirs`) | `engine/Volumen.kt` | **hecho** |
-| `common/conflicts.py` | `engine/Conflictos.kt` | pendiente — en el paso 1 los conflictos solo se **detectan y avisan** |
+| `common/conflicts.py` | `engine/Conflictos.kt` | **hecho** — en el paso 1 los conflictos solo se **detectan y avisan** |
 
 ### El riesgo que esto crea, y qué lo tapa
 
@@ -90,7 +91,7 @@ dentro. Los tests de Kotlin **no llevan ni un valor esperado escrito a mano**.
 
 ```bash
 python herramientas/vectores.py ../prdrive   # regenerar
-./gradlew :engine:test                       # 136 tests, sin SDK ni dispositivo
+./gradlew :engine:test                       # 161 tests, sin SDK ni dispositivo
 ```
 
 Cuando prdrive mueva una constante, falla el test que la nombra y dice cuál.
@@ -171,6 +172,13 @@ falla, que es justo cuando hace falta el log. Todo esto lo comprueba
    (`fs/log.Handler.AddOutput`, `fs/log/slog.go`), que vale para los cinco
    modos y no cuesta un fichero — ni los ciclos de escritura que
    `dispose_log()` cuida en prdrive. Es `RcloneLogTexto()`.
+
+   Y el sumidero recoge **también** la pasada de bisync, aunque bisync
+   redirija la salida mientras dura: son dos listas distintas —
+   `bilib.CaptureOutput` apila un `SetOutput` en `h.output` y el sumidero está
+   en `h.outputExtra` (`fs/log/slog.go`)—. Comprobado ejecutándolo, porque de
+   eso depende que el log se lea **de un solo sitio para los cinco modos** en
+   vez de del campo `output` en bisync y del sumidero en los otros cuatro.
 4. **Y hay dos cosas que NO se pueden pedir por llamada**, aunque lo parezca:
    - **El nivel de log.** `fs.Infof` y compañía se guardan contra
      `GetConfig(context.TODO())` (`fs/log.go`), o sea la configuración
@@ -439,7 +447,7 @@ Dos niveles, y la diferencia entre ellos importa: uno comprueba que la
 traducción es fiel, el otro que el original acertaba.
 
 - **El motor contra prdrive:** `./gradlew :engine:test`, sin SDK ni
-  dispositivo. Hoy **136 tests**, ninguno con un valor esperado escrito a
+  dispositivo. Hoy **161 tests**, ninguno con un valor esperado escrito a
   mano. Contra `vectores.json`, generado del Python de prdrive: fusión de
   flags, la cadena `upstreams` (con la pareja de la raíz, el caso `raiz` y las
   comillas de Windows), el nombre de sesión de bisync, `fresh|ok|broken` sobre
@@ -480,6 +488,12 @@ traducción es fiel, el otro que el original acertaba.
 
 Lo que sigue pendiente, y por qué:
 
+- **El módulo `app/`.** El motor está entero: crear el volumen, leer el QR,
+  leer el catálogo, escribir el config, ejecutar las parejas con su progreso,
+  apuntar cómo fueron y avisar de los conflictos. Lo que falta es la parte que
+  **solo dibuja y llama** — las dos pantallas en Compose, el
+  `DocumentsProvider` y las tres funciones del [Rclone] sobre el `.aar`— y la
+  que no se puede probar sin un teléfono: el escáner de códigos.
 - **En un teléfono:** una pareja de verdad contra el remoto: sincronizar,
   editar un fichero en el móvil, sincronizar, y confirmarlo en el PC.
   Comprobar que el baseline sobrevive a una segunda pasada (un prefijo que se

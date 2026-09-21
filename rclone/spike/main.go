@@ -493,6 +493,23 @@ func comprobarElLog(prdriveDir, remotoDir string) error {
 		return fmt.Errorf("el log no trae el diagnóstico:\n%s", res.output)
 	}
 
+	// Y el sumidero en memoria TAMBIÉN lo tiene, aunque bisync redirija la
+	// salida mientras dura la pasada. Es lo que permite que la app lea el log
+	// de un sitio solo para los cinco modos, en vez de del `output` en bisync
+	// y del sumidero en los otros cuatro.
+	//
+	// Funciona porque son dos listas distintas: `bilib.CaptureOutput` apila un
+	// `SetOutput` en `h.output`, y el sumidero está en `h.outputExtra`
+	// (fs/log/slog.go, SetOutput / AddOutput). Leyendo el código se puede
+	// suponer; esto lo comprueba.
+	apuntar("y el sumidero tiene el mismo diagnóstico", aguja,
+		fmt.Sprintf("%v", strings.Contains(res.log, aguja)))
+	if !strings.Contains(res.log, aguja) {
+		return fmt.Errorf("el sumidero NO recogió el log de la pasada de bisync, así que "+
+			"hay que leerlo del campo `output` en bisync y del sumidero en los demás:\n%s",
+			res.log)
+	}
+
 	// (2) La misma pasada SIN _async: el error llega, el log no.
 	entrada, err := json.Marshal(params)
 	if err != nil {

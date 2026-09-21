@@ -1384,5 +1384,370 @@
         ]
       }
     }
+  },
+  "conflictos": {
+    "dispositivo": "dispositivo",
+    "remoto": "remoto",
+    "sufijo_rclone": "conflict",
+    "perdedor_rclone": "num",
+    "casos": [
+      {
+        "caso": "dos sufijos",
+        "flags": {
+          "conflict-suffix": "conflicto-dispositivo,conflicto-remoto"
+        },
+        "esquema": {
+          "sufijo1": ".conflicto-dispositivo",
+          "sufijo2": ".conflicto-remoto",
+          "perdedor": "num",
+          "mantener_extension": false
+        },
+        "nombres": [
+          {
+            "nombre": "plan.md",
+            "leido": null
+          },
+          {
+            "nombre": "plan.md.conflicto-dispositivo",
+            "leido": {
+              "original": "plan.md",
+              "camino": "path1",
+              "numero": 0,
+              "lado": "dispositivo"
+            }
+          },
+          {
+            "nombre": "plan.md.conflicto-remoto1",
+            "leido": {
+              "original": "plan.md",
+              "camino": "path2",
+              "numero": 1,
+              "lado": "remoto"
+            }
+          },
+          {
+            "nombre": "plan.md.conflicto1",
+            "leido": null
+          },
+          {
+            "nombre": "plan.md.conflicto2",
+            "leido": null
+          },
+          {
+            "nombre": "plan.md.conflicto",
+            "leido": null
+          },
+          {
+            "nombre": "plan.conflicto-dispositivo1.md",
+            "leido": null
+          },
+          {
+            "nombre": "plan.md.conflict1",
+            "leido": {
+              "original": "plan.md",
+              "camino": null,
+              "numero": 1,
+              "lado": null
+            }
+          },
+          {
+            "nombre": "plan.md.conflict",
+            "leido": null
+          },
+          {
+            "nombre": "algo.tar.gz.conflicto-remoto3",
+            "leido": {
+              "original": "algo.tar.gz",
+              "camino": "path2",
+              "numero": 3,
+              "lado": "remoto"
+            }
+          }
+        ]
+      },
+      {
+        "caso": "un sufijo",
+        "flags": {
+          "conflict-suffix": "conflicto"
+        },
+        "esquema": {
+          "sufijo1": ".conflicto",
+          "sufijo2": ".conflicto",
+          "perdedor": "num",
+          "mantener_extension": false
+        },
+        "nombres": [
+          {
+            "nombre": "plan.md",
+            "leido": null
+          },
+          {
+            "nombre": "plan.md.conflicto-dispositivo",
+            "leido": null
+          },
+          {
+            "nombre": "plan.md.conflicto-remoto1",
+            "leido": null
+          },
+          {
+            "nombre": "plan.md.conflicto1",
+            "leido": {
+              "original": "plan.md",
+              "camino": null,
+              "numero": 1,
+              "lado": null
+            }
+          },
+          {
+            "nombre": "plan.md.conflicto2",
+            "leido": {
+              "original": "plan.md",
+              "camino": null,
+              "numero": 2,
+              "lado": null
+            }
+          },
+          {
+            "nombre": "plan.md.conflicto",
+            "leido": null
+          },
+          {
+            "nombre": "plan.conflicto-dispositivo1.md",
+            "leido": null
+          },
+          {
+            "nombre": "plan.md.conflict1",
+            "leido": {
+              "original": "plan.md",
+              "camino": null,
+              "numero": 1,
+              "lado": null
+            }
+          },
+          {
+            "nombre": "plan.md.conflict",
+            "leido": null
+          },
+          {
+            "nombre": "algo.tar.gz.conflicto-remoto3",
+            "leido": null
+          }
+        ]
+      },
+      {
+        "caso": "un sufijo pathname",
+        "flags": {
+          "conflict-suffix": "conflicto",
+          "conflict-loser": "pathname"
+        },
+        "esquema": {
+          "sufijo1": ".conflicto",
+          "sufijo2": ".conflicto",
+          "perdedor": "pathname",
+          "mantener_extension": false
+        },
+        "nombres": [
+          {
+            "nombre": "plan.md",
+            "leido": null
+          },
+          {
+            "nombre": "plan.md.conflicto-dispositivo",
+            "leido": null
+          },
+          {
+            "nombre": "plan.md.conflicto-remoto1",
+            "leido": null
+          },
+          {
+            "nombre": "plan.md.conflicto1",
+            "leido": {
+              "original": "plan.md",
+              "camino": "path1",
+              "numero": 1,
+              "lado": "dispositivo"
+            }
+          },
+          {
+            "nombre": "plan.md.conflicto2",
+            "leido": {
+              "original": "plan.md",
+              "camino": "path2",
+              "numero": 2,
+              "lado": "remoto"
+            }
+          },
+          {
+            "nombre": "plan.md.conflicto",
+            "leido": null
+          },
+          {
+            "nombre": "plan.conflicto-dispositivo1.md",
+            "leido": null
+          },
+          {
+            "nombre": "plan.md.conflict1",
+            "leido": {
+              "original": "plan.md",
+              "camino": null,
+              "numero": 1,
+              "lado": null
+            }
+          },
+          {
+            "nombre": "plan.md.conflict",
+            "leido": null
+          },
+          {
+            "nombre": "algo.tar.gz.conflicto-remoto3",
+            "leido": null
+          }
+        ]
+      },
+      {
+        "caso": "extension delante",
+        "flags": {
+          "conflict-suffix": "conflicto-dispositivo,conflicto-remoto",
+          "suffix-keep-extension": true
+        },
+        "esquema": {
+          "sufijo1": ".conflicto-dispositivo",
+          "sufijo2": ".conflicto-remoto",
+          "perdedor": "num",
+          "mantener_extension": true
+        },
+        "nombres": [
+          {
+            "nombre": "plan.md",
+            "leido": null
+          },
+          {
+            "nombre": "plan.md.conflicto-dispositivo",
+            "leido": null
+          },
+          {
+            "nombre": "plan.md.conflicto-remoto1",
+            "leido": null
+          },
+          {
+            "nombre": "plan.md.conflicto1",
+            "leido": null
+          },
+          {
+            "nombre": "plan.md.conflicto2",
+            "leido": null
+          },
+          {
+            "nombre": "plan.md.conflicto",
+            "leido": null
+          },
+          {
+            "nombre": "plan.conflicto-dispositivo1.md",
+            "leido": {
+              "original": "plan.md",
+              "camino": "path1",
+              "numero": 1,
+              "lado": "dispositivo"
+            }
+          },
+          {
+            "nombre": "plan.md.conflict1",
+            "leido": null
+          },
+          {
+            "nombre": "plan.md.conflict",
+            "leido": null
+          },
+          {
+            "nombre": "algo.tar.gz.conflicto-remoto3",
+            "leido": null
+          }
+        ]
+      },
+      {
+        "caso": "de fabrica",
+        "flags": {},
+        "esquema": {
+          "sufijo1": ".conflict",
+          "sufijo2": ".conflict",
+          "perdedor": "num",
+          "mantener_extension": false
+        },
+        "nombres": [
+          {
+            "nombre": "plan.md",
+            "leido": null
+          },
+          {
+            "nombre": "plan.md.conflicto-dispositivo",
+            "leido": null
+          },
+          {
+            "nombre": "plan.md.conflicto-remoto1",
+            "leido": null
+          },
+          {
+            "nombre": "plan.md.conflicto1",
+            "leido": null
+          },
+          {
+            "nombre": "plan.md.conflicto2",
+            "leido": null
+          },
+          {
+            "nombre": "plan.md.conflicto",
+            "leido": null
+          },
+          {
+            "nombre": "plan.conflicto-dispositivo1.md",
+            "leido": null
+          },
+          {
+            "nombre": "plan.md.conflict1",
+            "leido": {
+              "original": "plan.md",
+              "camino": null,
+              "numero": 1,
+              "lado": null
+            }
+          },
+          {
+            "nombre": "plan.md.conflict",
+            "leido": null
+          },
+          {
+            "nombre": "algo.tar.gz.conflicto-remoto3",
+            "leido": null
+          }
+        ]
+      }
+    ],
+    "lados": [
+      {
+        "modo": "bisync",
+        "path1": "dispositivo",
+        "path2": "remoto"
+      },
+      {
+        "modo": "up",
+        "path1": "dispositivo",
+        "path2": "remoto"
+      },
+      {
+        "modo": "down",
+        "path1": "remoto",
+        "path2": "dispositivo"
+      },
+      {
+        "modo": "up-mirror",
+        "path1": "dispositivo",
+        "path2": "remoto"
+      },
+      {
+        "modo": "down-mirror",
+        "path1": "remoto",
+        "path2": "dispositivo"
+      }
+    ]
   }
 }

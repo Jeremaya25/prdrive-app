@@ -35,6 +35,10 @@ engine/       Kotlin puro (JVM), SIN una línea de Android
 │               core/stats en vez de del log
 ├── Results.kt  espejo de common/results.py: state/last_run.json y qué log
 │               se guarda
+├── Sincronizacion.kt  la otra mitad de sync.py (run_pair, run_all): el orden,
+│               lo que se salta, lo que se aborta y lo que se avisa
+├── Conflictos.kt espejo de common/conflicts.py: el nombre que rclone le pone
+│               al perdedor, y de qué lado viene
 ├── Catalog.kt  espejo de common/catalog.py, SIN la mitad de escribir: el
 │               catálogo del remoto, su copia local y el aviso de un backend
 │               que no viaja en el .aar
@@ -51,7 +55,7 @@ herramientas/
 └── vectores.py genera los valores esperados desde el prdrive de verdad
 ```
 
-Pendiente (ver `PLAN.md`): `engine/Conflictos.kt` y el módulo `app/`.
+Pendiente (ver `PLAN.md`): el módulo `app/`, que solo dibuja y llama.
 
 El envoltorio del RPC está en `engine/` y no en `rclone/` como decía el plan,
 porque cabe entero ahí: la superficie de `librclone` es

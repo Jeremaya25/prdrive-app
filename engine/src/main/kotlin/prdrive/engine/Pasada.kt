@@ -71,6 +71,14 @@ interface Rclone {
 
     /** El log acumulado desde la última llamada a [logReiniciar]. */
     fun logTexto(): String
+
+    /**
+     * Hasta qué nivel registra rclone, con los nombres de su `--log-level`.
+     *
+     * Está en el canal y no en los parámetros de la llamada porque en rclone
+     * es **global**: ver [Pasada.nivelDeLog] y `rclone/gobind/prdrive.go`.
+     */
+    fun nivelDeLog(nombre: String)
 }
 
 /** El tipo que rclone espera de un parámetro, que no siempre es el del TOML. */
