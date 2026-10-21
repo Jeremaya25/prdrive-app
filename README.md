@@ -18,7 +18,7 @@ lleva la clave privada dentro, y quien lo enseña avisa.
 ## Estado
 
 En construcción. El plan del paso 1 —con todo lo que se ha comprobado contra el
-código de rclone v1.75.1, que es la versión que prdrive fija— está en
+código de rclone, y con el motor alineado con prdrive 0.7.7, que fija rclone v1.75.2— está en
 [`PLAN.md`](PLAN.md).
 
 Hecho: el **motor** (`engine/`), que es Kotlin puro y sin nada de Android — las

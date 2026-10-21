@@ -22,12 +22,16 @@ El plan del paso 1, con todo lo comprobado contra el código de rclone, está en
 ```
 engine/       Kotlin puro (JVM), SIN una línea de Android
 ├── Model.kt    espejo de common/model.py: MODES, BASE_FLAGS, capas de flags,
-│               Pareja/Config, el `upstreams` del remote 'combine'
-├── Bisync.kt   espejo de common/bisync.py: nombre de sesión, filtros, estado
-│               del baseline, apartar y renombrar
+│               lo que el config no puede llevar (comprobar_seguridad),
+│               Pareja/Config, el llavero, el `upstreams` del remote 'combine'
+├── Bisync.kt   espejo de common/bisync.py: nombre de sesión (con alias y
+│               remotes locales), filtros, estado del baseline, referencia
+│               vacía, apartar y renombrar
 ├── Toml.kt     espejo de common/config_file.py: leer Y escribir, con el
 │               round-trip verificado
-└── Pairing.kt  la mitad que LEE de common/pairing.py: la carga del QR
+├── Pairing.kt  la mitad que LEE de common/pairing.py: la carga del QR
+└── Python.kt   repr(), str() y bool() de Python, para decir lo mismo que
+                prdrive en sus mensajes
 herramientas/
 └── vectores.py genera los valores esperados desde el prdrive de verdad
 ```
@@ -81,9 +85,21 @@ python herramientas/vectores.py ../prdrive
 python herramientas/vectores.py ../prdrive   # regenerar los vectores
 ```
 
-`engine/` compila con cualquier JDK 17 o posterior y genera bytecode 17, que es
-lo que consume AGP 8.x. Los avisos del compilador son errores
-(`allWarningsAsErrors`). No hay linter aparte.
+Gradle 9.6 y Kotlin 2.4. `engine/` se construye con cualquier JDK 17 o
+posterior (el JBR 25 de Android Studio vale) y genera bytecode 17. Los avisos
+del compilador son errores (`allWarningsAsErrors`). No hay linter aparte.
+
+El generador de vectores sale igual en Windows que en Linux: le hace creer a
+prdrive que corre en un dispositivo POSIX con la raíz en `/volumen`.
+
+En Windows, si Gradle se cae al arrancar con «Unable to establish loopback
+connection», es el JDK que no puede crear su socket local en la carpeta
+temporal (pasa con rutas cortas 8.3 como `PCERQU~1`). Se arregla apuntándolo a
+otra:
+
+```bash
+export JAVA_TOOL_OPTIONS='-Djdk.net.unixdomain.tmpdir=C:\Windows\Temp'
+```
 
 ## Convenios
 

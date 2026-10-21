@@ -29,12 +29,23 @@ class ModelTest {
         assertEquals(Vectores.texto(c, "DEFAULT_REMOTE"), DEFAULT_REMOTE)
         assertEquals(Vectores.texto(c, "DEFAULT_MODE"), DEFAULT_MODE)
         assertEquals(Vectores.texto(c, "DEFAULT_DEVICE_REMOTE"), DEFAULT_DEVICE_REMOTE)
+        assertEquals(Vectores.texto(c, "DEFAULT_CATALOG_PATH"), DEFAULT_CATALOG_PATH)
         assertEquals(Vectores.texto(c, "RAIZ_UPSTREAM"), RAIZ_UPSTREAM)
+        assertEquals(c["VENTANA_HORA"], VENTANA_HORA)
+        assertEquals(Vectores.texto(c, "VERSIONS_DIR"), VERSIONS_DIR)
+        assertEquals(Vectores.texto(c, "LLAVERO"), LLAVERO)
+        assertEquals(Vectores.texto(c, "LLAVERO_LOCAL"), LLAVERO_LOCAL)
+        assertEquals(Vectores.texto(c, "LLAVERO_REMOTO"), LLAVERO_REMOTO)
+        assertEquals(Vectores.cadenas(c, "LLAVERO_REGLAS"), LLAVERO_REGLAS)
+        assertEquals(normalizar(Vectores.objeto(c, "LLAVERO_FLAGS")), normalizar(LLAVERO_FLAGS))
+        assertEquals(Vectores.texto(c, "REGLA_SIN_LLAVERO"), REGLA_SIN_LLAVERO)
+        assertEquals(Vectores.texto(c, "REGLA_SIN_PROGRAMA"), REGLA_SIN_PROGRAMA)
         assertEquals(Vectores.texto(c, "PATH1_SUFFIX"), Bisync.PATH1_SUFFIX)
         assertEquals(Vectores.texto(c, "PATH2_SUFFIX"), Bisync.PATH2_SUFFIX)
         assertEquals(Vectores.texto(c, "ERR_SUFFIX"), Bisync.ERR_SUFFIX)
         assertEquals(Vectores.texto(c, "MISSING_LISTINGS"), Bisync.MISSING_LISTINGS)
         assertEquals(Vectores.texto(c, "FILTERS_HEADER"), Bisync.FILTERS_HEADER)
+        assertEquals(c["TOPE_ALIAS"], Bisync.TOPE_ALIAS.toLong())
     }
 
     @Test
@@ -52,6 +63,8 @@ class ModelTest {
             assertEquals(Vectores.texto(esperado, "verb"), modo.verb, "$nombre: verbo")
             assertEquals(Vectores.texto(esperado, "source"), modo.source, "$nombre: origen")
             assertEquals(Vectores.texto(esperado, "dest"), modo.dest, "$nombre: destino")
+            assertEquals(esperado["origen_local"], modo.origenLocal, "$nombre: origen local")
+            assertEquals(esperado["borra_en_remoto"], modo.borraEnRemoto, "$nombre: borra en el remoto")
             assertEquals(
                 normalizar(Vectores.objeto(esperado, "flags_propios")),
                 normalizar(modo.flags),
@@ -100,6 +113,12 @@ class ModelTest {
         assertEquals(Vectores.cadenas(resueltas, "names"), config.names)
         assertEquals(Vectores.texto(resueltas, "device_remote"), config.deviceRemote)
         assertEquals(resueltas["keep_logs"], config.keepLogs)
+        assertEquals(resueltas["pareja_llavero"], config.parejaLlavero?.name)
+        val catalogo = Vectores.cadenas(resueltas, "carpeta_del_catalogo")
+        assertEquals(
+            catalogo[0] to catalogo[1],
+            carpetaDelCatalogo(Vectores.objeto(Vectores.objeto(resueltas, "config"), "defaults")),
+        )
 
         val esperadas = Vectores.objetos(resueltas, "parejas")
         assertEquals(esperadas.size, config.pairs.size, "número de parejas")
@@ -157,6 +176,18 @@ class ModelTest {
             assertEquals(Vectores.texto(esperada, "source"), pareja.source, "$n: origen")
             assertEquals(Vectores.texto(esperada, "dest"), pareja.dest, "$n: destino")
             assertEquals(Vectores.texto(esperada, "workdir"), pareja.workdir, "$n: workdir")
+            assertEquals(esperada["versions"], pareja.versions, "$n: versions")
+            assertEquals(esperada["watch"], pareja.watch, "$n: watch")
+            assertEquals(Vectores.cadenas(esperada, "reglas"), pareja.reglas, "$n: reglas del código")
+            assertEquals(esperada["llavero"], pareja.llavero, "$n: llavero")
+            assertEquals(esperada["llave_interna"], pareja.llaveInterna, "$n: llave interna")
+            assertEquals(esperada["es_raiz"], pareja.esRaiz, "$n: es la raíz")
+            assertEquals(
+                Vectores.texto(esperada, "versions_path1"), pareja.versionsPath1, "$n: backup-dir1",
+            )
+            assertEquals(
+                Vectores.texto(esperada, "versions_path2"), pareja.versionsPath2, "$n: backup-dir2",
+            )
         }
     }
 

@@ -8,13 +8,13 @@ package prdrive.engine
  * `tomllib` solo lee y prdrive no admite dependencias; aquí la razón es la
  * misma más una: lo que se escriba tiene que ser **byte a byte** lo que el
  * programa de escritorio luego relee, porque el `sync_config.toml` se edita a
- * mano y el `pairs.toml` del catálogo lo comparten todos los dispositivos.
+ * mano y el `remote.toml` del catálogo lo comparten todos los dispositivos.
  *
  * **No es un TOML completo y no pretende serlo.** Cubre el esquema que el
  * proyecto usa de verdad: escalares, arrays de cadenas, `[tabla]`,
  * `[[array de tablas]]` y una subtabla `flags`. Lo que no entiende lo **rechaza
  * en voz alta** ([TomlError]) en vez de ignorarlo: `tomllib` acepta más que
- * esto, así que un `pairs.toml` escrito a mano con un TOML legítimo que aquí no
+ * esto, así que un catálogo escrito a mano con un TOML legítimo que aquí no
  * entre tiene que dar un mensaje, nunca una pareja a medio leer.
  *
  * Se trabaja siempre con el mapa **crudo**, nunca con [Config]: sus [Pareja]
@@ -30,6 +30,9 @@ class TomlError(mensaje: String) : Exception(mensaje)
  * identifica, luego lo que la matiza. El resto va detrás, alfabético.
  */
 val PAIR_KEY_ORDER = listOf("name", "local", "remote_path", "remote", "mode")
+
+/** Las tablas que [dumps] escribe en su sitio; cualquier otra va al final, tal cual. */
+val TABLAS_CONOCIDAS = listOf("remote", "defaults", "daemon", "pair")
 
 private val BARE_KEY = Regex("[A-Za-z0-9_-]+")
 
@@ -357,11 +360,9 @@ private fun cadena(valor: Any?): String {
 private fun escalar(valor: Any?): String = when (valor) {
     is Boolean -> if (valor) "true" else "false"
     is Long, is Int, is Short, is Byte -> valor.toString()
-    // `repr()` de Python para un float siempre lleva parte decimal o exponente,
-    // y `Double.toString()` de Kotlin también, así que «4.0» sale «4.0» en los
-    // dos lados. Es lo que hace que el round-trip cuadre.
-    is Double -> valor.toString()
-    is Float -> valor.toDouble().toString()
+    // `repr()` de Python, que es lo que escribe `_scalar()`: «4.0» y «1e+20».
+    is Double -> floatPy(valor)
+    is Float -> floatPy(valor.toDouble())
     else -> cadena(valor)
 }
 
@@ -448,6 +449,19 @@ fun dumps(raw: Map<String, Any?>, head: String = ""): String {
             out += cuerpoDeTabla(it)
             out.add("")
         }
+    }
+
+    // Una tabla que este código no conoce (la de una versión más nueva, o el
+    // `[keychain]`) se escribe tal cual al final, en orden alfabético: el modelo
+    // la ignora al leer, y perderla al reescribir haría que [dumpsChecked] se
+    // negara a escribir el fichero entero. Lo que no se sepa escribir (una
+    // subtabla) lo sigue parando él.
+    for (nombre in raw.keys.filter { it !in TABLAS_CONOCIDAS && raw[it] is Map<*, *> }.sorted()) {
+        @Suppress("UNCHECKED_CAST")
+        val tabla = raw[nombre] as Map<String, Any?>
+        out.add("[${clave(nombre)}]")
+        out += cuerpoDeTabla(tabla)
+        out.add("")
     }
 
     return out.joinToString("\n").trimEnd() + "\n"

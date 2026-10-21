@@ -88,6 +88,97 @@ class BisyncTest {
                 Bisync.expectedPrefix(pareja),
                 "${pareja.name}: prefijo de los listados",
             )
+            assertEquals(
+                esperada["prefijo_comprobable"],
+                Bisync.prefijoComprobable(pareja),
+                "${pareja.name}: el prefijo se puede comprobar",
+            )
+        }
+    }
+
+    @Test
+    fun `un alias o un remote local se nombran como los nombra rclone`() {
+        // Un alias no tiene nombre propio: FsPath escribe el de su destino. Si
+        // el teléfono calculara el del alias, el baseline que escribe rclone
+        // nunca sería «el de esta pareja» y pediría resync en cada pasada.
+        val extremos = Vectores.seccion("extremos")
+        val tipos = Bisync.tiposDeRemote(Vectores.texto(extremos, "rclone_conf"))
+        for (caso in Vectores.objetos(extremos, "fs_path_remote")) {
+            val entrada = Vectores.texto(caso, "entrada")
+            assertEquals(
+                Vectores.texto(caso, "salida"),
+                Bisync.fsPathRemote(entrada, tipos),
+                "fsPathRemote(«$entrada»)",
+            )
+        }
+        for (caso in Vectores.objetos(extremos, "resolver_extremo")) {
+            val entrada = Vectores.texto(caso, "entrada")
+            assertEquals(
+                caso["salida"],
+                Bisync.resolverExtremo(entrada, tipos),
+                "resolverExtremo(«$entrada»)",
+            )
+        }
+        for (caso in Vectores.objetos(extremos, "raiz_local")) {
+            val entrada = Vectores.texto(caso, "entrada")
+            assertEquals(Vectores.texto(caso, "salida"), Bisync.raizLocal(entrada), "raizLocal(«$entrada»)")
+        }
+    }
+
+    @Test
+    fun `el estado del baseline se lee igual que en el escritorio, detalle incluido`() {
+        // El detalle es lo que lee el usuario cuando una pareja pide resync: se
+        // monta en disco lo mismo que montó el generador y se compara letra a
+        // letra.
+        val estado = Vectores.seccion("estado")
+        for (caso in Vectores.objetos(estado, "pair_state")) {
+            val nombre = Vectores.texto(caso, "caso")
+            val workdir = File(temporal(), "notas")
+            montar(workdir, caso["ficheros"])
+            val obtenido = Bisync.pairState(workdir)
+            assertEquals(Vectores.texto(caso, "status"), obtenido.status, "«$nombre»: estado")
+            assertEquals(Vectores.texto(caso, "detail"), obtenido.detail, "«$nombre»: detalle")
+            assertEquals(caso["prefix"], obtenido.prefix, "«$nombre»: prefijo")
+        }
+    }
+
+    @Test
+    fun `una referencia vacía solo se rehace si es de esta pareja y hay carpeta local`() {
+        // Un baseline vacío hace abortar toda pasada que no sea un resync; con
+        // nada que proteger se rehace solo. Pero solo entonces: si uno de los
+        // dos lados tenía algo, rehacerlo sería tragarse un borrado.
+        val estado = Vectores.seccion("estado")
+        val datos = Vectores.objeto(estado, "pareja")
+        val p = construirPareja(
+            mapOf(
+                "name" to Vectores.texto(datos, "name"),
+                "local" to Vectores.texto(datos, "local"),
+                "remote_path" to Vectores.texto(datos, "remote_path"),
+            ),
+            mapOf("device_remote" to DEFAULT_DEVICE_REMOTE, "remote" to Vectores.texto(datos, "remote")),
+        )
+        assertEquals(Vectores.texto(estado, "prefijo"), Bisync.expectedPrefix(p))
+        for (caso in Vectores.objetos(estado, "referencia_vacia")) {
+            val nombre = Vectores.texto(caso, "caso")
+            val raiz = temporal()
+            val workdir = File(raiz, "state/${p.name}")
+            montar(workdir, caso["ficheros"])
+            val local = File(raiz, "volumen/${p.local}")
+            if (caso["local_existe"] == true) local.mkdirs()
+            assertEquals(
+                caso["vacia"],
+                Bisync.referenciaVacia(p, Bisync.pairState(workdir), workdir, local),
+                "«$nombre»",
+            )
+        }
+    }
+
+    /** Crea los ficheros de un caso de los vectores; `null` es «sin workdir». */
+    private fun montar(workdir: File, ficheros: Any?) {
+        if (ficheros !is Map<*, *>) return
+        workdir.mkdirs()
+        for ((nombre, contenido) in ficheros) {
+            File(workdir, nombre.toString()).writeText(contenido.toString())
         }
     }
 
@@ -134,52 +225,6 @@ class BisyncTest {
         assertEquals("ok", estado.status)
         assertEquals(prefijo, estado.prefix)
         assertEquals(emptyList(), Bisync.resyncReasons(p, estado, Bisync.EstadoFiltros("ok", "")))
-    }
-
-    @Test
-    fun `un lst-err residual no rompe un baseline que está bien`() {
-        // rclone renombra .lst -> .lst-err al abortar y no los limpia nadie. Si
-        // después hay un juego válido, el baseline es bueno y esos son residuo:
-        // tratarlos como rotura obligaría a un resync que no hace falta.
-        val p = pareja()
-        val workdir = File(temporal(), p.name).apply { mkdirs() }
-        val prefijo = Bisync.expectedPrefix(p)
-        File(workdir, prefijo + Bisync.PATH1_SUFFIX).writeText("x")
-        File(workdir, prefijo + Bisync.PATH2_SUFFIX).writeText("x")
-        File(workdir, prefijo + Bisync.ERR_SUFFIX).writeText("x")
-
-        val estado = Bisync.pairState(workdir)
-        assertEquals("ok", estado.status)
-        assertTrue("residuales" in estado.detail, "el detalle no menciona el residuo")
-    }
-
-    @Test
-    fun `solo lst-err es un baseline roto`() {
-        val workdir = File(temporal(), "notas").apply { mkdirs() }
-        File(workdir, "algo" + Bisync.ERR_SUFFIX).writeText("x")
-        assertEquals("broken", Bisync.pairState(workdir).status)
-    }
-
-    @Test
-    fun `falta uno de los dos listados y está roto`() {
-        val workdir = File(temporal(), "notas").apply { mkdirs() }
-        File(workdir, "algo" + Bisync.PATH1_SUFFIX).writeText("x")
-        val estado = Bisync.pairState(workdir)
-        assertEquals("broken", estado.status)
-        assertNull(estado.prefix)
-    }
-
-    @Test
-    fun `dos juegos de listados están roto, no se elige uno`() {
-        // Elegir sería adivinar cuál describe el destino de ahora.
-        val workdir = File(temporal(), "notas").apply { mkdirs() }
-        for (prefijo in listOf("uno", "otro")) {
-            File(workdir, prefijo + Bisync.PATH1_SUFFIX).writeText("x")
-            File(workdir, prefijo + Bisync.PATH2_SUFFIX).writeText("x")
-        }
-        val estado = Bisync.pairState(workdir)
-        assertEquals("broken", estado.status)
-        assertTrue("varios juegos" in estado.detail)
     }
 
     @Test

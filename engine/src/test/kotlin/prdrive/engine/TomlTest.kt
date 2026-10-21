@@ -61,6 +61,7 @@ class TomlTest {
     @Test
     fun `el orden de las claves de una pareja es el de prdrive`() {
         assertEquals(Vectores.cadenas(Vectores.seccion("toml"), "pair_key_order"), PAIR_KEY_ORDER)
+        assertEquals(Vectores.cadenas(Vectores.seccion("toml"), "tablas_conocidas"), TABLAS_CONOCIDAS)
     }
 
     @Test
@@ -165,12 +166,13 @@ class TomlTest {
     }
 
     @Test
-    fun `dumps solo escribe las cuatro secciones, y dumpsChecked no deja que eso cuele`() {
-        // `dumps` ignora cualquier clave de primer nivel que no sea una de sus
-        // secciones — igual que `config_file.py`, que escribe remote, defaults,
-        // daemon y pair y nada más. Callado, eso perdería datos; lo que lo hace
-        // seguro es que `dumpsChecked` relee lo generado y se niega, así que la
-        // pérdida se convierte en un error antes de tocar el disco.
+    fun `dumps no escribe una clave suelta de primer nivel, y dumpsChecked no deja que eso cuele`() {
+        // Las tablas que no conoce las escribe al final (lo comprueban los
+        // vectores, con `[keychain]` y dos inventadas), pero una clave suelta
+        // de primer nivel no — igual que `config_file.py`. Callado, eso perdería
+        // datos; lo que lo hace seguro es que `dumpsChecked` relee lo generado y
+        // se niega, así que la pérdida se convierte en un error antes de tocar
+        // el disco.
         val conIntrusa = mapOf(
             "defaults" to mapOf("device_remote" to "disp"),
             "pair" to listOf(mapOf("name" to "x", "local" to "a", "remote_path" to "/a")),

@@ -2,26 +2,47 @@
   "_generado_por": "herramientas/vectores.py",
   "_no_editar": "Se regenera desde el prdrive citado en 'prdrive'.",
   "prdrive": {
-    "version": "0.2.0",
-    "commit": "0111cbb65be9d1479c281946ae44b14296bd90a7"
+    "version": "0.7.7",
+    "commit": "4bcda9b11e0e7ab6ba07c0cb6bbcca1a49dbf2c5"
   },
   "raiz_dispositivo": "/volumen",
+  "carpeta_programa": ".prdrive",
   "base_flags": {
     "verbose": true,
     "create-empty-src-dirs": true,
     "stats": "2s",
-    "stats-one-line": true
+    "stats-one-line": true,
+    "modify-window": "2s"
   },
   "constantes": {
     "DEFAULT_REMOTE": "remote",
     "DEFAULT_MODE": "bisync",
     "DEFAULT_DEVICE_REMOTE": "disp",
+    "DEFAULT_CATALOG_PATH": "/prdrive-catalog/remote.toml",
     "RAIZ_UPSTREAM": "raiz",
+    "VENTANA_HORA": 2,
+    "VERSIONS_DIR": ".prversions",
+    "LLAVERO": "keychain",
+    "LLAVERO_LOCAL": ".keychain",
+    "LLAVERO_REMOTO": "keychain",
+    "LLAVERO_REGLAS": [
+      "- *.old.kdbx",
+      "+ *.kdbx",
+      "+ LEEME.txt",
+      "- **"
+    ],
+    "LLAVERO_FLAGS": {
+      "conflict-loser": "num",
+      "resync-mode": "newer"
+    },
+    "REGLA_SIN_LLAVERO": "- /.keychain/**",
+    "REGLA_SIN_PROGRAMA": "- /.prdrive/**",
     "PATH1_SUFFIX": ".path1.lst",
     "PATH2_SUFFIX": ".path2.lst",
     "ERR_SUFFIX": ".lst-err",
     "MISSING_LISTINGS": "cannot find prior Path1 or Path2 listings",
-    "FILTERS_HEADER": "# Generado por sync.py desde sync_config.toml. No editar a mano:\n# se regenera en cada ejecución. Cambiar los patrones exige --resync."
+    "FILTERS_HEADER": "# Generado por sync.py desde sync_config.toml. No editar a mano:\n# se regenera en cada ejecución. Cambiar los patrones exige --resync.",
+    "TOPE_ALIAS": 8
   },
   "flags_to_args": [
     {
@@ -120,6 +141,8 @@
       "verb": "bisync",
       "source": "local",
       "dest": "remote",
+      "origen_local": true,
+      "borra_en_remoto": false,
       "flags_propios": {
         "conflict-resolve": "newer",
         "conflict-suffix": "conflicto-dispositivo,conflicto-remoto",
@@ -133,6 +156,7 @@
         "create-empty-src-dirs": true,
         "stats": "2s",
         "stats-one-line": true,
+        "modify-window": "2s",
         "conflict-resolve": "newer",
         "conflict-suffix": "conflicto-dispositivo,conflicto-remoto",
         "max-delete": 25,
@@ -145,30 +169,38 @@
       "verb": "copy",
       "source": "local",
       "dest": "remote",
+      "origen_local": true,
+      "borra_en_remoto": false,
       "flags_propios": {},
       "flags_con_base": {
         "verbose": true,
         "create-empty-src-dirs": true,
         "stats": "2s",
-        "stats-one-line": true
+        "stats-one-line": true,
+        "modify-window": "2s"
       }
     },
     "down": {
       "verb": "copy",
       "source": "remote",
       "dest": "local",
+      "origen_local": false,
+      "borra_en_remoto": false,
       "flags_propios": {},
       "flags_con_base": {
         "verbose": true,
         "create-empty-src-dirs": true,
         "stats": "2s",
-        "stats-one-line": true
+        "stats-one-line": true,
+        "modify-window": "2s"
       }
     },
     "up-mirror": {
       "verb": "sync",
       "source": "local",
       "dest": "remote",
+      "origen_local": true,
+      "borra_en_remoto": true,
       "flags_propios": {
         "max-delete": 50
       },
@@ -177,6 +209,7 @@
         "create-empty-src-dirs": true,
         "stats": "2s",
         "stats-one-line": true,
+        "modify-window": "2s",
         "max-delete": 50
       }
     },
@@ -184,6 +217,8 @@
       "verb": "sync",
       "source": "remote",
       "dest": "local",
+      "origen_local": false,
+      "borra_en_remoto": false,
       "flags_propios": {
         "max-delete": 50
       },
@@ -192,9 +227,1173 @@
         "create-empty-src-dirs": true,
         "stats": "2s",
         "stats-one-line": true,
+        "modify-window": "2s",
         "max-delete": 50
       }
     }
+  },
+  "seguridad": {
+    "flags_reservados": {
+      "config": "lo pone sync.py: es el rclone.conf del dispositivo",
+      "log-file": "lo pone sync.py: cada pasada escribe en su propio log",
+      "dry-run": "es --dry-run de sync.py, para que valga en todas las parejas",
+      "workdir": "lo pone sync.py: state/<pareja>/, y cambiarlo mueve el baseline",
+      "resync": "es --resync de sync.py, que además pregunta antes",
+      "force": "es --force de sync.py: salta el freno de borrados en UNA pasada y no puede quedar fijo. Quita `force` (o `--force` de `extra_flags`) de `.prdrive/sync_config.toml` del dispositivo o, si viene del catálogo, del `remote.toml` del remoto; ya quitado, para saltar el freno una vez está «Forzar sincronización…» en «Reparación» o `sync.py PAREJA --force`",
+      "filters-file": "sale de los patrones incluir/excluir de la pareja",
+      "filter": "usa los patrones incluir/excluir; mezclarlos rompe el filtrado",
+      "filter-from": "usa los patrones incluir/excluir; mezclarlos rompe el filtrado",
+      "include": "usa el cuadro «Incluir»",
+      "exclude": "usa el cuadro «Excluir»",
+      "backup-dir": "el versionado de bisync usa --backup-dir1/2, no este",
+      "backup-dir1": "sale de la casilla «Guardar versiones»: es <pareja>/.prversions",
+      "backup-dir2": "sale de la casilla «Guardar versiones»: es <pareja>/.prversions",
+      "suffix": "lo pone sync.py: la marca de tiempo de ESTA pasada",
+      "suffix-keep-extension": "lo pone sync.py junto con --suffix"
+    },
+    "flags_escriben": {
+      "cpuprofile": "escribe (o trunca) en este equipo el fichero que se le diga, y el config viaja con el dispositivo",
+      "memprofile": "escribe (o trunca) en este equipo el fichero que se le diga, y el config viaja con el dispositivo"
+    },
+    "quitalo": "Quítalo del config.",
+    "problema_flag": [
+      {
+        "entrada": "transfers",
+        "salida": null
+      },
+      {
+        "entrada": "config",
+        "salida": "lo pone sync.py: es el rclone.conf del dispositivo"
+      },
+      {
+        "entrada": "log-file",
+        "salida": "lo pone sync.py: cada pasada escribe en su propio log"
+      },
+      {
+        "entrada": "Log_File",
+        "salida": "lo pone sync.py: cada pasada escribe en su propio log"
+      },
+      {
+        "entrada": "dry-run",
+        "salida": "es --dry-run de sync.py, para que valga en todas las parejas"
+      },
+      {
+        "entrada": "workdir",
+        "salida": "lo pone sync.py: state/<pareja>/, y cambiarlo mueve el baseline"
+      },
+      {
+        "entrada": "resync",
+        "salida": "es --resync de sync.py, que además pregunta antes"
+      },
+      {
+        "entrada": "force",
+        "salida": "es --force de sync.py: salta el freno de borrados en UNA pasada y no puede quedar fijo. Quita `force` (o `--force` de `extra_flags`) de `.prdrive/sync_config.toml` del dispositivo o, si viene del catálogo, del `remote.toml` del remoto; ya quitado, para saltar el freno una vez está «Forzar sincronización…» en «Reparación» o `sync.py PAREJA --force`"
+      },
+      {
+        "entrada": "filters-file",
+        "salida": "sale de los patrones incluir/excluir de la pareja"
+      },
+      {
+        "entrada": "filter",
+        "salida": "usa los patrones incluir/excluir; mezclarlos rompe el filtrado"
+      },
+      {
+        "entrada": "filter-from",
+        "salida": "usa los patrones incluir/excluir; mezclarlos rompe el filtrado"
+      },
+      {
+        "entrada": "include",
+        "salida": "usa el cuadro «Incluir»"
+      },
+      {
+        "entrada": "exclude",
+        "salida": "usa el cuadro «Excluir»"
+      },
+      {
+        "entrada": "backup-dir",
+        "salida": "el versionado de bisync usa --backup-dir1/2, no este"
+      },
+      {
+        "entrada": "backup-dir1",
+        "salida": "sale de la casilla «Guardar versiones»: es <pareja>/.prversions"
+      },
+      {
+        "entrada": "backup-dir2",
+        "salida": "sale de la casilla «Guardar versiones»: es <pareja>/.prversions"
+      },
+      {
+        "entrada": "suffix",
+        "salida": "lo pone sync.py: la marca de tiempo de ESTA pasada"
+      },
+      {
+        "entrada": "suffix-keep-extension",
+        "salida": "lo pone sync.py junto con --suffix"
+      },
+      {
+        "entrada": "cpuprofile",
+        "salida": "escribe (o trunca) en este equipo el fichero que se le diga, y el config viaja con el dispositivo"
+      },
+      {
+        "entrada": "memprofile",
+        "salida": "escribe (o trunca) en este equipo el fichero que se le diga, y el config viaja con el dispositivo"
+      },
+      {
+        "entrada": "password-command",
+        "salida": "lanza un programa en este equipo, y el config viaja con el dispositivo"
+      },
+      {
+        "entrada": "sftp-ssh",
+        "salida": "lanza un programa en este equipo, y el config viaja con el dispositivo"
+      },
+      {
+        "entrada": "SFTP_SSH",
+        "salida": "lanza un programa en este equipo, y el config viaja con el dispositivo"
+      },
+      {
+        "entrada": "metadata-mapper",
+        "salida": "lanza un programa en este equipo, y el config viaja con el dispositivo"
+      },
+      {
+        "entrada": "rc",
+        "salida": "lanza un programa en este equipo, y el config viaja con el dispositivo"
+      },
+      {
+        "entrada": "rc-addr",
+        "salida": "lanza un programa en este equipo, y el config viaja con el dispositivo"
+      },
+      {
+        "entrada": "rcd",
+        "salida": null
+      },
+      {
+        "entrada": "sftp-ssh=sh -c id",
+        "salida": "lanza un programa en este equipo, y el config viaja con el dispositivo"
+      },
+      {
+        "entrada": " max-delete ",
+        "salida": null
+      },
+      {
+        "entrada": "bearer-token-command",
+        "salida": "lanza un programa en este equipo, y el config viaja con el dispositivo"
+      },
+      {
+        "entrada": "checksum",
+        "salida": null
+      }
+    ],
+    "problema_extra": [
+      {
+        "entrada": [],
+        "salida": null
+      },
+      {
+        "entrada": [
+          "--fast-list"
+        ],
+        "salida": null
+      },
+      {
+        "entrada": [
+          "--sftp-ssh=sh -c id"
+        ],
+        "salida": "'--sftp-ssh' no se admite: lanza un programa en este equipo, y el config viaja con el dispositivo. Quítalo del config."
+      },
+      {
+        "entrada": [
+          "-v",
+          "--config",
+          "x"
+        ],
+        "salida": "'--config' no se admite: lo pone sync.py: es el rclone.conf del dispositivo. Quítalo del config."
+      },
+      {
+        "entrada": [
+          "8M",
+          "sh -c id"
+        ],
+        "salida": null
+      },
+      {
+        "entrada": [
+          "--checkers",
+          "8",
+          "--rc-addr=:5572"
+        ],
+        "salida": "'--rc-addr' no se admite: lanza un programa en este equipo, y el config viaja con el dispositivo. Quítalo del config."
+      },
+      {
+        "entrada": [
+          "--max-delete=10",
+          "--memprofile=/tmp/x"
+        ],
+        "salida": "'--memprofile' no se admite: escribe (o trunca) en este equipo el fichero que se le diga, y el config viaja con el dispositivo. Quítalo del config."
+      }
+    ],
+    "problema_valor_flag": [
+      {
+        "entrada": "8M",
+        "salida": null
+      },
+      {
+        "entrada": 25,
+        "salida": null
+      },
+      {
+        "entrada": true,
+        "salida": null
+      },
+      {
+        "entrada": "--sftp-ssh=sh -c id",
+        "salida": "'--sftp-ssh' no se admite: lanza un programa en este equipo, y el config viaja con el dispositivo. Quítalo del config."
+      },
+      {
+        "entrada": [
+          "a",
+          "--config=x"
+        ],
+        "salida": "'--config' no se admite: lo pone sync.py: es el rclone.conf del dispositivo. Quítalo del config."
+      },
+      {
+        "entrada": [
+          "a",
+          3
+        ],
+        "salida": null
+      },
+      {
+        "entrada": null,
+        "salida": null
+      },
+      {
+        "entrada": "-1",
+        "salida": null
+      },
+      {
+        "entrada": [
+          "--fast-list"
+        ],
+        "salida": null
+      }
+    ],
+    "problema_remote": [
+      {
+        "entrada": "nas",
+        "salida": null
+      },
+      {
+        "entrada": "mi nas",
+        "salida": null
+      },
+      {
+        "entrada": "nas,ssh='sh -c id'",
+        "salida": "'remote' no vale (\"nas,ssh='sh -c id'\"): es el nombre de un remote del rclone.conf, con letras, números, espacios entre palabras y . _ + @ -, sin empezar por '-' ni llevar ',' ':' '=' o comillas (rclone lo leería como opciones de la conexión)."
+      },
+      {
+        "entrada": ":sftp,host=x",
+        "salida": "'remote' no vale (':sftp,host=x'): es el nombre de un remote del rclone.conf, con letras, números, espacios entre palabras y . _ + @ -, sin empezar por '-' ni llevar ',' ':' '=' o comillas (rclone lo leería como opciones de la conexión)."
+      },
+      {
+        "entrada": "C",
+        "salida": "'remote' no vale ('C'): rclone lee un nombre de una sola letra como una unidad de Windows (C:), no como un remote. Renombra el remote, con dos caracteres o más, en el rclone.conf y aquí."
+      },
+      {
+        "entrada": "c",
+        "salida": "'remote' no vale ('c'): rclone lee un nombre de una sola letra como una unidad de Windows (c:), no como un remote. Renombra el remote, con dos caracteres o más, en el rclone.conf y aquí."
+      },
+      {
+        "entrada": "ñ",
+        "salida": null
+      },
+      {
+        "entrada": "-nas",
+        "salida": "'remote' no vale ('-nas'): es el nombre de un remote del rclone.conf, con letras, números, espacios entre palabras y . _ + @ -, sin empezar por '-' ni llevar ',' ':' '=' o comillas (rclone lo leería como opciones de la conexión)."
+      },
+      {
+        "entrada": "nas ",
+        "salida": "'remote' no vale ('nas '): es el nombre de un remote del rclone.conf, con letras, números, espacios entre palabras y . _ + @ -, sin empezar por '-' ni llevar ',' ':' '=' o comillas (rclone lo leería como opciones de la conexión)."
+      },
+      {
+        "entrada": "a.b+c@d-e_f",
+        "salida": null
+      },
+      {
+        "entrada": "",
+        "salida": "'remote' no vale (''): es el nombre de un remote del rclone.conf, con letras, números, espacios entre palabras y . _ + @ -, sin empezar por '-' ni llevar ',' ':' '=' o comillas (rclone lo leería como opciones de la conexión)."
+      },
+      {
+        "entrada": 5,
+        "salida": "'remote' no vale: tiene que ser un texto."
+      },
+      {
+        "entrada": null,
+        "salida": "'remote' no vale: tiene que ser un texto."
+      },
+      {
+        "entrada": "dos  espacios",
+        "salida": "'remote' no vale ('dos  espacios'): es el nombre de un remote del rclone.conf, con letras, números, espacios entre palabras y . _ + @ -, sin empezar por '-' ni llevar ',' ':' '=' o comillas (rclone lo leería como opciones de la conexión)."
+      },
+      {
+        "entrada": "año",
+        "salida": null
+      },
+      {
+        "entrada": "nas:x",
+        "salida": "'remote' no vale ('nas:x'): es el nombre de un remote del rclone.conf, con letras, números, espacios entre palabras y . _ + @ -, sin empezar por '-' ni llevar ',' ':' '=' o comillas (rclone lo leería como opciones de la conexión)."
+      },
+      {
+        "entrada": "nas=1",
+        "salida": "'remote' no vale ('nas=1'): es el nombre de un remote del rclone.conf, con letras, números, espacios entre palabras y . _ + @ -, sin empezar por '-' ni llevar ',' ':' '=' o comillas (rclone lo leería como opciones de la conexión)."
+      },
+      {
+        "entrada": "n\"a",
+        "salida": "'remote' no vale ('n\"a'): es el nombre de un remote del rclone.conf, con letras, números, espacios entre palabras y . _ + @ -, sin empezar por '-' ni llevar ',' ':' '=' o comillas (rclone lo leería como opciones de la conexión)."
+      },
+      {
+        "entrada": "ab",
+        "salida": null
+      },
+      {
+        "entrada": "1",
+        "salida": null
+      },
+      {
+        "entrada": "C",
+        "clave": "catalog_remote",
+        "salida": "'catalog_remote' no vale ('C'): rclone lee un nombre de una sola letra como una unidad de Windows (C:), no como un remote. Renombra el remote, con dos caracteres o más, en el rclone.conf y aquí."
+      }
+    ],
+    "problema_nombre": [
+      {
+        "entrada": "notas",
+        "salida": null
+      },
+      {
+        "entrada": "-x",
+        "salida": "el nombre no puede empezar por '-' (se leería como una opción)"
+      },
+      {
+        "entrada": ".",
+        "salida": "el nombre no puede llevar '/', '\\', ':' ni caracteres de control, ni ser '.' o '..' (es el nombre de su carpeta en state/ y filters/)"
+      },
+      {
+        "entrada": "..",
+        "salida": "el nombre no puede llevar '/', '\\', ':' ni caracteres de control, ni ser '.' o '..' (es el nombre de su carpeta en state/ y filters/)"
+      },
+      {
+        "entrada": "a/b",
+        "salida": "el nombre no puede llevar '/', '\\', ':' ni caracteres de control, ni ser '.' o '..' (es el nombre de su carpeta en state/ y filters/)"
+      },
+      {
+        "entrada": "a\\b",
+        "salida": "el nombre no puede llevar '/', '\\', ':' ni caracteres de control, ni ser '.' o '..' (es el nombre de su carpeta en state/ y filters/)"
+      },
+      {
+        "entrada": "a:b",
+        "salida": "el nombre no puede llevar '/', '\\', ':' ni caracteres de control, ni ser '.' o '..' (es el nombre de su carpeta en state/ y filters/)"
+      },
+      {
+        "entrada": "tab\tx",
+        "salida": "el nombre no puede llevar '/', '\\', ':' ni caracteres de control, ni ser '.' o '..' (es el nombre de su carpeta en state/ y filters/)"
+      },
+      {
+        "entrada": 5,
+        "salida": "el nombre tiene que ser un texto"
+      },
+      {
+        "entrada": "",
+        "salida": null
+      },
+      {
+        "entrada": "ñandú",
+        "salida": null
+      },
+      {
+        "entrada": "--resync",
+        "salida": "el nombre no puede empezar por '-' (se leería como una opción)"
+      },
+      {
+        "entrada": "a.b",
+        "salida": null
+      }
+    ],
+    "problema_local": [
+      {
+        "entrada": "sync-data/notas",
+        "salida": null
+      },
+      {
+        "entrada": ".",
+        "salida": null
+      },
+      {
+        "entrada": "/sync-data",
+        "salida": null
+      },
+      {
+        "entrada": "..",
+        "salida": "local = \"..\" sale del dispositivo (lleva un '..' o una letra de unidad): la pareja sincronizaría carpetas del ordenador. Pon una carpeta de dentro del dispositivo, con la ruta relativa a su raíz."
+      },
+      {
+        "entrada": "a/../b",
+        "salida": "local = \"a/../b\" sale del dispositivo (lleva un '..' o una letra de unidad): la pareja sincronizaría carpetas del ordenador. Pon una carpeta de dentro del dispositivo, con la ruta relativa a su raíz."
+      },
+      {
+        "entrada": "C:/x",
+        "salida": "local = \"C:/x\" sale del dispositivo (lleva un '..' o una letra de unidad): la pareja sincronizaría carpetas del ordenador. Pon una carpeta de dentro del dispositivo, con la ruta relativa a su raíz."
+      },
+      {
+        "entrada": "c:",
+        "salida": "local = \"c:\" sale del dispositivo (lleva un '..' o una letra de unidad): la pareja sincronizaría carpetas del ordenador. Pon una carpeta de dentro del dispositivo, con la ruta relativa a su raíz."
+      },
+      {
+        "entrada": "...",
+        "salida": "local = \"...\" lleva un tramo de solo puntos y espacios ('...'): Windows lo recorta y la pareja acabaría en otra carpeta del ordenador. Pon una carpeta de dentro del dispositivo, con nombre."
+      },
+      {
+        "entrada": ". .",
+        "salida": "local = \". .\" lleva un tramo de solo puntos y espacios ('. .'): Windows lo recorta y la pareja acabaría en otra carpeta del ordenador. Pon una carpeta de dentro del dispositivo, con nombre."
+      },
+      {
+        "entrada": "a/...",
+        "salida": "local = \"a/...\" lleva un tramo de solo puntos y espacios ('...'): Windows lo recorta y la pareja acabaría en otra carpeta del ordenador. Pon una carpeta de dentro del dispositivo, con nombre."
+      },
+      {
+        "entrada": "x:y",
+        "salida": "local = \"x:y\" sale del dispositivo (lleva un '..' o una letra de unidad): la pareja sincronizaría carpetas del ordenador. Pon una carpeta de dentro del dispositivo, con la ruta relativa a su raíz."
+      },
+      {
+        "entrada": ".prdrive",
+        "salida": "local = \".prdrive\" cae en «.prdrive»: es la carpeta del programa, con su clave. Pon otra carpeta de dentro del dispositivo."
+      },
+      {
+        "entrada": ".prdrive./x",
+        "salida": "local = \".prdrive./x\" cae en «.prdrive.»: es la carpeta del programa, con su clave. Pon otra carpeta de dentro del dispositivo."
+      },
+      {
+        "entrada": ".PRDRIVE ",
+        "salida": "local = \".PRDRIVE \" cae en «.PRDRIVE »: es la carpeta del programa, con su clave. Pon otra carpeta de dentro del dispositivo."
+      },
+      {
+        "entrada": ".keychain/x",
+        "salida": "local = \".keychain/x\" cae en «.keychain»: es la del llavero, que tiene su propia pareja ([keychain]). Pon otra carpeta de dentro del dispositivo."
+      },
+      {
+        "entrada": "sync-data\\notas",
+        "salida": null
+      },
+      {
+        "entrada": "",
+        "salida": null
+      },
+      {
+        "entrada": "sync-data/.prdrive",
+        "salida": null
+      }
+    ],
+    "normalizar_local": [
+      {
+        "entrada": "sync-data/notas",
+        "salida": "sync-data/notas"
+      },
+      {
+        "entrada": ".",
+        "salida": "."
+      },
+      {
+        "entrada": "/sync-data",
+        "salida": "sync-data"
+      },
+      {
+        "entrada": "..",
+        "salida": ".."
+      },
+      {
+        "entrada": "a/../b",
+        "salida": "a/../b"
+      },
+      {
+        "entrada": "C:/x",
+        "salida": "C:/x"
+      },
+      {
+        "entrada": "c:",
+        "salida": "c:"
+      },
+      {
+        "entrada": "...",
+        "salida": "..."
+      },
+      {
+        "entrada": ". .",
+        "salida": ". ."
+      },
+      {
+        "entrada": "a/...",
+        "salida": "a/..."
+      },
+      {
+        "entrada": "x:y",
+        "salida": "x:y"
+      },
+      {
+        "entrada": ".prdrive",
+        "salida": ".prdrive"
+      },
+      {
+        "entrada": ".prdrive./x",
+        "salida": ".prdrive./x"
+      },
+      {
+        "entrada": ".PRDRIVE ",
+        "salida": ".PRDRIVE "
+      },
+      {
+        "entrada": ".keychain/x",
+        "salida": ".keychain/x"
+      },
+      {
+        "entrada": "sync-data\\notas",
+        "salida": "sync-data/notas"
+      },
+      {
+        "entrada": "",
+        "salida": ""
+      },
+      {
+        "entrada": "sync-data/.prdrive",
+        "salida": "sync-data/.prdrive"
+      }
+    ],
+    "configs": [
+      {
+        "caso": "vale",
+        "config": {
+          "defaults": {
+            "device_remote": "disp",
+            "remote": "nas"
+          },
+          "pair": [
+            {
+              "name": "a",
+              "local": "a",
+              "remote_path": "/a"
+            }
+          ]
+        },
+        "error": null
+      },
+      {
+        "caso": "flag reservado en defaults",
+        "config": {
+          "defaults": {
+            "device_remote": "disp",
+            "remote": "nas",
+            "flags": {
+              "config": "x"
+            }
+          },
+          "pair": [
+            {
+              "name": "a",
+              "local": "a",
+              "remote_path": "/a"
+            }
+          ]
+        },
+        "error": "[defaults] [defaults.flags] 'config' no se admite: lo pone sync.py: es el rclone.conf del dispositivo. Quítalo del config."
+      },
+      {
+        "caso": "flag que lanza un programa",
+        "config": {
+          "defaults": {
+            "device_remote": "disp",
+            "remote": "nas"
+          },
+          "pair": [
+            {
+              "name": "a",
+              "local": "a",
+              "remote_path": "/a",
+              "flags": {
+                "sftp-ssh": "sh"
+              }
+            }
+          ]
+        },
+        "error": "[a] [pair.flags] 'sftp-ssh' no se admite: lanza un programa en este equipo, y el config viaja con el dispositivo. Quítalo del config."
+      },
+      {
+        "caso": "flag escondido en un valor",
+        "config": {
+          "defaults": {
+            "device_remote": "disp",
+            "remote": "nas"
+          },
+          "pair": [
+            {
+              "name": "a",
+              "local": "a",
+              "remote_path": "/a",
+              "flags": {
+                "checksum": "--sftp-ssh=sh -c id"
+              }
+            }
+          ]
+        },
+        "error": "[a] [pair.flags] 'checksum': en su valor, '--sftp-ssh' no se admite: lanza un programa en este equipo, y el config viaja con el dispositivo. Quítalo del config."
+      },
+      {
+        "caso": "extra_flags con rc",
+        "config": {
+          "defaults": {
+            "device_remote": "disp",
+            "remote": "nas"
+          },
+          "pair": [
+            {
+              "name": "a",
+              "local": "a",
+              "remote_path": "/a",
+              "extra_flags": [
+                "--rc-addr=:1"
+              ]
+            }
+          ]
+        },
+        "error": "[a] extra_flags: '--rc-addr' no se admite: lanza un programa en este equipo, y el config viaja con el dispositivo. Quítalo del config."
+      },
+      {
+        "caso": "extra_flags que no es lista",
+        "config": {
+          "defaults": {
+            "device_remote": "disp",
+            "remote": "nas"
+          },
+          "pair": [
+            {
+              "name": "a",
+              "local": "a",
+              "remote_path": "/a",
+              "extra_flags": 5
+            }
+          ]
+        },
+        "error": "[a] extra_flags tiene que ser una lista de textos."
+      },
+      {
+        "caso": "extra_flags tabla",
+        "config": {
+          "defaults": {
+            "device_remote": "disp",
+            "remote": "nas"
+          },
+          "pair": [
+            {
+              "name": "a",
+              "local": "a",
+              "remote_path": "/a",
+              "extra_flags": {
+                "--rc": true
+              }
+            }
+          ]
+        },
+        "error": "[a] extra_flags: '--rc' no se admite: lanza un programa en este equipo, y el config viaja con el dispositivo. Quítalo del config."
+      },
+      {
+        "caso": "remote de una letra en defaults",
+        "config": {
+          "defaults": {
+            "device_remote": "disp",
+            "remote": "C"
+          },
+          "pair": [
+            {
+              "name": "a",
+              "local": "a",
+              "remote_path": "/a"
+            }
+          ]
+        },
+        "error": "[defaults] 'remote' no vale ('C'): rclone lee un nombre de una sola letra como una unidad de Windows (C:), no como un remote. Renombra el remote, con dos caracteres o más, en el rclone.conf y aquí. Deja solo el nombre del remote o quita la clave del config."
+      },
+      {
+        "caso": "catalog_remote con opciones",
+        "config": {
+          "defaults": {
+            "device_remote": "disp",
+            "remote": "nas",
+            "catalog_remote": "nas,x=y"
+          },
+          "pair": [
+            {
+              "name": "a",
+              "local": "a",
+              "remote_path": "/a"
+            }
+          ]
+        },
+        "error": "[defaults] 'catalog_remote' no vale ('nas,x=y'): es el nombre de un remote del rclone.conf, con letras, números, espacios entre palabras y . _ + @ -, sin empezar por '-' ni llevar ',' ':' '=' o comillas (rclone lo leería como opciones de la conexión). Deja solo el nombre del remote o quita la clave del config."
+      },
+      {
+        "caso": "remote al vuelo en la pareja",
+        "config": {
+          "defaults": {
+            "device_remote": "disp",
+            "remote": "nas"
+          },
+          "pair": [
+            {
+              "name": "a",
+              "local": "a",
+              "remote_path": "/a",
+              "remote": ":sftp"
+            }
+          ]
+        },
+        "error": "[a] 'remote' no vale (':sftp'): es el nombre de un remote del rclone.conf, con letras, números, espacios entre palabras y . _ + @ -, sin empezar por '-' ni llevar ',' ':' '=' o comillas (rclone lo leería como opciones de la conexión). Deja solo el nombre del remote o quita la clave del config."
+      },
+      {
+        "caso": "remote vacío en la pareja",
+        "config": {
+          "defaults": {
+            "device_remote": "disp",
+            "remote": "nas"
+          },
+          "pair": [
+            {
+              "name": "a",
+              "local": "a",
+              "remote_path": "/a",
+              "remote": ""
+            }
+          ]
+        },
+        "error": "[a] 'remote' no vale (''): es el nombre de un remote del rclone.conf, con letras, números, espacios entre palabras y . _ + @ -, sin empezar por '-' ni llevar ',' ':' '=' o comillas (rclone lo leería como opciones de la conexión). Deja solo el nombre del remote o quita la clave del config."
+      },
+      {
+        "caso": "local que no es texto",
+        "config": {
+          "defaults": {
+            "device_remote": "disp",
+            "remote": "nas"
+          },
+          "pair": [
+            {
+              "name": "a",
+              "local": 5,
+              "remote_path": "/a"
+            }
+          ]
+        },
+        "error": "[a] 'local' tiene que ser un texto, no 5: es la carpeta de dentro del dispositivo. Pon la ruta entre comillas, relativa a su raíz."
+      },
+      {
+        "caso": "local que sale",
+        "config": {
+          "defaults": {
+            "device_remote": "disp",
+            "remote": "nas"
+          },
+          "pair": [
+            {
+              "name": "a",
+              "local": "../x",
+              "remote_path": "/a"
+            }
+          ]
+        },
+        "error": "[a] local = \"../x\" sale del dispositivo (lleva un '..' o una letra de unidad): la pareja sincronizaría carpetas del ordenador. Pon una carpeta de dentro del dispositivo, con la ruta relativa a su raíz."
+      },
+      {
+        "caso": "local en la carpeta del programa",
+        "config": {
+          "defaults": {
+            "device_remote": "disp",
+            "remote": "nas"
+          },
+          "pair": [
+            {
+              "name": "a",
+              "local": ".prdrive/keys",
+              "remote_path": "/a"
+            }
+          ]
+        },
+        "error": "[a] local = \".prdrive/keys\" cae en «.prdrive»: es la carpeta del programa, con su clave. Pon otra carpeta de dentro del dispositivo."
+      },
+      {
+        "caso": "include con salto de línea",
+        "config": {
+          "defaults": {
+            "device_remote": "disp",
+            "remote": "nas"
+          },
+          "pair": [
+            {
+              "name": "a",
+              "local": "a",
+              "remote_path": "/a",
+              "include": [
+                "x\n!\n+ **"
+              ]
+            }
+          ]
+        },
+        "error": "[a] include 'x\\n!\\n+ **' lleva un salto de línea: en el fichero de filtros de rclone cada línea es una regla, y con un '!' se borrarían las de antes. Quita el salto de línea del patrón (un patrón por entrada de la lista)."
+      },
+      {
+        "caso": "exclude de defaults con retorno",
+        "config": {
+          "defaults": {
+            "device_remote": "disp",
+            "remote": "nas",
+            "exclude": [
+              "a\rb"
+            ]
+          },
+          "pair": [
+            {
+              "name": "a",
+              "local": "a",
+              "remote_path": "/a"
+            }
+          ]
+        },
+        "error": "[defaults] exclude 'a\\rb' lleva un salto de línea: en el fichero de filtros de rclone cada línea es una regla, y con un '!' se borrarían las de antes. Quita el salto de línea del patrón (un patrón por entrada de la lista)."
+      },
+      {
+        "caso": "watch en defaults",
+        "config": {
+          "defaults": {
+            "device_remote": "disp",
+            "remote": "nas",
+            "watch": true
+          },
+          "pair": [
+            {
+              "name": "a",
+              "local": "a",
+              "remote_path": "/a"
+            }
+          ]
+        },
+        "error": "[defaults] no admite 'watch': vigilar los cambios locales se pide pareja a pareja, con 'watch = true' en cada [[pair]] que lo quiera."
+      },
+      {
+        "caso": "watch que no es booleano",
+        "config": {
+          "defaults": {
+            "device_remote": "disp",
+            "remote": "nas"
+          },
+          "pair": [
+            {
+              "name": "a",
+              "local": "a",
+              "remote_path": "/a",
+              "watch": "si"
+            }
+          ]
+        },
+        "error": "[a] 'watch' tiene que ser true o false, no 'si'."
+      },
+      {
+        "caso": "watch en un modo de bajada",
+        "config": {
+          "defaults": {
+            "device_remote": "disp",
+            "remote": "nas"
+          },
+          "pair": [
+            {
+              "name": "a",
+              "local": "a",
+              "remote_path": "/a",
+              "watch": true,
+              "mode": "down"
+            }
+          ]
+        },
+        "error": "[a] 'watch' solo vale donde el origen es el dispositivo (bisync, up, up-mirror), y esta pareja es 'down'. Quita la clave o cambia el modo."
+      },
+      {
+        "caso": "versions fuera de bisync",
+        "config": {
+          "defaults": {
+            "device_remote": "disp",
+            "remote": "nas"
+          },
+          "pair": [
+            {
+              "name": "a",
+              "local": "a",
+              "remote_path": "/a",
+              "versions": true,
+              "mode": "up"
+            }
+          ]
+        },
+        "error": "[a] 'versions' solo vale en modo bisync, y esta pareja es 'up'. Quita la clave o cambia el modo."
+      },
+      {
+        "caso": "nombre con guion delante",
+        "config": {
+          "defaults": {
+            "device_remote": "disp",
+            "remote": "nas"
+          },
+          "pair": [
+            {
+              "name": "-x",
+              "local": "a",
+              "remote_path": "/a"
+            }
+          ]
+        },
+        "error": "[-x] el nombre no puede empezar por '-' (se leería como una opción)"
+      },
+      {
+        "caso": "nombre que no es texto",
+        "config": {
+          "defaults": {
+            "device_remote": "disp",
+            "remote": "nas"
+          },
+          "pair": [
+            {
+              "name": 5,
+              "local": "a",
+              "remote_path": "/a"
+            }
+          ]
+        },
+        "error": "[5] el nombre tiene que ser un texto"
+      },
+      {
+        "caso": "nombre vacío",
+        "config": {
+          "defaults": {
+            "device_remote": "disp",
+            "remote": "nas"
+          },
+          "pair": [
+            {
+              "name": "",
+              "local": "a",
+              "remote_path": "/a"
+            }
+          ]
+        },
+        "error": "Hay una [[pair]] sin 'name' en el config."
+      },
+      {
+        "caso": "modo inventado",
+        "config": {
+          "defaults": {
+            "device_remote": "disp",
+            "remote": "nas"
+          },
+          "pair": [
+            {
+              "name": "a",
+              "local": "a",
+              "remote_path": "/a",
+              "mode": "sync"
+            }
+          ]
+        },
+        "error": "[a] modo inválido: 'sync'. Válidos: ['bisync', 'down', 'down-mirror', 'up', 'up-mirror']"
+      },
+      {
+        "caso": "falta local",
+        "config": {
+          "defaults": {
+            "device_remote": "disp"
+          },
+          "pair": [
+            {
+              "name": "a",
+              "remote_path": "/a"
+            }
+          ]
+        },
+        "error": "[a] falta 'local' en el config."
+      },
+      {
+        "caso": "sin parejas",
+        "config": {
+          "defaults": {
+            "device_remote": "disp"
+          },
+          "pair": []
+        },
+        "error": "El config no tiene ninguna [[pair]] definida."
+      },
+      {
+        "caso": "pareja que se llama como el llavero",
+        "config": {
+          "defaults": {
+            "device_remote": "disp",
+            "remote": "nas"
+          },
+          "pair": [
+            {
+              "name": "keychain",
+              "local": "a",
+              "remote_path": "/a"
+            }
+          ],
+          "keychain": {
+            "base": "x.kdbx"
+          }
+        },
+        "error": "Hay una pareja que se llama 'keychain', que es el nombre de la del llavero. Renómbrala o quita [keychain]."
+      },
+      {
+        "caso": "llavero sin base",
+        "config": {
+          "defaults": {
+            "device_remote": "disp",
+            "remote": "nas"
+          },
+          "pair": [
+            {
+              "name": "a",
+              "local": "a",
+              "remote_path": "/a"
+            }
+          ],
+          "keychain": {}
+        },
+        "error": "[keychain] tiene que decir qué base lleva, con «base = \"<nombre>.kdbx\"», un nombre suelto que acabe en .kdbx (en minúsculas)."
+      },
+      {
+        "caso": "llavero en mayúsculas",
+        "config": {
+          "defaults": {
+            "device_remote": "disp",
+            "remote": "nas"
+          },
+          "pair": [
+            {
+              "name": "a",
+              "local": "a",
+              "remote_path": "/a"
+            }
+          ],
+          "keychain": {
+            "base": "x.KDBX"
+          }
+        },
+        "error": "[keychain] tiene que decir qué base lleva, con «base = \"<nombre>.kdbx\"», un nombre suelto que acabe en .kdbx (en minúsculas)."
+      },
+      {
+        "caso": "llavero con ruta",
+        "config": {
+          "defaults": {
+            "device_remote": "disp",
+            "remote": "nas"
+          },
+          "pair": [
+            {
+              "name": "a",
+              "local": "a",
+              "remote_path": "/a"
+            }
+          ],
+          "keychain": {
+            "base": "a/x.kdbx"
+          }
+        },
+        "error": "[keychain] tiene que decir qué base lleva, con «base = \"<nombre>.kdbx\"», un nombre suelto que acabe en .kdbx (en minúsculas)."
+      },
+      {
+        "caso": "llavero oculto",
+        "config": {
+          "defaults": {
+            "device_remote": "disp",
+            "remote": "nas"
+          },
+          "pair": [
+            {
+              "name": "a",
+              "local": "a",
+              "remote_path": "/a"
+            }
+          ],
+          "keychain": {
+            "base": ".x.kdbx"
+          }
+        },
+        "error": "[keychain] tiene que decir qué base lleva, con «base = \"<nombre>.kdbx\"», un nombre suelto que acabe en .kdbx (en minúsculas)."
+      },
+      {
+        "caso": "llave_interna que no es booleana",
+        "config": {
+          "defaults": {
+            "device_remote": "disp",
+            "remote": "nas"
+          },
+          "pair": [
+            {
+              "name": "a",
+              "local": "a",
+              "remote_path": "/a"
+            }
+          ],
+          "keychain": {
+            "base": "x.kdbx",
+            "llave_interna": "si"
+          }
+        },
+        "error": "[keychain] llave_interna tiene que ser true o false."
+      },
+      {
+        "caso": "llave_interna sin fichero llave",
+        "config": {
+          "defaults": {
+            "device_remote": "disp",
+            "remote": "nas"
+          },
+          "pair": [
+            {
+              "name": "a",
+              "local": "a",
+              "remote_path": "/a"
+            }
+          ],
+          "keychain": {
+            "base": "x.kdbx",
+            "llave_interna": true
+          }
+        },
+        "error": "[keychain] llave_interna = true necesita fichero_llave = true: la base se abre solo con su fichero llave."
+      },
+      {
+        "caso": "llavero que vale",
+        "config": {
+          "defaults": {
+            "device_remote": "disp",
+            "remote": "nas"
+          },
+          "pair": [
+            {
+              "name": "a",
+              "local": "a",
+              "remote_path": "/a"
+            }
+          ],
+          "keychain": {
+            "base": "x.kdbx",
+            "llave_interna": true,
+            "fichero_llave": true
+          }
+        },
+        "error": null
+      }
+    ]
   },
   "canonical": {
     "canonical_path": [
@@ -292,6 +1491,239 @@
       }
     ]
   },
+  "extremos": {
+    "rclone_conf": "[nas]\ntype = sftp\nhost = ejemplo.invalid\n\n[disco]\ntype = local\n\n[crudo]\ntype = local\nnounc = true\n\n[atajo]\ntype = alias\nremote = /datos/compartidos\n\n[sobre_nas]\ntype = alias\nremote = nas:/copia\n\n[sobre_disco]\ntype = alias\nremote = disco:/srv/x\n\n[doble]\ntype = alias\nremote = sobre_nas:sub\n\n[roto]\ntype = alias\nremote = no_existe:/x\n\n[vacio]\ntype = alias\n\n[bucle_a]\ntype = alias\nremote = bucle_b:\n\n[bucle_b]\ntype = alias\nremote = bucle_a:\n\n[conexion]\ntype = alias\nremote = :sftp,host=x:/y\n\n[raiz]\ntype = alias\nremote = nas:\n",
+    "fs_path_remote": [
+      {
+        "entrada": "nas:/copia/notas",
+        "salida": "nas:/copia/notas/"
+      },
+      {
+        "entrada": "disco:/srv//x/./y",
+        "salida": "disco:/srv/x/y/"
+      },
+      {
+        "entrada": "disco:rel/../z",
+        "salida": "disco:z/"
+      },
+      {
+        "entrada": "disco:",
+        "salida": "disco:．/"
+      },
+      {
+        "entrada": "crudo:/a/b",
+        "salida": "crudo:/a/b/"
+      },
+      {
+        "entrada": "atajo:",
+        "salida": "/datos/compartidos/"
+      },
+      {
+        "entrada": "atajo:sub/dir",
+        "salida": "/datos/compartidos/sub/dir/"
+      },
+      {
+        "entrada": "atajo:/abs/../x",
+        "salida": "/datos/compartidos/x/"
+      },
+      {
+        "entrada": "sobre_nas:",
+        "salida": "nas:/copia/"
+      },
+      {
+        "entrada": "sobre_nas:notas",
+        "salida": "nas:/copia/notas/"
+      },
+      {
+        "entrada": "sobre_disco:a",
+        "salida": "disco:/srv/x/a/"
+      },
+      {
+        "entrada": "doble:x",
+        "salida": "nas:/copia/sub/x/"
+      },
+      {
+        "entrada": "roto:x",
+        "salida": "roto:x/"
+      },
+      {
+        "entrada": "vacio:x",
+        "salida": "vacio:x/"
+      },
+      {
+        "entrada": "bucle_a:x",
+        "salida": "bucle_a:x/"
+      },
+      {
+        "entrada": "conexion:x",
+        "salida": "conexion:x/"
+      },
+      {
+        "entrada": "raiz:",
+        "salida": "nas:/"
+      },
+      {
+        "entrada": "raiz:a",
+        "salida": "nas:a/"
+      },
+      {
+        "entrada": "desconocido:/x",
+        "salida": "desconocido:/x/"
+      },
+      {
+        "entrada": "sin_dos_puntos",
+        "salida": "sin_dos_puntos/"
+      },
+      {
+        "entrada": "atajo:../../etc",
+        "salida": "/datos/compartidos/etc/"
+      }
+    ],
+    "resolver_extremo": [
+      {
+        "entrada": "nas:/copia/notas",
+        "salida": "nas:/copia/notas/"
+      },
+      {
+        "entrada": "disco:/srv//x/./y",
+        "salida": "disco:/srv/x/y/"
+      },
+      {
+        "entrada": "disco:rel/../z",
+        "salida": "disco:z/"
+      },
+      {
+        "entrada": "disco:",
+        "salida": "disco:．/"
+      },
+      {
+        "entrada": "crudo:/a/b",
+        "salida": "crudo:/a/b/"
+      },
+      {
+        "entrada": "atajo:",
+        "salida": "/datos/compartidos/"
+      },
+      {
+        "entrada": "atajo:sub/dir",
+        "salida": "/datos/compartidos/sub/dir/"
+      },
+      {
+        "entrada": "atajo:/abs/../x",
+        "salida": "/datos/compartidos/x/"
+      },
+      {
+        "entrada": "sobre_nas:",
+        "salida": "nas:/copia/"
+      },
+      {
+        "entrada": "sobre_nas:notas",
+        "salida": "nas:/copia/notas/"
+      },
+      {
+        "entrada": "sobre_disco:a",
+        "salida": "disco:/srv/x/a/"
+      },
+      {
+        "entrada": "doble:x",
+        "salida": "nas:/copia/sub/x/"
+      },
+      {
+        "entrada": "roto:x",
+        "salida": null
+      },
+      {
+        "entrada": "vacio:x",
+        "salida": null
+      },
+      {
+        "entrada": "bucle_a:x",
+        "salida": null
+      },
+      {
+        "entrada": "conexion:x",
+        "salida": null
+      },
+      {
+        "entrada": "raiz:",
+        "salida": "nas:/"
+      },
+      {
+        "entrada": "raiz:a",
+        "salida": "nas:a/"
+      },
+      {
+        "entrada": "desconocido:/x",
+        "salida": "desconocido:/x/"
+      },
+      {
+        "entrada": "sin_dos_puntos",
+        "salida": "sin_dos_puntos/"
+      },
+      {
+        "entrada": "atajo:../../etc",
+        "salida": "/datos/compartidos/etc/"
+      }
+    ],
+    "raiz_local": [
+      {
+        "entrada": "",
+        "salida": "．"
+      },
+      {
+        "entrada": ".",
+        "salida": "．"
+      },
+      {
+        "entrada": "/",
+        "salida": "/"
+      },
+      {
+        "entrada": "a//b",
+        "salida": "a/b"
+      },
+      {
+        "entrada": "a/./b",
+        "salida": "a/b"
+      },
+      {
+        "entrada": "a/../b",
+        "salida": "b"
+      },
+      {
+        "entrada": "/a/b/",
+        "salida": "/a/b"
+      },
+      {
+        "entrada": "//a",
+        "salida": "/a"
+      },
+      {
+        "entrada": "///a",
+        "salida": "/a"
+      },
+      {
+        "entrada": "a/..",
+        "salida": "．"
+      },
+      {
+        "entrada": "..",
+        "salida": "．．"
+      },
+      {
+        "entrada": "./x",
+        "salida": "x"
+      },
+      {
+        "entrada": "x/.",
+        "salida": "x"
+      },
+      {
+        "entrada": "a/../..",
+        "salida": "．．"
+      }
+    ]
+  },
   "upstream": [
     {
       "nombre": "raiz",
@@ -329,7 +1761,7 @@
       "defaults": {
         "remote": "nas",
         "device_remote": "disp",
-        "catalog_path": "/prdrive-catalog/pairs.toml",
+        "catalog_path": "/prdrive-catalog/remote.toml",
         "exclude": [
           "*.tmp"
         ],
@@ -343,11 +1775,16 @@
         ],
         "interval_minutes": 15
       },
+      "keychain": {
+        "base": "claves.kdbx"
+      },
       "pair": [
         {
           "name": "notas",
           "local": "sync-data/notas",
-          "remote_path": "/copia/notas"
+          "remote_path": "/copia/notas",
+          "versions": true,
+          "watch": true
         },
         {
           "name": "fotos",
@@ -391,9 +1828,14 @@
       "subida",
       "espejo"
     ],
+    "pareja_llavero": "keychain",
+    "carpeta_del_catalogo": [
+      "nas",
+      "/prdrive-catalog/"
+    ],
     "pen_environment": {
       "RCLONE_CONFIG_DISP_TYPE": "combine",
-      "RCLONE_CONFIG_DISP_UPSTREAMS": "\"raiz=/volumen\" \"sync-data=/volumen/sync-data\""
+      "RCLONE_CONFIG_DISP_UPSTREAMS": "\".keychain=/volumen/.keychain\" \"raiz=/volumen\" \"sync-data=/volumen/sync-data\""
     },
     "parejas": [
       {
@@ -411,6 +1853,7 @@
           "create-empty-src-dirs": true,
           "stats": "2s",
           "stats-one-line": true,
+          "modify-window": "2s",
           "conflict-resolve": "newer",
           "conflict-suffix": "conflicto-dispositivo,conflicto-remoto",
           "max-delete": 25,
@@ -423,6 +1866,12 @@
         "use_filters_file": true,
         "wants_filters_file": true,
         "device_remote": "disp",
+        "versions": true,
+        "watch": true,
+        "reglas": [],
+        "llavero": false,
+        "llave_interna": false,
+        "es_raiz": false,
         "is_bisync": true,
         "tramos_locales": [
           "sync-data",
@@ -436,9 +1885,12 @@
         "remote_endpoint": "nas:/copia/notas",
         "source": "disp:sync-data/notas",
         "dest": "nas:/copia/notas",
+        "versions_path1": "disp:sync-data/notas/.prversions",
+        "versions_path2": "nas:/copia/notas/.prversions",
         "workdir": "notas",
         "expected_prefix": "disp_sync-data_notas..nas__copia_notas",
-        "filters_content": "# Generado por sync.py desde sync_config.toml. No editar a mano:\n# se regenera en cada ejecución. Cambiar los patrones exige --resync.\n- *.tmp\n"
+        "prefijo_comprobable": true,
+        "filters_content": "# Generado por sync.py desde sync_config.toml. No editar a mano:\n# se regenera en cada ejecución. Cambiar los patrones exige --resync.\n- .prversions/**\n- *.tmp\n"
       },
       {
         "name": "fotos",
@@ -458,6 +1910,7 @@
           "create-empty-src-dirs": true,
           "stats": "2s",
           "stats-one-line": true,
+          "modify-window": "2s",
           "conflict-resolve": "newer",
           "conflict-suffix": "conflicto-dispositivo,conflicto-remoto",
           "max-delete": 5,
@@ -471,6 +1924,12 @@
         "use_filters_file": true,
         "wants_filters_file": true,
         "device_remote": "disp",
+        "versions": false,
+        "watch": false,
+        "reglas": [],
+        "llavero": false,
+        "llave_interna": false,
+        "es_raiz": false,
         "is_bisync": true,
         "tramos_locales": [
           "sync-data",
@@ -485,8 +1944,11 @@
         "remote_endpoint": "nas:/copia/fotos",
         "source": "disp:sync-data/media/fotos",
         "dest": "nas:/copia/fotos",
+        "versions_path1": "disp:sync-data/media/fotos/.prversions",
+        "versions_path2": "nas:/copia/fotos/.prversions",
         "workdir": "fotos",
         "expected_prefix": "disp_sync-data_media_fotos..nas__copia_fotos",
+        "prefijo_comprobable": true,
         "filters_content": "# Generado por sync.py desde sync_config.toml. No editar a mano:\n# se regenera en cada ejecución. Cambiar los patrones exige --resync.\n+ *.jpg\n+ *.raw\n- *.tmp\n- **\n"
       },
       {
@@ -504,6 +1966,7 @@
           "create-empty-src-dirs": true,
           "stats": "2s",
           "stats-one-line": true,
+          "modify-window": "2s",
           "conflict-resolve": "newer",
           "conflict-suffix": "conflicto-dispositivo,conflicto-remoto",
           "max-delete": 25,
@@ -516,6 +1979,15 @@
         "use_filters_file": true,
         "wants_filters_file": true,
         "device_remote": "disp",
+        "versions": false,
+        "watch": false,
+        "reglas": [
+          "- /.prdrive/**",
+          "- /.keychain/**"
+        ],
+        "llavero": false,
+        "llave_interna": false,
+        "es_raiz": true,
         "is_bisync": true,
         "tramos_locales": [],
         "top_level_dir": "raiz",
@@ -526,9 +1998,12 @@
         "remote_endpoint": "nas:/copia/volumen",
         "source": "disp:raiz",
         "dest": "nas:/copia/volumen",
+        "versions_path1": "disp:raiz/.prversions",
+        "versions_path2": "nas:/copia/volumen/.prversions",
         "workdir": "todo",
         "expected_prefix": "disp_raiz..nas__copia_volumen",
-        "filters_content": "# Generado por sync.py desde sync_config.toml. No editar a mano:\n# se regenera en cada ejecución. Cambiar los patrones exige --resync.\n- *.tmp\n"
+        "prefijo_comprobable": true,
+        "filters_content": "# Generado por sync.py desde sync_config.toml. No editar a mano:\n# se regenera en cada ejecución. Cambiar los patrones exige --resync.\n- /.prdrive/**\n- /.keychain/**\n- *.tmp\n"
       },
       {
         "name": "subida",
@@ -545,12 +2020,19 @@
           "create-empty-src-dirs": true,
           "stats": "2s",
           "stats-one-line": true,
+          "modify-window": "2s",
           "transfers": 4
         },
         "extra_flags": [],
         "use_filters_file": true,
         "wants_filters_file": false,
         "device_remote": "disp",
+        "versions": false,
+        "watch": false,
+        "reglas": [],
+        "llavero": false,
+        "llave_interna": false,
+        "es_raiz": false,
         "is_bisync": false,
         "tramos_locales": [
           "sync-data",
@@ -564,8 +2046,11 @@
         "remote_endpoint": "nas:/copia/salida",
         "source": "disp:sync-data/salida",
         "dest": "nas:/copia/salida",
+        "versions_path1": "disp:sync-data/salida/.prversions",
+        "versions_path2": "nas:/copia/salida/.prversions",
         "workdir": "subida",
         "expected_prefix": "disp_sync-data_salida..nas__copia_salida",
+        "prefijo_comprobable": true,
         "filters_content": "# Generado por sync.py desde sync_config.toml. No editar a mano:\n# se regenera en cada ejecución. Cambiar los patrones exige --resync.\n- *.tmp\n"
       },
       {
@@ -583,6 +2068,7 @@
           "create-empty-src-dirs": true,
           "stats": "2s",
           "stats-one-line": true,
+          "modify-window": "2s",
           "max-delete": 50,
           "transfers": 4
         },
@@ -590,6 +2076,12 @@
         "use_filters_file": false,
         "wants_filters_file": false,
         "device_remote": "disp",
+        "versions": false,
+        "watch": false,
+        "reglas": [],
+        "llavero": false,
+        "llave_interna": false,
+        "es_raiz": false,
         "is_bisync": false,
         "tramos_locales": [
           "sync-data",
@@ -603,9 +2095,208 @@
         "remote_endpoint": "nas:/copia/espejo",
         "source": "disp:sync-data/espejo",
         "dest": "nas:/copia/espejo",
+        "versions_path1": "disp:sync-data/espejo/.prversions",
+        "versions_path2": "nas:/copia/espejo/.prversions",
         "workdir": "espejo",
         "expected_prefix": "disp_sync-data_espejo..nas__copia_espejo",
+        "prefijo_comprobable": true,
         "filters_content": "# Generado por sync.py desde sync_config.toml. No editar a mano:\n# se regenera en cada ejecución. Cambiar los patrones exige --resync.\n- *.tmp\n"
+      },
+      {
+        "name": "keychain",
+        "mode": "bisync",
+        "local": ".keychain",
+        "remote_path": "/prdrive-catalog/keychain",
+        "remote_name": "nas",
+        "includes": [],
+        "excludes": [],
+        "flags": {
+          "verbose": true,
+          "create-empty-src-dirs": true,
+          "stats": "2s",
+          "stats-one-line": true,
+          "modify-window": "2s",
+          "conflict-resolve": "newer",
+          "conflict-suffix": "conflicto-dispositivo,conflicto-remoto",
+          "max-delete": 25,
+          "resilient": true,
+          "recover": true,
+          "max-lock": "2m",
+          "conflict-loser": "num",
+          "resync-mode": "newer"
+        },
+        "extra_flags": [],
+        "use_filters_file": true,
+        "wants_filters_file": true,
+        "device_remote": "disp",
+        "versions": true,
+        "watch": false,
+        "reglas": [
+          "- *.old.kdbx",
+          "+ *.kdbx",
+          "+ LEEME.txt",
+          "- **"
+        ],
+        "llavero": true,
+        "llave_interna": false,
+        "es_raiz": false,
+        "is_bisync": true,
+        "tramos_locales": [
+          ".keychain"
+        ],
+        "top_level_dir": ".keychain",
+        "top_level_abs": "/volumen/.keychain",
+        "ruta_en_combine": ".keychain",
+        "local_abs": "/volumen/.keychain",
+        "local_endpoint": "disp:.keychain",
+        "remote_endpoint": "nas:/prdrive-catalog/keychain",
+        "source": "disp:.keychain",
+        "dest": "nas:/prdrive-catalog/keychain",
+        "versions_path1": "disp:.keychain/.prversions",
+        "versions_path2": "nas:/prdrive-catalog/keychain/.prversions",
+        "workdir": "keychain",
+        "expected_prefix": "disp_.keychain..nas__prdrive-catalog_keychain",
+        "prefijo_comprobable": true,
+        "filters_content": "# Generado por sync.py desde sync_config.toml. No editar a mano:\n# se regenera en cada ejecución. Cambiar los patrones exige --resync.\n- .prversions/**\n- *.old.kdbx\n+ *.kdbx\n+ LEEME.txt\n- **\n"
+      }
+    ]
+  },
+  "estado": {
+    "pareja": {
+      "name": "notas",
+      "local": "sync-data/notas",
+      "remote_path": "/copia/notas",
+      "remote": "nas"
+    },
+    "prefijo": "disp_sync-data_notas..nas__copia_notas",
+    "pair_state": [
+      {
+        "caso": "sin workdir",
+        "ficheros": null,
+        "status": "fresh",
+        "detail": "sin workdir (nunca sincronizada)",
+        "prefix": null
+      },
+      {
+        "caso": "workdir vacío",
+        "ficheros": {},
+        "status": "fresh",
+        "detail": "sin listados previos",
+        "prefix": null
+      },
+      {
+        "caso": "los dos listados",
+        "ficheros": {
+          "disp_sync-data_notas..nas__copia_notas.path1.lst": "# bisync listing v1 from 2026-01-01\n\n-  5 - - 2026-01-01T00:00:00.000000000+0000 \"a.txt\"\n",
+          "disp_sync-data_notas..nas__copia_notas.path2.lst": "# bisync listing v1 from 2026-01-01\n\n-  5 - - 2026-01-01T00:00:00.000000000+0000 \"a.txt\"\n"
+        },
+        "status": "ok",
+        "detail": "baseline 'disp_sync-data_notas..nas__copia_notas'",
+        "prefix": "disp_sync-data_notas..nas__copia_notas"
+      },
+      {
+        "caso": "con residuo",
+        "ficheros": {
+          "disp_sync-data_notas..nas__copia_notas.path1.lst": "# bisync listing v1 from 2026-01-01\n\n-  5 - - 2026-01-01T00:00:00.000000000+0000 \"a.txt\"\n",
+          "disp_sync-data_notas..nas__copia_notas.path2.lst": "# bisync listing v1 from 2026-01-01\n\n-  5 - - 2026-01-01T00:00:00.000000000+0000 \"a.txt\"\n",
+          "disp_sync-data_notas..nas__copia_notas.lst-err": "# bisync listing v1 from 2026-01-01\n\n-  5 - - 2026-01-01T00:00:00.000000000+0000 \"a.txt\"\n"
+        },
+        "status": "ok",
+        "detail": "baseline 'disp_sync-data_notas..nas__copia_notas' (+1 .lst-err: el baseline que rclone apartó al abortar una pasada; ya no lo usa y se puede borrar a mano)",
+        "prefix": "disp_sync-data_notas..nas__copia_notas"
+      },
+      {
+        "caso": "solo residuo",
+        "ficheros": {
+          "algo.lst-err": "# bisync listing v1 from 2026-01-01\n\n-  5 - - 2026-01-01T00:00:00.000000000+0000 \"a.txt\"\n",
+          "otro.lst-err": "# bisync listing v1 from 2026-01-01\n\n-  5 - - 2026-01-01T00:00:00.000000000+0000 \"a.txt\"\n"
+        },
+        "status": "broken",
+        "detail": "2 listado(s) .lst-err: rclone aparta así el baseline cuando una pasada aborta con un error crítico, para bloquear las siguientes",
+        "prefix": null
+      },
+      {
+        "caso": "falta uno",
+        "ficheros": {
+          "disp_sync-data_notas..nas__copia_notas.path1.lst": "# bisync listing v1 from 2026-01-01\n\n-  5 - - 2026-01-01T00:00:00.000000000+0000 \"a.txt\"\n"
+        },
+        "status": "broken",
+        "detail": "falta uno de los dos listados (.path1/.path2)",
+        "prefix": null
+      },
+      {
+        "caso": "dos juegos",
+        "ficheros": {
+          "uno.path1.lst": "# bisync listing v1 from 2026-01-01\n\n-  5 - - 2026-01-01T00:00:00.000000000+0000 \"a.txt\"\n",
+          "uno.path2.lst": "# bisync listing v1 from 2026-01-01\n\n-  5 - - 2026-01-01T00:00:00.000000000+0000 \"a.txt\"\n",
+          "otro.path1.lst": "# bisync listing v1 from 2026-01-01\n\n-  5 - - 2026-01-01T00:00:00.000000000+0000 \"a.txt\"\n",
+          "otro.path2.lst": "# bisync listing v1 from 2026-01-01\n\n-  5 - - 2026-01-01T00:00:00.000000000+0000 \"a.txt\"\n"
+        },
+        "status": "broken",
+        "detail": "varios juegos de listados: ['otro', 'uno']",
+        "prefix": null
+      }
+    ],
+    "referencia_vacia": [
+      {
+        "caso": "los dos vacíos",
+        "ficheros": {
+          "disp_sync-data_notas..nas__copia_notas.path1.lst": "# bisync listing v1 from 2026-01-01\n\n",
+          "disp_sync-data_notas..nas__copia_notas.path2.lst": "# bisync listing v1 from 2026-01-01\n\n"
+        },
+        "local_existe": true,
+        "vacia": true
+      },
+      {
+        "caso": "uno lleno",
+        "ficheros": {
+          "disp_sync-data_notas..nas__copia_notas.path1.lst": "# bisync listing v1 from 2026-01-01\n\n",
+          "disp_sync-data_notas..nas__copia_notas.path2.lst": "# bisync listing v1 from 2026-01-01\n\n-  5 - - 2026-01-01T00:00:00.000000000+0000 \"a.txt\"\n"
+        },
+        "local_existe": true,
+        "vacia": false
+      },
+      {
+        "caso": "los dos llenos",
+        "ficheros": {
+          "disp_sync-data_notas..nas__copia_notas.path1.lst": "# bisync listing v1 from 2026-01-01\n\n-  5 - - 2026-01-01T00:00:00.000000000+0000 \"a.txt\"\n",
+          "disp_sync-data_notas..nas__copia_notas.path2.lst": "# bisync listing v1 from 2026-01-01\n\n-  5 - - 2026-01-01T00:00:00.000000000+0000 \"a.txt\"\n"
+        },
+        "local_existe": true,
+        "vacia": false
+      },
+      {
+        "caso": "vacíos sin carpeta local",
+        "ficheros": {
+          "disp_sync-data_notas..nas__copia_notas.path1.lst": "# bisync listing v1 from 2026-01-01\n\n",
+          "disp_sync-data_notas..nas__copia_notas.path2.lst": "# bisync listing v1 from 2026-01-01\n\n"
+        },
+        "local_existe": false,
+        "vacia": false
+      },
+      {
+        "caso": "vacíos de otra pareja",
+        "ficheros": {
+          "otro.path1.lst": "# bisync listing v1 from 2026-01-01\n\n",
+          "otro.path2.lst": "# bisync listing v1 from 2026-01-01\n\n"
+        },
+        "local_existe": true,
+        "vacia": false
+      },
+      {
+        "caso": "solo cabecera y blancos",
+        "ficheros": {
+          "disp_sync-data_notas..nas__copia_notas.path1.lst": "# x\n\n\n",
+          "disp_sync-data_notas..nas__copia_notas.path2.lst": "\n"
+        },
+        "local_existe": true,
+        "vacia": true
+      },
+      {
+        "caso": "sin baseline",
+        "ficheros": {},
+        "local_existe": true,
+        "vacia": false
       }
     ]
   },
@@ -616,7 +2307,7 @@
           "defaults": {
             "remote": "nas",
             "device_remote": "disp",
-            "catalog_path": "/prdrive-catalog/pairs.toml",
+            "catalog_path": "/prdrive-catalog/remote.toml",
             "exclude": [
               "*.tmp"
             ],
@@ -630,11 +2321,16 @@
             ],
             "interval_minutes": 15
           },
+          "keychain": {
+            "base": "claves.kdbx"
+          },
           "pair": [
             {
               "name": "notas",
               "local": "sync-data/notas",
-              "remote_path": "/copia/notas"
+              "remote_path": "/copia/notas",
+              "versions": true,
+              "watch": true
             },
             {
               "name": "fotos",
@@ -670,14 +2366,14 @@
           ]
         },
         "head": "",
-        "texto": "[defaults]\nremote = \"nas\"\ndevice_remote = \"disp\"\ncatalog_path = \"/prdrive-catalog/pairs.toml\"\nexclude = [\"*.tmp\"]\n\n[defaults.flags]\ntransfers = 4\n\n[daemon]\npairs = [\"notas\"]\ninterval_minutes = 15\n\n[[pair]]\nname = \"notas\"\nlocal = \"sync-data/notas\"\nremote_path = \"/copia/notas\"\n\n[[pair]]\nname = \"fotos\"\nlocal = \"sync-data/media/fotos\"\nremote_path = \"/copia/fotos\"\ninclude = [\n    \"*.jpg\",\n    \"*.raw\",\n]\n\n[pair.flags]\ncheckers = 2\nmax-delete = 5\n\n[[pair]]\nname = \"todo\"\nlocal = \".\"\nremote_path = \"/copia/volumen\"\n\n[[pair]]\nname = \"subida\"\nlocal = \"sync-data/salida\"\nremote_path = \"/copia/salida\"\nmode = \"up\"\n\n[[pair]]\nname = \"espejo\"\nlocal = \"sync-data/espejo\"\nremote_path = \"/copia/espejo\"\nmode = \"up-mirror\"\nuse_filters_file = false\n"
+        "texto": "[defaults]\nremote = \"nas\"\ndevice_remote = \"disp\"\ncatalog_path = \"/prdrive-catalog/remote.toml\"\nexclude = [\"*.tmp\"]\n\n[defaults.flags]\ntransfers = 4\n\n[daemon]\npairs = [\"notas\"]\ninterval_minutes = 15\n\n[[pair]]\nname = \"notas\"\nlocal = \"sync-data/notas\"\nremote_path = \"/copia/notas\"\nversions = true\nwatch = true\n\n[[pair]]\nname = \"fotos\"\nlocal = \"sync-data/media/fotos\"\nremote_path = \"/copia/fotos\"\ninclude = [\n    \"*.jpg\",\n    \"*.raw\",\n]\n\n[pair.flags]\ncheckers = 2\nmax-delete = 5\n\n[[pair]]\nname = \"todo\"\nlocal = \".\"\nremote_path = \"/copia/volumen\"\n\n[[pair]]\nname = \"subida\"\nlocal = \"sync-data/salida\"\nremote_path = \"/copia/salida\"\nmode = \"up\"\n\n[[pair]]\nname = \"espejo\"\nlocal = \"sync-data/espejo\"\nremote_path = \"/copia/espejo\"\nmode = \"up-mirror\"\nuse_filters_file = false\n\n[keychain]\nbase = \"claves.kdbx\"\n"
       },
       {
         "raw": {
           "defaults": {
             "remote": "nas",
             "device_remote": "disp",
-            "catalog_path": "/prdrive-catalog/pairs.toml",
+            "catalog_path": "/prdrive-catalog/remote.toml",
             "exclude": [
               "*.tmp"
             ],
@@ -691,11 +2387,16 @@
             ],
             "interval_minutes": 15
           },
+          "keychain": {
+            "base": "claves.kdbx"
+          },
           "pair": [
             {
               "name": "notas",
               "local": "sync-data/notas",
-              "remote_path": "/copia/notas"
+              "remote_path": "/copia/notas",
+              "versions": true,
+              "watch": true
             },
             {
               "name": "fotos",
@@ -731,7 +2432,7 @@
           ]
         },
         "head": "# Generado para los tests.\n# Dos líneas, para probar que sobrevive.\n",
-        "texto": "# Generado para los tests.\n# Dos líneas, para probar que sobrevive.\n\n[defaults]\nremote = \"nas\"\ndevice_remote = \"disp\"\ncatalog_path = \"/prdrive-catalog/pairs.toml\"\nexclude = [\"*.tmp\"]\n\n[defaults.flags]\ntransfers = 4\n\n[daemon]\npairs = [\"notas\"]\ninterval_minutes = 15\n\n[[pair]]\nname = \"notas\"\nlocal = \"sync-data/notas\"\nremote_path = \"/copia/notas\"\n\n[[pair]]\nname = \"fotos\"\nlocal = \"sync-data/media/fotos\"\nremote_path = \"/copia/fotos\"\ninclude = [\n    \"*.jpg\",\n    \"*.raw\",\n]\n\n[pair.flags]\ncheckers = 2\nmax-delete = 5\n\n[[pair]]\nname = \"todo\"\nlocal = \".\"\nremote_path = \"/copia/volumen\"\n\n[[pair]]\nname = \"subida\"\nlocal = \"sync-data/salida\"\nremote_path = \"/copia/salida\"\nmode = \"up\"\n\n[[pair]]\nname = \"espejo\"\nlocal = \"sync-data/espejo\"\nremote_path = \"/copia/espejo\"\nmode = \"up-mirror\"\nuse_filters_file = false\n"
+        "texto": "# Generado para los tests.\n# Dos líneas, para probar que sobrevive.\n\n[defaults]\nremote = \"nas\"\ndevice_remote = \"disp\"\ncatalog_path = \"/prdrive-catalog/remote.toml\"\nexclude = [\"*.tmp\"]\n\n[defaults.flags]\ntransfers = 4\n\n[daemon]\npairs = [\"notas\"]\ninterval_minutes = 15\n\n[[pair]]\nname = \"notas\"\nlocal = \"sync-data/notas\"\nremote_path = \"/copia/notas\"\nversions = true\nwatch = true\n\n[[pair]]\nname = \"fotos\"\nlocal = \"sync-data/media/fotos\"\nremote_path = \"/copia/fotos\"\ninclude = [\n    \"*.jpg\",\n    \"*.raw\",\n]\n\n[pair.flags]\ncheckers = 2\nmax-delete = 5\n\n[[pair]]\nname = \"todo\"\nlocal = \".\"\nremote_path = \"/copia/volumen\"\n\n[[pair]]\nname = \"subida\"\nlocal = \"sync-data/salida\"\nremote_path = \"/copia/salida\"\nmode = \"up\"\n\n[[pair]]\nname = \"espejo\"\nlocal = \"sync-data/espejo\"\nremote_path = \"/copia/espejo\"\nmode = \"up-mirror\"\nuse_filters_file = false\n\n[keychain]\nbase = \"claves.kdbx\"\n"
       },
       {
         "raw": {
@@ -745,7 +2446,7 @@
           "defaults": {
             "remote": "nas",
             "device_remote": "disp",
-            "catalog_path": "/prdrive-catalog/pairs.toml",
+            "catalog_path": "/prdrive-catalog/remote.toml",
             "exclude": [
               "*.tmp"
             ],
@@ -759,11 +2460,16 @@
             ],
             "interval_minutes": 15
           },
+          "keychain": {
+            "base": "claves.kdbx"
+          },
           "pair": [
             {
               "name": "notas",
               "local": "sync-data/notas",
-              "remote_path": "/copia/notas"
+              "remote_path": "/copia/notas",
+              "versions": true,
+              "watch": true
             },
             {
               "name": "fotos",
@@ -799,7 +2505,78 @@
           ]
         },
         "head": "",
-        "texto": "[remote]\nname = \"nas\"\ntype = \"sftp\"\nhost = \"ejemplo.invalid\"\nport = \"22\"\nuser = \"usuario\"\n\n[defaults]\nremote = \"nas\"\ndevice_remote = \"disp\"\ncatalog_path = \"/prdrive-catalog/pairs.toml\"\nexclude = [\"*.tmp\"]\n\n[defaults.flags]\ntransfers = 4\n\n[daemon]\npairs = [\"notas\"]\ninterval_minutes = 15\n\n[[pair]]\nname = \"notas\"\nlocal = \"sync-data/notas\"\nremote_path = \"/copia/notas\"\n\n[[pair]]\nname = \"fotos\"\nlocal = \"sync-data/media/fotos\"\nremote_path = \"/copia/fotos\"\ninclude = [\n    \"*.jpg\",\n    \"*.raw\",\n]\n\n[pair.flags]\ncheckers = 2\nmax-delete = 5\n\n[[pair]]\nname = \"todo\"\nlocal = \".\"\nremote_path = \"/copia/volumen\"\n\n[[pair]]\nname = \"subida\"\nlocal = \"sync-data/salida\"\nremote_path = \"/copia/salida\"\nmode = \"up\"\n\n[[pair]]\nname = \"espejo\"\nlocal = \"sync-data/espejo\"\nremote_path = \"/copia/espejo\"\nmode = \"up-mirror\"\nuse_filters_file = false\n"
+        "texto": "[remote]\nname = \"nas\"\ntype = \"sftp\"\nhost = \"ejemplo.invalid\"\nport = \"22\"\nuser = \"usuario\"\n\n[defaults]\nremote = \"nas\"\ndevice_remote = \"disp\"\ncatalog_path = \"/prdrive-catalog/remote.toml\"\nexclude = [\"*.tmp\"]\n\n[defaults.flags]\ntransfers = 4\n\n[daemon]\npairs = [\"notas\"]\ninterval_minutes = 15\n\n[[pair]]\nname = \"notas\"\nlocal = \"sync-data/notas\"\nremote_path = \"/copia/notas\"\nversions = true\nwatch = true\n\n[[pair]]\nname = \"fotos\"\nlocal = \"sync-data/media/fotos\"\nremote_path = \"/copia/fotos\"\ninclude = [\n    \"*.jpg\",\n    \"*.raw\",\n]\n\n[pair.flags]\ncheckers = 2\nmax-delete = 5\n\n[[pair]]\nname = \"todo\"\nlocal = \".\"\nremote_path = \"/copia/volumen\"\n\n[[pair]]\nname = \"subida\"\nlocal = \"sync-data/salida\"\nremote_path = \"/copia/salida\"\nmode = \"up\"\n\n[[pair]]\nname = \"espejo\"\nlocal = \"sync-data/espejo\"\nremote_path = \"/copia/espejo\"\nmode = \"up-mirror\"\nuse_filters_file = false\n\n[keychain]\nbase = \"claves.kdbx\"\n"
+      },
+      {
+        "raw": {
+          "defaults": {
+            "remote": "nas",
+            "device_remote": "disp",
+            "catalog_path": "/prdrive-catalog/remote.toml",
+            "exclude": [
+              "*.tmp"
+            ],
+            "flags": {
+              "transfers": 4
+            }
+          },
+          "daemon": {
+            "pairs": [
+              "notas"
+            ],
+            "interval_minutes": 15
+          },
+          "keychain": {
+            "base": "claves.kdbx"
+          },
+          "pair": [
+            {
+              "name": "notas",
+              "local": "sync-data/notas",
+              "remote_path": "/copia/notas",
+              "versions": true,
+              "watch": true
+            },
+            {
+              "name": "fotos",
+              "local": "sync-data/media/fotos",
+              "remote_path": "/copia/fotos",
+              "include": [
+                "*.jpg",
+                "*.raw"
+              ],
+              "flags": {
+                "max-delete": 5,
+                "checkers": 2
+              }
+            },
+            {
+              "name": "todo",
+              "local": ".",
+              "remote_path": "/copia/volumen"
+            },
+            {
+              "name": "subida",
+              "local": "sync-data/salida",
+              "remote_path": "/copia/salida",
+              "mode": "up"
+            },
+            {
+              "name": "espejo",
+              "local": "sync-data/espejo",
+              "remote_path": "/copia/espejo",
+              "mode": "up-mirror",
+              "use_filters_file": false
+            }
+          ],
+          "zeta": {
+            "b": 1,
+            "a": "x"
+          },
+          "alfa": {}
+        },
+        "head": "",
+        "texto": "[defaults]\nremote = \"nas\"\ndevice_remote = \"disp\"\ncatalog_path = \"/prdrive-catalog/remote.toml\"\nexclude = [\"*.tmp\"]\n\n[defaults.flags]\ntransfers = 4\n\n[daemon]\npairs = [\"notas\"]\ninterval_minutes = 15\n\n[[pair]]\nname = \"notas\"\nlocal = \"sync-data/notas\"\nremote_path = \"/copia/notas\"\nversions = true\nwatch = true\n\n[[pair]]\nname = \"fotos\"\nlocal = \"sync-data/media/fotos\"\nremote_path = \"/copia/fotos\"\ninclude = [\n    \"*.jpg\",\n    \"*.raw\",\n]\n\n[pair.flags]\ncheckers = 2\nmax-delete = 5\n\n[[pair]]\nname = \"todo\"\nlocal = \".\"\nremote_path = \"/copia/volumen\"\n\n[[pair]]\nname = \"subida\"\nlocal = \"sync-data/salida\"\nremote_path = \"/copia/salida\"\nmode = \"up\"\n\n[[pair]]\nname = \"espejo\"\nlocal = \"sync-data/espejo\"\nremote_path = \"/copia/espejo\"\nmode = \"up-mirror\"\nuse_filters_file = false\n\n[alfa]\n\n[keychain]\nbase = \"claves.kdbx\"\n\n[zeta]\na = \"x\"\nb = 1\n"
       }
     ],
     "dumps_table": [
@@ -855,6 +2632,12 @@
       "remote_path",
       "remote",
       "mode"
+    ],
+    "tablas_conocidas": [
+      "remote",
+      "defaults",
+      "daemon",
+      "pair"
     ]
   },
   "pairing": {
@@ -864,8 +2647,9 @@
       "key_file",
       "known_hosts_file"
     ],
+    "default_catalog_path": "/prdrive-catalog/remote.toml",
     "con_clave": {
-      "texto": "catalog_path = \"/prdrive-catalog/pairs.toml\"\nkey_name = \"id_ed25519\"\nknown_hosts = \"ejemplo.invalid ssh-ed25519 AAAA...\\n\"\nprdrive = 1\nprivate_key_b64 = \"LS0tLS1CRUdJTiBPUEVOU1NIIFBSSVZBVEUgS0VZLS0tLS0KQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUEKLS0tLS1FTkQgT1BFTlNTSCBQUklWQVRFIEtFWS0tLS0tCg==\"\nremote_name = \"nas\"\n[options]\nhost = \"ejemplo.invalid\"\nport = \"22\"\ntype = \"sftp\"\nuser = \"usuario\"",
+      "texto": "catalog_path = \"/prdrive-catalog/remote.toml\"\nkey_name = \"id_ed25519\"\nknown_hosts = \"ejemplo.invalid ssh-ed25519 AAAA...\\n\"\nprdrive = 1\nprivate_key_b64 = \"LS0tLS1CRUdJTiBPUEVOU1NIIFBSSVZBVEUgS0VZLS0tLS0KQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUEKLS0tLS1FTkQgT1BFTlNTSCBQUklWQVRFIEtFWS0tLS0tCg==\"\nremote_name = \"nas\"\n[options]\nhost = \"ejemplo.invalid\"\nport = \"22\"\ntype = \"sftp\"\nuser = \"usuario\"",
       "private_key_len": 451,
       "leido": {
         "remote_name": "nas",
@@ -874,7 +2658,7 @@
       }
     },
     "sin_clave": {
-      "texto": "catalog_path = \"/prdrive-catalog/pairs.toml\"\nkey_name = \"id_ed25519\"\nprdrive = 1\nremote_name = \"nas\"\n[options]\nhost = \"ejemplo.invalid\"\nport = \"22\"\ntype = \"sftp\"\nuser = \"usuario\""
+      "texto": "catalog_path = \"/prdrive-catalog/remote.toml\"\nkey_name = \"id_ed25519\"\nprdrive = 1\nremote_name = \"nas\"\n[options]\nhost = \"ejemplo.invalid\"\nport = \"22\"\ntype = \"sftp\"\nuser = \"usuario\""
     },
     "rechazos": [
       {

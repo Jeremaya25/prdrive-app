@@ -28,6 +28,9 @@ class PairingTest {
         assertEquals(Vectores.texto(pairing, "marca"), Pairing.MARCA)
         assertEquals(pairing["formato"], Pairing.FORMATO)
         assertEquals(Vectores.cadenas(pairing, "rutas_derivadas"), Pairing.RUTAS_DERIVADAS)
+        // Un QR sin `catalog_path` busca el catálogo donde lo busca prdrive: si
+        // aquí siguiera siendo `pairs.toml`, un remoto nuevo no tendría catálogo.
+        assertEquals(Vectores.texto(pairing, "default_catalog_path"), Pairing.DEFAULT_CATALOG_PATH)
     }
 
     @Test

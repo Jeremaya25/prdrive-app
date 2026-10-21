@@ -1,10 +1,25 @@
 # prdrive para Android — paso 1
 
-Estado del plan: **refinado contra rclone v1.75.1 y contra prdrive 0.2.0**.
-Lo que aquí se afirma sobre rclone está comprobado contra el código de la
-versión que prdrive fija (`common/pins.py`: `RCLONE_VERSION = "v1.75.1"`), no
-contra su documentación. Los sitios exactos se citan, como hace
-`common/bisync.py` en el otro repo.
+Estado del plan: **refinado contra rclone v1.75.1 y contra prdrive 0.2.0**; el
+motor está alineado con **prdrive 0.7.7**, que fija rclone **v1.75.2**
+(`common/pins.py`). Lo que aquí se afirma sobre rclone está comprobado contra el
+código de la versión que prdrive fija, no contra su documentación. Los sitios
+exactos se citan, como hace `common/bisync.py` en el otro repo.
+
+### Lo que trajo prdrive entre 0.2.0 y 0.7.7 (paso 0)
+
+- `modify-window = "2s"` en `BASE_FLAGS`.
+- El catálogo se llama `remote.toml` (un remoto de antes conserva `pairs.toml`).
+- `comprobar_seguridad()`: el config no puede llevar flags que pone la pasada,
+  que lanzan un programa o que escriben ficheros; ni remotes que son cadenas de
+  conexión o letras de unidad; ni un `local` que sale del volumen o cae en
+  `.prdrive/`; ni patrones con saltos de línea.
+- `versions` (`--backup-dir1/2` en `.prversions/`), `watch`, el llavero
+  (`[keychain]`, que añade su pareja) y las reglas de la pareja de la raíz
+  (`- /.prdrive/**`, que en el teléfono protege la clave igual que en un
+  pendrive).
+- El prefijo de bisync sobre un remote `alias` o `local`, y la «referencia
+  vacía» que la pasada rehace sola.
 
 ## De dónde viene esto
 
@@ -65,8 +80,8 @@ cómo ha ido**. Los ficheros de Python siguen siendo la especificación.
 
 | Python (especificación) | Kotlin | Estado |
 |---|---|---|
-| `common/model.py` (`MODES`, `BASE_FLAGS`, `flags_to_args`, `_build_pair`, `_upstream`, `pen_environment`) | `engine/Model.kt` | **hecho** |
-| `common/bisync.py` | `engine/Bisync.kt` | **hecho** |
+| `common/model.py` (`MODES`, `BASE_FLAGS`, `flags_to_args`, `comprobar_seguridad`, `_build_pair`, `_build_llavero`, `_upstream`, `pen_environment`) | `engine/Model.kt` | **hecho** (0.7.7) |
+| `common/bisync.py` | `engine/Bisync.kt` | **hecho** (0.7.7) |
 | `common/config_file.py` | `engine/Toml.kt` | **hecho** |
 | `common/pairing.py` (la mitad que lee) | `engine/Pairing.kt` | **hecho** |
 | `common/catalog.py` | `engine/Catalog.kt` | pendiente — **solo lectura** en el paso 1, así que nada de la ceremonia de `push()` |
@@ -87,7 +102,7 @@ dentro. Los tests de Kotlin **no llevan ni un valor esperado escrito a mano**.
 
 ```bash
 python herramientas/vectores.py ../prdrive   # regenerar
-./gradlew :engine:test                       # 58 tests, sin SDK ni dispositivo
+./gradlew :engine:test                       # sin SDK ni dispositivo
 ```
 
 Cuando prdrive mueva una constante, falla el test que la nombra y dice cuál.
@@ -272,11 +287,13 @@ dibuja y llama; nada de `engine/` sabe que existe Android.**
 
 ## Cómo se comprueba
 
-- **Este repositorio, sin dispositivo:** `./gradlew :engine:test`. Hoy 58 tests,
-  todos contra los vectores generados desde prdrive: fusión de flags, la cadena
+- **Este repositorio, sin dispositivo:** `./gradlew :engine:test`. Todos los
+  tests van contra los vectores generados desde prdrive: fusión de flags, lo que
+  el config no puede llevar (con sus mensajes, letra a letra), la cadena
   `upstreams` (incluida la pareja de la raíz y el caso `raiz` y las comillas de
-  Windows), el nombre de sesión de bisync, `fresh|ok|broken` sobre `.lst` de
-  mentira, el round-trip del TOML y la vuelta del payload del QR.
+  Windows), el nombre de sesión de bisync (también sobre alias y remotes
+  locales), `fresh|ok|broken` y la referencia vacía sobre `.lst` de mentira, el
+  round-trip del TOML y la vuelta del payload del QR.
 - **Spike del `.aar`, antes de escribir la app:** construirlo con `gomobile
   bind`, llamar a `RcloneRPC("rc/noop", …)` para ver que arranca, y a
   `RcloneRPC("sync/bisync", …)` entre **dos carpetas locales** — sin red — para

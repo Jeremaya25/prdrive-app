@@ -48,7 +48,8 @@ object Pairing {
     val RUTAS_DERIVADAS = listOf("key_file", "known_hosts_file")
 
     const val DEFAULT_KEY_NAME = "id_ed25519"
-    const val DEFAULT_CATALOG_PATH = "/prdrive-catalog/pairs.toml"
+    /** El de fábrica, el mismo que el de [Config]: `pairing.py` lo toma de `catalog.py`. */
+    const val DEFAULT_CATALOG_PATH = prdrive.engine.DEFAULT_CATALOG_PATH
 
     /** No se puede leer la carga, o no es de prdrive. */
     class PairingError(mensaje: String) : Exception(mensaje)
