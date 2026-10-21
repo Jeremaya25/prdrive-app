@@ -791,4 +791,28 @@ object Pasada {
         }
         return resultado.copy(lineas = lineas, conflictos = conflictos)
     }
+
+    /**
+     * [pasar] como la llama `run_all()`: un error de E/S a mitad de una pareja
+     * (el `OSError` del escritorio: una carpeta que no se puede leer, un log que
+     * no se puede guardar) no se lleva las demás. Esa pareja cuenta como
+     * fallida, con su línea, y se apunta (salvo en un simulacro).
+     */
+    fun pasarOFallar(
+        volumen: Volumen,
+        pareja: Pareja,
+        rclone: Rclone,
+        opciones: Opciones,
+        ctx: Contexto = Contexto(),
+        alProgreso: (Map<String, Any?>) -> Unit = {},
+        decir: (String) -> Unit = {},
+        reloj: () -> String = Store::stamp,
+    ): Resultado = try {
+        pasar(volumen, pareja, rclone, opciones, ctx, alProgreso, decir, reloj)
+    } catch (e: IOException) {
+        val linea = "[${pareja.name}] FALLÓ: ${e.message ?: e}"
+        decir(linea)
+        if (!ctx.simulacro) Resultados.apuntar(volumen.state, pareja.name, FALLO, null, reloj)
+        Resultado(pareja.name, FALLO, listOf(linea))
+    }
 }

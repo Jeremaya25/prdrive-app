@@ -3,6 +3,7 @@ package prdrive.engine
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -182,5 +183,28 @@ class PairingTest {
     fun `una carga sin remote_name no puede escribir un rclone_conf`() {
         val carga = Pairing.leer("prdrive = 1\n")
         assertFailsWith<Pairing.PairingError> { Pairing.rcloneConf(carga) }
+    }
+
+    @Test
+    fun `el nombre del remote lo pone el catalogo, como align_with_catalog`() {
+        val alinear = Vectores.objeto(Vectores.seccion("paso3"), "alinear")
+        val carga = Pairing.leer(Vectores.texto(alinear, "carga"))
+        for (caso in Vectores.objetos(alinear, "casos")) {
+            @Suppress("UNCHECKED_CAST")
+            val (ajustada, notas) = Pairing.alinearConCatalogo(carga, caso["catalogo"] as Map<String, Any?>)
+            assertEquals(caso["nombre"], ajustada.remoteName, "«${caso["caso"]}»")
+            assertEquals(caso["notas"], notas, "«${caso["caso"]}»")
+            assertEquals(carga.opciones, ajustada.opciones, "las opciones se quedan las del código")
+        }
+    }
+
+    @Test
+    fun `un codigo roto no enseña lo que lleva dentro`() {
+        // El lector de TOML cita el valor que no puede leer; en esta carga, ese
+        // valor puede ser la clave privada.
+        val e = assertFailsWith<Pairing.PairingError> {
+            Pairing.leer("prdrive = 1\nprivate_key_b64 = \"QUJDREVGR0hJSktMTU5PUA==\n")
+        }
+        assertFalse("QUJDREVG" in (e.message ?: ""), e.message)
     }
 }

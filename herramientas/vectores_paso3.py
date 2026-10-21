@@ -239,6 +239,34 @@ def vectores_rclone_conf(profile) -> dict:
     }
 
 
+CATALOGOS_PARA_ALINEAR = {
+    "mismo nombre": {"defaults": {"remote": "nas"}},
+    "otro en defaults": {"defaults": {"remote": "casa"}},
+    "otro en [remote]": {"remote": {"name": "nube", "type": "sftp"}, "defaults": {"remote": "casa"}},
+    "[remote] sin nombre": {"remote": {"type": "sftp"}, "defaults": {"remote": "casa"}},
+    "con espacios": {"defaults": {"remote": "  casa  "}},
+    "sin nombre en ningún sitio": {"defaults": {}},
+    "nombre vacío": {"remote": {"name": ""}, "defaults": {"remote": ""}},
+}
+
+
+def vectores_alinear(pairing) -> dict:
+    """`profile.align_with_catalog()`: el nombre del remote que se escribe en el
+    dispositivo, y la nota que lo dice. Solo la regla del nombre: las opciones
+    del `[remote]` del catálogo no las hereda el teléfono todavía."""
+    from install import profile  # noqa: PLC0415
+    texto = pairing.dumps("nas", {"type": "sftp", "host": "h"}, key_name="id_ed25519",
+                          catalog_path="/prdrive-catalog/remote.toml")
+    salida = []
+    for caso, raw in CATALOGOS_PARA_ALINEAR.items():
+        ajustado, notas = profile.align_with_catalog(profile.loads(texto), raw)
+        salida.append({
+            "caso": caso, "catalogo": raw, "nombre": ajustado.remote_name,
+            "notas": [n for n in notas if n.startswith("En el dispositivo el remote se llamará")],
+        })
+    return {"carga": texto, "casos": salida}
+
+
 def vectores(model, bisync, base: dict) -> dict:
     import sync   # noqa: PLC0415
     from common import orden   # noqa: PLC0415
@@ -249,4 +277,5 @@ def vectores(model, bisync, base: dict) -> dict:
         "logs": vectores_logs(sync, model),
         "volumen": vectores_volumen(deploy, remote, model, base),
         "rclone_conf": vectores_rclone_conf(profile),
+        "alinear": vectores_alinear(__import__("common.pairing", fromlist=["x"])),
     }

@@ -107,6 +107,9 @@ class PuntaAPuntaTest {
 
             // 3. El --resync inicial de la bisync: trae lo del PC.
             esperar("empezar", 180)
+            // «Ir a la principal» sale también si algo ha fallado: que no.
+            errorEnPantalla()?.let { fail("la pantalla dice: $it") }
+            compose.onNodeWithTag("aviso-espejos").assertExists()
             compose.waitUntilAtLeastOneExists(hasText("notas: OK") and hasAnyAncestor(hasTestTag("resultado-notas")), 5000)
             captura("3-inicio")
             assertEquals("escrito en el PC\n", File(v.raiz, "sync-data/notas/del-pc.txt").readText())
@@ -128,8 +131,13 @@ class PuntaAPuntaTest {
             val stat = Rclone.rpc("operations/stat", mapOf("fs" to "nas:/copia/notas", "remote" to "del-telefono.txt"))
             assertTrue("no ha llegado al servidor: $stat", stat["item"] != null)
 
-            // La fila dice que está al día, sin fallos ni resync pendiente.
+            // La fila dice que está al día, sin fallos ni resync pendiente. Un
+            // fallo de la pasada no es un error de la pantalla: se ve en la fila.
             compose.waitUntilAtLeastOneExists(hasText("Al día", substring = true) and hasAnyAncestor(hasTestTag("fila-notas")), 5000)
+            for (pareja in listOf("notas", "fotos")) {
+                val fallos = compose.onAllNodes(hasText("Falló", substring = true) and hasAnyAncestor(hasTestTag("fila-$pareja")))
+                assertTrue("la pasada de $pareja ha fallado", fallos.fetchSemanticsNodes().isEmpty())
+            }
             compose.onAllNodes(hasTestTag("resync-notas")).fetchSemanticsNodes().let {
                 assertTrue("sigue pidiendo resync", it.isEmpty())
             }

@@ -43,6 +43,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -52,6 +53,12 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.lifecycle.compose.LifecycleResumeEffect
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import prdrive.app.Estado
 import prdrive.app.Prdrive
 import prdrive.app.rclone.Rclone
@@ -143,15 +150,21 @@ private fun conRedLocal(alResponder: () -> Unit = {}): (() -> Unit) -> Unit {
     var pendiente by remember { mutableStateOf<(() -> Unit)?>(null) }
     val lanzador = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
         alResponder()
-        pendiente?.invoke()
+        val accion = pendiente
         pendiente = null
+        accion?.invoke()
     }
     return { accion ->
-        if (Prdrive.faltaRedLocal(contexto)) {
-            pendiente = accion
-            lanzador.launch(Prdrive.PERMISO_RED_LOCAL)
-        } else {
-            accion()
+        when {
+            // Con la pregunta en pantalla, otro toque no la repite: Android
+            // contestaría a la segunda en seguida, como cancelada, y la acción
+            // iría sin permiso.
+            pendiente != null -> Unit
+            Prdrive.faltaRedLocal(contexto) -> {
+                pendiente = accion
+                lanzador.launch(Prdrive.PERMISO_RED_LOCAL)
+            }
+            else -> accion()
         }
     }
 }
@@ -235,17 +248,22 @@ private fun PasoCodigo(m: Modelo) {
         ) { Text("Escanear el código") }
         // Pequeño a propósito: lo pegado lleva la clave, y no tiene por qué
         // quedarse a la vista. Una vez leído, se vacía.
+        // Como una contraseña: sin autocorrección ni aprendizaje del teclado
+        // (que se quedaría con la clave) y sin enseñar lo pegado.
         OutlinedTextField(
             value = texto,
             onValueChange = { texto = it },
             label = { Text("Texto del código") },
             maxLines = 3,
+            visualTransformation = PasswordVisualTransformation(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, autoCorrectEnabled = false),
             modifier = Modifier.fillMaxWidth().testTag("carga"),
         )
         OutlinedButton(
             onClick = {
                 m.leerCodigo(texto)
-                if (m.carga != null) texto = ""
+                // Se lea o no, fuera de la pantalla: lleva la clave.
+                texto = ""
             },
             enabled = texto.isNotBlank() && m.ocupado == null,
             modifier = Modifier.testTag("usarTexto"),
@@ -321,11 +339,28 @@ private fun ColumnScope.PasoIniciando(m: Modelo) {
         "Primera pasada de cada pareja bisync (--resync): junta lo que hay en los dos lados " +
             "sin borrar nada.",
     )
+    m.instalado?.notas?.forEach { Text(it, style = MaterialTheme.typography.bodySmall) }
+    val espejos = m.instalado?.espejos.orEmpty()
+    if (espejos.isNotEmpty()) {
+        // El aviso del instalador (`_paso_inicializar`), con lo que aquí se hace
+        // en vez de `--dry-run`, que el teléfono no tiene.
+        Text(
+            "No se inicializan aquí: ${espejos.joinToString(", ")}. Son espejos: borran en el " +
+                "otro lado lo que no esté en el origen, y lanzarlos con las carpetas locales " +
+                "recién creadas propagaría ese vacío. Por eso la carpeta de un espejo de subida " +
+                "no se crea: hasta que la crees tú con lo que quieres subir, sus pasadas se paran " +
+                "en vez de vaciar el remoto.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.tertiary,
+            modifier = Modifier.testTag("aviso-espejos"),
+        )
+    }
     LineaDeProgreso(m.progreso)
     Ocupado(m.ocupado)
     Error(m.error)
     for ((nombre, r) in m.resultados) Resumen(nombre, r)
-    if (m.inicioTerminado || (m.ocupado == null && m.error != null)) {
+    // Solo cuando no queda nada en marcha: con el modelo ocupado, el toque se perdería.
+    if (m.inicioTerminado && m.ocupado == null) {
         Button(onClick = m::empezar, modifier = Modifier.testTag("empezar")) { Text("Ir a la pantalla principal") }
     }
     HorizontalDivider()
@@ -352,6 +387,11 @@ private fun Principal(m: Modelo) {
     val contexto = LocalContext.current
     var log by remember { mutableStateOf<Estado.Fila?>(null) }
     var faltaRed by remember { mutableStateOf(Prdrive.faltaRedLocal(contexto)) }
+    // Al volver de los ajustes de la app, el permiso puede haber cambiado.
+    LifecycleResumeEffect(Unit) {
+        faltaRed = Prdrive.faltaRedLocal(contexto)
+        onPauseOrDispose {}
+    }
     val conRed = conRedLocal { faltaRed = Prdrive.faltaRedLocal(contexto) }
     Marco("prdrive") {
         Button(
@@ -364,8 +404,10 @@ private fun Principal(m: Modelo) {
         Ocupado(m.ocupado)
         Error(m.error)
         LazyColumn(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            items(m.filas, key = { it.nombre }) { f ->
-                FilaDePareja(f, m.resultados[f.nombre], m.ocupado == null, { log = f }, { m.aprobarResync(f.nombre) })
+            // Sin clave por nombre: dos parejas que se llamen igual no pueden
+            // tumbar la pantalla (Compose no admite claves repetidas).
+            items(m.filas) { f ->
+                FilaDePareja(f, m.resultados[f.nombre], m.ocupado == null, { log = f }, { conRed { m.aprobarResync(f.nombre) } })
             }
             item {
                 Spacer(Modifier.height(8.dp))
@@ -421,7 +463,10 @@ private fun FilaDePareja(
 
 @Composable
 private fun DialogoLog(f: Estado.Fila, cerrar: () -> Unit) {
-    val texto = remember(f) { f.fallo?.log?.let(Estado::leer)?.let { Pasada.cola(it, 60) } ?: emptyList() }
+    // Leído fuera del hilo de la pantalla: un log puede ser grande.
+    val texto by produceState(emptyList<String>(), f) {
+        value = withContext(Dispatchers.IO) { f.fallo?.log?.let(Estado::leer)?.let { Pasada.cola(it, 60) } ?: emptyList() }
+    }
     AlertDialog(
         onDismissRequest = cerrar,
         confirmButton = { TextButton(onClick = cerrar) { Text("Cerrar") } },

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lo que no sale del teléfono ni en una copia en la nube ni al pasar los
+     datos a otro: `.prdrive/` lleva la clave privada del remoto y el
+     rclone.conf. `allowBackup="false"` no basta desde API 31: no cubre la
+     transferencia de un teléfono a otro. Las carpetas de las parejas sí pueden
+     ir; sin `.prdrive/`, el teléfono nuevo empieza por el emparejamiento. -->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="file" path="volumen/.prdrive" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="file" path="volumen/.prdrive" />
+    </device-transfer>
+</data-extraction-rules>

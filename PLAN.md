@@ -370,6 +370,25 @@ dibuja y llama; nada de `engine/` sabe que existe Android.**
   - El escáner de QR es el de Play services (sin permiso de cámara); está en
     la pantalla, pero la prueba pega el texto, porque un emulador no tiene un
     QR delante.
+  - Lo que dijo su revisión, y cómo queda:
+    - **El nombre del remote lo pone el catálogo** (`align_with_catalog`,
+      solo la regla del nombre). Las opciones del `[remote]` del catálogo
+      todavía no se heredan.
+    - **Primero el `rclone.conf` entero y el config el último**, que es lo que
+      marca el volumen como sembrado. Todo lo que puede fallar se comprueba
+      antes de escribir nada.
+    - **La carpeta de un espejo de subida no se crea**, a diferencia de
+      `make_local_dirs()`. En el teléfono «Sincronizar» pasa todas las parejas
+      en seguida y sin `--dry-run`, así que hasta que la persona la crea, la
+      pasada se para en vez de vaciar el remoto. Se avisa como en el
+      instalador.
+    - **Un error de E/S en una pareja no se lleva las demás**
+      (`Pasada.pasarOFallar`, el `run_all()` del escritorio), y se respeta
+      `keep_logs`.
+    - **La clave no sale del teléfono.** Ni en un mensaje de error (el lector
+      de TOML citaba el valor), ni por el teclado (el campo es de contraseña),
+      ni en una copia o al pasar los datos a otro teléfono
+      (`dataExtractionRules` sin `.prdrive/`).
 - **En un teléfono:** una pareja de verdad contra el remoto: sincronizar, editar
   un fichero en el móvil, sincronizar, y confirmarlo en el PC. Comprobar que el
   baseline sobrevive a una segunda pasada (un prefijo que se mueve aparece como

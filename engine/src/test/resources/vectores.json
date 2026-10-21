@@ -18603,6 +18603,97 @@
         "bearer_token_command",
         "ssh"
       ]
+    },
+    "alinear": {
+      "carga": "catalog_path = \"/prdrive-catalog/remote.toml\"\nkey_name = \"id_ed25519\"\nprdrive = 1\nremote_name = \"nas\"\n[options]\nhost = \"h\"\ntype = \"sftp\"",
+      "casos": [
+        {
+          "caso": "mismo nombre",
+          "catalogo": {
+            "defaults": {
+              "remote": "nas"
+            }
+          },
+          "nombre": "nas",
+          "notas": []
+        },
+        {
+          "caso": "otro en defaults",
+          "catalogo": {
+            "defaults": {
+              "remote": "casa"
+            }
+          },
+          "nombre": "casa",
+          "notas": [
+            "En el dispositivo el remote se llamará 'casa' y no 'nas': es el nombre que usan los remote_path del catálogo."
+          ]
+        },
+        {
+          "caso": "otro en [remote]",
+          "catalogo": {
+            "remote": {
+              "name": "nube",
+              "type": "sftp"
+            },
+            "defaults": {
+              "remote": "casa"
+            }
+          },
+          "nombre": "nube",
+          "notas": [
+            "En el dispositivo el remote se llamará 'nube' y no 'nas': es el nombre que usan los remote_path del catálogo."
+          ]
+        },
+        {
+          "caso": "[remote] sin nombre",
+          "catalogo": {
+            "remote": {
+              "type": "sftp"
+            },
+            "defaults": {
+              "remote": "casa"
+            }
+          },
+          "nombre": "casa",
+          "notas": [
+            "En el dispositivo el remote se llamará 'casa' y no 'nas': es el nombre que usan los remote_path del catálogo."
+          ]
+        },
+        {
+          "caso": "con espacios",
+          "catalogo": {
+            "defaults": {
+              "remote": "  casa  "
+            }
+          },
+          "nombre": "casa",
+          "notas": [
+            "En el dispositivo el remote se llamará 'casa' y no 'nas': es el nombre que usan los remote_path del catálogo."
+          ]
+        },
+        {
+          "caso": "sin nombre en ningún sitio",
+          "catalogo": {
+            "defaults": {}
+          },
+          "nombre": "nas",
+          "notas": []
+        },
+        {
+          "caso": "nombre vacío",
+          "catalogo": {
+            "remote": {
+              "name": ""
+            },
+            "defaults": {
+              "remote": ""
+            }
+          },
+          "nombre": "nas",
+          "notas": []
+        }
+      ]
     }
   },
   "python": {

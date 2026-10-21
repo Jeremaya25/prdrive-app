@@ -120,7 +120,14 @@ object Pairing {
         val raw = try {
             loadRaw(texto)
         } catch (e: TomlError) {
-            throw PairingError("El código no lleva un TOML válido: ${e.message}")
+            // Solo la línea: el mensaje del lector cita el valor que no ha
+            // podido leer, y en esta carga ese valor puede ser la clave privada.
+            // (El de tomllib no cita valores; el de aquí sí.)
+            val linea = Regex("^Línea ([0-9]+)").find(e.message ?: "")?.groupValues?.get(1)
+            throw PairingError(
+                "El código no lleva un TOML válido" + (linea?.let { " (falla la línea $it)" } ?: "") +
+                    ". Si lo has pegado, comprueba que está entero.",
+            )
         }
 
         val version = raw[MARCA] ?: throw PairingError("Este código no es de prdrive.")
@@ -241,6 +248,33 @@ object Pairing {
         }
         val texto = lineas.joinToString("\n") + "\n"
         return if (seccionCombine.isEmpty()) texto else texto + "\n" + seccionCombine
+    }
+
+    /**
+     * El nombre del remote lo decide el catálogo, no el código
+     * (`profile.align_with_catalog()`, su primera regla): los `remote_path` de
+     * todas las parejas se resuelven contra él, y si el `rclone.conf` del
+     * teléfono lo llamara de otra forma, cada pasada fallaría con un «unknown
+     * remote» que no se parece a la causa. Es el de `[remote].name` o, si no,
+     * el de `[defaults].remote`.
+     *
+     * Solo el nombre: las opciones del backend se quedan las del código, que son
+     * las que se acaban de probar al leer el catálogo (allí se heredan las de un
+     * `[remote]` completo, con sus excepciones; aquí todavía no).
+     *
+     * @return la carga con el nombre del catálogo y la nota de lo cambiado
+     *   (ninguna si ya coincidía), para poder decirlo.
+     */
+    fun alinearConCatalogo(carga: Carga, catalogoRaw: Map<String, Any?>): kotlin.Pair<Carga, List<String>> {
+        val tabla = tablaDe(catalogoRaw, "remote") ?: emptyMap()
+        val defaults = tablaDe(catalogoRaw, "defaults") ?: emptyMap()
+        val elegido = listOf(tabla["name"], defaults["remote"]).firstOrNull { verdad(it) } ?: ""
+        val nombre = stripPy(strPy(elegido))
+        if (nombre.isEmpty() || nombre == carga.remoteName) return carga to emptyList()
+        return carga.copy(remoteName = nombre) to listOf(
+            "En el dispositivo el remote se llamará '$nombre' y no '${carga.remoteName}': es el " +
+                "nombre que usan los remote_path del catálogo.",
+        )
     }
 
     /** `NOMBRE_RCLONE` de install/profile.py: la misma regla que [problemaRemote]. */

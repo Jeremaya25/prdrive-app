@@ -12,6 +12,7 @@
 
     <application
         android:allowBackup="false"
+        android:dataExtractionRules="@xml/extraccion_de_datos"
         android:icon="@drawable/ic_prdrive"
         android:label="@string/app_name"
         android:supportsRtl="true"

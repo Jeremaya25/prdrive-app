@@ -90,6 +90,10 @@ class Modelo(app: Application) : AndroidViewModel(app) {
     var inicioTerminado by mutableStateOf(false)
         private set
 
+    /** Lo que el instalador ha ajustado (el nombre del remote) y los espejos, que no se inicializan. */
+    var instalado by mutableStateOf<Instalador.Instalado?>(null)
+        private set
+
     // --- pasadas (las del primer arranque y las de la principal) --------------
 
     var progreso by mutableStateOf<Progreso?>(null)
@@ -188,14 +192,19 @@ class Modelo(app: Application) : AndroidViewModel(app) {
         val cat = catalogo ?: return
         val orden = cat.names.filter { it in elegidas }
         trabajo("Instalando…") {
-            val config = Instalador.instalar(contexto, c, cat, orden)
+            val hecho = Instalador.instalar(contexto, c, cat, orden)
+            instalado = hecho
             paso = Paso.INICIANDO
             lineas = emptyList()
-            for (nombre in Instalador.aInicializar(config, cat)) {
-                val r = Instalador.inicializar(contexto, config, nombre, { progreso = Progreso.de(nombre, it) }, ::decir)
-                resultados = resultados + (nombre to r)
+            try {
+                for (nombre in Instalador.aInicializar(hecho.config, cat)) {
+                    val r = Instalador.inicializar(contexto, hecho.config, nombre, { progreso = Progreso.de(nombre, it) }, ::decir)
+                    resultados = resultados + (nombre to r)
+                }
+            } finally {
+                // Bien o mal, el volumen ya está sembrado: se puede ir a la principal.
+                inicioTerminado = true
             }
-            inicioTerminado = true
         }
     }
 
@@ -214,21 +223,28 @@ class Modelo(app: Application) : AndroidViewModel(app) {
         filas = Estado.filas(v, config())
     }
 
-    /** Pasa todas las parejas, una detrás de otra, como `sync.py`. */
+    /**
+     * Pasa todas las parejas, una detrás de otra, como `run_all()`: un error de
+     * una no se lleva las demás ([Pasada.pasarOFallar]), y las filas se
+     * refrescan pase lo que pase.
+     */
     fun sincronizar() {
         trabajo("Sincronizando…") {
             val v = Prdrive.iniciarRclone(contexto)
             val config = config()
-            val ctx = Pasada.Contexto()
+            val ctx = Pasada.Contexto(keepLogs = config.keepLogs)
             lineas = emptyList()
-            for (p in config.delUsuario) {
-                val r = Pasada.pasar(
-                    v, p, Adaptadores.pasada, Adaptadores.opciones, ctx,
-                    { progreso = Progreso.de(p.name, it) }, ::decir,
-                )
-                resultados = resultados + (p.name to r)
+            try {
+                for (p in config.delUsuario) {
+                    val r = Pasada.pasarOFallar(
+                        v, p, Adaptadores.pasada, Adaptadores.opciones, ctx,
+                        { progreso = Progreso.de(p.name, it) }, ::decir,
+                    )
+                    resultados = resultados + (p.name to r)
+                }
+            } finally {
+                filas = Estado.filas(v, config)
             }
-            filas = Estado.filas(v, config)
         }
     }
 
@@ -239,12 +255,16 @@ class Modelo(app: Application) : AndroidViewModel(app) {
             val config = config()
             val p = config.pairs.first { it.name == nombre }
             lineas = emptyList()
-            val r = Pasada.pasar(
-                v, p, Adaptadores.pasada, Adaptadores.opciones, Pasada.Contexto(resyncAprobado = true),
-                { progreso = Progreso.de(p.name, it) }, ::decir,
-            )
-            resultados = resultados + (p.name to r)
-            filas = Estado.filas(v, config)
+            try {
+                val r = Pasada.pasarOFallar(
+                    v, p, Adaptadores.pasada, Adaptadores.opciones,
+                    Pasada.Contexto(resyncAprobado = true, keepLogs = config.keepLogs),
+                    { progreso = Progreso.de(p.name, it) }, ::decir,
+                )
+                resultados = resultados + (p.name to r)
+            } finally {
+                filas = Estado.filas(v, config)
+            }
         }
     }
 

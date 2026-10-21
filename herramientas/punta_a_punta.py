@@ -18,6 +18,7 @@ prueba. Necesita `ssh-keygen` (OpenSSH).
 from __future__ import annotations
 
 import base64
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -58,6 +59,9 @@ FICHEROS = {
 def preparar(prdrive: Path, trabajo: Path, puerto: int) -> Path:
     """Deja el remoto, las claves y la carga en [trabajo]; devuelve la carga en base64."""
     remoto, claves = trabajo / "remoto", trabajo / "claves"
+    # El remoto, de cero cada vez: lo que subió una prueba anterior haría pasar
+    # la comprobación de que esta ha subido lo suyo. Las claves sí se quedan.
+    shutil.rmtree(remoto, ignore_errors=True)
     (remoto / "prdrive-catalog").mkdir(parents=True, exist_ok=True)
     (remoto / "prdrive-catalog" / "remote.toml").write_text(CATALOGO, encoding="utf-8", newline="\n")
     for ruta, texto in FICHEROS.items():
