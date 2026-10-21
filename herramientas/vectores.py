@@ -135,14 +135,22 @@ def procedencia(prdrive: Path) -> dict:
     return {"version": version, "commit": commit}
 
 
-def _error(funcion, *args) -> str | None:
-    """El mensaje de `ConfigError` que lanza `funcion(*args)`, o `None` si no lanza."""
+def _error(funcion, *args) -> dict:
+    """Lo que pasa al llamar a `funcion(*args)`.
+
+    `{"error": None}` si no lanza; `{"error": mensaje}` si lanza `ConfigError`;
+    y `{"error": None, "rompe": "TypeError"}` si prdrive se cae con otra
+    excepción. Ese último caso no tiene mensaje que copiar: el motor no puede
+    caerse con un catálogo mal escrito, así que tiene que dar un `ConfigError`
+    con el suyo, y el test lo comprueba."""
     from common.model import ConfigError   # noqa: PLC0415
     try:
         funcion(*args)
     except ConfigError as e:
-        return str(e)
-    return None
+        return {"error": str(e)}
+    except Exception as e:   # noqa: BLE001 — es justo lo que se quiere apuntar
+        return {"error": None, "rompe": type(e).__name__}
+    return {"error": None}
 
 
 def vectores_flags(model) -> list[dict]:
@@ -191,7 +199,9 @@ def vectores_seguridad(model) -> dict:
              "exclude", "backup-dir", "backup-dir1", "backup-dir2", "suffix",
              "suffix-keep-extension", "cpuprofile", "memprofile", "password-command",
              "sftp-ssh", "SFTP_SSH", "metadata-mapper", "rc", "rc-addr", "rcd",
-             "sftp-ssh=sh -c id", " max-delete ", "bearer-token-command", "checksum"]
+             "sftp-ssh=sh -c id", " max-delete ", "bearer-token-command", "checksum",
+             # Lo que `str.strip()` quita y `trim()` de Kotlin no: el NEL (U+0085).
+             "config", " config ", "　rc"]
     extras = [[], ["--fast-list"], ["--sftp-ssh=sh -c id"], ["-v", "--config", "x"],
               ["8M", "sh -c id"], ["--checkers", "8", "--rc-addr=:5572"],
               ["--max-delete=10", "--memprofile=/tmp/x"]]
@@ -199,7 +209,11 @@ def vectores_seguridad(model) -> dict:
                None, "-1", ["--fast-list"]]
     remotes = ["nas", "mi nas", "nas,ssh='sh -c id'", ":sftp,host=x", "C", "c", "ñ",
                "-nas", "nas ", "a.b+c@d-e_f", "", 5, None, "dos  espacios", "año",
-               "nas:x", "nas=1", 'n"a', "ab", "1"]
+               "nas:x", "nas=1", 'n"a', "ab", "1",
+               # El `\w` de Python, que no es ninguno de los de Java: rechaza el
+               # ZWJ, el ZWNJ, una marca combinante y un conector, y acepta ½ y ².
+               "a‍b", "a‌b", "ńas", "a‿b", "nas½", "x²",
+               "١٢", "日本"]
     nombres = ["notas", "-x", ".", "..", "a/b", "a\\b", "a:b", "tab\tx", 5, "",
                "ñandú", "--resync", "a.b"]
     locales = ["sync-data/notas", ".", "/sync-data", "..", "a/../b", "C:/x", "c:",
@@ -282,8 +296,16 @@ def _configs_rechazados(model) -> list[dict]:
         "llavero que vale": {
             **base(), "keychain": {"base": "x.kdbx", "llave_interna": True,
                                    "fichero_llave": True}},
+        # Los que tumban a prdrive en vez de rechazarse: ver `_error()`.
+        "flags que es una lista": base(flags=["--max-delete=5"]),
+        "flags que es un texto": base(flags="x"),
+        "flags de defaults que es un texto": con_defaults(flags="x"),
+        "device_remote que es un booleano": con_defaults(device_remote=True),
+        "device_remote que es un número": con_defaults(device_remote=5),
+        "include de defaults que es un número": con_defaults(include=5),
+        "exclude de la pareja que es un número": base(exclude=5),
     }
-    return [{"caso": caso, "config": crudo, "error": _error(model.parse_config, crudo)}
+    return [{"caso": caso, "config": crudo, **_error(model.parse_config, crudo)}
             for caso, crudo in casos.items()]
 
 
@@ -456,8 +478,25 @@ def vectores_parejas(bisync, model) -> dict:
             "prefijo_comprobable": bisync.prefijo_comprobable(p, {}),
             "filters_content": bisync.filters_content(p),
         })
+    from common.model import ConfigError   # noqa: PLC0415
+    try:
+        config.select(["notas", "inventada"])
+        select_error = None
+    except ConfigError as e:
+        select_error = str(e)
+    choque = model.parse_config({
+        "defaults": {"device_remote": "disp", "remote": "nas"},
+        "pair": [{"name": "todo", "local": ".", "remote_path": "/a"},
+                 {"name": "choque", "local": model.RAIZ_UPSTREAM, "remote_path": "/b"}]})
     return {
         "config": CONFIG,
+        "select": {"pedidas": ["todo", "notas"],
+                   "salida": [p.name for p in config.select(["todo", "notas"])],
+                   "error_con": ["notas", "inventada"], "error": select_error},
+        "choque_de_upstreams": {"pair": [{"name": p.name, "local": p.local,
+                                          "remote_path": p.remote_path}
+                                         for p in choque.pairs],
+                                "error": _error(choque.pen_environment)["error"]},
         "device_remote": config.device_remote,
         "keep_logs": config.keep_logs,
         "names": config.names,
@@ -531,6 +570,94 @@ def vectores_estado(bisync, model) -> dict:
                     "vacia": bisync.referencia_vacia(pareja, tipos={})})
     finally:
         model.STATE_DIR, model.DEVICE_ROOT = viejos
+    salida.update(_filtros_y_movimientos(bisync, model, pareja))
+    return salida
+
+
+def _filtros_y_movimientos(bisync, model, pareja) -> dict:
+    """El estado de los filtros, por qué pide resync una pareja, y apartar y
+    renombrar su estado: lo que el usuario lee cuando le piden un resync."""
+    import hashlib   # noqa: PLC0415
+    from datetime import datetime as _dt   # noqa: PLC0415
+
+    contenido = bisync.filters_content(pareja)
+    md5 = hashlib.md5(contenido.encode("utf-8")).hexdigest()
+    filtros = {
+        "sin md5": None,
+        "md5 bueno": md5,
+        "md5 bueno con salto de línea": md5 + "\n",
+        "md5 de otro contenido": "0" * 32,
+    }
+    salida: dict = {"filtros": [], "resync_reasons": [], "apartar": [], "renombrar": []}
+    viejos = model.STATE_DIR, model.FILTERS_DIR, bisync.datetime
+    try:
+        with tempfile.TemporaryDirectory() as tmp:
+            fichero = Path(tmp) / f"{pareja.name}.txt"
+            fichero.write_text(contenido, encoding="utf-8", newline="\n")
+            for caso, hash_previo in filtros.items():
+                marca = Path(str(fichero) + ".md5")
+                if hash_previo is None:
+                    marca.unlink(missing_ok=True)
+                else:
+                    marca.write_text(hash_previo, encoding="utf-8", newline="\n")
+                estado = bisync.filters_state(fichero)
+                salida["filtros"].append({"caso": caso, "contenido": contenido,
+                                          "md5": hash_previo, "status": estado.status,
+                                          "detail": estado.detail})
+            estado = bisync.filters_state(None)
+            salida["sin_fichero"] = {"status": estado.status, "detail": estado.detail}
+
+        prefijo = bisync.expected_prefix(pareja, {})
+        lleno = '# x\n-  5 - - 2026-01-01T00:00:00.000000000+0000 "a.txt"\n'
+        for caso, listados, con_md5 in (
+                ("fresca y filtros nuevos", {}, False),
+                ("con baseline y filtros nuevos", {prefijo + bisync.PATH1_SUFFIX: lleno,
+                                                   prefijo + bisync.PATH2_SUFFIX: lleno}, False),
+                ("con baseline y filtros al día", {prefijo + bisync.PATH1_SUFFIX: lleno,
+                                                   prefijo + bisync.PATH2_SUFFIX: lleno}, True)):
+            with tempfile.TemporaryDirectory() as tmp:
+                model.STATE_DIR = Path(tmp) / "state"
+                model.FILTERS_DIR = Path(tmp) / "filters"
+                if listados:
+                    _montar(model.STATE_DIR / pareja.name, listados)
+                if con_md5:
+                    ffile = bisync.filters_file_for(pareja)
+                    Path(str(ffile) + ".md5").write_text(md5, encoding="utf-8")
+                salida["resync_reasons"].append({
+                    "caso": caso, "ficheros": listados, "md5": con_md5,
+                    "razones": bisync.resync_reasons(pareja)})
+
+        class _Fijo(_dt):
+            @classmethod
+            def now(cls, tz=None):
+                return cls(2026, 10, 1, 11, 1, 1)
+        bisync.datetime = _Fijo
+        salida["fecha_apartado"] = [2026, 10, 1, 11, 1, 1]
+        salida["sello_apartado"] = f"{_Fijo.now():%Y%m%d_%H%M%S}"
+        with tempfile.TemporaryDirectory() as tmp:
+            model.STATE_DIR = Path(tmp)
+            sin = bisync.shelve_baseline("notas")
+            (Path(tmp) / "notas").mkdir()
+            primera = bisync.shelve_baseline("notas")
+            (Path(tmp) / "notas").mkdir()
+            segunda = bisync.shelve_baseline("notas")
+            salida["apartar"] = [None if sin is None else sin.name, primera.name, segunda.name]
+
+        with tempfile.TemporaryDirectory() as tmp:
+            model.STATE_DIR = Path(tmp) / "state"
+            model.FILTERS_DIR = Path(tmp) / "filters"
+            (model.STATE_DIR / "viejo").mkdir(parents=True)
+            model.FILTERS_DIR.mkdir()
+            (model.FILTERS_DIR / "viejo.txt").write_text("x", encoding="utf-8")
+            (model.FILTERS_DIR / "viejo.txt.md5").write_text("y", encoding="utf-8")
+            (model.STATE_DIR / "ocupado").mkdir()
+            movidos = bisync.rename_pair_state("viejo", "nuevo")
+            salida["renombrar"] = [[o.parent.name + "/" + o.name, d.parent.name + "/" + d.name]
+                                   for o, d in movidos]
+            salida["renombrar_a_uno_que_existe"] = [
+                [o.name, d.name] for o, d in bisync.rename_pair_state("nuevo", "ocupado")]
+    finally:
+        model.STATE_DIR, model.FILTERS_DIR, bisync.datetime = viejos
     return salida
 
 
@@ -566,6 +693,7 @@ def vectores_toml(config_file) -> dict:
             for t in ({"max-delete": 25, "resilient": True, "max-lock": "2m"},
                       {"exclude": ["*.tmp"], "transfers": 4},
                       {"raro clave": "x"},
+                      {"a": 5e-324, "b": 1e22, "c": 0.1, "d": float("inf"), "e": -1e-7},
                       {})
         ],
         "header_of": [
@@ -622,6 +750,10 @@ def _rechazos(pairing) -> list[dict]:
         "sin marca": 'remote_name = "nas"\n',
         "otro formato": 'prdrive = 99\nremote_name = "nas"\n',
         "base64 malo": 'prdrive = 1\nprivate_key_b64 = "no es base64!!"\n',
+        # Basura que una cámara puede leer: tiene que ser un «no se puede leer»,
+        # nunca una excepción que tumbe la app.
+        "escape u roto": 'prdrive = 1\nremote_name = "\\uZZZZ"\n',
+        "carácter de control": 'prdrive = 1\nremote_name = "a\x01b"\n',
     }
     salida = []
     for etiqueta, texto in casos.items():
@@ -646,6 +778,412 @@ def _rclone_conf(pairing) -> list[dict]:
     return [{"texto": t, "remotes": pairing.parse_rclone_conf(t)} for t in casos]
 
 
+# ---------------------------------------------------------------------------
+# Paso 1: el catálogo, los resultados y los conflictos
+#
+# Los tres leen y escriben en `state/` y hablan con rclone. Se les dan una
+# carpeta temporal por `state/` y un rclone de mentira hecho de respuestas
+# fijas; lo que se apunta en el JSON es la tabla de respuestas, para que el
+# test de Kotlin le ponga delante al motor exactamente el mismo rclone.
+# ---------------------------------------------------------------------------
+
+SELLOS = [f"2026-10-0{n} 1{n}:0{n}:0{n}" for n in range(1, 10)]
+"""Las fechas que se le hace devolver a `store.stamp()`, una por llamada."""
+
+
+class _Reloj:
+    """Sustituye a `store.stamp()`: devuelve `SELLOS` en orden."""
+
+    def __init__(self, store):
+        self.store, self.n = store, 0
+        self.original = store.stamp
+
+    def __enter__(self):
+        def sello() -> str:
+            valor = SELLOS[self.n % len(SELLOS)]
+            self.n += 1
+            return valor
+        self.store.stamp = sello
+        return self
+
+    def __exit__(self, *_):
+        self.store.stamp = self.original
+
+
+def vectores_json() -> list[dict]:
+    """`json.dumps(…, ensure_ascii=False, indent=1)`, que es como `store.write_json`
+    escribe todo lo de `state/`. El escritorio lee lo que escribe el teléfono."""
+    casos = [
+        {},
+        {"a": 1},
+        {"parejas": {"notas": {"cuando": "2026-10-01 11:01:01", "codigo": 0, "log": None,
+                               "buena": "2026-10-01 11:01:01"}}},
+        {"s": 'con "comillas", \\ barra, \n salto, \t tab, ñ, \x01 control y  '},
+        {"l": [1, 2.5, True, False, None, [], {}], "vacia": []},
+        {"f": 1e20, "g": -0.0, "h": 1.5e-7, "i": 100.0},
+        # Los dígitos mínimos de `repr()`, también donde `Double.toString()` no
+        # los da (los subnormales) y en el cambio a notación científica.
+        {"sub": 5e-324, "sub2": 1e-323, "grande": 1e22, "decima": 0.1, "tercio": 1 / 3,
+         "largo": 123456789012345678.0, "borde": 1e16, "casi": 9999999999999998.0,
+         "pequeno": 0.0001, "menor": 0.00001, "neg": -2.5e-5},
+        [1, "dos", {"tres": 3}],
+    ]
+    return [{"valor": c, "texto": json.dumps(c, ensure_ascii=False, indent=1)} for c in casos]
+
+
+def vectores_store(store) -> dict:
+    from datetime import datetime   # noqa: PLC0415
+    return {"formato": store.FORMATO,
+            "ejemplo": f"{datetime(2026, 1, 2, 3, 4, 5):{store.FORMATO}}"}
+
+
+CATALOGO_TEXTO = """\
+# El catálogo de los tests.
+
+[remote]
+name = "nas"
+type = "sftp"
+
+[defaults]
+remote = "nas"
+device_remote = "disp"
+
+[[pair]]
+name = "notas"
+local = "sync-data/notas"
+remote_path = "/copia/notas"
+
+[[pair]]
+name = "fotos"
+local = "sync-data/fotos"
+remote_path = "/copia/fotos"
+mode = "down"
+"""
+
+
+def _rclone_falso(ficheros: dict[str, str], carpetas: dict[str, str], *,
+                  sin_red: bool = False, cubetas: bool = False) -> dict:
+    """La tabla de respuestas de un rclone de mentira.
+
+    `ficheros` son `endpoint: contenido`; `carpetas`, `endpoint: lo que da cat`
+    (rclone concatena los ficheros de dentro). Lo que no está no existe: `cat`
+    sale con 3, salvo en un remoto de cubetas, donde sale con 0 y vacío."""
+    respuestas = {}
+    for donde, texto in ficheros.items():
+        respuestas[f"cat {donde}"] = [0, texto, ""]
+        respuestas[f"lsjson --stat {donde}"] = [
+            0, json.dumps({"Path": donde.rsplit("/", 1)[-1], "IsDir": False}), ""]
+    for donde, texto in carpetas.items():
+        respuestas[f"cat {donde}"] = [0, texto, ""]
+        respuestas[f"lsjson --stat {donde}"] = [
+            0, json.dumps({"Path": donde.rsplit("/", 1)[-1], "IsDir": True}), ""]
+    if sin_red:
+        defecto = [1, "", "Failed to cat: dial tcp: lookup nas: no such host"]
+        respuestas = {}
+    elif cubetas:
+        defecto = [0, "", ""]
+    else:
+        defecto = [3, "", "error: directory not found"]
+    return {"respuestas": respuestas, "por_defecto": defecto}
+
+
+def _ejecutar_falso(tabla: dict):
+    import subprocess as sp   # noqa: PLC0415
+
+    def ejecutar(args: list[str]) -> sp.CompletedProcess:
+        codigo, salida, error = tabla["respuestas"].get(" ".join(args), tabla["por_defecto"])
+        return sp.CompletedProcess(args, codigo, salida, error)
+    return ejecutar
+
+
+def vectores_catalogo(catalog, model, store) -> dict:
+    """El catálogo: dónde se busca, cómo se lee y qué se dice cuando no se puede."""
+    from common.model import ConfigError   # noqa: PLC0415
+    endpoints = [None, {"defaults": {}}, {"defaults": {"remote": "nas"}},
+                 {"defaults": {"remote": "nas", "catalog_remote": "cat",
+                               "catalog_path": "/x/pairs.toml"}},
+                 {"defaults": {"remote": "nas", "catalog_path": ""}}]
+    rutas = ["nas:/prdrive-catalog/remote.toml", "nas:remote.toml", "nas:",
+             "nas:/a/b/", "/local/x.toml", "remote.toml", "nas:/c/pairs.toml",
+             "nas:/c/otro.toml", "nas:pairs.toml", "nas:/c/REMOTE.toml"]
+    dentro = [("",), ("nas:",), ("nas:/c",), ("/c/",), ("nas:/c", "pairs.toml"), ("c",)]
+    problemas = ["", "  ", "/prdrive-catalog", "/prdrive-catalog/remote.toml",
+                 "/x/Y.TOML", "nas:/c", "/c/"]
+
+    defecto = {"defaults": {"remote": "nas"}}
+    nuevo = "nas:/prdrive-catalog/remote.toml"
+    viejo = "nas:/prdrive-catalog/pairs.toml"
+    carpeta = "nas:/prdrive-catalog"
+    escenarios = {
+        "remote.toml normal": (defecto, _rclone_falso({nuevo: CATALOGO_TEXTO}, {})),
+        "un remoto de antes conserva pairs.toml": (
+            defecto, _rclone_falso({viejo: CATALOGO_TEXTO}, {})),
+        "un dispositivo de antes encuentra remote.toml": (
+            {"defaults": {"remote": "nas", "catalog_path": "/prdrive-catalog/pairs.toml"}},
+            _rclone_falso({nuevo: CATALOGO_TEXTO}, {})),
+        "con los dos manda remote.toml": (
+            defecto, _rclone_falso({nuevo: CATALOGO_TEXTO, viejo: "[defaults]\n"}, {})),
+        "no hay ninguno": (defecto, _rclone_falso({}, {})),
+        "sin red": (defecto, _rclone_falso({}, {}, sin_red=True)),
+        "remoto de cubetas sin catálogo": (defecto, _rclone_falso({}, {}, cubetas=True)),
+        "remoto de cubetas con pairs.toml": (
+            defecto, _rclone_falso({viejo: CATALOGO_TEXTO}, {}, cubetas=True)),
+        "la ruta es la carpeta": (
+            {"defaults": {"remote": "nas", "catalog_path": "/prdrive-catalog"}},
+            _rclone_falso({nuevo: CATALOGO_TEXTO},
+                          {carpeta: CATALOGO_TEXTO + "\n" + CATALOGO_TEXTO})),
+        "la carpeta solo tiene el catálogo": (
+            {"defaults": {"remote": "nas", "catalog_path": "/prdrive-catalog"}},
+            _rclone_falso({viejo: CATALOGO_TEXTO}, {carpeta: CATALOGO_TEXTO})),
+        "la carpeta vacía": (
+            {"defaults": {"remote": "nas", "catalog_path": "/prdrive-catalog"}},
+            _rclone_falso({}, {carpeta: ""})),
+        "TOML roto": (defecto, _rclone_falso({nuevo: "esto no [ es toml\n"}, {})),
+        "catalog_remote propio": (
+            {"defaults": {"remote": "nas", "catalog_remote": "cat"}},
+            _rclone_falso({"cat:/prdrive-catalog/remote.toml": CATALOGO_TEXTO}, {})),
+    }
+    salida_escenarios = []
+    viejos = catalog.run, model.STATE_DIR
+    try:
+        for caso, (raw_local, tabla) in escenarios.items():
+            with tempfile.TemporaryDirectory() as tmp, _Reloj(store):
+                model.STATE_DIR = Path(tmp)
+                catalog.run = _ejecutar_falso(tabla)
+                where = catalog.endpoint(raw_local)
+                res, cual = catalog.leer(catalog.run, where)
+                registro = {"caso": caso, "raw_local": raw_local, "rclone": tabla,
+                            "endpoint": where,
+                            "leer": {"codigo": res.returncode, "salida": res.stdout,
+                                     "error": res.stderr, "cual": cual}}
+                try:
+                    cat = catalog.pull(raw_local)
+                except ConfigError as e:
+                    mensaje = str(e)
+                    registro["pull"] = {"error": mensaje}
+                    # El detalle de un TOML que no se lee es el de tomllib, que el
+                    # lector de Kotlin no dice con las mismas palabras.
+                    marca = " no es TOML válido: "
+                    if marca in mensaje:
+                        registro["pull"]["error"] = mensaje.split(marca)[0] + marca
+                        registro["pull"]["detalle_del_parser"] = True
+                else:
+                    registro["pull"] = {"text": cat.text, "source": cat.source,
+                                        "stamp": cat.stamp, "endpoint": cat.endpoint,
+                                        "names": cat.names, "defaults": cat.defaults}
+                copia = Path(tmp) / "catalog.toml"
+                registro["copia"] = {
+                    "toml": copia.read_text(encoding="utf-8") if copia.exists() else None,
+                    "json": ((Path(tmp) / "catalog.json").read_text(encoding="utf-8")
+                             if (Path(tmp) / "catalog.json").exists() else None)}
+                # Y lo que dice `load()` si después se va la red: la copia, o nada.
+                catalog.run = _ejecutar_falso(_rclone_falso({}, {}, sin_red=True))
+                cat, aviso = catalog.load(raw_local)
+                registro["load_sin_red"] = {
+                    "source": cat.source if cat else None,
+                    "stamp": cat.stamp if cat else None,
+                    "endpoint": cat.endpoint if cat else None,
+                    "aviso": aviso}
+                salida_escenarios.append(registro)
+    finally:
+        catalog.run, model.STATE_DIR = viejos
+
+    raw = model.parse_config  # noqa: F841 (solo para que se vea de dónde sale el texto)
+    leido = catalog.Catalog(raw=__import__("tomllib").loads(CATALOGO_TEXTO),
+                            text=CATALOGO_TEXTO, source="remote", stamp=SELLOS[0],
+                            endpoint=nuevo)
+    parejas = [{"name": "a", "local": "x"}, {"name": "b", "mode": "up"}]
+    return {
+        "fichero": catalog.FICHERO,
+        "fichero_anterior": catalog.FICHERO_ANTERIOR,
+        "nombres": list(catalog.NOMBRES),
+        "rc_no_existe": list(catalog.RC_NO_EXISTE),
+        "net_flags": list(catalog.NET_FLAGS),
+        "sin_fecha": catalog.SIN_FECHA,
+        "endpoint": [{"raw_local": r, "salida": catalog.endpoint(r)} for r in endpoints],
+        "partir": [{"entrada": r, "salida": list(catalog.partir(r))} for r in rutas],
+        "candidatos": [{"entrada": r, "salida": list(catalog.candidatos(r))} for r in rutas],
+        "dentro": [{"entrada": list(d), "salida": catalog._dentro(*d)} for d in dentro],
+        "problema_de_ruta": [{"entrada": p, "salida": catalog.problema_de_ruta(p)}
+                             for p in problemas],
+        "escenarios": salida_escenarios,
+        "pairs_by_name": catalog.pairs_by_name(leido),
+        "diff_keys": [{"a": a, "b": b, "salida": list(catalog.diff_keys(a, b))}
+                      for a, b in ((parejas[0], parejas[1]), (parejas[0], parejas[0]),
+                                   (None, parejas[1]), ({"x": 1}, {"x": 1.0}))],
+    }
+
+
+def vectores_resultados(results, model, store) -> dict:
+    """`state/last_run.json`: lo que apunta cada pasada y lo que se lee de él."""
+    from pathlib import Path as P   # noqa: PLC0415
+    viejos = model.STATE_DIR, model.LOG_DIR
+    pasos = [("notas", 0, None), ("fotos", 2, "fotos-1.log"), ("notas", 1, "notas-1.log"),
+             ("fotos", 0, None), ("notas", 1, "notas-2.log")]
+    salida: dict = {"pasos": [], "fallos": [], "buenas": {}}
+    try:
+        with tempfile.TemporaryDirectory() as tmp, _Reloj(store):
+            model.STATE_DIR = P(tmp) / "state"
+            model.LOG_DIR = P(tmp) / "logs"
+            model.STATE_DIR.mkdir()
+            model.LOG_DIR.mkdir()
+            (model.LOG_DIR / "notas-2.log").write_text("x", encoding="utf-8")
+            for nombre, codigo, log in pasos:
+                results.apuntar(nombre, codigo, model.LOG_DIR / log if log else None)
+                salida["pasos"].append({
+                    "nombre": nombre, "codigo": codigo, "log": log,
+                    "texto": results.ruta_estado().read_text(encoding="utf-8")})
+            nombres = ["notas", "fotos", "nunca"]
+            salida["fallos"] = [_fallo(f) for f in results.fallos_de(nombres)]
+            datos = json.loads(results.ruta_estado().read_text(encoding="utf-8"))["parejas"]
+            salida["buenas"] = {n: results._buena(datos[n]) for n in ("notas", "fotos")}
+
+            # Registros de antes de la clave `buena`, y basura.
+            legado = {"parejas": {
+                "vieja_buena": {"cuando": SELLOS[0], "codigo": 0},
+                "vieja_mala": {"cuando": SELLOS[1], "codigo": 3, "log": "no-esta.log"},
+                "codigo_texto": {"cuando": SELLOS[2], "codigo": "4"},
+                "codigo_roto": {"cuando": SELLOS[3], "codigo": "x"},
+                "no_es_tabla": "hola",
+                "log_con_ruta": {"cuando": SELLOS[4], "codigo": 1,
+                                 "log": "../../fuera/notas-2.log"},
+            }}
+            texto_legado = json.dumps(legado, ensure_ascii=False, indent=1)
+            results.ruta_estado().write_text(texto_legado, encoding="utf-8")
+            todos = list(legado["parejas"]) + ["nunca"]
+            salida["legado"] = {
+                "texto": texto_legado,
+                "fallos": [_fallo(f) for f in results.fallos_de(todos)],
+                "buenas": {n: results._buena(d) for n, d in legado["parejas"].items()
+                           if isinstance(d, dict)},
+                "ultimas_buenas": sorted(results.ultimas_buenas(todos)),
+            }
+    finally:
+        model.STATE_DIR, model.LOG_DIR = viejos
+    return salida
+
+
+def _fallo(f) -> dict:
+    return {"pareja": f.pareja, "cuando": f.cuando, "codigo": f.codigo,
+            "log": f.log.name if f.log else None, "buena": f.buena}
+
+
+def vectores_conflictos(conflicts, model, store) -> dict:
+    """Los perdedores de bisync: cómo se llaman según los flags, de qué lado
+    vienen y cómo se agrupan con su original."""
+    from pathlib import Path as P   # noqa: PLC0415
+
+    def pareja(**extra):
+        crudo = {"defaults": {"device_remote": "disp", "remote": "nas"},
+                 "pair": [{"name": "notas", "local": "sync-data/notas",
+                           "remote_path": "/copia/notas", **extra}]}
+        return model.parse_config(crudo).pairs[0]
+
+    extras = {
+        "de fábrica": {},
+        "un sufijo": {"flags": {"conflict_suffix": "uno"}},
+        "tres sufijos": {"flags": {"conflict-suffix": "a,b,c"}},
+        "sufijo vacío": {"flags": {"conflict-suffix": ""}},
+        "pathname": {"flags": {"conflict-suffix": "c", "conflict-loser": "pathname"}},
+        "num con un sufijo": {"flags": {"conflict-suffix": "c", "conflict-loser": "num"}},
+        # `suffix-keep-extension` no se puede escribir en el config (lo pone la
+        # pasada): una pareja lo lleva por tener versiones.
+        "con versiones": {"versions": True},
+        "con versiones y un sufijo": {"versions": True, "flags": {"conflict-suffix": "c"}},
+        "de bajada": {"mode": "down"},
+    }
+    parejas = {n: pareja(**e) for n, e in extras.items()}
+    nombres = ["plan.md", "plan.md.conflicto-dispositivo1", "plan.md.conflicto-remoto2",
+               "plan.md.conflicto-remoto", "plan.conflicto-remoto1.md",
+               "plan.md.conflict1", "plan.md.conflict", "a.tar.gz.c1", "a.c2.tar.gz",
+               "x.uno3", "x.uno", "y.a1", "y.b2", "y.c3", "z.c1", "z.c2", "z.c3",
+               ".conflicto-remoto1", "datos.conflicto-dispositivo12",
+               "plan.conflict1.md", "uno.conflict1.dos.txt"]
+    esquemas = {n: list(conflicts.esquema(p)) for n, p in parejas.items()}
+    lecturas = []
+    for n, p in parejas.items():
+        esq = conflicts.esquema(p)
+        for nombre in nombres:
+            leido = conflicts.leer_nombre(nombre, esq)
+            lecturas.append({"esquema": n, "nombre": nombre,
+                             "salida": list(leido) if leido else None})
+
+    ficheros_notas = [
+        "plan.md", "plan.md.conflicto-dispositivo1",
+        "a/b.txt.conflicto-remoto1",
+        "c.txt", "c.txt.conflicto-dispositivo1", "c.txt.conflicto-dispositivo2",
+        "d.txt", "d.txt.conflict1",
+        "e.txt", "e.txt.conflicto-remoto1", "e.txt.conflicto-dispositivo1",
+        "solo.txt.conflict",
+        ".prversions/v.txt.conflicto-remoto1",
+        "sub/.prversions/w.txt.conflicto-remoto1",
+    ]
+    ficheros_raiz = [
+        "doc.txt", "doc.txt.conflicto-remoto1",
+        ".prdrive/k.txt.conflicto-remoto1",
+        ".keychain/x.kdbx.conflicto-remoto1",
+        "System Volume Information/s.conflicto-remoto1",
+        ".Trash-1000/t.conflicto-remoto1",
+        "carpeta/.prdrive/p.conflicto-remoto1",
+    ]
+    escenarios = []
+    viejos = model.DEVICE_ROOT, model.STATE_DIR
+    try:
+        for caso, crudo, ficheros in (
+                ("una pareja", {"name": "notas", "local": "sync-data/notas",
+                                "remote_path": "/copia/notas"}, ficheros_notas),
+                ("la raíz entera", {"name": "todo", "local": ".",
+                                    "remote_path": "/copia/todo"}, ficheros_raiz)):
+            with tempfile.TemporaryDirectory() as tmp, _Reloj(store):
+                # `resolve()`: en Windows la carpeta temporal puede tener un nombre
+                # corto (8.3) y `local_abs` sale con el largo.
+                model.DEVICE_ROOT = P(tmp).resolve() / "volumen"
+                model.STATE_DIR = P(tmp).resolve() / "state"
+                model.STATE_DIR.mkdir()
+                p = model.parse_config({"defaults": {"device_remote": "disp", "remote": "nas"},
+                                        "pair": [crudo]}).pairs[0]
+                for f in ficheros:
+                    ruta = p.local_abs / f
+                    ruta.parent.mkdir(parents=True, exist_ok=True)
+                    ruta.write_text("x", encoding="utf-8")
+                encontrados = conflicts.actualizar_pareja(p)
+                registro = {"caso": caso, "pareja": crudo, "ficheros": ficheros,
+                            "conflictos": [_conflicto(c, model.DEVICE_ROOT) for c in encontrados],
+                            "estado": conflicts.ruta_estado().read_text(encoding="utf-8"),
+                            "sin_apuntar": conflicts.sin_apuntar(p.name),
+                            "contar": conflicts.contar({p.name: encontrados})}
+                # Se borra una copia y se carga sin recorrer: el aviso se va solo.
+                if encontrados:
+                    borrada = encontrados[0].copias[0]
+                    borrada.unlink()
+                    registro["borrada"] = borrada.relative_to(model.DEVICE_ROOT).as_posix()
+                    config = model.parse_config({"defaults": {"device_remote": "disp",
+                                                              "remote": "nas"},
+                                                 "pair": [crudo]})
+                    cargados = conflicts.cargar(config)
+                    registro["cargar"] = {n: [_conflicto(c, model.DEVICE_ROOT) for c in lista]
+                                          for n, lista in cargados.items()}
+                escenarios.append(registro)
+    finally:
+        model.DEVICE_ROOT, model.STATE_DIR = viejos
+    return {"dispositivo": conflicts.DISPOSITIVO, "remoto": conflicts.REMOTO,
+            "sufijo_rclone": conflicts.SUFIJO_RCLONE,
+            "perdedor_rclone": conflicts.PERDEDOR_RCLONE,
+            "base": {"defaults": {"device_remote": "disp", "remote": "nas"},
+                     "pair": {"name": "notas", "local": "sync-data/notas",
+                              "remote_path": "/copia/notas"}},
+            "extras": extras, "esquemas": esquemas, "leer_nombre": lecturas,
+            "escenarios": escenarios}
+
+
+def _conflicto(c, raiz) -> dict:
+    return {"pareja": c.pareja, "relativa": c.relativa,
+            "original": c.original.relative_to(raiz).as_posix(),
+            "versiones": [{"ruta": v.ruta.relative_to(raiz).as_posix(), "lado": v.lado,
+                           "es_original": v.es_original, "numero": v.numero}
+                          for v in c.versiones]}
+
+
 def main() -> int:
     if len(sys.argv) != 2:
         print(__doc__.strip().splitlines()[0])
@@ -657,6 +1195,7 @@ def main() -> int:
         return 2
 
     bisync, config_file, model, pairing = cargar(prdrive)
+    from common import catalog, conflicts, results, store   # noqa: PLC0415
     datos = {
         "_generado_por": "herramientas/vectores.py",
         "_no_editar": "Se regenera desde el prdrive citado en 'prdrive'.",
@@ -696,6 +1235,13 @@ def main() -> int:
         "estado": vectores_estado(bisync, model),
         "toml": vectores_toml(config_file),
         "pairing": vectores_pairing(pairing),
+        "json": vectores_json(),
+        "store": vectores_store(store),
+        "sellos": SELLOS,
+        "ruido_del_sistema": list(model.RUIDO_DEL_SISTEMA),
+        "catalogo": vectores_catalogo(catalog, model, store),
+        "resultados": vectores_resultados(results, model, store),
+        "conflictos": vectores_conflictos(conflicts, model, store),
     }
 
     DESTINO.parent.mkdir(parents=True, exist_ok=True)

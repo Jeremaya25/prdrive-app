@@ -284,22 +284,42 @@ private fun leerEscalar(texto: String, numero: Int): Any {
         if (texto.length < 2 || !texto.endsWith("'")) {
             throw TomlError("Línea $numero: la cadena literal «$texto» no se cierra.")
         }
-        return texto.substring(1, texto.length - 1)
+        val dentro = texto.substring(1, texto.length - 1)
+        dentro.firstOrNull { prohibido(it) }?.let { caracterDeControl(it, numero) }
+        return dentro
     }
     if (texto == "true") return true
     if (texto == "false") return false
+    // Lo que escribe `repr()` de Python para un float que no es un número.
+    when (texto) {
+        "inf", "+inf" -> return Double.POSITIVE_INFINITY
+        "-inf" -> return Double.NEGATIVE_INFINITY
+        "nan", "+nan", "-nan" -> return Double.NaN
+    }
+    // Cifras ASCII y nada más, como TOML: en Android `\d` admite las de
+    // cualquier alfabeto, así que se escriben a mano.
     val sinGuiones = texto.replace("_", "")
-    if (Regex("[+-]?\\d+").matches(sinGuiones)) {
+    if (Regex("[+-]?[0-9]+").matches(sinGuiones)) {
         return sinGuiones.toLongOrNull()
             ?: throw TomlError("Línea $numero: el entero «$texto» no cabe.")
     }
-    if (Regex("[+-]?\\d+\\.\\d+([eE][+-]?\\d+)?").matches(sinGuiones) ||
-        Regex("[+-]?\\d+[eE][+-]?\\d+").matches(sinGuiones)
+    if (Regex("[+-]?[0-9]+\\.[0-9]+([eE][+-]?[0-9]+)?").matches(sinGuiones) ||
+        Regex("[+-]?[0-9]+[eE][+-]?[0-9]+").matches(sinGuiones)
     ) {
         return sinGuiones.toDouble()
     }
     throw TomlError("Línea $numero: «$texto» no es un valor que se entienda aquí.")
 }
+
+/**
+ * Lo que `tomllib` no deja escribir tal cual dentro de una cadena: los
+ * caracteres de control, salvo el tabulador. Aceptarlos aquí haría que el
+ * teléfono escribiera un fichero que el escritorio no puede leer.
+ */
+private fun prohibido(c: Char): Boolean = (c.code < 0x20 && c != '\t') || c.code == 0x7f
+
+private fun caracterDeControl(c: Char, numero: Int): Nothing =
+    throw TomlError("Línea $numero: carácter de control U+${hex(c.code, 4).uppercase()} en una cadena.")
 
 private fun leerCadena(texto: String, numero: Int): String {
     if (texto.length < 2 || !texto.endsWith("\"")) {
@@ -312,27 +332,34 @@ private fun leerCadena(texto: String, numero: Int): String {
         val c = dentro[i]
         if (c != '\\') {
             if (c == '"') throw TomlError("Línea $numero: comilla sin escapar en «$texto».")
+            if (prohibido(c)) caracterDeControl(c, numero)
             salida.append(c)
             i++
             continue
         }
         i++
         if (i >= dentro.length) throw TomlError("Línea $numero: escape a medias en «$texto».")
+        // Los escapes de TOML 1.0, los mismos que acepta `tomllib`.
         when (val e = dentro[i]) {
             '"' -> salida.append('"')
             '\\' -> salida.append('\\')
             'n' -> salida.append('\n')
             'r' -> salida.append('\r')
             't' -> salida.append('\t')
-            'b' -> salida.append('')
-            'f' -> salida.append('')
-            '/' -> salida.append('/')
-            'u' -> {
-                if (i + 5 > dentro.length) {
-                    throw TomlError("Línea $numero: escape \\u a medias en «$texto».")
+            'b' -> salida.append('\b')
+            'f' -> salida.append('\u000c')
+            'u', 'U' -> {
+                val largo = if (e == 'u') 4 else 8
+                val cifras = if (i + 1 + largo <= dentro.length) dentro.substring(i + 1, i + 1 + largo) else ""
+                if (cifras.length != largo || !cifras.all { it in "0123456789abcdefABCDEF" }) {
+                    throw TomlError("Línea $numero: escape «\\$e$cifras» mal formado en «$texto».")
                 }
-                salida.append(dentro.substring(i + 1, i + 5).toInt(16).toChar())
-                i += 4
+                val punto = cifras.toLong(16)
+                if (punto > 0x10FFFF || punto in 0xD800..0xDFFF) {
+                    throw TomlError("Línea $numero: «\\$e$cifras» no es un carácter Unicode.")
+                }
+                salida.appendCodePoint(punto.toInt())
+                i += largo
             }
             else -> throw TomlError("Línea $numero: escape «\\$e» no soportado.")
         }

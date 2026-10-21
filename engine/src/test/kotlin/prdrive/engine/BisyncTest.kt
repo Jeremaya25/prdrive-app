@@ -56,7 +56,7 @@ class BisyncTest {
             val entrada = Vectores.texto(caso, "entrada")
             assertEquals(
                 Vectores.texto(caso, "salida"),
-                Bisync.fsPathRemote(entrada),
+                Bisync.fsPathRemote(entrada, emptyMap()),
                 "fsPathRemote(«$entrada»)",
             )
         }
@@ -82,15 +82,16 @@ class BisyncTest {
         // PC es lo que hace machine-independent al remote 'combine'.
         val resueltas = Vectores.seccion("resueltas")
         val config = parseConfig(Vectores.objeto(resueltas, "config"))
+        assertEquals(Vectores.objetos(resueltas, "parejas").size, config.pairs.size, "número de parejas")
         for ((esperada, pareja) in Vectores.objetos(resueltas, "parejas").zip(config.pairs)) {
             assertEquals(
                 Vectores.texto(esperada, "expected_prefix"),
-                Bisync.expectedPrefix(pareja),
+                Bisync.expectedPrefix(pareja, emptyMap()),
                 "${pareja.name}: prefijo de los listados",
             )
             assertEquals(
                 esperada["prefijo_comprobable"],
-                Bisync.prefijoComprobable(pareja),
+                Bisync.prefijoComprobable(pareja, emptyMap()),
                 "${pareja.name}: el prefijo se puede comprobar",
             )
         }
@@ -130,7 +131,6 @@ class BisyncTest {
         // El detalle es lo que lee el usuario cuando una pareja pide resync: se
         // monta en disco lo mismo que montó el generador y se compara letra a
         // letra.
-        val estado = Vectores.seccion("estado")
         for (caso in Vectores.objetos(estado, "pair_state")) {
             val nombre = Vectores.texto(caso, "caso")
             val workdir = File(temporal(), "notas")
@@ -147,7 +147,6 @@ class BisyncTest {
         // Un baseline vacío hace abortar toda pasada que no sea un resync; con
         // nada que proteger se rehace solo. Pero solo entonces: si uno de los
         // dos lados tenía algo, rehacerlo sería tragarse un borrado.
-        val estado = Vectores.seccion("estado")
         val datos = Vectores.objeto(estado, "pareja")
         val p = construirPareja(
             mapOf(
@@ -157,7 +156,7 @@ class BisyncTest {
             ),
             mapOf("device_remote" to DEFAULT_DEVICE_REMOTE, "remote" to Vectores.texto(datos, "remote")),
         )
-        assertEquals(Vectores.texto(estado, "prefijo"), Bisync.expectedPrefix(p))
+        assertEquals(Vectores.texto(estado, "prefijo"), Bisync.expectedPrefix(p, emptyMap()))
         for (caso in Vectores.objetos(estado, "referencia_vacia")) {
             val nombre = Vectores.texto(caso, "caso")
             val raiz = temporal()
@@ -167,7 +166,7 @@ class BisyncTest {
             if (caso["local_existe"] == true) local.mkdirs()
             assertEquals(
                 caso["vacia"],
-                Bisync.referenciaVacia(p, Bisync.pairState(workdir), workdir, local),
+                Bisync.referenciaVacia(p, Bisync.pairState(workdir), workdir, local, emptyMap()),
                 "«$nombre»",
             )
         }
@@ -186,6 +185,7 @@ class BisyncTest {
     fun `el fichero de filtros se escribe igual, línea por línea`() {
         val resueltas = Vectores.seccion("resueltas")
         val config = parseConfig(Vectores.objeto(resueltas, "config"))
+        assertEquals(Vectores.objetos(resueltas, "parejas").size, config.pairs.size, "número de parejas")
         for ((esperada, pareja) in Vectores.objetos(resueltas, "parejas").zip(config.pairs)) {
             assertEquals(
                 Vectores.texto(esperada, "filters_content"),
@@ -197,58 +197,70 @@ class BisyncTest {
 
     // --- contra el disco ----------------------------------------------------
 
-    private fun pareja(nombre: String = "notas"): Pareja = construirPareja(
-        mapOf("name" to nombre, "local" to "sync-data/$nombre", "remote_path" to "/copia/$nombre"),
-        mapOf("device_remote" to "disp", "remote" to "nas"),
-    )
+    private val estado get() = Vectores.seccion("estado")
 
-    @Test
-    fun `sin workdir la pareja está fresh y pide resync`() {
-        val state = temporal()
-        val p = pareja()
-        val estado = Bisync.pairState(File(state, p.name))
-        assertEquals("fresh", estado.status)
-        assertNull(estado.prefix)
-        assertTrue(Bisync.resyncReasons(p, estado, Bisync.EstadoFiltros("ok", "")).isNotEmpty())
+    /** La pareja con la que el generador montó los casos de disco. */
+    private fun pareja(): Pareja {
+        val datos = Vectores.objeto(estado, "pareja")
+        return construirPareja(
+            mapOf(
+                "name" to Vectores.texto(datos, "name"),
+                "local" to Vectores.texto(datos, "local"),
+                "remote_path" to Vectores.texto(datos, "remote_path"),
+            ),
+            mapOf("device_remote" to DEFAULT_DEVICE_REMOTE, "remote" to Vectores.texto(datos, "remote")),
+        )
     }
 
-    @Test
-    fun `con los dos listados la pareja está ok y dice su prefijo`() {
-        val state = temporal()
-        val p = pareja()
-        val workdir = File(state, p.name).apply { mkdirs() }
-        val prefijo = Bisync.expectedPrefix(p)
-        File(workdir, prefijo + Bisync.PATH1_SUFFIX).writeText("x")
-        File(workdir, prefijo + Bisync.PATH2_SUFFIX).writeText("x")
-
-        val estado = Bisync.pairState(workdir)
-        assertEquals("ok", estado.status)
-        assertEquals(prefijo, estado.prefix)
-        assertEquals(emptyList(), Bisync.resyncReasons(p, estado, Bisync.EstadoFiltros("ok", "")))
-    }
+    private fun md5De(fichero: File): String =
+        java.security.MessageDigest.getInstance("MD5").digest(fichero.readBytes())
+            .joinToString("") { (it.toInt() and 0xff).toString(16).padStart(2, '0') }
 
     @Test
-    fun `los filtros sin md5 previo piden resync, y con el md5 bueno no`() {
-        val p = pareja()
-        val filtros = temporal()
-        val ffile = Bisync.filtersFileFor(p, filtros)
-        assertNotNull(ffile)
-
-        assertEquals("new", Bisync.filtersState(ffile).status)
-
+    fun `el estado de los filtros se dice como en el escritorio`() {
         // El md5 lo escribe bisync durante el --resync; aquí se imita para
         // comprobar la comparación, que es lo que evita un log rojo de rclone.
-        val md5 = java.security.MessageDigest.getInstance("MD5")
-            .digest(ffile.readBytes()).joinToString("") { "%02x".format(it) }
-        File(ffile.path + ".md5").writeText(md5)
-        assertEquals("ok", Bisync.filtersState(ffile).status)
-
-        ffile.writeText(ffile.readText() + "- otro\n")
-        assertEquals("changed", Bisync.filtersState(ffile).status)
+        val p = pareja()
+        val ffile = Bisync.filtersFileFor(p, temporal())
+        assertNotNull(ffile)
+        for (caso in Vectores.objetos(estado, "filtros")) {
+            val nombre = Vectores.texto(caso, "caso")
+            assertEquals(Vectores.texto(caso, "contenido"), ffile.readText(), "«$nombre»: contenido")
+            val md5 = File(ffile.path + ".md5")
+            val previo = caso["md5"]
+            if (previo == null) md5.delete() else md5.writeText(previo.toString())
+            val obtenido = Bisync.filtersState(ffile)
+            assertEquals(Vectores.texto(caso, "status"), obtenido.status, "«$nombre»")
+            assertEquals(Vectores.texto(caso, "detail"), obtenido.detail, "«$nombre»")
+        }
+        val sin = Vectores.objeto(estado, "sin_fichero")
+        assertEquals(
+            Bisync.EstadoFiltros(Vectores.texto(sin, "status"), Vectores.texto(sin, "detail")),
+            Bisync.filtersState(null),
+        )
     }
 
     @Test
-    fun `una pareja sin fichero de filtros no pide resync por los filtros`() {
+    fun `por qué pide resync una pareja se dice como en el escritorio`() {
+        val p = pareja()
+        for (caso in Vectores.objetos(estado, "resync_reasons")) {
+            val nombre = Vectores.texto(caso, "caso")
+            val raiz = temporal()
+            val workdir = File(raiz, "state/${p.name}")
+            val ficheros = Vectores.objeto(caso, "ficheros")
+            if (ficheros.isNotEmpty()) montar(workdir, ficheros)
+            val ffile = Bisync.filtersFileFor(p, File(raiz, "filters"))!!
+            if (caso["md5"] == true) File(ffile.path + ".md5").writeText(md5De(ffile))
+            assertEquals(
+                Vectores.cadenas(caso, "razones"),
+                Bisync.resyncReasons(p, Bisync.pairState(workdir), Bisync.filtersState(ffile)),
+                "«$nombre»",
+            )
+        }
+    }
+
+    @Test
+    fun `una pareja que no es bisync no tiene fichero de filtros ni pide resync`() {
         val espejo = construirPareja(
             mapOf(
                 "name" to "espejo", "local" to "sync-data/espejo",
@@ -257,8 +269,6 @@ class BisyncTest {
             mapOf("device_remote" to "disp", "remote" to "nas"),
         )
         assertNull(Bisync.filtersFileFor(espejo, temporal()))
-        assertEquals("ok", Bisync.filtersState(null).status)
-        // Y una pareja que no es bisync nunca pide resync, sea cual sea el estado.
         assertEquals(
             emptyList(),
             Bisync.resyncReasons(
@@ -270,43 +280,47 @@ class BisyncTest {
     }
 
     @Test
-    fun `apartar el baseline deja la pareja fresh y no borra nada`() {
+    fun `apartar el baseline lo renombra como el escritorio y no borra nada`() {
+        val f = Vectores.lista(estado, "fecha_apartado").map { (it as Long).toInt() }
+        val sello = Bisync.selloApartado(java.time.LocalDateTime.of(f[0], f[1], f[2], f[3], f[4], f[5]))
+        assertEquals(Vectores.texto(estado, "sello_apartado"), sello)
+
         val state = temporal()
-        val workdir = File(state, "notas").apply { mkdirs() }
-        File(workdir, "algo" + Bisync.PATH1_SUFFIX).writeText("x")
-
-        val apartado = Bisync.shelveBaseline(state, "notas", "20260918_120000")
-        assertNotNull(apartado)
-        assertTrue(apartado.isDirectory, "el baseline apartado tiene que seguir ahí")
-        assertEquals("fresh", Bisync.pairState(File(state, "notas")).status)
-        // Y el directorio apartado es inerte: no lo ve quien mira el primer nivel.
-        assertTrue(apartado.name.startsWith("notas.old-"))
+        val esperado = Vectores.lista(estado, "apartar")
+        assertEquals(esperado[0], Bisync.shelveBaseline(state, "notas", sello)?.name, "sin baseline")
+        File(state, "notas").mkdirs()
+        File(state, "notas/algo" + Bisync.PATH1_SUFFIX).writeText("x")
+        val primera = Bisync.shelveBaseline(state, "notas", sello)
+        assertEquals(esperado[1], primera?.name)
+        assertTrue(File(primera, "algo" + Bisync.PATH1_SUFFIX).isFile, "lo apartado sigue ahí")
+        File(state, "notas").mkdirs()
+        assertEquals(esperado[2], Bisync.shelveBaseline(state, "notas", sello)?.name, "el segundo no pisa al primero")
     }
 
     @Test
-    fun `apartar sin baseline no hace nada`() {
-        assertNull(Bisync.shelveBaseline(temporal(), "no-existe", "20260918_120000"))
-    }
-
-    @Test
-    fun `renombrar una pareja mueve su estado y el md5 con su fichero`() {
+    fun `renombrar una pareja mueve lo mismo que en el escritorio`() {
         // El prefijo NO depende del nombre, así que renombrar es gratis: lo que
         // cuelga del nombre son las rutas, y el .md5 tiene que viajar con su
         // fichero o bisync abortará diciendo que los filtros han cambiado.
-        val state = temporal()
-        val filtros = temporal()
-        File(state, "viejo").apply { mkdirs() }
-        File(state, "viejo/algo" + Bisync.PATH1_SUFFIX).writeText("x")
-        File(filtros, "viejo.txt").writeText("filtros")
-        File(filtros, "viejo.txt.md5").writeText("hash")
+        val raiz = temporal()
+        val state = File(raiz, "state")
+        val filtros = File(raiz, "filters").apply { mkdirs() }
+        File(state, "viejo").mkdirs()
+        File(filtros, "viejo.txt").writeText("x")
+        File(filtros, "viejo.txt.md5").writeText("y")
+        File(state, "ocupado").mkdirs()
 
-        val movimientos = Bisync.renamePairState(state, filtros, "viejo", "nuevo")
-
-        assertEquals(3, movimientos.size, "se mueven el workdir, el .txt y el .md5")
-        assertTrue(File(state, "nuevo/algo" + Bisync.PATH1_SUFFIX).isFile)
-        assertTrue(File(filtros, "nuevo.txt").isFile)
-        assertTrue(File(filtros, "nuevo.txt.md5").isFile)
-        assertTrue(!File(state, "viejo").exists())
+        val movidos = Bisync.renamePairState(state, filtros, "viejo", "nuevo")
+        assertEquals(
+            Vectores.lista(estado, "renombrar"),
+            movidos.map { (o, d) -> listOf(o.parentFile.name + "/" + o.name, d.parentFile.name + "/" + d.name) },
+        )
+        // Si el destino del estado ya existe, el estado se queda donde está.
+        val aOcupado = Bisync.renamePairState(state, filtros, "nuevo", "ocupado")
+        assertEquals(
+            Vectores.lista(estado, "renombrar_a_uno_que_existe"),
+            aOcupado.map { (o, d) -> listOf(o.name, d.name) },
+        )
     }
 
     @Test

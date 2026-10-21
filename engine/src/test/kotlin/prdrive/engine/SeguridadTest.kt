@@ -2,6 +2,7 @@ package prdrive.engine
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 import kotlin.test.fail
 
 /**
@@ -95,7 +96,13 @@ class SeguridadTest {
             } catch (e: Exception) {
                 fail("«$nombre»: tenía que ser un ConfigError y es ${e::class.simpleName}: ${e.message}")
             }
-            assertEquals(esperado, obtenido, "«$nombre»")
+            if (caso["rompe"] != null) {
+                // prdrive se cae (con un ${caso["rompe"]}): no hay mensaje que
+                // copiar, pero el motor tiene que negarse con un ConfigError.
+                assertTrue(obtenido != null, "«$nombre»: prdrive se cae y el motor lo deja pasar")
+            } else {
+                assertEquals(esperado, obtenido, "«$nombre»")
+            }
         }
     }
 }

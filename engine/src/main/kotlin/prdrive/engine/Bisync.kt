@@ -64,7 +64,13 @@ object Bisync {
     // v1.75.x), así que aquí tampoco.
     // -----------------------------------------------------------------------
 
-    private val NO_CANONICAL = Regex("[\\s\\\\/:?*]")
+    // El `\s` de canonical.go es el de RE2, que en Go es solo `[\t\n\f\r ]`. Se
+    // escribe a mano porque ni el de Java (que añade `\x0b`) ni el de Android
+    // (ICU: cualquier espacio Unicode) ni el de Python (también Unicode) son ese.
+    // Ojo: aquí el motor se separa de `common/bisync.py` a propósito, y el que
+    // manda es rclone: con un espacio de ancho completo (U+3000) en el nombre,
+    // prdrive calcularía un prefijo que rclone no escribe.
+    private val NO_CANONICAL = Regex("[\\t\\n\\f\\r \\\\/:?*]")
 
     fun canonicalPath(remote: String): String =
         NO_CANONICAL.replace(remote.trim('\\', '/'), "_")
@@ -96,7 +102,7 @@ object Bisync {
      * No se replica la rama de Windows de `FsPath` (el separador `\` y el
      * prefijo `\\?\`): en Android no se da.
      */
-    fun fsPathRemote(s: String, tipos: Map<String, TipoRemote> = emptyMap()): String =
+    fun fsPathRemote(s: String, tipos: Map<String, TipoRemote>): String =
         resolverExtremo(s, tipos) ?: if (s.endsWith("/")) s else "$s/"
 
     fun sessionName(path1: String, path2: String): String =
@@ -110,7 +116,7 @@ object Bisync {
      * `device_remote` lo rechaza [parseConfig] antes de llegar aquí, en vez de
      * calcular un nombre que no sería el que rclone busca.
      */
-    fun expectedPrefix(pareja: Pareja, tipos: Map<String, TipoRemote> = emptyMap()): String =
+    fun expectedPrefix(pareja: Pareja, tipos: Map<String, TipoRemote>): String =
         sessionName(
             fsPathRemote(pareja.endpoint(pareja.mode.source), tipos),
             fsPathRemote(pareja.endpoint(pareja.mode.dest), tipos),
@@ -123,7 +129,7 @@ object Bisync {
      * daría un «no es de esta pareja» falso, y quien diagnostica no debe acusar
      * con él.
      */
-    fun prefijoComprobable(pareja: Pareja, tipos: Map<String, TipoRemote> = emptyMap()): Boolean =
+    fun prefijoComprobable(pareja: Pareja, tipos: Map<String, TipoRemote>): Boolean =
         listOf(pareja.mode.source, pareja.mode.dest)
             .all { resolverExtremo(pareja.endpoint(it), tipos) != null }
 
@@ -265,16 +271,57 @@ object Bisync {
 
     /**
      * El `Root()` del backend local de rclone (backend/local/local.go) en
-     * POSIX: la ruta limpia (`filepath.Clean`: `a//b` y `a/./b` son `a/b`), y un
-     * tramo `.` o `..` sale como `．`/`．．` por el codificador de nombres
-     * (`ToStandardPath`).
+     * POSIX: la ruta limpia (`filepath.Clean`: `a//b` y `a/./b` son `a/b`), con
+     * cada tramo pasado al codificador estándar (`ToStandardPath`, que es
+     * `Standard.Encode(OS.Decode(tramo))`, lib/encoder/encoder.go).
+     *
+     * prdrive solo replica los tramos `.` y `..` (`．`/`．．`). Aquí también lo
+     * demás que `Standard` codifica —los caracteres de control salen como sus
+     * símbolos (`\u000b` es `␋`), DEL como `␡`, NUL como `␀`—, porque el spike lo
+     * vio en un dispositivo: rclone escribe el prefijo así, y el que manda es él.
+     * Se da por hecho que `OS.Decode` (`Base`: NUL, `/` y los puntos) no cambia
+     * el tramo, que es lo normal en una ruta de verdad.
      */
     fun raizLocal(ruta: String): String {
         var limpia = normpath(ruta.ifEmpty { "." })
         if (limpia.startsWith("//")) limpia = limpia.substring(1)
-        return limpia.split("/").joinToString("/") {
-            if (it == "." || it == "..") "．".repeat(it.length) else it
+        return limpia.split("/").joinToString("/") { codificarEstandar(it) }
+    }
+
+    /** `encoder.QuoteRune`: lo que va delante de un símbolo que ya estaba en el nombre. */
+    private const val COMILLA = '‛'
+
+    /** `encoder.symbolOffset`: el símbolo de NUL, y los de control van detrás. */
+    private const val SIMBOLO = '␀'
+
+    /**
+     * `Standard.Encode` de un tramo: `EncodeZero | EncodeSlash | EncodeCtl |
+     * EncodeDel | EncodeDot`. Un símbolo que ya estaba en el nombre se protege
+     * con [COMILLA], para que la codificación se pueda deshacer.
+     */
+    private fun codificarEstandar(tramo: String): String {
+        when (tramo) {
+            "" -> return ""
+            "." -> return "．"
+            ".." -> return "．．"
+            "．" -> return "$COMILLA．"
+            "．．" -> return "$COMILLA．$COMILLA．"
         }
+        val salida = StringBuilder()
+        for (c in tramo) {
+            when {
+                c.code == 0 -> salida.append(SIMBOLO)
+                c == SIMBOLO || c == COMILLA -> salida.append(COMILLA).append(c)
+                c == '/' -> salida.append('／')
+                c == '／' -> salida.append(COMILLA).append(c)
+                c.code == 0x7f -> salida.append('␡')
+                c == '␡' -> salida.append(COMILLA).append(c)
+                c.code in 1..0x1f -> salida.append((SIMBOLO.code + c.code).toChar())
+                c.code in SIMBOLO.code + 1..SIMBOLO.code + 0x1f -> salida.append(COMILLA).append(c)
+                else -> salida.append(c)
+            }
+        }
+        return salida.toString()
     }
 
     // -----------------------------------------------------------------------
@@ -338,10 +385,11 @@ object Bisync {
         val fichero = File(filtersDir, "${pareja.name}.txt")
         if (!fichero.exists() || fichero.readText() != contenido) {
             val temporal = File.createTempFile("${pareja.name}.txt.", ".tmp", filtersDir)
-            temporal.writeText(contenido)
-            if (!temporal.renameTo(fichero)) {
+            try {
+                temporal.writeText(contenido)
+                if (!temporal.renameTo(fichero)) fichero.writeText(contenido)
+            } finally {
                 temporal.delete()
-                fichero.writeText(contenido)
             }
         }
         return fichero
@@ -353,7 +401,7 @@ object Bisync {
         val digest = md5(ffile.readBytes())
         val hashFile = File(ffile.path + ".md5")
         if (!hashFile.exists()) return EstadoFiltros("new", "${ffile.name} sin hash previo")
-        if (hashFile.readText().trim() != digest) {
+        if (stripPy(hashFile.readText()) != digest) {
             return EstadoFiltros(
                 "changed",
                 "${ffile.name} ha cambiado desde el último resync",
@@ -364,7 +412,7 @@ object Bisync {
 
     private fun md5(datos: ByteArray): String =
         MessageDigest.getInstance("MD5").digest(datos)
-            .joinToString("") { "%02x".format(it) }
+            .joinToString("") { hex(it.toInt() and 0xff, 2) }
 
     // -----------------------------------------------------------------------
     // Estado del baseline
@@ -462,7 +510,7 @@ object Bisync {
      * tenía algo que proteger. Un listado que no se puede leer no está vacío.
      */
     private fun sinEntradas(lst: File): Boolean = try {
-        lst.readLines(Charsets.UTF_8).none { it.isNotEmpty() && !it.startsWith("#") }
+        lst.useLines(Charsets.UTF_8) { lineas -> lineas.none { it.isNotEmpty() && !it.startsWith("#") } }
     } catch (_: IOException) {
         false
     }
@@ -492,7 +540,7 @@ object Bisync {
         estado: EstadoPareja,
         workdir: File,
         carpetaLocal: File,
-        tipos: Map<String, TipoRemote> = emptyMap(),
+        tipos: Map<String, TipoRemote>,
     ): Boolean {
         if (!pareja.isBisync || !estado.hasBaseline) return false
         val prefijo = estado.prefix ?: return false
@@ -525,6 +573,12 @@ object Bisync {
     // Apartar el baseline
     // -----------------------------------------------------------------------
 
+    private val FORMATO_SELLO = java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")
+
+    /** El sello de un baseline apartado (`%Y%m%d_%H%M%S`), de ahora o de otra fecha. */
+    fun selloApartado(cuando: java.time.LocalDateTime = java.time.LocalDateTime.now()): String =
+        cuando.format(FORMATO_SELLO)
+
     /**
      * Aparta el baseline de una pareja: `state/<n>/` -> `state/<n>.old-<sello>/`.
      *
@@ -541,7 +595,7 @@ object Bisync {
      *
      * Devuelve dónde ha quedado, o `null` si no había baseline que apartar.
      */
-    fun shelveBaseline(stateDir: File, nombre: String, sello: String): File? {
+    fun shelveBaseline(stateDir: File, nombre: String, sello: String = selloApartado()): File? {
         val workdir = File(stateDir, nombre)
         if (!workdir.isDirectory) return null
         var destino = File(stateDir, "$nombre.old-$sello")
@@ -550,7 +604,9 @@ object Bisync {
             destino = File(stateDir, "$nombre.old-${sello}_$n")
             n++
         }
-        return if (workdir.renameTo(destino)) destino else null
+        // Como `Path.rename()`: si no se puede, es un error y no «no había baseline».
+        if (!workdir.renameTo(destino)) throw IOException("No se pudo apartar $workdir a $destino")
+        return destino
     }
 
     /**
@@ -571,13 +627,17 @@ object Bisync {
         val movimientos = ArrayList<kotlin.Pair<File, File>>()
         val origen = File(stateDir, viejo)
         val destino = File(stateDir, nuevo)
-        if (origen.isDirectory && !destino.exists() && origen.renameTo(destino)) {
+        if (origen.isDirectory && !destino.exists()) {
+            // Si el estado no se mueve, los filtros tampoco: media pareja
+            // renombrada es peor que ninguna.
+            if (!origen.renameTo(destino)) throw IOException("No se pudo mover $origen a $destino")
             movimientos.add(origen to destino)
         }
         for (sufijo in listOf(".txt", ".txt.md5")) {
             val fViejo = File(filtersDir, "$viejo$sufijo")
             val fNuevo = File(filtersDir, "$nuevo$sufijo")
-            if (fViejo.exists() && !fNuevo.exists() && fViejo.renameTo(fNuevo)) {
+            if (fViejo.exists() && !fNuevo.exists()) {
+                if (!fViejo.renameTo(fNuevo)) throw IOException("No se pudo mover $fViejo a $fNuevo")
                 movimientos.add(fViejo to fNuevo)
             }
         }

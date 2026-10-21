@@ -198,10 +198,38 @@ class TomlTest {
             "pair punto flags sin pareja" to "[pair.flags]\na = 1\n",
             "array de tablas anidado" to "[[a.b]]\nc = 1\n",
             "tabla sobre un escalar" to "a = 1\n[a]\nb = 2\n",
+            // Lo que tomllib rechaza y un lector más blando dejaría pasar: el
+            // teléfono escribiría después un fichero que el escritorio no lee.
+            "escape u mal formado" to "a = \"\\uZZZZ\"\n",
+            "escape u con signo" to "a = \"\\u+041\"\n",
+            "escape u a medias" to "a = \"\\u12\"\n",
+            "escape que TOML no tiene" to "a = \"\\/\"\n",
+            "carácter de control en una cadena" to "a = \"a\u0001b\"\n",
+            "DEL en una cadena literal" to "a = 'a\u007fb'\n",
+            "cifras de otro alfabeto" to "a = \u0661\u0662\n",
         )
         for ((caso, texto) in malos) {
             assertFailsWith<TomlError>("«$caso» tenía que fallar") { loadRaw(texto) }
         }
+    }
+
+    @Test
+    fun `dumpsChecked se niega a escribir lo que el escritorio no podría leer`() {
+        // `dumps` no escapa los caracteres de control (tampoco el de prdrive), y
+        // tomllib no los admite: releer tiene que fallar antes de escribir.
+        val raw = mapOf(
+            "defaults" to mapOf("device_remote" to "disp", "exclude" to listOf("a\u0001b")),
+            "pair" to listOf(mapOf("name" to "x", "local" to "a", "remote_path" to "/a")),
+        )
+        assertFailsWith<TomlError> { dumpsChecked(raw) }
+    }
+
+    @Test
+    fun `los escapes de TOML se leen enteros, también los de ocho cifras`() {
+        assertEquals(
+            mapOf("a" to "Aé😀\b\u000c"),
+            loadRaw("a = \"\\u0041\\u00E9\\U0001F600\\b\\f\"\n"),
+        )
     }
 
     @Test

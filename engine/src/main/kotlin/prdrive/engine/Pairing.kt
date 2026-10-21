@@ -175,17 +175,17 @@ object Pairing {
         val remotes = LinkedHashMap<String, MutableMap<String, String>>()
         var actual: MutableMap<String, String>? = null
         for (cruda in texto.lines()) {
-            val linea = cruda.trim()
+            val linea = stripPy(cruda)
             if (linea.isEmpty() || linea.startsWith("#") || linea.startsWith(";")) continue
             if (linea.startsWith("[") && linea.endsWith("]")) {
                 val nueva = LinkedHashMap<String, String>()
-                remotes[linea.substring(1, linea.length - 1).trim()] = nueva
+                remotes[stripPy(linea.substring(1, linea.length - 1))] = nueva
                 actual = nueva
                 continue
             }
             val corte = linea.indexOf('=')
             if (actual == null || corte < 0) continue
-            actual[linea.substring(0, corte).trim()] = linea.substring(corte + 1).trim()
+            actual[stripPy(linea.substring(0, corte))] = stripPy(linea.substring(corte + 1))
         }
         return remotes
     }

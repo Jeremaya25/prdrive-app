@@ -203,21 +203,22 @@ class ModelTest {
         // el nombre de los listados de bisync.
         val esperado = entorno.getValue("RCLONE_CONFIG_DISP_UPSTREAMS").toString()
         assertEquals(esperado, config.upstreamsDeCombine(raiz))
-        assertEquals("combine", entorno.getValue("RCLONE_CONFIG_DISP_TYPE"))
-
-        assertEquals(
-            "[disp]\ntype = combine\nupstreams = $esperado\n",
-            config.seccionCombine(raiz),
-        )
+        // La sección del rclone.conf lleva el mismo tipo que la variable del escritorio.
+        val tipo = entorno.getValue("RCLONE_CONFIG_DISP_TYPE")
+        assertEquals("[disp]\ntype = $tipo\nupstreams = $esperado\n", config.seccionCombine(raiz))
     }
 
     @Test
     fun `select devuelve las pedidas y se niega con un nombre que no existe`() {
         val resueltas = Vectores.seccion("resueltas")
         val config = parseConfig(Vectores.objeto(resueltas, "config"))
-        assertEquals(listOf("notas", "todo"), config.select(listOf("todo", "notas")).map { it.name })
-        val e = assertFailsWith<ConfigError> { config.select(listOf("notas", "inventada")) }
-        assertTrue("inventada" in (e.message ?: ""), "el mensaje no nombra la pareja que falta")
+        val select = Vectores.objeto(resueltas, "select")
+        assertEquals(
+            Vectores.cadenas(select, "salida"),
+            config.select(Vectores.cadenas(select, "pedidas")).map { it.name },
+        )
+        val e = assertFailsWith<ConfigError> { config.select(Vectores.cadenas(select, "error_con")) }
+        assertEquals(Vectores.texto(select, "error"), e.message)
     }
 
     @Test
@@ -267,16 +268,16 @@ class ModelTest {
         // Solo pasa con la raíz: `local = "."` la declara como RAIZ_UPSTREAM y
         // otra pareja tiene una carpeta llamada justo así. Sería un upstream
         // apuntando a donde no es, callando.
+        val choque = Vectores.objeto(Vectores.seccion("resueltas"), "choque_de_upstreams")
         val config = parseConfig(
             mapOf(
                 "defaults" to mapOf("device_remote" to "disp", "remote" to "nas"),
-                "pair" to listOf(
-                    mapOf("name" to "todo", "local" to ".", "remote_path" to "/a"),
-                    mapOf("name" to "choque", "local" to RAIZ_UPSTREAM, "remote_path" to "/b"),
-                ),
+                "pair" to Vectores.lista(choque, "pair"),
             ),
         )
-        val e = assertFailsWith<ConfigError> { config.upstreamsDeCombine("/volumen") }
-        assertTrue(RAIZ_UPSTREAM in (e.message ?: ""))
+        val e = assertFailsWith<ConfigError> {
+            config.upstreamsDeCombine(Vectores.texto(Vectores.raiz, "raiz_dispositivo"))
+        }
+        assertEquals(Vectores.texto(choque, "error"), e.message)
     }
 }

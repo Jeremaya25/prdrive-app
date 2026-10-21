@@ -380,6 +380,18 @@
       {
         "entrada": "checksum",
         "salida": null
+      },
+      {
+        "entrada": "config",
+        "salida": "lo pone sync.py: es el rclone.conf del dispositivo"
+      },
+      {
+        "entrada": " config ",
+        "salida": "lo pone sync.py: es el rclone.conf del dispositivo"
+      },
+      {
+        "entrada": "　rc",
+        "salida": "lanza un programa en este equipo, y el config viaja con el dispositivo"
       }
     ],
     "problema_extra": [
@@ -555,6 +567,38 @@
       },
       {
         "entrada": "1",
+        "salida": null
+      },
+      {
+        "entrada": "a‍b",
+        "salida": "'remote' no vale ('a\\u200db'): es el nombre de un remote del rclone.conf, con letras, números, espacios entre palabras y . _ + @ -, sin empezar por '-' ni llevar ',' ':' '=' o comillas (rclone lo leería como opciones de la conexión)."
+      },
+      {
+        "entrada": "a‌b",
+        "salida": "'remote' no vale ('a\\u200cb'): es el nombre de un remote del rclone.conf, con letras, números, espacios entre palabras y . _ + @ -, sin empezar por '-' ni llevar ',' ':' '=' o comillas (rclone lo leería como opciones de la conexión)."
+      },
+      {
+        "entrada": "ńas",
+        "salida": "'remote' no vale ('ńas'): es el nombre de un remote del rclone.conf, con letras, números, espacios entre palabras y . _ + @ -, sin empezar por '-' ni llevar ',' ':' '=' o comillas (rclone lo leería como opciones de la conexión)."
+      },
+      {
+        "entrada": "a‿b",
+        "salida": "'remote' no vale ('a‿b'): es el nombre de un remote del rclone.conf, con letras, números, espacios entre palabras y . _ + @ -, sin empezar por '-' ni llevar ',' ':' '=' o comillas (rclone lo leería como opciones de la conexión)."
+      },
+      {
+        "entrada": "nas½",
+        "salida": null
+      },
+      {
+        "entrada": "x²",
+        "salida": null
+      },
+      {
+        "entrada": "١٢",
+        "salida": null
+      },
+      {
+        "entrada": "日本",
         "salida": null
       },
       {
@@ -1392,6 +1436,139 @@
           }
         },
         "error": null
+      },
+      {
+        "caso": "flags que es una lista",
+        "config": {
+          "defaults": {
+            "device_remote": "disp",
+            "remote": "nas"
+          },
+          "pair": [
+            {
+              "name": "a",
+              "local": "a",
+              "remote_path": "/a",
+              "flags": [
+                "--max-delete=5"
+              ]
+            }
+          ]
+        },
+        "error": null,
+        "rompe": "AttributeError"
+      },
+      {
+        "caso": "flags que es un texto",
+        "config": {
+          "defaults": {
+            "device_remote": "disp",
+            "remote": "nas"
+          },
+          "pair": [
+            {
+              "name": "a",
+              "local": "a",
+              "remote_path": "/a",
+              "flags": "x"
+            }
+          ]
+        },
+        "error": null,
+        "rompe": "AttributeError"
+      },
+      {
+        "caso": "flags de defaults que es un texto",
+        "config": {
+          "defaults": {
+            "device_remote": "disp",
+            "remote": "nas",
+            "flags": "x"
+          },
+          "pair": [
+            {
+              "name": "a",
+              "local": "a",
+              "remote_path": "/a"
+            }
+          ]
+        },
+        "error": null,
+        "rompe": "AttributeError"
+      },
+      {
+        "caso": "device_remote que es un booleano",
+        "config": {
+          "defaults": {
+            "device_remote": true,
+            "remote": "nas"
+          },
+          "pair": [
+            {
+              "name": "a",
+              "local": "a",
+              "remote_path": "/a"
+            }
+          ]
+        },
+        "error": null,
+        "rompe": "TypeError"
+      },
+      {
+        "caso": "device_remote que es un número",
+        "config": {
+          "defaults": {
+            "device_remote": 5,
+            "remote": "nas"
+          },
+          "pair": [
+            {
+              "name": "a",
+              "local": "a",
+              "remote_path": "/a"
+            }
+          ]
+        },
+        "error": null,
+        "rompe": "TypeError"
+      },
+      {
+        "caso": "include de defaults que es un número",
+        "config": {
+          "defaults": {
+            "device_remote": "disp",
+            "remote": "nas",
+            "include": 5
+          },
+          "pair": [
+            {
+              "name": "a",
+              "local": "a",
+              "remote_path": "/a"
+            }
+          ]
+        },
+        "error": null,
+        "rompe": "TypeError"
+      },
+      {
+        "caso": "exclude de la pareja que es un número",
+        "config": {
+          "defaults": {
+            "device_remote": "disp",
+            "remote": "nas"
+          },
+          "pair": [
+            {
+              "name": "a",
+              "local": "a",
+              "remote_path": "/a",
+              "exclude": 5
+            }
+          ]
+        },
+        "error": null,
+        "rompe": "TypeError"
       }
     ]
   },
@@ -1818,6 +1995,36 @@
           "use_filters_file": false
         }
       ]
+    },
+    "select": {
+      "pedidas": [
+        "todo",
+        "notas"
+      ],
+      "salida": [
+        "notas",
+        "todo"
+      ],
+      "error_con": [
+        "notas",
+        "inventada"
+      ],
+      "error": "No existen estas parejas en el config: inventada"
+    },
+    "choque_de_upstreams": {
+      "pair": [
+        {
+          "name": "todo",
+          "local": ".",
+          "remote_path": "/a"
+        },
+        {
+          "name": "choque",
+          "local": "raiz",
+          "remote_path": "/b"
+        }
+      ],
+      "error": "Dos parejas declaran el upstream 'raiz' apuntando a carpetas distintas (/volumen y /volumen/raiz). Renombra la carpeta 'raiz' de la raíz del dispositivo."
     },
     "device_remote": "disp",
     "keep_logs": false,
@@ -2298,6 +2505,109 @@
         "local_existe": true,
         "vacia": false
       }
+    ],
+    "filtros": [
+      {
+        "caso": "sin md5",
+        "contenido": "# Generado por sync.py desde sync_config.toml. No editar a mano:\n# se regenera en cada ejecución. Cambiar los patrones exige --resync.\n",
+        "md5": null,
+        "status": "new",
+        "detail": "notas.txt sin hash previo"
+      },
+      {
+        "caso": "md5 bueno",
+        "contenido": "# Generado por sync.py desde sync_config.toml. No editar a mano:\n# se regenera en cada ejecución. Cambiar los patrones exige --resync.\n",
+        "md5": "6ff4f340c4048d3edde47c9a818da10c",
+        "status": "ok",
+        "detail": "notas.txt sin cambios"
+      },
+      {
+        "caso": "md5 bueno con salto de línea",
+        "contenido": "# Generado por sync.py desde sync_config.toml. No editar a mano:\n# se regenera en cada ejecución. Cambiar los patrones exige --resync.\n",
+        "md5": "6ff4f340c4048d3edde47c9a818da10c\n",
+        "status": "ok",
+        "detail": "notas.txt sin cambios"
+      },
+      {
+        "caso": "md5 de otro contenido",
+        "contenido": "# Generado por sync.py desde sync_config.toml. No editar a mano:\n# se regenera en cada ejecución. Cambiar los patrones exige --resync.\n",
+        "md5": "00000000000000000000000000000000",
+        "status": "changed",
+        "detail": "notas.txt ha cambiado desde el último resync"
+      }
+    ],
+    "resync_reasons": [
+      {
+        "caso": "fresca y filtros nuevos",
+        "ficheros": {},
+        "md5": false,
+        "razones": [
+          "estado fresh: sin workdir (nunca sincronizada)",
+          "filtros new: notas.txt sin hash previo"
+        ]
+      },
+      {
+        "caso": "con baseline y filtros nuevos",
+        "ficheros": {
+          "disp_sync-data_notas..nas__copia_notas.path1.lst": "# x\n-  5 - - 2026-01-01T00:00:00.000000000+0000 \"a.txt\"\n",
+          "disp_sync-data_notas..nas__copia_notas.path2.lst": "# x\n-  5 - - 2026-01-01T00:00:00.000000000+0000 \"a.txt\"\n"
+        },
+        "md5": false,
+        "razones": [
+          "filtros new: notas.txt sin hash previo"
+        ]
+      },
+      {
+        "caso": "con baseline y filtros al día",
+        "ficheros": {
+          "disp_sync-data_notas..nas__copia_notas.path1.lst": "# x\n-  5 - - 2026-01-01T00:00:00.000000000+0000 \"a.txt\"\n",
+          "disp_sync-data_notas..nas__copia_notas.path2.lst": "# x\n-  5 - - 2026-01-01T00:00:00.000000000+0000 \"a.txt\"\n"
+        },
+        "md5": true,
+        "razones": []
+      }
+    ],
+    "apartar": [
+      null,
+      "notas.old-20261001_110101",
+      "notas.old-20261001_110101_1"
+    ],
+    "renombrar": [
+      [
+        "state/viejo",
+        "state/nuevo"
+      ],
+      [
+        "filters/viejo.txt",
+        "filters/nuevo.txt"
+      ],
+      [
+        "filters/viejo.txt.md5",
+        "filters/nuevo.txt.md5"
+      ]
+    ],
+    "sin_fichero": {
+      "status": "ok",
+      "detail": "sin fichero de filtros"
+    },
+    "fecha_apartado": [
+      2026,
+      10,
+      1,
+      11,
+      1,
+      1
+    ],
+    "sello_apartado": "20261001_110101",
+    "renombrar_a_uno_que_existe": [
+      [
+        "nuevo.txt",
+        "ocupado.txt"
+      ],
+      [
+        "nuevo.txt.md5",
+        "ocupado.txt.md5"
+      ]
     ]
   },
   "toml": {
@@ -2604,6 +2914,16 @@
         "texto": "\"raro clave\" = \"x\""
       },
       {
+        "tabla": {
+          "a": 5e-324,
+          "b": 1e+22,
+          "c": 0.1,
+          "d": Infinity,
+          "e": -1e-07
+        },
+        "texto": "a = 5e-324\nb = 1e+22\nc = 0.1\nd = inf\ne = -1e-07"
+      },
+      {
         "tabla": {},
         "texto": ""
       }
@@ -2680,6 +3000,16 @@
         "caso": "base64 malo",
         "texto": "prdrive = 1\nprivate_key_b64 = \"no es base64!!\"\n",
         "rechaza": true
+      },
+      {
+        "caso": "escape u roto",
+        "texto": "prdrive = 1\nremote_name = \"\\uZZZZ\"\n",
+        "rechaza": true
+      },
+      {
+        "caso": "carácter de control",
+        "texto": "prdrive = 1\nremote_name = \"a\u0001b\"\n",
+        "rechaza": true
       }
     ],
     "rclone_conf": [
@@ -2718,6 +3048,2731 @@
           "nas": {
             "type": "sftp"
           }
+        }
+      }
+    ]
+  },
+  "json": [
+    {
+      "valor": {},
+      "texto": "{}"
+    },
+    {
+      "valor": {
+        "a": 1
+      },
+      "texto": "{\n \"a\": 1\n}"
+    },
+    {
+      "valor": {
+        "parejas": {
+          "notas": {
+            "cuando": "2026-10-01 11:01:01",
+            "codigo": 0,
+            "log": null,
+            "buena": "2026-10-01 11:01:01"
+          }
+        }
+      },
+      "texto": "{\n \"parejas\": {\n  \"notas\": {\n   \"cuando\": \"2026-10-01 11:01:01\",\n   \"codigo\": 0,\n   \"log\": null,\n   \"buena\": \"2026-10-01 11:01:01\"\n  }\n }\n}"
+    },
+    {
+      "valor": {
+        "s": "con \"comillas\", \\ barra, \n salto, \t tab, ñ, \u0001 control y  "
+      },
+      "texto": "{\n \"s\": \"con \\\"comillas\\\", \\\\ barra, \\n salto, \\t tab, ñ, \\u0001 control y  \"\n}"
+    },
+    {
+      "valor": {
+        "l": [
+          1,
+          2.5,
+          true,
+          false,
+          null,
+          [],
+          {}
+        ],
+        "vacia": []
+      },
+      "texto": "{\n \"l\": [\n  1,\n  2.5,\n  true,\n  false,\n  null,\n  [],\n  {}\n ],\n \"vacia\": []\n}"
+    },
+    {
+      "valor": {
+        "f": 1e+20,
+        "g": -0.0,
+        "h": 1.5e-07,
+        "i": 100.0
+      },
+      "texto": "{\n \"f\": 1e+20,\n \"g\": -0.0,\n \"h\": 1.5e-07,\n \"i\": 100.0\n}"
+    },
+    {
+      "valor": {
+        "sub": 5e-324,
+        "sub2": 1e-323,
+        "grande": 1e+22,
+        "decima": 0.1,
+        "tercio": 0.3333333333333333,
+        "largo": 1.2345678901234568e+17,
+        "borde": 1e+16,
+        "casi": 9999999999999998.0,
+        "pequeno": 0.0001,
+        "menor": 1e-05,
+        "neg": -2.5e-05
+      },
+      "texto": "{\n \"sub\": 5e-324,\n \"sub2\": 1e-323,\n \"grande\": 1e+22,\n \"decima\": 0.1,\n \"tercio\": 0.3333333333333333,\n \"largo\": 1.2345678901234568e+17,\n \"borde\": 1e+16,\n \"casi\": 9999999999999998.0,\n \"pequeno\": 0.0001,\n \"menor\": 1e-05,\n \"neg\": -2.5e-05\n}"
+    },
+    {
+      "valor": [
+        1,
+        "dos",
+        {
+          "tres": 3
+        }
+      ],
+      "texto": "[\n 1,\n \"dos\",\n {\n  \"tres\": 3\n }\n]"
+    }
+  ],
+  "store": {
+    "formato": "%Y-%m-%d %H:%M:%S",
+    "ejemplo": "2026-01-02 03:04:05"
+  },
+  "sellos": [
+    "2026-10-01 11:01:01",
+    "2026-10-02 12:02:02",
+    "2026-10-03 13:03:03",
+    "2026-10-04 14:04:04",
+    "2026-10-05 15:05:05",
+    "2026-10-06 16:06:06",
+    "2026-10-07 17:07:07",
+    "2026-10-08 18:08:08",
+    "2026-10-09 19:09:09"
+  ],
+  "ruido_del_sistema": [
+    "system volume information",
+    "$recycle.bin",
+    "recycler",
+    "lost+found",
+    ".ds_store",
+    ".spotlight-v100",
+    ".fseventsd",
+    ".trashes",
+    "desktop.ini",
+    "autorun.inf",
+    ".trash-*"
+  ],
+  "catalogo": {
+    "fichero": "remote.toml",
+    "fichero_anterior": "pairs.toml",
+    "nombres": [
+      "remote.toml",
+      "pairs.toml"
+    ],
+    "rc_no_existe": [
+      3,
+      4
+    ],
+    "net_flags": [
+      "--contimeout",
+      "10s",
+      "--timeout",
+      "20s",
+      "--retries",
+      "1",
+      "--low-level-retries",
+      "2"
+    ],
+    "sin_fecha": "fecha desconocida",
+    "endpoint": [
+      {
+        "raw_local": null,
+        "salida": "remote:/prdrive-catalog/remote.toml"
+      },
+      {
+        "raw_local": {
+          "defaults": {}
+        },
+        "salida": "remote:/prdrive-catalog/remote.toml"
+      },
+      {
+        "raw_local": {
+          "defaults": {
+            "remote": "nas"
+          }
+        },
+        "salida": "nas:/prdrive-catalog/remote.toml"
+      },
+      {
+        "raw_local": {
+          "defaults": {
+            "remote": "nas",
+            "catalog_remote": "cat",
+            "catalog_path": "/x/pairs.toml"
+          }
+        },
+        "salida": "cat:/x/pairs.toml"
+      },
+      {
+        "raw_local": {
+          "defaults": {
+            "remote": "nas",
+            "catalog_path": ""
+          }
+        },
+        "salida": "nas:/prdrive-catalog/remote.toml"
+      }
+    ],
+    "partir": [
+      {
+        "entrada": "nas:/prdrive-catalog/remote.toml",
+        "salida": [
+          "nas:/prdrive-catalog/",
+          "remote.toml"
+        ]
+      },
+      {
+        "entrada": "nas:remote.toml",
+        "salida": [
+          "nas:",
+          "remote.toml"
+        ]
+      },
+      {
+        "entrada": "nas:",
+        "salida": [
+          "nas:",
+          ""
+        ]
+      },
+      {
+        "entrada": "nas:/a/b/",
+        "salida": [
+          "nas:/a/b/",
+          ""
+        ]
+      },
+      {
+        "entrada": "/local/x.toml",
+        "salida": [
+          "/local/",
+          "x.toml"
+        ]
+      },
+      {
+        "entrada": "remote.toml",
+        "salida": [
+          "",
+          "remote.toml"
+        ]
+      },
+      {
+        "entrada": "nas:/c/pairs.toml",
+        "salida": [
+          "nas:/c/",
+          "pairs.toml"
+        ]
+      },
+      {
+        "entrada": "nas:/c/otro.toml",
+        "salida": [
+          "nas:/c/",
+          "otro.toml"
+        ]
+      },
+      {
+        "entrada": "nas:pairs.toml",
+        "salida": [
+          "nas:",
+          "pairs.toml"
+        ]
+      },
+      {
+        "entrada": "nas:/c/REMOTE.toml",
+        "salida": [
+          "nas:/c/",
+          "REMOTE.toml"
+        ]
+      }
+    ],
+    "candidatos": [
+      {
+        "entrada": "nas:/prdrive-catalog/remote.toml",
+        "salida": [
+          "nas:/prdrive-catalog/remote.toml",
+          "nas:/prdrive-catalog/pairs.toml"
+        ]
+      },
+      {
+        "entrada": "nas:remote.toml",
+        "salida": [
+          "nas:remote.toml",
+          "nas:pairs.toml"
+        ]
+      },
+      {
+        "entrada": "nas:",
+        "salida": [
+          "nas:"
+        ]
+      },
+      {
+        "entrada": "nas:/a/b/",
+        "salida": [
+          "nas:/a/b/"
+        ]
+      },
+      {
+        "entrada": "/local/x.toml",
+        "salida": [
+          "/local/x.toml"
+        ]
+      },
+      {
+        "entrada": "remote.toml",
+        "salida": [
+          "remote.toml",
+          "pairs.toml"
+        ]
+      },
+      {
+        "entrada": "nas:/c/pairs.toml",
+        "salida": [
+          "nas:/c/remote.toml",
+          "nas:/c/pairs.toml"
+        ]
+      },
+      {
+        "entrada": "nas:/c/otro.toml",
+        "salida": [
+          "nas:/c/otro.toml"
+        ]
+      },
+      {
+        "entrada": "nas:pairs.toml",
+        "salida": [
+          "nas:remote.toml",
+          "nas:pairs.toml"
+        ]
+      },
+      {
+        "entrada": "nas:/c/REMOTE.toml",
+        "salida": [
+          "nas:/c/REMOTE.toml"
+        ]
+      }
+    ],
+    "dentro": [
+      {
+        "entrada": [
+          ""
+        ],
+        "salida": "remote.toml"
+      },
+      {
+        "entrada": [
+          "nas:"
+        ],
+        "salida": "nas:remote.toml"
+      },
+      {
+        "entrada": [
+          "nas:/c"
+        ],
+        "salida": "nas:/c/remote.toml"
+      },
+      {
+        "entrada": [
+          "/c/"
+        ],
+        "salida": "/c/remote.toml"
+      },
+      {
+        "entrada": [
+          "nas:/c",
+          "pairs.toml"
+        ],
+        "salida": "nas:/c/pairs.toml"
+      },
+      {
+        "entrada": [
+          "c"
+        ],
+        "salida": "c/remote.toml"
+      }
+    ],
+    "problema_de_ruta": [
+      {
+        "entrada": "",
+        "salida": null
+      },
+      {
+        "entrada": "  ",
+        "salida": null
+      },
+      {
+        "entrada": "/prdrive-catalog",
+        "salida": "La ruta del catálogo tiene que ser la de su fichero .toml, no la de la carpeta: «/prdrive-catalog» no termina en .toml. Si el catálogo está dentro, sería «/prdrive-catalog/remote.toml»."
+      },
+      {
+        "entrada": "/prdrive-catalog/remote.toml",
+        "salida": null
+      },
+      {
+        "entrada": "/x/Y.TOML",
+        "salida": null
+      },
+      {
+        "entrada": "nas:/c",
+        "salida": "La ruta del catálogo tiene que ser la de su fichero .toml, no la de la carpeta: «nas:/c» no termina en .toml. Si el catálogo está dentro, sería «nas:/c/remote.toml»."
+      },
+      {
+        "entrada": "/c/",
+        "salida": "La ruta del catálogo tiene que ser la de su fichero .toml, no la de la carpeta: «/c/» no termina en .toml. Si el catálogo está dentro, sería «/c/remote.toml»."
+      }
+    ],
+    "escenarios": [
+      {
+        "caso": "remote.toml normal",
+        "raw_local": {
+          "defaults": {
+            "remote": "nas"
+          }
+        },
+        "rclone": {
+          "respuestas": {
+            "cat nas:/prdrive-catalog/remote.toml": [
+              0,
+              "# El catálogo de los tests.\n\n[remote]\nname = \"nas\"\ntype = \"sftp\"\n\n[defaults]\nremote = \"nas\"\ndevice_remote = \"disp\"\n\n[[pair]]\nname = \"notas\"\nlocal = \"sync-data/notas\"\nremote_path = \"/copia/notas\"\n\n[[pair]]\nname = \"fotos\"\nlocal = \"sync-data/fotos\"\nremote_path = \"/copia/fotos\"\nmode = \"down\"\n",
+              ""
+            ],
+            "lsjson --stat nas:/prdrive-catalog/remote.toml": [
+              0,
+              "{\"Path\": \"remote.toml\", \"IsDir\": false}",
+              ""
+            ]
+          },
+          "por_defecto": [
+            3,
+            "",
+            "error: directory not found"
+          ]
+        },
+        "endpoint": "nas:/prdrive-catalog/remote.toml",
+        "leer": {
+          "codigo": 0,
+          "salida": "# El catálogo de los tests.\n\n[remote]\nname = \"nas\"\ntype = \"sftp\"\n\n[defaults]\nremote = \"nas\"\ndevice_remote = \"disp\"\n\n[[pair]]\nname = \"notas\"\nlocal = \"sync-data/notas\"\nremote_path = \"/copia/notas\"\n\n[[pair]]\nname = \"fotos\"\nlocal = \"sync-data/fotos\"\nremote_path = \"/copia/fotos\"\nmode = \"down\"\n",
+          "error": "",
+          "cual": "nas:/prdrive-catalog/remote.toml"
+        },
+        "pull": {
+          "text": "# El catálogo de los tests.\n\n[remote]\nname = \"nas\"\ntype = \"sftp\"\n\n[defaults]\nremote = \"nas\"\ndevice_remote = \"disp\"\n\n[[pair]]\nname = \"notas\"\nlocal = \"sync-data/notas\"\nremote_path = \"/copia/notas\"\n\n[[pair]]\nname = \"fotos\"\nlocal = \"sync-data/fotos\"\nremote_path = \"/copia/fotos\"\nmode = \"down\"\n",
+          "source": "remote",
+          "stamp": "2026-10-01 11:01:01",
+          "endpoint": "nas:/prdrive-catalog/remote.toml",
+          "names": [
+            "notas",
+            "fotos"
+          ],
+          "defaults": {
+            "remote": "nas",
+            "device_remote": "disp"
+          }
+        },
+        "copia": {
+          "toml": "# El catálogo de los tests.\n\n[remote]\nname = \"nas\"\ntype = \"sftp\"\n\n[defaults]\nremote = \"nas\"\ndevice_remote = \"disp\"\n\n[[pair]]\nname = \"notas\"\nlocal = \"sync-data/notas\"\nremote_path = \"/copia/notas\"\n\n[[pair]]\nname = \"fotos\"\nlocal = \"sync-data/fotos\"\nremote_path = \"/copia/fotos\"\nmode = \"down\"\n",
+          "json": "{\n \"pulled_at\": \"2026-10-01 11:01:01\",\n \"endpoint\": \"nas:/prdrive-catalog/remote.toml\"\n}"
+        },
+        "load_sin_red": {
+          "source": "cache",
+          "stamp": "2026-10-01 11:01:01",
+          "endpoint": "nas:/prdrive-catalog/remote.toml",
+          "aviso": "Sin conexión con el catálogo. Se enseña la copia local del 2026-10-01 11:01:01; no se puede editar el catálogo hasta que vuelva la conexión.\nNo pude leer el catálogo nas:/prdrive-catalog/remote.toml: Failed to cat: dial tcp: lookup nas: no such host"
+        }
+      },
+      {
+        "caso": "un remoto de antes conserva pairs.toml",
+        "raw_local": {
+          "defaults": {
+            "remote": "nas"
+          }
+        },
+        "rclone": {
+          "respuestas": {
+            "cat nas:/prdrive-catalog/pairs.toml": [
+              0,
+              "# El catálogo de los tests.\n\n[remote]\nname = \"nas\"\ntype = \"sftp\"\n\n[defaults]\nremote = \"nas\"\ndevice_remote = \"disp\"\n\n[[pair]]\nname = \"notas\"\nlocal = \"sync-data/notas\"\nremote_path = \"/copia/notas\"\n\n[[pair]]\nname = \"fotos\"\nlocal = \"sync-data/fotos\"\nremote_path = \"/copia/fotos\"\nmode = \"down\"\n",
+              ""
+            ],
+            "lsjson --stat nas:/prdrive-catalog/pairs.toml": [
+              0,
+              "{\"Path\": \"pairs.toml\", \"IsDir\": false}",
+              ""
+            ]
+          },
+          "por_defecto": [
+            3,
+            "",
+            "error: directory not found"
+          ]
+        },
+        "endpoint": "nas:/prdrive-catalog/remote.toml",
+        "leer": {
+          "codigo": 0,
+          "salida": "# El catálogo de los tests.\n\n[remote]\nname = \"nas\"\ntype = \"sftp\"\n\n[defaults]\nremote = \"nas\"\ndevice_remote = \"disp\"\n\n[[pair]]\nname = \"notas\"\nlocal = \"sync-data/notas\"\nremote_path = \"/copia/notas\"\n\n[[pair]]\nname = \"fotos\"\nlocal = \"sync-data/fotos\"\nremote_path = \"/copia/fotos\"\nmode = \"down\"\n",
+          "error": "",
+          "cual": "nas:/prdrive-catalog/pairs.toml"
+        },
+        "pull": {
+          "text": "# El catálogo de los tests.\n\n[remote]\nname = \"nas\"\ntype = \"sftp\"\n\n[defaults]\nremote = \"nas\"\ndevice_remote = \"disp\"\n\n[[pair]]\nname = \"notas\"\nlocal = \"sync-data/notas\"\nremote_path = \"/copia/notas\"\n\n[[pair]]\nname = \"fotos\"\nlocal = \"sync-data/fotos\"\nremote_path = \"/copia/fotos\"\nmode = \"down\"\n",
+          "source": "remote",
+          "stamp": "2026-10-01 11:01:01",
+          "endpoint": "nas:/prdrive-catalog/pairs.toml",
+          "names": [
+            "notas",
+            "fotos"
+          ],
+          "defaults": {
+            "remote": "nas",
+            "device_remote": "disp"
+          }
+        },
+        "copia": {
+          "toml": "# El catálogo de los tests.\n\n[remote]\nname = \"nas\"\ntype = \"sftp\"\n\n[defaults]\nremote = \"nas\"\ndevice_remote = \"disp\"\n\n[[pair]]\nname = \"notas\"\nlocal = \"sync-data/notas\"\nremote_path = \"/copia/notas\"\n\n[[pair]]\nname = \"fotos\"\nlocal = \"sync-data/fotos\"\nremote_path = \"/copia/fotos\"\nmode = \"down\"\n",
+          "json": "{\n \"pulled_at\": \"2026-10-01 11:01:01\",\n \"endpoint\": \"nas:/prdrive-catalog/pairs.toml\"\n}"
+        },
+        "load_sin_red": {
+          "source": "cache",
+          "stamp": "2026-10-01 11:01:01",
+          "endpoint": "nas:/prdrive-catalog/pairs.toml",
+          "aviso": "Sin conexión con el catálogo. Se enseña la copia local del 2026-10-01 11:01:01; no se puede editar el catálogo hasta que vuelva la conexión.\nNo pude leer el catálogo nas:/prdrive-catalog/remote.toml: Failed to cat: dial tcp: lookup nas: no such host"
+        }
+      },
+      {
+        "caso": "un dispositivo de antes encuentra remote.toml",
+        "raw_local": {
+          "defaults": {
+            "remote": "nas",
+            "catalog_path": "/prdrive-catalog/pairs.toml"
+          }
+        },
+        "rclone": {
+          "respuestas": {
+            "cat nas:/prdrive-catalog/remote.toml": [
+              0,
+              "# El catálogo de los tests.\n\n[remote]\nname = \"nas\"\ntype = \"sftp\"\n\n[defaults]\nremote = \"nas\"\ndevice_remote = \"disp\"\n\n[[pair]]\nname = \"notas\"\nlocal = \"sync-data/notas\"\nremote_path = \"/copia/notas\"\n\n[[pair]]\nname = \"fotos\"\nlocal = \"sync-data/fotos\"\nremote_path = \"/copia/fotos\"\nmode = \"down\"\n",
+              ""
+            ],
+            "lsjson --stat nas:/prdrive-catalog/remote.toml": [
+              0,
+              "{\"Path\": \"remote.toml\", \"IsDir\": false}",
+              ""
+            ]
+          },
+          "por_defecto": [
+            3,
+            "",
+            "error: directory not found"
+          ]
+        },
+        "endpoint": "nas:/prdrive-catalog/pairs.toml",
+        "leer": {
+          "codigo": 0,
+          "salida": "# El catálogo de los tests.\n\n[remote]\nname = \"nas\"\ntype = \"sftp\"\n\n[defaults]\nremote = \"nas\"\ndevice_remote = \"disp\"\n\n[[pair]]\nname = \"notas\"\nlocal = \"sync-data/notas\"\nremote_path = \"/copia/notas\"\n\n[[pair]]\nname = \"fotos\"\nlocal = \"sync-data/fotos\"\nremote_path = \"/copia/fotos\"\nmode = \"down\"\n",
+          "error": "",
+          "cual": "nas:/prdrive-catalog/remote.toml"
+        },
+        "pull": {
+          "text": "# El catálogo de los tests.\n\n[remote]\nname = \"nas\"\ntype = \"sftp\"\n\n[defaults]\nremote = \"nas\"\ndevice_remote = \"disp\"\n\n[[pair]]\nname = \"notas\"\nlocal = \"sync-data/notas\"\nremote_path = \"/copia/notas\"\n\n[[pair]]\nname = \"fotos\"\nlocal = \"sync-data/fotos\"\nremote_path = \"/copia/fotos\"\nmode = \"down\"\n",
+          "source": "remote",
+          "stamp": "2026-10-01 11:01:01",
+          "endpoint": "nas:/prdrive-catalog/remote.toml",
+          "names": [
+            "notas",
+            "fotos"
+          ],
+          "defaults": {
+            "remote": "nas",
+            "device_remote": "disp"
+          }
+        },
+        "copia": {
+          "toml": "# El catálogo de los tests.\n\n[remote]\nname = \"nas\"\ntype = \"sftp\"\n\n[defaults]\nremote = \"nas\"\ndevice_remote = \"disp\"\n\n[[pair]]\nname = \"notas\"\nlocal = \"sync-data/notas\"\nremote_path = \"/copia/notas\"\n\n[[pair]]\nname = \"fotos\"\nlocal = \"sync-data/fotos\"\nremote_path = \"/copia/fotos\"\nmode = \"down\"\n",
+          "json": "{\n \"pulled_at\": \"2026-10-01 11:01:01\",\n \"endpoint\": \"nas:/prdrive-catalog/remote.toml\"\n}"
+        },
+        "load_sin_red": {
+          "source": "cache",
+          "stamp": "2026-10-01 11:01:01",
+          "endpoint": "nas:/prdrive-catalog/remote.toml",
+          "aviso": "Sin conexión con el catálogo. Se enseña la copia local del 2026-10-01 11:01:01; no se puede editar el catálogo hasta que vuelva la conexión.\nNo pude leer el catálogo nas:/prdrive-catalog/remote.toml: Failed to cat: dial tcp: lookup nas: no such host"
+        }
+      },
+      {
+        "caso": "con los dos manda remote.toml",
+        "raw_local": {
+          "defaults": {
+            "remote": "nas"
+          }
+        },
+        "rclone": {
+          "respuestas": {
+            "cat nas:/prdrive-catalog/remote.toml": [
+              0,
+              "# El catálogo de los tests.\n\n[remote]\nname = \"nas\"\ntype = \"sftp\"\n\n[defaults]\nremote = \"nas\"\ndevice_remote = \"disp\"\n\n[[pair]]\nname = \"notas\"\nlocal = \"sync-data/notas\"\nremote_path = \"/copia/notas\"\n\n[[pair]]\nname = \"fotos\"\nlocal = \"sync-data/fotos\"\nremote_path = \"/copia/fotos\"\nmode = \"down\"\n",
+              ""
+            ],
+            "lsjson --stat nas:/prdrive-catalog/remote.toml": [
+              0,
+              "{\"Path\": \"remote.toml\", \"IsDir\": false}",
+              ""
+            ],
+            "cat nas:/prdrive-catalog/pairs.toml": [
+              0,
+              "[defaults]\n",
+              ""
+            ],
+            "lsjson --stat nas:/prdrive-catalog/pairs.toml": [
+              0,
+              "{\"Path\": \"pairs.toml\", \"IsDir\": false}",
+              ""
+            ]
+          },
+          "por_defecto": [
+            3,
+            "",
+            "error: directory not found"
+          ]
+        },
+        "endpoint": "nas:/prdrive-catalog/remote.toml",
+        "leer": {
+          "codigo": 0,
+          "salida": "# El catálogo de los tests.\n\n[remote]\nname = \"nas\"\ntype = \"sftp\"\n\n[defaults]\nremote = \"nas\"\ndevice_remote = \"disp\"\n\n[[pair]]\nname = \"notas\"\nlocal = \"sync-data/notas\"\nremote_path = \"/copia/notas\"\n\n[[pair]]\nname = \"fotos\"\nlocal = \"sync-data/fotos\"\nremote_path = \"/copia/fotos\"\nmode = \"down\"\n",
+          "error": "",
+          "cual": "nas:/prdrive-catalog/remote.toml"
+        },
+        "pull": {
+          "text": "# El catálogo de los tests.\n\n[remote]\nname = \"nas\"\ntype = \"sftp\"\n\n[defaults]\nremote = \"nas\"\ndevice_remote = \"disp\"\n\n[[pair]]\nname = \"notas\"\nlocal = \"sync-data/notas\"\nremote_path = \"/copia/notas\"\n\n[[pair]]\nname = \"fotos\"\nlocal = \"sync-data/fotos\"\nremote_path = \"/copia/fotos\"\nmode = \"down\"\n",
+          "source": "remote",
+          "stamp": "2026-10-01 11:01:01",
+          "endpoint": "nas:/prdrive-catalog/remote.toml",
+          "names": [
+            "notas",
+            "fotos"
+          ],
+          "defaults": {
+            "remote": "nas",
+            "device_remote": "disp"
+          }
+        },
+        "copia": {
+          "toml": "# El catálogo de los tests.\n\n[remote]\nname = \"nas\"\ntype = \"sftp\"\n\n[defaults]\nremote = \"nas\"\ndevice_remote = \"disp\"\n\n[[pair]]\nname = \"notas\"\nlocal = \"sync-data/notas\"\nremote_path = \"/copia/notas\"\n\n[[pair]]\nname = \"fotos\"\nlocal = \"sync-data/fotos\"\nremote_path = \"/copia/fotos\"\nmode = \"down\"\n",
+          "json": "{\n \"pulled_at\": \"2026-10-01 11:01:01\",\n \"endpoint\": \"nas:/prdrive-catalog/remote.toml\"\n}"
+        },
+        "load_sin_red": {
+          "source": "cache",
+          "stamp": "2026-10-01 11:01:01",
+          "endpoint": "nas:/prdrive-catalog/remote.toml",
+          "aviso": "Sin conexión con el catálogo. Se enseña la copia local del 2026-10-01 11:01:01; no se puede editar el catálogo hasta que vuelva la conexión.\nNo pude leer el catálogo nas:/prdrive-catalog/remote.toml: Failed to cat: dial tcp: lookup nas: no such host"
+        }
+      },
+      {
+        "caso": "no hay ninguno",
+        "raw_local": {
+          "defaults": {
+            "remote": "nas"
+          }
+        },
+        "rclone": {
+          "respuestas": {},
+          "por_defecto": [
+            3,
+            "",
+            "error: directory not found"
+          ]
+        },
+        "endpoint": "nas:/prdrive-catalog/remote.toml",
+        "leer": {
+          "codigo": 3,
+          "salida": "",
+          "error": "error: directory not found",
+          "cual": "nas:/prdrive-catalog/pairs.toml"
+        },
+        "pull": {
+          "error": "No hay catálogo en nas:/prdrive-catalog/remote.toml ni en nas:/prdrive-catalog/pairs.toml: error: directory not found"
+        },
+        "copia": {
+          "toml": null,
+          "json": null
+        },
+        "load_sin_red": {
+          "source": null,
+          "stamp": null,
+          "endpoint": null,
+          "aviso": "No hay catálogo ni copia local, así que solo se puede trabajar con las parejas que ya tiene este dispositivo.\nNo pude leer el catálogo nas:/prdrive-catalog/remote.toml: Failed to cat: dial tcp: lookup nas: no such host"
+        }
+      },
+      {
+        "caso": "sin red",
+        "raw_local": {
+          "defaults": {
+            "remote": "nas"
+          }
+        },
+        "rclone": {
+          "respuestas": {},
+          "por_defecto": [
+            1,
+            "",
+            "Failed to cat: dial tcp: lookup nas: no such host"
+          ]
+        },
+        "endpoint": "nas:/prdrive-catalog/remote.toml",
+        "leer": {
+          "codigo": 1,
+          "salida": "",
+          "error": "Failed to cat: dial tcp: lookup nas: no such host",
+          "cual": "nas:/prdrive-catalog/remote.toml"
+        },
+        "pull": {
+          "error": "No pude leer el catálogo nas:/prdrive-catalog/remote.toml: Failed to cat: dial tcp: lookup nas: no such host"
+        },
+        "copia": {
+          "toml": null,
+          "json": null
+        },
+        "load_sin_red": {
+          "source": null,
+          "stamp": null,
+          "endpoint": null,
+          "aviso": "No hay catálogo ni copia local, así que solo se puede trabajar con las parejas que ya tiene este dispositivo.\nNo pude leer el catálogo nas:/prdrive-catalog/remote.toml: Failed to cat: dial tcp: lookup nas: no such host"
+        }
+      },
+      {
+        "caso": "remoto de cubetas sin catálogo",
+        "raw_local": {
+          "defaults": {
+            "remote": "nas"
+          }
+        },
+        "rclone": {
+          "respuestas": {},
+          "por_defecto": [
+            0,
+            "",
+            ""
+          ]
+        },
+        "endpoint": "nas:/prdrive-catalog/remote.toml",
+        "leer": {
+          "codigo": 0,
+          "salida": "",
+          "error": "",
+          "cual": "nas:/prdrive-catalog/remote.toml"
+        },
+        "pull": {
+          "text": "",
+          "source": "remote",
+          "stamp": "2026-10-01 11:01:01",
+          "endpoint": "nas:/prdrive-catalog/remote.toml",
+          "names": [],
+          "defaults": {}
+        },
+        "copia": {
+          "toml": "",
+          "json": "{\n \"pulled_at\": \"2026-10-01 11:01:01\",\n \"endpoint\": \"nas:/prdrive-catalog/remote.toml\"\n}"
+        },
+        "load_sin_red": {
+          "source": "cache",
+          "stamp": "2026-10-01 11:01:01",
+          "endpoint": "nas:/prdrive-catalog/remote.toml",
+          "aviso": "Sin conexión con el catálogo. Se enseña la copia local del 2026-10-01 11:01:01; no se puede editar el catálogo hasta que vuelva la conexión.\nNo pude leer el catálogo nas:/prdrive-catalog/remote.toml: Failed to cat: dial tcp: lookup nas: no such host"
+        }
+      },
+      {
+        "caso": "remoto de cubetas con pairs.toml",
+        "raw_local": {
+          "defaults": {
+            "remote": "nas"
+          }
+        },
+        "rclone": {
+          "respuestas": {
+            "cat nas:/prdrive-catalog/pairs.toml": [
+              0,
+              "# El catálogo de los tests.\n\n[remote]\nname = \"nas\"\ntype = \"sftp\"\n\n[defaults]\nremote = \"nas\"\ndevice_remote = \"disp\"\n\n[[pair]]\nname = \"notas\"\nlocal = \"sync-data/notas\"\nremote_path = \"/copia/notas\"\n\n[[pair]]\nname = \"fotos\"\nlocal = \"sync-data/fotos\"\nremote_path = \"/copia/fotos\"\nmode = \"down\"\n",
+              ""
+            ],
+            "lsjson --stat nas:/prdrive-catalog/pairs.toml": [
+              0,
+              "{\"Path\": \"pairs.toml\", \"IsDir\": false}",
+              ""
+            ]
+          },
+          "por_defecto": [
+            0,
+            "",
+            ""
+          ]
+        },
+        "endpoint": "nas:/prdrive-catalog/remote.toml",
+        "leer": {
+          "codigo": 0,
+          "salida": "# El catálogo de los tests.\n\n[remote]\nname = \"nas\"\ntype = \"sftp\"\n\n[defaults]\nremote = \"nas\"\ndevice_remote = \"disp\"\n\n[[pair]]\nname = \"notas\"\nlocal = \"sync-data/notas\"\nremote_path = \"/copia/notas\"\n\n[[pair]]\nname = \"fotos\"\nlocal = \"sync-data/fotos\"\nremote_path = \"/copia/fotos\"\nmode = \"down\"\n",
+          "error": "",
+          "cual": "nas:/prdrive-catalog/pairs.toml"
+        },
+        "pull": {
+          "text": "# El catálogo de los tests.\n\n[remote]\nname = \"nas\"\ntype = \"sftp\"\n\n[defaults]\nremote = \"nas\"\ndevice_remote = \"disp\"\n\n[[pair]]\nname = \"notas\"\nlocal = \"sync-data/notas\"\nremote_path = \"/copia/notas\"\n\n[[pair]]\nname = \"fotos\"\nlocal = \"sync-data/fotos\"\nremote_path = \"/copia/fotos\"\nmode = \"down\"\n",
+          "source": "remote",
+          "stamp": "2026-10-01 11:01:01",
+          "endpoint": "nas:/prdrive-catalog/pairs.toml",
+          "names": [
+            "notas",
+            "fotos"
+          ],
+          "defaults": {
+            "remote": "nas",
+            "device_remote": "disp"
+          }
+        },
+        "copia": {
+          "toml": "# El catálogo de los tests.\n\n[remote]\nname = \"nas\"\ntype = \"sftp\"\n\n[defaults]\nremote = \"nas\"\ndevice_remote = \"disp\"\n\n[[pair]]\nname = \"notas\"\nlocal = \"sync-data/notas\"\nremote_path = \"/copia/notas\"\n\n[[pair]]\nname = \"fotos\"\nlocal = \"sync-data/fotos\"\nremote_path = \"/copia/fotos\"\nmode = \"down\"\n",
+          "json": "{\n \"pulled_at\": \"2026-10-01 11:01:01\",\n \"endpoint\": \"nas:/prdrive-catalog/pairs.toml\"\n}"
+        },
+        "load_sin_red": {
+          "source": "cache",
+          "stamp": "2026-10-01 11:01:01",
+          "endpoint": "nas:/prdrive-catalog/pairs.toml",
+          "aviso": "Sin conexión con el catálogo. Se enseña la copia local del 2026-10-01 11:01:01; no se puede editar el catálogo hasta que vuelva la conexión.\nNo pude leer el catálogo nas:/prdrive-catalog/remote.toml: Failed to cat: dial tcp: lookup nas: no such host"
+        }
+      },
+      {
+        "caso": "la ruta es la carpeta",
+        "raw_local": {
+          "defaults": {
+            "remote": "nas",
+            "catalog_path": "/prdrive-catalog"
+          }
+        },
+        "rclone": {
+          "respuestas": {
+            "cat nas:/prdrive-catalog/remote.toml": [
+              0,
+              "# El catálogo de los tests.\n\n[remote]\nname = \"nas\"\ntype = \"sftp\"\n\n[defaults]\nremote = \"nas\"\ndevice_remote = \"disp\"\n\n[[pair]]\nname = \"notas\"\nlocal = \"sync-data/notas\"\nremote_path = \"/copia/notas\"\n\n[[pair]]\nname = \"fotos\"\nlocal = \"sync-data/fotos\"\nremote_path = \"/copia/fotos\"\nmode = \"down\"\n",
+              ""
+            ],
+            "lsjson --stat nas:/prdrive-catalog/remote.toml": [
+              0,
+              "{\"Path\": \"remote.toml\", \"IsDir\": false}",
+              ""
+            ],
+            "cat nas:/prdrive-catalog": [
+              0,
+              "# El catálogo de los tests.\n\n[remote]\nname = \"nas\"\ntype = \"sftp\"\n\n[defaults]\nremote = \"nas\"\ndevice_remote = \"disp\"\n\n[[pair]]\nname = \"notas\"\nlocal = \"sync-data/notas\"\nremote_path = \"/copia/notas\"\n\n[[pair]]\nname = \"fotos\"\nlocal = \"sync-data/fotos\"\nremote_path = \"/copia/fotos\"\nmode = \"down\"\n\n# El catálogo de los tests.\n\n[remote]\nname = \"nas\"\ntype = \"sftp\"\n\n[defaults]\nremote = \"nas\"\ndevice_remote = \"disp\"\n\n[[pair]]\nname = \"notas\"\nlocal = \"sync-data/notas\"\nremote_path = \"/copia/notas\"\n\n[[pair]]\nname = \"fotos\"\nlocal = \"sync-data/fotos\"\nremote_path = \"/copia/fotos\"\nmode = \"down\"\n",
+              ""
+            ],
+            "lsjson --stat nas:/prdrive-catalog": [
+              0,
+              "{\"Path\": \"prdrive-catalog\", \"IsDir\": true}",
+              ""
+            ]
+          },
+          "por_defecto": [
+            3,
+            "",
+            "error: directory not found"
+          ]
+        },
+        "endpoint": "nas:/prdrive-catalog",
+        "leer": {
+          "codigo": 0,
+          "salida": "# El catálogo de los tests.\n\n[remote]\nname = \"nas\"\ntype = \"sftp\"\n\n[defaults]\nremote = \"nas\"\ndevice_remote = \"disp\"\n\n[[pair]]\nname = \"notas\"\nlocal = \"sync-data/notas\"\nremote_path = \"/copia/notas\"\n\n[[pair]]\nname = \"fotos\"\nlocal = \"sync-data/fotos\"\nremote_path = \"/copia/fotos\"\nmode = \"down\"\n\n# El catálogo de los tests.\n\n[remote]\nname = \"nas\"\ntype = \"sftp\"\n\n[defaults]\nremote = \"nas\"\ndevice_remote = \"disp\"\n\n[[pair]]\nname = \"notas\"\nlocal = \"sync-data/notas\"\nremote_path = \"/copia/notas\"\n\n[[pair]]\nname = \"fotos\"\nlocal = \"sync-data/fotos\"\nremote_path = \"/copia/fotos\"\nmode = \"down\"\n",
+          "error": "",
+          "cual": "nas:/prdrive-catalog"
+        },
+        "pull": {
+          "error": "La ruta del catálogo, nas:/prdrive-catalog, es una carpeta y no un fichero: tiene que apuntar al fichero del catálogo. Dentro hay un remote.toml, así que seguramente es «/prdrive-catalog/remote.toml»."
+        },
+        "copia": {
+          "toml": null,
+          "json": null
+        },
+        "load_sin_red": {
+          "source": null,
+          "stamp": null,
+          "endpoint": null,
+          "aviso": "No hay catálogo ni copia local, así que solo se puede trabajar con las parejas que ya tiene este dispositivo.\nNo pude leer el catálogo nas:/prdrive-catalog: Failed to cat: dial tcp: lookup nas: no such host"
+        }
+      },
+      {
+        "caso": "la carpeta solo tiene el catálogo",
+        "raw_local": {
+          "defaults": {
+            "remote": "nas",
+            "catalog_path": "/prdrive-catalog"
+          }
+        },
+        "rclone": {
+          "respuestas": {
+            "cat nas:/prdrive-catalog/pairs.toml": [
+              0,
+              "# El catálogo de los tests.\n\n[remote]\nname = \"nas\"\ntype = \"sftp\"\n\n[defaults]\nremote = \"nas\"\ndevice_remote = \"disp\"\n\n[[pair]]\nname = \"notas\"\nlocal = \"sync-data/notas\"\nremote_path = \"/copia/notas\"\n\n[[pair]]\nname = \"fotos\"\nlocal = \"sync-data/fotos\"\nremote_path = \"/copia/fotos\"\nmode = \"down\"\n",
+              ""
+            ],
+            "lsjson --stat nas:/prdrive-catalog/pairs.toml": [
+              0,
+              "{\"Path\": \"pairs.toml\", \"IsDir\": false}",
+              ""
+            ],
+            "cat nas:/prdrive-catalog": [
+              0,
+              "# El catálogo de los tests.\n\n[remote]\nname = \"nas\"\ntype = \"sftp\"\n\n[defaults]\nremote = \"nas\"\ndevice_remote = \"disp\"\n\n[[pair]]\nname = \"notas\"\nlocal = \"sync-data/notas\"\nremote_path = \"/copia/notas\"\n\n[[pair]]\nname = \"fotos\"\nlocal = \"sync-data/fotos\"\nremote_path = \"/copia/fotos\"\nmode = \"down\"\n",
+              ""
+            ],
+            "lsjson --stat nas:/prdrive-catalog": [
+              0,
+              "{\"Path\": \"prdrive-catalog\", \"IsDir\": true}",
+              ""
+            ]
+          },
+          "por_defecto": [
+            3,
+            "",
+            "error: directory not found"
+          ]
+        },
+        "endpoint": "nas:/prdrive-catalog",
+        "leer": {
+          "codigo": 0,
+          "salida": "# El catálogo de los tests.\n\n[remote]\nname = \"nas\"\ntype = \"sftp\"\n\n[defaults]\nremote = \"nas\"\ndevice_remote = \"disp\"\n\n[[pair]]\nname = \"notas\"\nlocal = \"sync-data/notas\"\nremote_path = \"/copia/notas\"\n\n[[pair]]\nname = \"fotos\"\nlocal = \"sync-data/fotos\"\nremote_path = \"/copia/fotos\"\nmode = \"down\"\n",
+          "error": "",
+          "cual": "nas:/prdrive-catalog"
+        },
+        "pull": {
+          "error": "La ruta del catálogo, nas:/prdrive-catalog, es una carpeta y no un fichero: tiene que apuntar al fichero del catálogo. Dentro hay un pairs.toml, así que seguramente es «/prdrive-catalog/pairs.toml»."
+        },
+        "copia": {
+          "toml": null,
+          "json": null
+        },
+        "load_sin_red": {
+          "source": null,
+          "stamp": null,
+          "endpoint": null,
+          "aviso": "No hay catálogo ni copia local, así que solo se puede trabajar con las parejas que ya tiene este dispositivo.\nNo pude leer el catálogo nas:/prdrive-catalog: Failed to cat: dial tcp: lookup nas: no such host"
+        }
+      },
+      {
+        "caso": "la carpeta vacía",
+        "raw_local": {
+          "defaults": {
+            "remote": "nas",
+            "catalog_path": "/prdrive-catalog"
+          }
+        },
+        "rclone": {
+          "respuestas": {
+            "cat nas:/prdrive-catalog": [
+              0,
+              "",
+              ""
+            ],
+            "lsjson --stat nas:/prdrive-catalog": [
+              0,
+              "{\"Path\": \"prdrive-catalog\", \"IsDir\": true}",
+              ""
+            ]
+          },
+          "por_defecto": [
+            3,
+            "",
+            "error: directory not found"
+          ]
+        },
+        "endpoint": "nas:/prdrive-catalog",
+        "leer": {
+          "codigo": 0,
+          "salida": "",
+          "error": "",
+          "cual": "nas:/prdrive-catalog"
+        },
+        "pull": {
+          "error": "La ruta del catálogo, nas:/prdrive-catalog, es una carpeta y no un fichero: tiene que apuntar al fichero del catálogo. Por ejemplo «/prdrive-catalog/remote.toml», si es ahí donde está."
+        },
+        "copia": {
+          "toml": null,
+          "json": null
+        },
+        "load_sin_red": {
+          "source": null,
+          "stamp": null,
+          "endpoint": null,
+          "aviso": "No hay catálogo ni copia local, así que solo se puede trabajar con las parejas que ya tiene este dispositivo.\nNo pude leer el catálogo nas:/prdrive-catalog: Failed to cat: dial tcp: lookup nas: no such host"
+        }
+      },
+      {
+        "caso": "TOML roto",
+        "raw_local": {
+          "defaults": {
+            "remote": "nas"
+          }
+        },
+        "rclone": {
+          "respuestas": {
+            "cat nas:/prdrive-catalog/remote.toml": [
+              0,
+              "esto no [ es toml\n",
+              ""
+            ],
+            "lsjson --stat nas:/prdrive-catalog/remote.toml": [
+              0,
+              "{\"Path\": \"remote.toml\", \"IsDir\": false}",
+              ""
+            ]
+          },
+          "por_defecto": [
+            3,
+            "",
+            "error: directory not found"
+          ]
+        },
+        "endpoint": "nas:/prdrive-catalog/remote.toml",
+        "leer": {
+          "codigo": 0,
+          "salida": "esto no [ es toml\n",
+          "error": "",
+          "cual": "nas:/prdrive-catalog/remote.toml"
+        },
+        "pull": {
+          "error": "El catálogo nas:/prdrive-catalog/remote.toml no es TOML válido: ",
+          "detalle_del_parser": true
+        },
+        "copia": {
+          "toml": null,
+          "json": null
+        },
+        "load_sin_red": {
+          "source": null,
+          "stamp": null,
+          "endpoint": null,
+          "aviso": "No hay catálogo ni copia local, así que solo se puede trabajar con las parejas que ya tiene este dispositivo.\nNo pude leer el catálogo nas:/prdrive-catalog/remote.toml: Failed to cat: dial tcp: lookup nas: no such host"
+        }
+      },
+      {
+        "caso": "catalog_remote propio",
+        "raw_local": {
+          "defaults": {
+            "remote": "nas",
+            "catalog_remote": "cat"
+          }
+        },
+        "rclone": {
+          "respuestas": {
+            "cat cat:/prdrive-catalog/remote.toml": [
+              0,
+              "# El catálogo de los tests.\n\n[remote]\nname = \"nas\"\ntype = \"sftp\"\n\n[defaults]\nremote = \"nas\"\ndevice_remote = \"disp\"\n\n[[pair]]\nname = \"notas\"\nlocal = \"sync-data/notas\"\nremote_path = \"/copia/notas\"\n\n[[pair]]\nname = \"fotos\"\nlocal = \"sync-data/fotos\"\nremote_path = \"/copia/fotos\"\nmode = \"down\"\n",
+              ""
+            ],
+            "lsjson --stat cat:/prdrive-catalog/remote.toml": [
+              0,
+              "{\"Path\": \"remote.toml\", \"IsDir\": false}",
+              ""
+            ]
+          },
+          "por_defecto": [
+            3,
+            "",
+            "error: directory not found"
+          ]
+        },
+        "endpoint": "cat:/prdrive-catalog/remote.toml",
+        "leer": {
+          "codigo": 0,
+          "salida": "# El catálogo de los tests.\n\n[remote]\nname = \"nas\"\ntype = \"sftp\"\n\n[defaults]\nremote = \"nas\"\ndevice_remote = \"disp\"\n\n[[pair]]\nname = \"notas\"\nlocal = \"sync-data/notas\"\nremote_path = \"/copia/notas\"\n\n[[pair]]\nname = \"fotos\"\nlocal = \"sync-data/fotos\"\nremote_path = \"/copia/fotos\"\nmode = \"down\"\n",
+          "error": "",
+          "cual": "cat:/prdrive-catalog/remote.toml"
+        },
+        "pull": {
+          "text": "# El catálogo de los tests.\n\n[remote]\nname = \"nas\"\ntype = \"sftp\"\n\n[defaults]\nremote = \"nas\"\ndevice_remote = \"disp\"\n\n[[pair]]\nname = \"notas\"\nlocal = \"sync-data/notas\"\nremote_path = \"/copia/notas\"\n\n[[pair]]\nname = \"fotos\"\nlocal = \"sync-data/fotos\"\nremote_path = \"/copia/fotos\"\nmode = \"down\"\n",
+          "source": "remote",
+          "stamp": "2026-10-01 11:01:01",
+          "endpoint": "cat:/prdrive-catalog/remote.toml",
+          "names": [
+            "notas",
+            "fotos"
+          ],
+          "defaults": {
+            "remote": "nas",
+            "device_remote": "disp"
+          }
+        },
+        "copia": {
+          "toml": "# El catálogo de los tests.\n\n[remote]\nname = \"nas\"\ntype = \"sftp\"\n\n[defaults]\nremote = \"nas\"\ndevice_remote = \"disp\"\n\n[[pair]]\nname = \"notas\"\nlocal = \"sync-data/notas\"\nremote_path = \"/copia/notas\"\n\n[[pair]]\nname = \"fotos\"\nlocal = \"sync-data/fotos\"\nremote_path = \"/copia/fotos\"\nmode = \"down\"\n",
+          "json": "{\n \"pulled_at\": \"2026-10-01 11:01:01\",\n \"endpoint\": \"cat:/prdrive-catalog/remote.toml\"\n}"
+        },
+        "load_sin_red": {
+          "source": "cache",
+          "stamp": "2026-10-01 11:01:01",
+          "endpoint": "cat:/prdrive-catalog/remote.toml",
+          "aviso": "Sin conexión con el catálogo. Se enseña la copia local del 2026-10-01 11:01:01; no se puede editar el catálogo hasta que vuelva la conexión.\nNo pude leer el catálogo cat:/prdrive-catalog/remote.toml: Failed to cat: dial tcp: lookup nas: no such host"
+        }
+      }
+    ],
+    "pairs_by_name": {
+      "notas": {
+        "name": "notas",
+        "local": "sync-data/notas",
+        "remote_path": "/copia/notas"
+      },
+      "fotos": {
+        "name": "fotos",
+        "local": "sync-data/fotos",
+        "remote_path": "/copia/fotos",
+        "mode": "down"
+      }
+    },
+    "diff_keys": [
+      {
+        "a": {
+          "name": "a",
+          "local": "x"
+        },
+        "b": {
+          "name": "b",
+          "mode": "up"
+        },
+        "salida": [
+          "local",
+          "mode",
+          "name"
+        ]
+      },
+      {
+        "a": {
+          "name": "a",
+          "local": "x"
+        },
+        "b": {
+          "name": "a",
+          "local": "x"
+        },
+        "salida": []
+      },
+      {
+        "a": null,
+        "b": {
+          "name": "b",
+          "mode": "up"
+        },
+        "salida": [
+          "mode",
+          "name"
+        ]
+      },
+      {
+        "a": {
+          "x": 1
+        },
+        "b": {
+          "x": 1.0
+        },
+        "salida": []
+      }
+    ]
+  },
+  "resultados": {
+    "pasos": [
+      {
+        "nombre": "notas",
+        "codigo": 0,
+        "log": null,
+        "texto": "{\n \"parejas\": {\n  \"notas\": {\n   \"cuando\": \"2026-10-01 11:01:01\",\n   \"codigo\": 0,\n   \"log\": null,\n   \"buena\": \"2026-10-01 11:01:01\"\n  }\n }\n}"
+      },
+      {
+        "nombre": "fotos",
+        "codigo": 2,
+        "log": "fotos-1.log",
+        "texto": "{\n \"parejas\": {\n  \"notas\": {\n   \"cuando\": \"2026-10-01 11:01:01\",\n   \"codigo\": 0,\n   \"log\": null,\n   \"buena\": \"2026-10-01 11:01:01\"\n  },\n  \"fotos\": {\n   \"cuando\": \"2026-10-02 12:02:02\",\n   \"codigo\": 2,\n   \"log\": \"fotos-1.log\",\n   \"buena\": null\n  }\n }\n}"
+      },
+      {
+        "nombre": "notas",
+        "codigo": 1,
+        "log": "notas-1.log",
+        "texto": "{\n \"parejas\": {\n  \"notas\": {\n   \"cuando\": \"2026-10-03 13:03:03\",\n   \"codigo\": 1,\n   \"log\": \"notas-1.log\",\n   \"buena\": \"2026-10-01 11:01:01\"\n  },\n  \"fotos\": {\n   \"cuando\": \"2026-10-02 12:02:02\",\n   \"codigo\": 2,\n   \"log\": \"fotos-1.log\",\n   \"buena\": null\n  }\n }\n}"
+      },
+      {
+        "nombre": "fotos",
+        "codigo": 0,
+        "log": null,
+        "texto": "{\n \"parejas\": {\n  \"notas\": {\n   \"cuando\": \"2026-10-03 13:03:03\",\n   \"codigo\": 1,\n   \"log\": \"notas-1.log\",\n   \"buena\": \"2026-10-01 11:01:01\"\n  },\n  \"fotos\": {\n   \"cuando\": \"2026-10-04 14:04:04\",\n   \"codigo\": 0,\n   \"log\": null,\n   \"buena\": \"2026-10-04 14:04:04\"\n  }\n }\n}"
+      },
+      {
+        "nombre": "notas",
+        "codigo": 1,
+        "log": "notas-2.log",
+        "texto": "{\n \"parejas\": {\n  \"notas\": {\n   \"cuando\": \"2026-10-05 15:05:05\",\n   \"codigo\": 1,\n   \"log\": \"notas-2.log\",\n   \"buena\": \"2026-10-01 11:01:01\"\n  },\n  \"fotos\": {\n   \"cuando\": \"2026-10-04 14:04:04\",\n   \"codigo\": 0,\n   \"log\": null,\n   \"buena\": \"2026-10-04 14:04:04\"\n  }\n }\n}"
+      }
+    ],
+    "fallos": [
+      {
+        "pareja": "notas",
+        "cuando": "2026-10-05 15:05:05",
+        "codigo": 1,
+        "log": "notas-2.log",
+        "buena": "2026-10-01 11:01:01"
+      }
+    ],
+    "buenas": {
+      "notas": "2026-10-01 11:01:01",
+      "fotos": "2026-10-04 14:04:04"
+    },
+    "legado": {
+      "texto": "{\n \"parejas\": {\n  \"vieja_buena\": {\n   \"cuando\": \"2026-10-01 11:01:01\",\n   \"codigo\": 0\n  },\n  \"vieja_mala\": {\n   \"cuando\": \"2026-10-02 12:02:02\",\n   \"codigo\": 3,\n   \"log\": \"no-esta.log\"\n  },\n  \"codigo_texto\": {\n   \"cuando\": \"2026-10-03 13:03:03\",\n   \"codigo\": \"4\"\n  },\n  \"codigo_roto\": {\n   \"cuando\": \"2026-10-04 14:04:04\",\n   \"codigo\": \"x\"\n  },\n  \"no_es_tabla\": \"hola\",\n  \"log_con_ruta\": {\n   \"cuando\": \"2026-10-05 15:05:05\",\n   \"codigo\": 1,\n   \"log\": \"../../fuera/notas-2.log\"\n  }\n }\n}",
+      "fallos": [
+        {
+          "pareja": "vieja_mala",
+          "cuando": "2026-10-02 12:02:02",
+          "codigo": 3,
+          "log": null,
+          "buena": null
+        },
+        {
+          "pareja": "codigo_texto",
+          "cuando": "2026-10-03 13:03:03",
+          "codigo": 4,
+          "log": null,
+          "buena": null
+        },
+        {
+          "pareja": "log_con_ruta",
+          "cuando": "2026-10-05 15:05:05",
+          "codigo": 1,
+          "log": "notas-2.log",
+          "buena": null
+        }
+      ],
+      "buenas": {
+        "vieja_buena": "2026-10-01 11:01:01",
+        "vieja_mala": null,
+        "codigo_texto": null,
+        "codigo_roto": null,
+        "log_con_ruta": null
+      },
+      "ultimas_buenas": [
+        "vieja_buena"
+      ]
+    }
+  },
+  "conflictos": {
+    "dispositivo": "dispositivo",
+    "remoto": "remoto",
+    "sufijo_rclone": "conflict",
+    "perdedor_rclone": "num",
+    "base": {
+      "defaults": {
+        "device_remote": "disp",
+        "remote": "nas"
+      },
+      "pair": {
+        "name": "notas",
+        "local": "sync-data/notas",
+        "remote_path": "/copia/notas"
+      }
+    },
+    "extras": {
+      "de fábrica": {},
+      "un sufijo": {
+        "flags": {
+          "conflict_suffix": "uno"
+        }
+      },
+      "tres sufijos": {
+        "flags": {
+          "conflict-suffix": "a,b,c"
+        }
+      },
+      "sufijo vacío": {
+        "flags": {
+          "conflict-suffix": ""
+        }
+      },
+      "pathname": {
+        "flags": {
+          "conflict-suffix": "c",
+          "conflict-loser": "pathname"
+        }
+      },
+      "num con un sufijo": {
+        "flags": {
+          "conflict-suffix": "c",
+          "conflict-loser": "num"
+        }
+      },
+      "con versiones": {
+        "versions": true
+      },
+      "con versiones y un sufijo": {
+        "versions": true,
+        "flags": {
+          "conflict-suffix": "c"
+        }
+      },
+      "de bajada": {
+        "mode": "down"
+      }
+    },
+    "esquemas": {
+      "de fábrica": [
+        ".conflicto-dispositivo",
+        ".conflicto-remoto",
+        "num",
+        false
+      ],
+      "un sufijo": [
+        ".uno",
+        ".uno",
+        "num",
+        false
+      ],
+      "tres sufijos": [
+        ".a",
+        ".b",
+        "num",
+        false
+      ],
+      "sufijo vacío": [
+        ".conflict",
+        ".conflict",
+        "num",
+        false
+      ],
+      "pathname": [
+        ".c",
+        ".c",
+        "pathname",
+        false
+      ],
+      "num con un sufijo": [
+        ".c",
+        ".c",
+        "num",
+        false
+      ],
+      "con versiones": [
+        ".conflicto-dispositivo",
+        ".conflicto-remoto",
+        "num",
+        true
+      ],
+      "con versiones y un sufijo": [
+        ".c",
+        ".c",
+        "num",
+        true
+      ],
+      "de bajada": [
+        ".conflict",
+        ".conflict",
+        "num",
+        false
+      ]
+    },
+    "leer_nombre": [
+      {
+        "esquema": "de fábrica",
+        "nombre": "plan.md",
+        "salida": null
+      },
+      {
+        "esquema": "de fábrica",
+        "nombre": "plan.md.conflicto-dispositivo1",
+        "salida": [
+          "plan.md",
+          "path1",
+          1
+        ]
+      },
+      {
+        "esquema": "de fábrica",
+        "nombre": "plan.md.conflicto-remoto2",
+        "salida": [
+          "plan.md",
+          "path2",
+          2
+        ]
+      },
+      {
+        "esquema": "de fábrica",
+        "nombre": "plan.md.conflicto-remoto",
+        "salida": [
+          "plan.md",
+          "path2",
+          0
+        ]
+      },
+      {
+        "esquema": "de fábrica",
+        "nombre": "plan.conflicto-remoto1.md",
+        "salida": null
+      },
+      {
+        "esquema": "de fábrica",
+        "nombre": "plan.md.conflict1",
+        "salida": [
+          "plan.md",
+          null,
+          1
+        ]
+      },
+      {
+        "esquema": "de fábrica",
+        "nombre": "plan.md.conflict",
+        "salida": null
+      },
+      {
+        "esquema": "de fábrica",
+        "nombre": "a.tar.gz.c1",
+        "salida": null
+      },
+      {
+        "esquema": "de fábrica",
+        "nombre": "a.c2.tar.gz",
+        "salida": null
+      },
+      {
+        "esquema": "de fábrica",
+        "nombre": "x.uno3",
+        "salida": null
+      },
+      {
+        "esquema": "de fábrica",
+        "nombre": "x.uno",
+        "salida": null
+      },
+      {
+        "esquema": "de fábrica",
+        "nombre": "y.a1",
+        "salida": null
+      },
+      {
+        "esquema": "de fábrica",
+        "nombre": "y.b2",
+        "salida": null
+      },
+      {
+        "esquema": "de fábrica",
+        "nombre": "y.c3",
+        "salida": null
+      },
+      {
+        "esquema": "de fábrica",
+        "nombre": "z.c1",
+        "salida": null
+      },
+      {
+        "esquema": "de fábrica",
+        "nombre": "z.c2",
+        "salida": null
+      },
+      {
+        "esquema": "de fábrica",
+        "nombre": "z.c3",
+        "salida": null
+      },
+      {
+        "esquema": "de fábrica",
+        "nombre": ".conflicto-remoto1",
+        "salida": null
+      },
+      {
+        "esquema": "de fábrica",
+        "nombre": "datos.conflicto-dispositivo12",
+        "salida": [
+          "datos",
+          "path1",
+          12
+        ]
+      },
+      {
+        "esquema": "de fábrica",
+        "nombre": "plan.conflict1.md",
+        "salida": null
+      },
+      {
+        "esquema": "de fábrica",
+        "nombre": "uno.conflict1.dos.txt",
+        "salida": null
+      },
+      {
+        "esquema": "un sufijo",
+        "nombre": "plan.md",
+        "salida": null
+      },
+      {
+        "esquema": "un sufijo",
+        "nombre": "plan.md.conflicto-dispositivo1",
+        "salida": null
+      },
+      {
+        "esquema": "un sufijo",
+        "nombre": "plan.md.conflicto-remoto2",
+        "salida": null
+      },
+      {
+        "esquema": "un sufijo",
+        "nombre": "plan.md.conflicto-remoto",
+        "salida": null
+      },
+      {
+        "esquema": "un sufijo",
+        "nombre": "plan.conflicto-remoto1.md",
+        "salida": null
+      },
+      {
+        "esquema": "un sufijo",
+        "nombre": "plan.md.conflict1",
+        "salida": [
+          "plan.md",
+          null,
+          1
+        ]
+      },
+      {
+        "esquema": "un sufijo",
+        "nombre": "plan.md.conflict",
+        "salida": null
+      },
+      {
+        "esquema": "un sufijo",
+        "nombre": "a.tar.gz.c1",
+        "salida": null
+      },
+      {
+        "esquema": "un sufijo",
+        "nombre": "a.c2.tar.gz",
+        "salida": null
+      },
+      {
+        "esquema": "un sufijo",
+        "nombre": "x.uno3",
+        "salida": [
+          "x",
+          null,
+          3
+        ]
+      },
+      {
+        "esquema": "un sufijo",
+        "nombre": "x.uno",
+        "salida": null
+      },
+      {
+        "esquema": "un sufijo",
+        "nombre": "y.a1",
+        "salida": null
+      },
+      {
+        "esquema": "un sufijo",
+        "nombre": "y.b2",
+        "salida": null
+      },
+      {
+        "esquema": "un sufijo",
+        "nombre": "y.c3",
+        "salida": null
+      },
+      {
+        "esquema": "un sufijo",
+        "nombre": "z.c1",
+        "salida": null
+      },
+      {
+        "esquema": "un sufijo",
+        "nombre": "z.c2",
+        "salida": null
+      },
+      {
+        "esquema": "un sufijo",
+        "nombre": "z.c3",
+        "salida": null
+      },
+      {
+        "esquema": "un sufijo",
+        "nombre": ".conflicto-remoto1",
+        "salida": null
+      },
+      {
+        "esquema": "un sufijo",
+        "nombre": "datos.conflicto-dispositivo12",
+        "salida": null
+      },
+      {
+        "esquema": "un sufijo",
+        "nombre": "plan.conflict1.md",
+        "salida": null
+      },
+      {
+        "esquema": "un sufijo",
+        "nombre": "uno.conflict1.dos.txt",
+        "salida": null
+      },
+      {
+        "esquema": "tres sufijos",
+        "nombre": "plan.md",
+        "salida": null
+      },
+      {
+        "esquema": "tres sufijos",
+        "nombre": "plan.md.conflicto-dispositivo1",
+        "salida": null
+      },
+      {
+        "esquema": "tres sufijos",
+        "nombre": "plan.md.conflicto-remoto2",
+        "salida": null
+      },
+      {
+        "esquema": "tres sufijos",
+        "nombre": "plan.md.conflicto-remoto",
+        "salida": null
+      },
+      {
+        "esquema": "tres sufijos",
+        "nombre": "plan.conflicto-remoto1.md",
+        "salida": null
+      },
+      {
+        "esquema": "tres sufijos",
+        "nombre": "plan.md.conflict1",
+        "salida": [
+          "plan.md",
+          null,
+          1
+        ]
+      },
+      {
+        "esquema": "tres sufijos",
+        "nombre": "plan.md.conflict",
+        "salida": null
+      },
+      {
+        "esquema": "tres sufijos",
+        "nombre": "a.tar.gz.c1",
+        "salida": null
+      },
+      {
+        "esquema": "tres sufijos",
+        "nombre": "a.c2.tar.gz",
+        "salida": null
+      },
+      {
+        "esquema": "tres sufijos",
+        "nombre": "x.uno3",
+        "salida": null
+      },
+      {
+        "esquema": "tres sufijos",
+        "nombre": "x.uno",
+        "salida": null
+      },
+      {
+        "esquema": "tres sufijos",
+        "nombre": "y.a1",
+        "salida": [
+          "y",
+          "path1",
+          1
+        ]
+      },
+      {
+        "esquema": "tres sufijos",
+        "nombre": "y.b2",
+        "salida": [
+          "y",
+          "path2",
+          2
+        ]
+      },
+      {
+        "esquema": "tres sufijos",
+        "nombre": "y.c3",
+        "salida": null
+      },
+      {
+        "esquema": "tres sufijos",
+        "nombre": "z.c1",
+        "salida": null
+      },
+      {
+        "esquema": "tres sufijos",
+        "nombre": "z.c2",
+        "salida": null
+      },
+      {
+        "esquema": "tres sufijos",
+        "nombre": "z.c3",
+        "salida": null
+      },
+      {
+        "esquema": "tres sufijos",
+        "nombre": ".conflicto-remoto1",
+        "salida": null
+      },
+      {
+        "esquema": "tres sufijos",
+        "nombre": "datos.conflicto-dispositivo12",
+        "salida": null
+      },
+      {
+        "esquema": "tres sufijos",
+        "nombre": "plan.conflict1.md",
+        "salida": null
+      },
+      {
+        "esquema": "tres sufijos",
+        "nombre": "uno.conflict1.dos.txt",
+        "salida": null
+      },
+      {
+        "esquema": "sufijo vacío",
+        "nombre": "plan.md",
+        "salida": null
+      },
+      {
+        "esquema": "sufijo vacío",
+        "nombre": "plan.md.conflicto-dispositivo1",
+        "salida": null
+      },
+      {
+        "esquema": "sufijo vacío",
+        "nombre": "plan.md.conflicto-remoto2",
+        "salida": null
+      },
+      {
+        "esquema": "sufijo vacío",
+        "nombre": "plan.md.conflicto-remoto",
+        "salida": null
+      },
+      {
+        "esquema": "sufijo vacío",
+        "nombre": "plan.conflicto-remoto1.md",
+        "salida": null
+      },
+      {
+        "esquema": "sufijo vacío",
+        "nombre": "plan.md.conflict1",
+        "salida": [
+          "plan.md",
+          null,
+          1
+        ]
+      },
+      {
+        "esquema": "sufijo vacío",
+        "nombre": "plan.md.conflict",
+        "salida": null
+      },
+      {
+        "esquema": "sufijo vacío",
+        "nombre": "a.tar.gz.c1",
+        "salida": null
+      },
+      {
+        "esquema": "sufijo vacío",
+        "nombre": "a.c2.tar.gz",
+        "salida": null
+      },
+      {
+        "esquema": "sufijo vacío",
+        "nombre": "x.uno3",
+        "salida": null
+      },
+      {
+        "esquema": "sufijo vacío",
+        "nombre": "x.uno",
+        "salida": null
+      },
+      {
+        "esquema": "sufijo vacío",
+        "nombre": "y.a1",
+        "salida": null
+      },
+      {
+        "esquema": "sufijo vacío",
+        "nombre": "y.b2",
+        "salida": null
+      },
+      {
+        "esquema": "sufijo vacío",
+        "nombre": "y.c3",
+        "salida": null
+      },
+      {
+        "esquema": "sufijo vacío",
+        "nombre": "z.c1",
+        "salida": null
+      },
+      {
+        "esquema": "sufijo vacío",
+        "nombre": "z.c2",
+        "salida": null
+      },
+      {
+        "esquema": "sufijo vacío",
+        "nombre": "z.c3",
+        "salida": null
+      },
+      {
+        "esquema": "sufijo vacío",
+        "nombre": ".conflicto-remoto1",
+        "salida": null
+      },
+      {
+        "esquema": "sufijo vacío",
+        "nombre": "datos.conflicto-dispositivo12",
+        "salida": null
+      },
+      {
+        "esquema": "sufijo vacío",
+        "nombre": "plan.conflict1.md",
+        "salida": null
+      },
+      {
+        "esquema": "sufijo vacío",
+        "nombre": "uno.conflict1.dos.txt",
+        "salida": null
+      },
+      {
+        "esquema": "pathname",
+        "nombre": "plan.md",
+        "salida": null
+      },
+      {
+        "esquema": "pathname",
+        "nombre": "plan.md.conflicto-dispositivo1",
+        "salida": null
+      },
+      {
+        "esquema": "pathname",
+        "nombre": "plan.md.conflicto-remoto2",
+        "salida": null
+      },
+      {
+        "esquema": "pathname",
+        "nombre": "plan.md.conflicto-remoto",
+        "salida": null
+      },
+      {
+        "esquema": "pathname",
+        "nombre": "plan.conflicto-remoto1.md",
+        "salida": null
+      },
+      {
+        "esquema": "pathname",
+        "nombre": "plan.md.conflict1",
+        "salida": [
+          "plan.md",
+          null,
+          1
+        ]
+      },
+      {
+        "esquema": "pathname",
+        "nombre": "plan.md.conflict",
+        "salida": null
+      },
+      {
+        "esquema": "pathname",
+        "nombre": "a.tar.gz.c1",
+        "salida": [
+          "a.tar.gz",
+          "path1",
+          1
+        ]
+      },
+      {
+        "esquema": "pathname",
+        "nombre": "a.c2.tar.gz",
+        "salida": null
+      },
+      {
+        "esquema": "pathname",
+        "nombre": "x.uno3",
+        "salida": null
+      },
+      {
+        "esquema": "pathname",
+        "nombre": "x.uno",
+        "salida": null
+      },
+      {
+        "esquema": "pathname",
+        "nombre": "y.a1",
+        "salida": null
+      },
+      {
+        "esquema": "pathname",
+        "nombre": "y.b2",
+        "salida": null
+      },
+      {
+        "esquema": "pathname",
+        "nombre": "y.c3",
+        "salida": [
+          "y",
+          null,
+          3
+        ]
+      },
+      {
+        "esquema": "pathname",
+        "nombre": "z.c1",
+        "salida": [
+          "z",
+          "path1",
+          1
+        ]
+      },
+      {
+        "esquema": "pathname",
+        "nombre": "z.c2",
+        "salida": [
+          "z",
+          "path2",
+          2
+        ]
+      },
+      {
+        "esquema": "pathname",
+        "nombre": "z.c3",
+        "salida": [
+          "z",
+          null,
+          3
+        ]
+      },
+      {
+        "esquema": "pathname",
+        "nombre": ".conflicto-remoto1",
+        "salida": null
+      },
+      {
+        "esquema": "pathname",
+        "nombre": "datos.conflicto-dispositivo12",
+        "salida": null
+      },
+      {
+        "esquema": "pathname",
+        "nombre": "plan.conflict1.md",
+        "salida": null
+      },
+      {
+        "esquema": "pathname",
+        "nombre": "uno.conflict1.dos.txt",
+        "salida": null
+      },
+      {
+        "esquema": "num con un sufijo",
+        "nombre": "plan.md",
+        "salida": null
+      },
+      {
+        "esquema": "num con un sufijo",
+        "nombre": "plan.md.conflicto-dispositivo1",
+        "salida": null
+      },
+      {
+        "esquema": "num con un sufijo",
+        "nombre": "plan.md.conflicto-remoto2",
+        "salida": null
+      },
+      {
+        "esquema": "num con un sufijo",
+        "nombre": "plan.md.conflicto-remoto",
+        "salida": null
+      },
+      {
+        "esquema": "num con un sufijo",
+        "nombre": "plan.conflicto-remoto1.md",
+        "salida": null
+      },
+      {
+        "esquema": "num con un sufijo",
+        "nombre": "plan.md.conflict1",
+        "salida": [
+          "plan.md",
+          null,
+          1
+        ]
+      },
+      {
+        "esquema": "num con un sufijo",
+        "nombre": "plan.md.conflict",
+        "salida": null
+      },
+      {
+        "esquema": "num con un sufijo",
+        "nombre": "a.tar.gz.c1",
+        "salida": [
+          "a.tar.gz",
+          null,
+          1
+        ]
+      },
+      {
+        "esquema": "num con un sufijo",
+        "nombre": "a.c2.tar.gz",
+        "salida": null
+      },
+      {
+        "esquema": "num con un sufijo",
+        "nombre": "x.uno3",
+        "salida": null
+      },
+      {
+        "esquema": "num con un sufijo",
+        "nombre": "x.uno",
+        "salida": null
+      },
+      {
+        "esquema": "num con un sufijo",
+        "nombre": "y.a1",
+        "salida": null
+      },
+      {
+        "esquema": "num con un sufijo",
+        "nombre": "y.b2",
+        "salida": null
+      },
+      {
+        "esquema": "num con un sufijo",
+        "nombre": "y.c3",
+        "salida": [
+          "y",
+          null,
+          3
+        ]
+      },
+      {
+        "esquema": "num con un sufijo",
+        "nombre": "z.c1",
+        "salida": [
+          "z",
+          null,
+          1
+        ]
+      },
+      {
+        "esquema": "num con un sufijo",
+        "nombre": "z.c2",
+        "salida": [
+          "z",
+          null,
+          2
+        ]
+      },
+      {
+        "esquema": "num con un sufijo",
+        "nombre": "z.c3",
+        "salida": [
+          "z",
+          null,
+          3
+        ]
+      },
+      {
+        "esquema": "num con un sufijo",
+        "nombre": ".conflicto-remoto1",
+        "salida": null
+      },
+      {
+        "esquema": "num con un sufijo",
+        "nombre": "datos.conflicto-dispositivo12",
+        "salida": null
+      },
+      {
+        "esquema": "num con un sufijo",
+        "nombre": "plan.conflict1.md",
+        "salida": null
+      },
+      {
+        "esquema": "num con un sufijo",
+        "nombre": "uno.conflict1.dos.txt",
+        "salida": null
+      },
+      {
+        "esquema": "con versiones",
+        "nombre": "plan.md",
+        "salida": null
+      },
+      {
+        "esquema": "con versiones",
+        "nombre": "plan.md.conflicto-dispositivo1",
+        "salida": null
+      },
+      {
+        "esquema": "con versiones",
+        "nombre": "plan.md.conflicto-remoto2",
+        "salida": null
+      },
+      {
+        "esquema": "con versiones",
+        "nombre": "plan.md.conflicto-remoto",
+        "salida": null
+      },
+      {
+        "esquema": "con versiones",
+        "nombre": "plan.conflicto-remoto1.md",
+        "salida": [
+          "plan.md",
+          "path2",
+          1
+        ]
+      },
+      {
+        "esquema": "con versiones",
+        "nombre": "plan.md.conflict1",
+        "salida": null
+      },
+      {
+        "esquema": "con versiones",
+        "nombre": "plan.md.conflict",
+        "salida": null
+      },
+      {
+        "esquema": "con versiones",
+        "nombre": "a.tar.gz.c1",
+        "salida": null
+      },
+      {
+        "esquema": "con versiones",
+        "nombre": "a.c2.tar.gz",
+        "salida": null
+      },
+      {
+        "esquema": "con versiones",
+        "nombre": "x.uno3",
+        "salida": null
+      },
+      {
+        "esquema": "con versiones",
+        "nombre": "x.uno",
+        "salida": null
+      },
+      {
+        "esquema": "con versiones",
+        "nombre": "y.a1",
+        "salida": null
+      },
+      {
+        "esquema": "con versiones",
+        "nombre": "y.b2",
+        "salida": null
+      },
+      {
+        "esquema": "con versiones",
+        "nombre": "y.c3",
+        "salida": null
+      },
+      {
+        "esquema": "con versiones",
+        "nombre": "z.c1",
+        "salida": null
+      },
+      {
+        "esquema": "con versiones",
+        "nombre": "z.c2",
+        "salida": null
+      },
+      {
+        "esquema": "con versiones",
+        "nombre": "z.c3",
+        "salida": null
+      },
+      {
+        "esquema": "con versiones",
+        "nombre": ".conflicto-remoto1",
+        "salida": null
+      },
+      {
+        "esquema": "con versiones",
+        "nombre": "datos.conflicto-dispositivo12",
+        "salida": null
+      },
+      {
+        "esquema": "con versiones",
+        "nombre": "plan.conflict1.md",
+        "salida": [
+          "plan.md",
+          null,
+          1
+        ]
+      },
+      {
+        "esquema": "con versiones",
+        "nombre": "uno.conflict1.dos.txt",
+        "salida": [
+          "uno.dos.txt",
+          null,
+          1
+        ]
+      },
+      {
+        "esquema": "con versiones y un sufijo",
+        "nombre": "plan.md",
+        "salida": null
+      },
+      {
+        "esquema": "con versiones y un sufijo",
+        "nombre": "plan.md.conflicto-dispositivo1",
+        "salida": null
+      },
+      {
+        "esquema": "con versiones y un sufijo",
+        "nombre": "plan.md.conflicto-remoto2",
+        "salida": null
+      },
+      {
+        "esquema": "con versiones y un sufijo",
+        "nombre": "plan.md.conflicto-remoto",
+        "salida": null
+      },
+      {
+        "esquema": "con versiones y un sufijo",
+        "nombre": "plan.conflicto-remoto1.md",
+        "salida": null
+      },
+      {
+        "esquema": "con versiones y un sufijo",
+        "nombre": "plan.md.conflict1",
+        "salida": null
+      },
+      {
+        "esquema": "con versiones y un sufijo",
+        "nombre": "plan.md.conflict",
+        "salida": null
+      },
+      {
+        "esquema": "con versiones y un sufijo",
+        "nombre": "a.tar.gz.c1",
+        "salida": null
+      },
+      {
+        "esquema": "con versiones y un sufijo",
+        "nombre": "a.c2.tar.gz",
+        "salida": [
+          "a.tar.gz",
+          null,
+          2
+        ]
+      },
+      {
+        "esquema": "con versiones y un sufijo",
+        "nombre": "x.uno3",
+        "salida": null
+      },
+      {
+        "esquema": "con versiones y un sufijo",
+        "nombre": "x.uno",
+        "salida": null
+      },
+      {
+        "esquema": "con versiones y un sufijo",
+        "nombre": "y.a1",
+        "salida": null
+      },
+      {
+        "esquema": "con versiones y un sufijo",
+        "nombre": "y.b2",
+        "salida": null
+      },
+      {
+        "esquema": "con versiones y un sufijo",
+        "nombre": "y.c3",
+        "salida": null
+      },
+      {
+        "esquema": "con versiones y un sufijo",
+        "nombre": "z.c1",
+        "salida": null
+      },
+      {
+        "esquema": "con versiones y un sufijo",
+        "nombre": "z.c2",
+        "salida": null
+      },
+      {
+        "esquema": "con versiones y un sufijo",
+        "nombre": "z.c3",
+        "salida": null
+      },
+      {
+        "esquema": "con versiones y un sufijo",
+        "nombre": ".conflicto-remoto1",
+        "salida": null
+      },
+      {
+        "esquema": "con versiones y un sufijo",
+        "nombre": "datos.conflicto-dispositivo12",
+        "salida": null
+      },
+      {
+        "esquema": "con versiones y un sufijo",
+        "nombre": "plan.conflict1.md",
+        "salida": [
+          "plan.md",
+          null,
+          1
+        ]
+      },
+      {
+        "esquema": "con versiones y un sufijo",
+        "nombre": "uno.conflict1.dos.txt",
+        "salida": [
+          "uno.dos.txt",
+          null,
+          1
+        ]
+      },
+      {
+        "esquema": "de bajada",
+        "nombre": "plan.md",
+        "salida": null
+      },
+      {
+        "esquema": "de bajada",
+        "nombre": "plan.md.conflicto-dispositivo1",
+        "salida": null
+      },
+      {
+        "esquema": "de bajada",
+        "nombre": "plan.md.conflicto-remoto2",
+        "salida": null
+      },
+      {
+        "esquema": "de bajada",
+        "nombre": "plan.md.conflicto-remoto",
+        "salida": null
+      },
+      {
+        "esquema": "de bajada",
+        "nombre": "plan.conflicto-remoto1.md",
+        "salida": null
+      },
+      {
+        "esquema": "de bajada",
+        "nombre": "plan.md.conflict1",
+        "salida": [
+          "plan.md",
+          null,
+          1
+        ]
+      },
+      {
+        "esquema": "de bajada",
+        "nombre": "plan.md.conflict",
+        "salida": null
+      },
+      {
+        "esquema": "de bajada",
+        "nombre": "a.tar.gz.c1",
+        "salida": null
+      },
+      {
+        "esquema": "de bajada",
+        "nombre": "a.c2.tar.gz",
+        "salida": null
+      },
+      {
+        "esquema": "de bajada",
+        "nombre": "x.uno3",
+        "salida": null
+      },
+      {
+        "esquema": "de bajada",
+        "nombre": "x.uno",
+        "salida": null
+      },
+      {
+        "esquema": "de bajada",
+        "nombre": "y.a1",
+        "salida": null
+      },
+      {
+        "esquema": "de bajada",
+        "nombre": "y.b2",
+        "salida": null
+      },
+      {
+        "esquema": "de bajada",
+        "nombre": "y.c3",
+        "salida": null
+      },
+      {
+        "esquema": "de bajada",
+        "nombre": "z.c1",
+        "salida": null
+      },
+      {
+        "esquema": "de bajada",
+        "nombre": "z.c2",
+        "salida": null
+      },
+      {
+        "esquema": "de bajada",
+        "nombre": "z.c3",
+        "salida": null
+      },
+      {
+        "esquema": "de bajada",
+        "nombre": ".conflicto-remoto1",
+        "salida": null
+      },
+      {
+        "esquema": "de bajada",
+        "nombre": "datos.conflicto-dispositivo12",
+        "salida": null
+      },
+      {
+        "esquema": "de bajada",
+        "nombre": "plan.conflict1.md",
+        "salida": null
+      },
+      {
+        "esquema": "de bajada",
+        "nombre": "uno.conflict1.dos.txt",
+        "salida": null
+      }
+    ],
+    "escenarios": [
+      {
+        "caso": "una pareja",
+        "pareja": {
+          "name": "notas",
+          "local": "sync-data/notas",
+          "remote_path": "/copia/notas"
+        },
+        "ficheros": [
+          "plan.md",
+          "plan.md.conflicto-dispositivo1",
+          "a/b.txt.conflicto-remoto1",
+          "c.txt",
+          "c.txt.conflicto-dispositivo1",
+          "c.txt.conflicto-dispositivo2",
+          "d.txt",
+          "d.txt.conflict1",
+          "e.txt",
+          "e.txt.conflicto-remoto1",
+          "e.txt.conflicto-dispositivo1",
+          "solo.txt.conflict",
+          ".prversions/v.txt.conflicto-remoto1",
+          "sub/.prversions/w.txt.conflicto-remoto1"
+        ],
+        "conflictos": [
+          {
+            "pareja": "notas",
+            "relativa": "a/b.txt",
+            "original": "sync-data/notas/a/b.txt",
+            "versiones": [
+              {
+                "ruta": "sync-data/notas/a/b.txt.conflicto-remoto1",
+                "lado": "remoto",
+                "es_original": false,
+                "numero": 1
+              }
+            ]
+          },
+          {
+            "pareja": "notas",
+            "relativa": "c.txt",
+            "original": "sync-data/notas/c.txt",
+            "versiones": [
+              {
+                "ruta": "sync-data/notas/c.txt",
+                "lado": null,
+                "es_original": true,
+                "numero": 0
+              },
+              {
+                "ruta": "sync-data/notas/c.txt.conflicto-dispositivo1",
+                "lado": "dispositivo",
+                "es_original": false,
+                "numero": 1
+              },
+              {
+                "ruta": "sync-data/notas/c.txt.conflicto-dispositivo2",
+                "lado": "dispositivo",
+                "es_original": false,
+                "numero": 2
+              }
+            ]
+          },
+          {
+            "pareja": "notas",
+            "relativa": "d.txt",
+            "original": "sync-data/notas/d.txt",
+            "versiones": [
+              {
+                "ruta": "sync-data/notas/d.txt",
+                "lado": null,
+                "es_original": true,
+                "numero": 0
+              },
+              {
+                "ruta": "sync-data/notas/d.txt.conflict1",
+                "lado": null,
+                "es_original": false,
+                "numero": 1
+              }
+            ]
+          },
+          {
+            "pareja": "notas",
+            "relativa": "e.txt",
+            "original": "sync-data/notas/e.txt",
+            "versiones": [
+              {
+                "ruta": "sync-data/notas/e.txt",
+                "lado": null,
+                "es_original": true,
+                "numero": 0
+              },
+              {
+                "ruta": "sync-data/notas/e.txt.conflicto-dispositivo1",
+                "lado": "dispositivo",
+                "es_original": false,
+                "numero": 1
+              },
+              {
+                "ruta": "sync-data/notas/e.txt.conflicto-remoto1",
+                "lado": "remoto",
+                "es_original": false,
+                "numero": 1
+              }
+            ]
+          },
+          {
+            "pareja": "notas",
+            "relativa": "plan.md",
+            "original": "sync-data/notas/plan.md",
+            "versiones": [
+              {
+                "ruta": "sync-data/notas/plan.md",
+                "lado": "remoto",
+                "es_original": true,
+                "numero": 0
+              },
+              {
+                "ruta": "sync-data/notas/plan.md.conflicto-dispositivo1",
+                "lado": "dispositivo",
+                "es_original": false,
+                "numero": 1
+              }
+            ]
+          },
+          {
+            "pareja": "notas",
+            "relativa": "sub/.prversions/w.txt",
+            "original": "sync-data/notas/sub/.prversions/w.txt",
+            "versiones": [
+              {
+                "ruta": "sync-data/notas/sub/.prversions/w.txt.conflicto-remoto1",
+                "lado": "remoto",
+                "es_original": false,
+                "numero": 1
+              }
+            ]
+          }
+        ],
+        "estado": "{\n \"cuando\": \"2026-10-01 11:01:01\",\n \"parejas\": {\n  \"notas\": [\n   \"sync-data/notas/a/b.txt.conflicto-remoto1\",\n   \"sync-data/notas/c.txt.conflicto-dispositivo1\",\n   \"sync-data/notas/c.txt.conflicto-dispositivo2\",\n   \"sync-data/notas/d.txt.conflict1\",\n   \"sync-data/notas/e.txt.conflicto-dispositivo1\",\n   \"sync-data/notas/e.txt.conflicto-remoto1\",\n   \"sync-data/notas/plan.md.conflicto-dispositivo1\",\n   \"sync-data/notas/sub/.prversions/w.txt.conflicto-remoto1\"\n  ]\n }\n}",
+        "sin_apuntar": false,
+        "contar": {
+          "notas": 6
+        },
+        "borrada": "sync-data/notas/a/b.txt.conflicto-remoto1",
+        "cargar": {
+          "notas": [
+            {
+              "pareja": "notas",
+              "relativa": "c.txt",
+              "original": "sync-data/notas/c.txt",
+              "versiones": [
+                {
+                  "ruta": "sync-data/notas/c.txt",
+                  "lado": null,
+                  "es_original": true,
+                  "numero": 0
+                },
+                {
+                  "ruta": "sync-data/notas/c.txt.conflicto-dispositivo1",
+                  "lado": "dispositivo",
+                  "es_original": false,
+                  "numero": 1
+                },
+                {
+                  "ruta": "sync-data/notas/c.txt.conflicto-dispositivo2",
+                  "lado": "dispositivo",
+                  "es_original": false,
+                  "numero": 2
+                }
+              ]
+            },
+            {
+              "pareja": "notas",
+              "relativa": "d.txt",
+              "original": "sync-data/notas/d.txt",
+              "versiones": [
+                {
+                  "ruta": "sync-data/notas/d.txt",
+                  "lado": null,
+                  "es_original": true,
+                  "numero": 0
+                },
+                {
+                  "ruta": "sync-data/notas/d.txt.conflict1",
+                  "lado": null,
+                  "es_original": false,
+                  "numero": 1
+                }
+              ]
+            },
+            {
+              "pareja": "notas",
+              "relativa": "e.txt",
+              "original": "sync-data/notas/e.txt",
+              "versiones": [
+                {
+                  "ruta": "sync-data/notas/e.txt",
+                  "lado": null,
+                  "es_original": true,
+                  "numero": 0
+                },
+                {
+                  "ruta": "sync-data/notas/e.txt.conflicto-dispositivo1",
+                  "lado": "dispositivo",
+                  "es_original": false,
+                  "numero": 1
+                },
+                {
+                  "ruta": "sync-data/notas/e.txt.conflicto-remoto1",
+                  "lado": "remoto",
+                  "es_original": false,
+                  "numero": 1
+                }
+              ]
+            },
+            {
+              "pareja": "notas",
+              "relativa": "plan.md",
+              "original": "sync-data/notas/plan.md",
+              "versiones": [
+                {
+                  "ruta": "sync-data/notas/plan.md",
+                  "lado": "remoto",
+                  "es_original": true,
+                  "numero": 0
+                },
+                {
+                  "ruta": "sync-data/notas/plan.md.conflicto-dispositivo1",
+                  "lado": "dispositivo",
+                  "es_original": false,
+                  "numero": 1
+                }
+              ]
+            },
+            {
+              "pareja": "notas",
+              "relativa": "sub/.prversions/w.txt",
+              "original": "sync-data/notas/sub/.prversions/w.txt",
+              "versiones": [
+                {
+                  "ruta": "sync-data/notas/sub/.prversions/w.txt.conflicto-remoto1",
+                  "lado": "remoto",
+                  "es_original": false,
+                  "numero": 1
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "caso": "la raíz entera",
+        "pareja": {
+          "name": "todo",
+          "local": ".",
+          "remote_path": "/copia/todo"
+        },
+        "ficheros": [
+          "doc.txt",
+          "doc.txt.conflicto-remoto1",
+          ".prdrive/k.txt.conflicto-remoto1",
+          ".keychain/x.kdbx.conflicto-remoto1",
+          "System Volume Information/s.conflicto-remoto1",
+          ".Trash-1000/t.conflicto-remoto1",
+          "carpeta/.prdrive/p.conflicto-remoto1"
+        ],
+        "conflictos": [
+          {
+            "pareja": "todo",
+            "relativa": "carpeta/.prdrive/p",
+            "original": "carpeta/.prdrive/p",
+            "versiones": [
+              {
+                "ruta": "carpeta/.prdrive/p.conflicto-remoto1",
+                "lado": "remoto",
+                "es_original": false,
+                "numero": 1
+              }
+            ]
+          },
+          {
+            "pareja": "todo",
+            "relativa": "doc.txt",
+            "original": "doc.txt",
+            "versiones": [
+              {
+                "ruta": "doc.txt",
+                "lado": "dispositivo",
+                "es_original": true,
+                "numero": 0
+              },
+              {
+                "ruta": "doc.txt.conflicto-remoto1",
+                "lado": "remoto",
+                "es_original": false,
+                "numero": 1
+              }
+            ]
+          }
+        ],
+        "estado": "{\n \"cuando\": \"2026-10-01 11:01:01\",\n \"parejas\": {\n  \"todo\": [\n   \"carpeta/.prdrive/p.conflicto-remoto1\",\n   \"doc.txt.conflicto-remoto1\"\n  ]\n }\n}",
+        "sin_apuntar": false,
+        "contar": {
+          "todo": 2
+        },
+        "borrada": "carpeta/.prdrive/p.conflicto-remoto1",
+        "cargar": {
+          "todo": [
+            {
+              "pareja": "todo",
+              "relativa": "doc.txt",
+              "original": "doc.txt",
+              "versiones": [
+                {
+                  "ruta": "doc.txt",
+                  "lado": "dispositivo",
+                  "es_original": true,
+                  "numero": 0
+                },
+                {
+                  "ruta": "doc.txt.conflicto-remoto1",
+                  "lado": "remoto",
+                  "es_original": false,
+                  "numero": 1
+                }
+              ]
+            }
+          ]
         }
       }
     ]

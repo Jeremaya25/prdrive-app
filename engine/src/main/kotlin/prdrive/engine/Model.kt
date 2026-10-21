@@ -111,6 +111,18 @@ const val REGLA_SIN_PROGRAMA = "- /$CARPETA_PROGRAMA/**"
  */
 const val VERSIONS_DIR = ".prversions"
 
+/**
+ * Lo que el sistema deja en la raíz de cualquier volumen, en minúsculas y como
+ * patrones de `fnmatch`. No es contenido de nadie: un recorrido que busca
+ * conflictos en la pareja de la raíz entera no entra ahí. En el volumen de la
+ * app no debería aparecer nada de esto, pero el catálogo es el de todos.
+ */
+val RUIDO_DEL_SISTEMA: List<String> = listOf(
+    "system volume information", "\$recycle.bin", "recycler", "lost+found",
+    ".ds_store", ".spotlight-v100", ".fseventsd", ".trashes", "desktop.ini",
+    "autorun.inf", ".trash-*",
+)
+
 /** La ventana con la que se comparan las horas de modificación, en segundos. */
 const val VENTANA_HORA = 2L
 
@@ -286,7 +298,7 @@ val FLAGS_ESCRIBEN: Map<String, String> = linkedMapOf(
 const val QUITALO = "Quítalo del config."
 
 /** El nombre con el que rclone verá el flag: `_` es `-` y sin mayúsculas. */
-fun normalizarFlag(nombre: String): String = nombre.trim().replace("_", "-").lowercase()
+fun normalizarFlag(nombre: String): String = stripPy(nombre).replace("_", "-").lowercase()
 
 /**
  * Por qué un flag de rclone no puede ir en el config, o `null` si vale.
@@ -300,7 +312,7 @@ fun normalizarFlag(nombre: String): String = nombre.trim().replace("_", "-").low
  * rclone como `--sftp-ssh=sh -c id`.
  */
 fun problemaFlag(nombre: String): String? {
-    val clave = normalizarFlag(nombre).split("=", limit = 2)[0].trim()
+    val clave = stripPy(normalizarFlag(nombre).split("=", limit = 2)[0])
     (FLAGS_RESERVADOS[clave] ?: FLAGS_ESCRIBEN[clave])?.let { return it }
     if (clave.endsWith("-command") || clave.endsWith("-ssh") ||
         clave == "metadata-mapper" || clave == "rc" || clave.startsWith("rc-")
@@ -337,10 +349,14 @@ fun problemaValorFlag(valor: Any?): String? = when (valor) {
 
 /**
  * Un nombre de remote que no es una cadena de conexión: letras, números,
- * `_ . + @ -` y espacios entre palabras, sin empezar por `-`. El `\w` es el de
- * Python, que admite letras de cualquier alfabeto: de ahí el `(?U)`.
+ * `_ . + @ -` y espacios entre palabras, sin empezar por `-`.
+ *
+ * El `\w` de Python es «letra o número» de cualquier alfabeto (`str.isalnum()`)
+ * más `_`, y se escribe así, con `\p{L}` y `\p{N}`: el `\w` de Java no es ese
+ * (con `(?U)` deja pasar marcas combinantes y el ZWJ, y sin él solo es ASCII), y
+ * Android no admite `(?U)`.
  */
-private val NOMBRE_REMOTE = Regex("(?U)(?!-)[\\w.+@-]+(?: [\\w.+@-]+)*")
+private val NOMBRE_REMOTE = Regex("(?!-)[\\p{L}\\p{N}_.+@-]+(?: [\\p{L}\\p{N}_.+@-]+)*")
 
 /**
  * Por qué un `remote` no vale como nombre de remote de rclone, o `null`. Se
@@ -457,6 +473,11 @@ private fun listaDe(donde: String, clave: String, valor: Any?): List<String> = t
 }
 
 private fun comprobarCapas(donde: String, tabla: String, flags: Any?, extra: Any?) {
+    // prdrive se cae con un `AttributeError` al fundir una `flags` que no es una
+    // tabla (`flags = ["--x"]`); aquí se dice, en vez de tirar los flags callando.
+    if (verdad(flags) && flags !is Map<*, *>) {
+        throw ConfigError("$donde $tabla tiene que ser una tabla de flags (clave = valor).")
+    }
     if (flags is Map<*, *>) {
         for ((clave, valor) in flags) {
             problemaFlag(strPy(clave))?.let {
@@ -643,6 +664,14 @@ data class Pareja(
 
     /** `--backup-dir2`: lo que pierde el lado remoto. */
     val versionsPath2: String get() = "${dest.trimEnd('/')}/$VERSIONS_DIR"
+
+    /**
+     * La carpeta local de la pareja dentro de un volumen: el `local_abs` del
+     * escritorio, con el volumen dicho por quien lo sabe. La pareja de la raíz
+     * es el volumen mismo.
+     */
+    fun carpetaEn(volumen: java.io.File): java.io.File =
+        if (esRaiz) volumen else java.io.File(volumen, tramosLocales.joinToString("/"))
 }
 
 // ---------------------------------------------------------------------------
@@ -839,12 +868,12 @@ fun construirPareja(raw: Map<String, Any?>, defaults: Map<String, Any?>): Pareja
         local = normalizarLocal(raw.getValue("local")),
         remotePath = strPy(raw.getValue("remote_path")),
         remoteName = remote as String,
-        includes = listaDe(donde, "include", defaults["include"]) +
+        includes = listaDe("[defaults]", "include", defaults["include"]) +
             listaDe(donde, "include", raw["include"]),
-        excludes = listaDe(donde, "exclude", defaults["exclude"]) +
+        excludes = listaDe("[defaults]", "exclude", defaults["exclude"]) +
             listaDe(donde, "exclude", raw["exclude"]),
         flags = fundirFlags(mode, tablaDe(defaults, "flags"), tablaDe(raw, "flags")),
-        extraFlags = listaDe(donde, "extra_flags", defaults["extra_flags"]) +
+        extraFlags = listaDe("[defaults]", "extra_flags", defaults["extra_flags"]) +
             listaDe(donde, "extra_flags", raw["extra_flags"]),
         useFiltersFile = verdad(raw.leer("use_filters_file", defaults.leer("use_filters_file", true))),
         deviceRemote = nombreDeviceRemote(defaults),
@@ -921,7 +950,9 @@ fun nombreDeviceRemote(defaults: Map<String, Any?>): String? {
     val crudo = defaults["device_remote"]
     if (!verdad(crudo)) return null
     val name = strPy(crudo)
-    if (!NOMBRE_DEVICE_REMOTE.matches(name)) {
+    // Un `device_remote = true` hace caer a prdrive (`re.fullmatch` de un no
+    // texto); aquí se rechaza con el mensaje de un nombre que no vale.
+    if (crudo !is String || !NOMBRE_DEVICE_REMOTE.matches(name)) {
         throw ConfigError(
             "'device_remote' debe ser alfanumérico sin guiones (va en una " +
                 "variable de entorno RCLONE_CONFIG_<NOMBRE>_*): '$name'",
