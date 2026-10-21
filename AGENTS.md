@@ -50,22 +50,30 @@ rclone/
 │               y no a prdrive (escribe oraculo_rclone.json)
 ├── construir.sh   gomobile bind -> rclone/build/rclone.aar (no se versiona)
 app/          Android: solo dibuja y llama
-├── Prdrive.kt        dónde vive el volumen y cómo arranca rclone
+├── Prdrive.kt        dónde vive el volumen, cómo arranca rclone y el permiso
+│                     de red local
+├── Instalador.kt     el primer arranque sin pantallas (espejo del orden de
+│                     install/): conectar, leer el catálogo, sembrar, --resync
+├── Estado.kt         lo que la principal enseña de cada pareja, leído de state/
+├── ui/               Modelo (el ViewModel), Pantallas (Compose) y Escaner (el
+│                     de códigos de Play services)
 ├── rclone/Rclone.kt  el envoltorio del RPC (rpc, trabajo con _async)
 ├── rclone/Adaptadores.kt  el `Rclone` de la pasada y el `cat` del catálogo,
 │                     sobre el RPC
 ├── documentos/VolumenProvider.kt  el volumen en la app de Archivos, sin .prdrive/
 └── androidTest/  el spike contra rclone de verdad, la pasada entera, el
-                  proveedor, y los vectores del motor otra vez en Android
-                  (MotorEnAndroidTest)
+                  proveedor, los vectores del motor otra vez en Android
+                  (MotorEnAndroidTest) y las pantallas de punta a punta
+                  contra un servidor SFTP (PuntaAPuntaTest)
 herramientas/
 ├── vectores.py        genera los valores esperados desde el prdrive de verdad
 ├── vectores_paso3.py  su parte de la pasada y el volumen
-└── vectores_python.py lo que el motor imita del propio Python (y de tomllib)
+├── vectores_python.py lo que el motor imita del propio Python (y de tomllib)
+└── punta_a_punta.py   el servidor y la carga del QR de PuntaAPuntaTest
 ```
 
-Pendiente (ver `PLAN.md`, paso 4): las pantallas (primer arranque y la
-principal) y la prueba de punta a punta contra un servidor de verdad.
+El paso 1 de `PLAN.md` está hecho. Lo que queda fuera está en su último
+apartado («Fuera del paso 1»).
 
 ## Reglas que no se cruzan
 
@@ -127,6 +135,14 @@ rclone/construir.sh        # el .aar (Go, gomobile y un NDK)
 conectados, teléfonos incluidos. Con uno enchufado, se elige el emulador con
 `ANDROID_SERIAL=emulator-5554`.
 
+`PuntaAPuntaTest` se salta si no le llega la carga de un QR: necesita un
+servidor. `herramientas/punta_a_punta.py` lo monta (remoto, catálogo, claves y
+carga) con un `rclone` de la versión del `.aar`, y dice cómo lanzar la prueba:
+
+```bash
+python herramientas/punta_a_punta.py ../prdrive /ruta/a/rclone /tmp/e2e
+```
+
 El módulo `app` solo existe si hay un SDK de Android (`ANDROID_HOME`,
 `ANDROID_SDK_ROOT` o `sdk.dir` en `local.properties`): el CI del motor no lo
 tiene, y `:engine:test` no lo necesita.
@@ -175,6 +191,17 @@ export JAVA_TOOL_OPTIONS='-Djdk.net.unixdomain.tmpdir=C:\Windows\Temp'
   prdrive dice `^(.+)…$`, aquí va `([^\n]+)…\n?` con `matchEntire`. Y dentro de
   unos corchetes, `&&` o `[` son sintaxis de Java: `fnmatch` escribe cada
   carácter como `\x{…}`.
+- **Desde API 37, la red local pide permiso** (`ACCESS_LOCAL_NETWORK`, de los
+  que se piden al usarlo). Sin él, conectar con una dirección privada (un NAS
+  en `192.168.…`, el PC del emulador en `10.0.2.2`) no falla: se queda colgado
+  hasta el timeout. La app lo pide al conectar y al sincronizar, y lo explica
+  si falta. `adb shell` sí llega, así que no sirve para descartarlo.
+- **La carga del QR lleva la clave privada.** No se guarda con
+  `rememberSaveable` (el estado guardado de la actividad puede acabar en disco)
+  ni se deja a la vista en el campo de texto.
+- **Los tests de Compose en API 37** necesitan Espresso 3.7 (el que trae
+  `ui-test` busca `InputManager.getInstance`, que ya no existe) y las reglas
+  `junit4.v2` (las otras están obsoletas, y los avisos son errores).
 
 ## Ojo con estas cosas de rclone
 

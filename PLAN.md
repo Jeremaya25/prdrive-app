@@ -347,8 +347,23 @@ dibuja y llama; nada de `engine/` sabe que existe Android.**
   Al pasar los veredictos de `tomllib` a vectores salieron dos cosas que el
   lector de TOML aceptaba y `tomllib` no (`01`, `1__0`, un `\r` suelto): el
   teléfono habría escrito un fichero que el escritorio no lee.
-- **Paso 4, de punta a punta:** las pantallas, y una pareja contra un servidor
-  de verdad (SFTP o WebDAV en el PC, que el emulador ve en `10.0.2.2`).
+- **Paso 4, de punta a punta — hecho** (`PuntaAPuntaTest`, con el servidor de
+  `herramientas/punta_a_punta.py`: `rclone serve sftp` en el PC, con clave, que
+  el emulador ve en `10.0.2.2`). Las pantallas de verdad: se pega la carga del
+  QR, se conecta, se leen las parejas del catálogo, se instala, el `--resync`
+  inicial trae lo del PC, y en la principal una pasada sube lo nuevo del
+  teléfono y el espejo de bajada trae lo suyo; la fila queda «al día». Lo que
+  enseñó:
+  - **Android 17 (API 37) pide permiso para la red local**
+    (`ACCESS_LOCAL_NETWORK`). Sin él, la conexión a una dirección privada se
+    queda colgada hasta el timeout, mientras que `adb shell` sí llega. Es
+    justo el caso típico de prdrive: el NAS de casa. La app lo pide al
+    conectar y al sincronizar.
+  - el campo donde se pega la carga enseñaba la clave privada entera, y la
+    guardaba en el estado de la actividad; ahora ni lo uno ni lo otro.
+  - El escáner de QR es el de Play services (sin permiso de cámara); está en
+    la pantalla, pero la prueba pega el texto, porque un emulador no tiene un
+    QR delante.
 - **En un teléfono:** una pareja de verdad contra el remoto: sincronizar, editar
   un fichero en el móvil, sincronizar, y confirmarlo en el PC. Comprobar que el
   baseline sobrevive a una segunda pasada (un prefijo que se mueve aparece como

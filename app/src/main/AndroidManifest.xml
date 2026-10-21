@@ -1,9 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- rclone habla con el remoto. Ningún otro permiso: el volumen es
-         almacenamiento privado de la app. -->
+    <!-- rclone habla con el remoto. El volumen es almacenamiento privado de
+         la app: no hace falta ningún permiso de ficheros. -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Desde Android 17 (API 37), llegar a una dirección de la red local
+         (un NAS en 192.168.x.x, el PC en 10.x) pide este permiso, y sin él la
+         conexión se queda colgada hasta el timeout. Es de los que se piden al
+         usarlo: se pide al conectar y al sincronizar. -->
+    <uses-permission android:name="android.permission.ACCESS_LOCAL_NETWORK" />
 
     <application
         android:allowBackup="false"
@@ -11,6 +16,12 @@
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@android:style/Theme.Material.NoActionBar">
+        <!-- Que Play services baje el escáner de QR al instalar la app, y no la
+             primera vez que se pulsa «Escanear». -->
+        <meta-data
+            android:name="com.google.mlkit.vision.DEPENDENCIES"
+            android:value="barcode_ui" />
+
         <activity
             android:name=".MainActivity"
             android:exported="true">

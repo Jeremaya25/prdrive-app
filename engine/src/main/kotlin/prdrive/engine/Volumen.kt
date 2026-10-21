@@ -91,10 +91,14 @@ class Volumen(val raiz: File) {
      * parejas del config. El conf se genera antes de escribir nada, para que uno
      * rechazado no deje la clave a medias.
      *
+     * Sin [config], solo el remote: es lo que hace falta para leer el catálogo,
+     * y el config sale de él. El instalador lo vuelve a escribir, con el
+     * `combine`, en cuanto hay parejas elegidas.
+     *
      * @return lo escrito.
      */
-    fun escribirRemoto(carga: Pairing.Carga, config: Config): List<File> {
-        val texto = Pairing.rcloneConf(carga, config.seccionCombine(raiz.absolutePath))
+    fun escribirRemoto(carga: Pairing.Carga, config: Config?): List<File> {
+        val texto = Pairing.rcloneConf(carga, config?.seccionCombine(raiz.absolutePath) ?: "")
         val escrito = ArrayList<File>()
         val clave = carga.privateKey
         if (clave != null) {
