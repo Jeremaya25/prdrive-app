@@ -9,7 +9,7 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.runInterruptible
 import prdrive.app.Estado
 import prdrive.app.Instalador
 import prdrive.app.Prdrive
@@ -116,14 +116,19 @@ class Modelo(app: Application) : AndroidViewModel(app) {
      * Ejecuta [bloque] fuera del hilo de la pantalla, si no hay otra cosa en
      * marcha. Lo que lanza acaba en [error]: es el borde, y aquí un fallo se
      * cuenta en vez de cerrar la app.
+     *
+     * `runInterruptible`: si el modelo se cierra (la app sale del todo) con una
+     * pasada en marcha, el hilo se interrumpe, y eso para el trabajo de rclone
+     * y espera a que suelte el lock, sin apuntar la pasada como fallida
+     * ([Rclone.trabajo][prdrive.app.rclone.Rclone.trabajo]).
      */
-    private fun trabajo(que: String, bloque: suspend () -> Unit) {
+    private fun trabajo(que: String, bloque: () -> Unit) {
         if (ocupado != null) return
         ocupado = que
         error = null
         viewModelScope.launch {
             try {
-                withContext(Dispatchers.IO) { bloque() }
+                runInterruptible(Dispatchers.IO) { bloque() }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {

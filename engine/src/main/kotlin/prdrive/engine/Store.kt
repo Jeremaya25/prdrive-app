@@ -69,8 +69,7 @@ object Store {
     /** `_strptime.TimeRE().pattern(FORMATO_PY)`, con el `\s` y el `\d` de Python. */
     private val SELLO_PY: Regex by lazy {
         val d = "\\p{Nd}"
-        val espacio = (0..0xffff).filter { espacioPy(it.toChar()) }
-            .joinToString("", "[", "]+") { "\\x{${it.toString(16)}}" }
+        val espacio = "[$CLASE_ESPACIO_PY]+"
         Regex(
             "($d$d$d$d)-(1[0-2]|0[1-9]|[1-9])-(3[0-1]|[1-2]$d|0[1-9]|[1-9]| [1-9])" +
                 "$espacio(2[0-3]|[0-1]$d|$d| $d):([0-5]$d|$d):(6[0-1]|[0-5]$d|$d)",

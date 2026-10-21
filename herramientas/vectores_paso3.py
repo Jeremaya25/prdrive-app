@@ -29,6 +29,18 @@ def _config(base: dict) -> dict:
          "versions": True},
         {"name": "bajada", "local": "sync-data/bajada", "remote_path": "/copia/bajada",
          "mode": "down-mirror", "extra_flags": ["--max-delete", "3", "--checksum"]},
+        # El tope de bisync donde la línea de órdenes y el RPC no coinciden: sin
+        # él, negativo y por encima de 100 (cmd/bisync/cmd.go, applyContext).
+        {"name": "sin-tope", "local": "sync-data/sin-tope", "remote_path": "/copia/sin-tope",
+         "flags": {"max_delete": False}},
+        {"name": "tope-negativo", "local": "sync-data/tope-negativo",
+         "remote_path": "/copia/tope-negativo", "flags": {"max_delete": -1}},
+        {"name": "tope-alto", "local": "sync-data/tope-alto", "remote_path": "/copia/tope-alto",
+         "flags": {"max_delete": 200}},
+        # Flags de una letra, y uno que se acumula con una coma dentro.
+        {"name": "cortos", "local": "sync-data/cortos", "remote_path": "/copia/cortos",
+         "mode": "down-mirror",
+         "extra_flags": ["-uc", "--exclude-from", "a.txt", "--exclude-from", "b,c.txt"]},
     ]}
 
 
@@ -111,9 +123,46 @@ def vectores_errores(sync) -> dict:
         "casos": [{"caso": c, "texto": t, "explicacion": explicar(t)}
                   for c, t in TEXTOS_DE_FALLO.items()],
         "log_tail_lines": sync.LOG_TAIL_LINES,
+        "cola": _colas(sync),
+        "tope_bisync_de_fabrica": __import__("common.frenos", fromlist=["x"]).TOPE_BISYNC_DE_FABRICA,
         "logs_por_pareja": sync.LOGS_POR_PAREJA,
         "conflicts_shown": sync.CONFLICTS_SHOWN,
     }
+
+
+LOGS_PARA_LA_COLA = {
+    "corto": "2026/10/01 10:00:00 INFO  : a.txt: Copied (new)\n\nERROR : algo\n",
+    "con estadísticas": "\n".join(
+        ["2026/10/01 10:00:00 INFO  :        0 B / 1.086 MiB, 0%, 0 B/s, ETA -",
+         "Transferred:   \t    1.086 MiB / 1.086 MiB, 100%, 512 KiB/s, ETA 0s",
+         "Transferred:            0 / 3, 0%",
+         "a.bin: 23% / 1.431 MiB, 0 B/s, -",
+         "2026/10/01 10:00:01 ERROR : fallo de verdad",
+         "x1.5 MiB / 2 MiB, 10%, 1 MiB/s, ETA 1s",
+         "١٫٥ MiB / 2 MiB, 10%, 1 MiB/s, ETA 1s",
+         "1 B / 2 B, 50%, 1 B/s, ETA　x"]),
+    "largo": "\n".join(f"línea {n}" for n in range(40)),
+    "saltos raros": "uno\r\ndos tres\x0ccuatro\r\n\r\ncinco",
+    "vacío": "",
+}
+
+
+def _colas(sync) -> list[dict]:
+    """Lo que imprime `print_log_tail()` de cada log, sin su cabecera ni su
+    cierre: las líneas que el motor tiene que dar en su `cola()`."""
+    import contextlib  # noqa: PLC0415
+    import io  # noqa: PLC0415
+    salida = []
+    with tempfile.TemporaryDirectory() as tmp:
+        for caso, texto in LOGS_PARA_LA_COLA.items():
+            ruta = Path(tmp) / "x.log"
+            ruta.write_bytes(texto.encode("utf-8"))
+            impreso = io.StringIO()
+            with contextlib.redirect_stdout(impreso):
+                sync.print_log_tail(ruta)
+            lineas = impreso.getvalue().split("\n")[1:-2]  # sin «--- últimas…» ni «---»
+            salida.append({"caso": caso, "texto": texto, "cola": [x[2:] for x in lineas]})
+    return salida
 
 
 def vectores_logs(sync, model) -> dict:

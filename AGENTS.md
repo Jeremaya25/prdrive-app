@@ -211,6 +211,26 @@ export JAVA_TOOL_OPTIONS='-Djdk.net.unixdomain.tmpdir=C:\Windows\Temp'
   `excessDeletes`), y en el RPC el parámetro exige estar entre 0 y 100. En los
   modos `*-mirror`, que son `sync`, el mismo número es una **cuenta de
   ficheros**. Así que el 25 de bisync y el 50 de espejo no son comparables.
+- **Y el `maxDelete` del RPC no es el de la línea de órdenes.** Sin él, la
+  línea de órdenes usa el de fábrica (50, `DefaultMaxDelete`) y el RPC usa 0:
+  ningún borrado pasa. Negativo o por encima de 100, la línea de órdenes lo
+  ajusta y el RPC se niega. La pasada lo manda siempre, ya resuelto
+  (`Pasada.maxDeleteBisync`).
+- **La línea de órdenes no es el RPC**, y `llamadaDe` traduce como lee pflag:
+  - Las opciones que se repiten (`stringArray`: `--exclude-from`,
+    `--files-from`…) van como lista. Un texto plano rclone lo partiría por las
+    comas.
+  - Las letras (`-u`, `-uc`) salen del `ShortOpt` de `options/info`, y `-1`
+    de bisync es `--resync`.
+  - `--max_delete` no existe: pflag no normaliza `_`.
+  - Algunos flags no son opciones (`--delete-after`, `--header`, los de un
+    backend como `--sftp-…`): por el RPC no se pueden pasar, y se explica.
+  - Los tipos y las letras de las pruebas salen del oráculo, que llama al
+    `options/info` de verdad.
+- **Cancelar una pasada es parar el trabajo y esperar a que acabe**
+  (`job/stop` y `job/status` hasta `finished`): si no, el lock de bisync se
+  queda puesto y la captura del log se cruza con la de la pasada siguiente.
+  Una pasada cancelada no se apunta, como un Ctrl+C en el escritorio.
 - **`core/command` no sirve desde la biblioteca**, ni aunque lo veas en la
   documentación de rclone: `librclone.RPC()` rechaza los métodos que necesitan
   request/response, y su implementación lanza un proceso hijo. La ruta es

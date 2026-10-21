@@ -11,6 +11,13 @@ import android.provider.DocumentsProvider
 import android.webkit.MimeTypeMap
 import java.io.File
 import java.io.FileNotFoundException
+import java.io.IOException
+import java.nio.file.FileVisitResult
+import java.nio.file.Files
+import java.nio.file.LinkOption
+import java.nio.file.Path
+import java.nio.file.SimpleFileVisitor
+import java.nio.file.attribute.BasicFileAttributes
 import prdrive.app.Prdrive
 import prdrive.app.R
 import prdrive.engine.CARPETA_PROGRAMA
@@ -24,9 +31,19 @@ import prdrive.engine.CARPETA_PROGRAMA
  * —que es justo lo que hace poco fiable a bisync en tarjetas SD y discos USB—.
  *
  * **`.prdrive/` no se ve ni se alcanza**: lleva la clave privada y el
- * `rclone.conf`. Cada id de documento es una ruta relativa al volumen, y se
- * comprueba, ya resuelta, que cae dentro del volumen y fuera de la carpeta del
- * programa antes de tocar nada.
+ * `rclone.conf`. Y en el volumen puede haber enlaces simbólicos: los trae
+ * rclone de un `.rclonelink` del remoto en una pareja con `links`, y apuntan
+ * adonde diga quien los escribió. De ahí las dos reglas:
+ *
+ * - Un id es una ruta **léxica** dentro del volumen (sin `.`, `..` ni tramos
+ *   vacíos, y nunca `.prdrive` en la raíz), y lo que se toca es esa ruta: borrar
+ *   o renombrar un enlace es borrar o renombrar el enlace, no lo que señala.
+ * - Lo que hay detrás tiene que caer, ya resuelto, dentro del volumen y fuera de
+ *   la carpeta del programa. Lo que no, no existe: ni se lista ni se abre.
+ *
+ * Borrar una carpeta la recorre sin seguir enlaces (`Files.walkFileTree`), que
+ * `File.deleteRecursively()` sí sigue: con un enlace a `.prdrive/` dentro, se
+ * llevaría la clave.
  */
 class VolumenProvider : DocumentsProvider() {
 
@@ -44,7 +61,8 @@ class VolumenProvider : DocumentsProvider() {
         )
     }
 
-    private val raiz: File get() = Prdrive.volumen(context!!).raiz
+    /** El volumen tal cual (`filesDir/volumen`): las rutas léxicas cuelgan de aquí. */
+    private val raiz: File get() = Prdrive.volumen(context!!).raiz.absoluteFile
 
     override fun onCreate(): Boolean = true
 
@@ -62,34 +80,44 @@ class VolumenProvider : DocumentsProvider() {
         }
     }
 
+    private fun noExiste(id: String): Nothing = throw FileNotFoundException("No es de este volumen: $id")
+
+    /** Los tramos de un id, o ninguno para la raíz. */
+    private fun tramos(id: String): List<String> {
+        val relativa = when {
+            id == ID_RAIZ -> return emptyList()
+            id.startsWith("$ID_RAIZ/") -> id.substring(ID_RAIZ.length + 1)
+            else -> noExiste(id)
+        }
+        val tramos = relativa.split('/')
+        if (tramos.any { it.isEmpty() || it == "." || it == ".." }) noExiste(id)
+        if (tramos.first() == CARPETA_PROGRAMA) noExiste(id)
+        return tramos
+    }
+
+    private fun idDe(tramos: List<String>): String =
+        if (tramos.isEmpty()) ID_RAIZ else ID_RAIZ + "/" + tramos.joinToString("/")
+
     /**
-     * El fichero de un id: `volumen` es la raíz y `volumen/a/b` es `a/b` dentro.
-     * Resuelto (sin `..` ni enlaces), tiene que caer dentro del volumen y fuera
-     * de `.prdrive/`; si no, para quien pregunta no existe.
+     * La ruta léxica de un id, si lo que hay detrás —resuelto, enlaces incluidos—
+     * cae dentro del volumen y fuera de `.prdrive/`. Si no existe, se mira su
+     * carpeta: es lo que hace falta para crear algo nuevo.
      */
     private fun fichero(id: String): File {
-        val base = raiz.canonicalFile
-        val relativa = when {
-            id == ID_RAIZ -> ""
-            id.startsWith("$ID_RAIZ/") -> id.substring(ID_RAIZ.length + 1)
-            else -> throw FileNotFoundException("No es de este volumen: $id")
-        }
-        val f = File(base, relativa).canonicalFile
-        val programa = File(base, CARPETA_PROGRAMA).canonicalFile
-        val dentro = f == base || f.toPath().startsWith(base.toPath())
-        val enPrograma = f == programa || f.toPath().startsWith(programa.toPath())
-        if (!dentro || enPrograma) throw FileNotFoundException("No es de este volumen: $id")
+        val t = tramos(id)
+        val f = if (t.isEmpty()) raiz else File(raiz, t.joinToString("/"))
+        if (!alcanzable(f)) noExiste(id)
         return f
     }
 
-    private fun id(f: File): String {
-        val base = raiz.canonicalFile
-        val c = f.canonicalFile
-        return if (c == base) ID_RAIZ else "$ID_RAIZ/" + base.toPath().relativize(c.toPath()).toString().replace(File.separatorChar, '/')
+    private fun alcanzable(f: File): Boolean {
+        val base = raiz.canonicalFile.toPath()
+        val programa = File(raiz, CARPETA_PROGRAMA).canonicalFile.toPath()
+        // Un enlace roto no tiene destino que resolver: se juzga por su carpeta.
+        val existe = Files.exists(f.toPath())
+        val resuelta = (if (existe || f == raiz) f else f.parentFile ?: return false).canonicalFile.toPath()
+        return resuelta.startsWith(base) && !resuelta.startsWith(programa)
     }
-
-    /** Si es lo que se esconde: la carpeta del programa, en la raíz. */
-    private fun oculto(f: File): Boolean = f.canonicalFile == File(raiz, CARPETA_PROGRAMA).canonicalFile
 
     private fun mime(f: File): String {
         if (f.isDirectory) return Document.MIME_TYPE_DIR
@@ -97,19 +125,13 @@ class VolumenProvider : DocumentsProvider() {
         return MimeTypeMap.getSingleton().getMimeTypeFromExtension(ext) ?: "application/octet-stream"
     }
 
-    private fun fila(cursor: MatrixCursor, f: File) {
-        var flags = 0
-        if (f.isDirectory) {
-            flags = flags or Document.FLAG_DIR_SUPPORTS_CREATE
-        } else {
-            flags = flags or Document.FLAG_SUPPORTS_WRITE
-        }
-        if (f.canonicalFile != raiz.canonicalFile) {
-            flags = flags or Document.FLAG_SUPPORTS_DELETE or Document.FLAG_SUPPORTS_RENAME
-        }
+    private fun fila(cursor: MatrixCursor, id: String, f: File) {
+        val esRaiz = id == ID_RAIZ
+        var flags = if (f.isDirectory) Document.FLAG_DIR_SUPPORTS_CREATE else Document.FLAG_SUPPORTS_WRITE
+        if (!esRaiz) flags = flags or Document.FLAG_SUPPORTS_DELETE or Document.FLAG_SUPPORTS_RENAME
         cursor.newRow().apply {
-            add(Document.COLUMN_DOCUMENT_ID, id(f))
-            add(Document.COLUMN_DISPLAY_NAME, if (f.canonicalFile == raiz.canonicalFile) context!!.getString(R.string.app_name) else f.name)
+            add(Document.COLUMN_DOCUMENT_ID, id)
+            add(Document.COLUMN_DISPLAY_NAME, if (esRaiz) context!!.getString(R.string.app_name) else f.name)
             add(Document.COLUMN_MIME_TYPE, mime(f))
             add(Document.COLUMN_LAST_MODIFIED, f.lastModified())
             add(Document.COLUMN_FLAGS, flags)
@@ -117,8 +139,11 @@ class VolumenProvider : DocumentsProvider() {
         }
     }
 
-    override fun queryDocument(documentId: String, projection: Array<out String>?): Cursor =
-        MatrixCursor(projection ?: COLUMNAS_DOCUMENTO).apply { fila(this, fichero(documentId)) }
+    override fun queryDocument(documentId: String, projection: Array<out String>?): Cursor {
+        val f = fichero(documentId)
+        if (!Files.exists(f.toPath())) noExiste(documentId)
+        return MatrixCursor(projection ?: COLUMNAS_DOCUMENTO).apply { fila(this, documentId, f) }
+    }
 
     override fun queryChildDocuments(
         parentDocumentId: String,
@@ -126,63 +151,123 @@ class VolumenProvider : DocumentsProvider() {
         sortOrder: String?,
     ): Cursor {
         val padre = fichero(parentDocumentId)
+        val tramosPadre = tramos(parentDocumentId)
         return MatrixCursor(projection ?: COLUMNAS_DOCUMENTO).apply {
             setNotificationUri(context!!.contentResolver, DocumentsContract.buildChildDocumentsUri(AUTORIDAD, parentDocumentId))
-            (padre.listFiles() ?: emptyArray()).filter { !oculto(it) }.sortedBy { it.name.lowercase() }.forEach { fila(this, it) }
+            for (hijo in (padre.listFiles() ?: emptyArray()).sortedBy { it.name.lowercase() }) {
+                val id = idDe(tramosPadre + hijo.name)
+                // Lo que no se alcanza (la carpeta del programa, un enlace que
+                // sale del volumen o entra en ella, uno roto) no se enseña.
+                val f = try {
+                    fichero(id)
+                } catch (_: FileNotFoundException) {
+                    continue
+                }
+                if (Files.exists(f.toPath())) fila(this, id, f)
+            }
         }
     }
 
     override fun openDocument(documentId: String, mode: String, signal: CancellationSignal?): ParcelFileDescriptor {
         val f = fichero(documentId)
-        if (f.isDirectory) throw FileNotFoundException("Es una carpeta: $documentId")
-        return ParcelFileDescriptor.open(f, ParcelFileDescriptor.parseMode(mode))
+        if (f.isDirectory || !Files.exists(f.toPath())) throw FileNotFoundException("No se puede abrir: $documentId")
+        // Se abre lo comprobado: el destino ya resuelto, no la ruta del enlace.
+        return ParcelFileDescriptor.open(f.canonicalFile, ParcelFileDescriptor.parseMode(mode))
     }
+
+    private fun nombreValido(nombre: String) =
+        nombre.isNotEmpty() && '/' !in nombre && '\u0000' !in nombre && nombre != "." && nombre != ".."
 
     override fun createDocument(parentDocumentId: String, mimeType: String, displayName: String): String {
         val padre = fichero(parentDocumentId)
-        if (displayName.isEmpty() || '/' in displayName || displayName == "." || displayName == "..") {
-            throw FileNotFoundException("Nombre no válido: $displayName")
-        }
-        var destino = File(padre, displayName)
+        if (!padre.isDirectory) throw FileNotFoundException("No es una carpeta: $parentDocumentId")
+        if (!nombreValido(displayName)) throw FileNotFoundException("Nombre no válido: $displayName")
+        val tramosPadre = tramos(parentDocumentId)
+        val punto = displayName.lastIndexOf('.')
+        val (base, ext) = if (punto > 0) displayName.substring(0, punto) to displayName.substring(punto) else displayName to ""
+        var nombre = displayName
         var n = 1
-        while (destino.exists()) {
-            val punto = displayName.lastIndexOf('.')
-            val (base, ext) = if (punto > 0) displayName.substring(0, punto) to displayName.substring(punto) else displayName to ""
-            destino = File(padre, "$base ($n)$ext")
+        while (true) {
+            val id = idDe(tramosPadre + nombre)
+            // Un «.prdrive» en la raíz no es la carpeta del programa: se busca otro nombre.
+            val libre = try {
+                tramos(id)
+                !Files.exists(File(padre, nombre).toPath(), LinkOption.NOFOLLOW_LINKS)
+            } catch (_: FileNotFoundException) {
+                false
+            }
+            if (libre) {
+                val ruta = File(padre, nombre).toPath()
+                try {
+                    // CREATE_NEW y no `createNewFile()` tras mirar: si aparece un
+                    // enlace en medio, falla en vez de crear al otro lado.
+                    if (mimeType == Document.MIME_TYPE_DIR) Files.createDirectory(ruta) else Files.createFile(ruta)
+                } catch (e: IOException) {
+                    throw FileNotFoundException("No se pudo crear $displayName: ${e.message}")
+                }
+                avisar(parentDocumentId)
+                return id
+            }
+            nombre = "$base ($n)$ext"
             n++
         }
-        val id = id(destino)
-        fichero(id) // que no caiga en `.prdrive/` (un «.prdrive» creado en la raíz)
-        val ok = if (mimeType == Document.MIME_TYPE_DIR) destino.mkdir() else destino.createNewFile()
-        if (!ok) throw FileNotFoundException("No se pudo crear $displayName")
-        avisar(parentDocumentId)
-        return id
     }
 
     override fun deleteDocument(documentId: String) {
+        val t = tramos(documentId)
+        if (t.isEmpty()) throw FileNotFoundException("La raíz no se borra")
         val f = fichero(documentId)
-        if (f.canonicalFile == raiz.canonicalFile) throw FileNotFoundException("La raíz no se borra")
-        if (!f.deleteRecursively()) throw FileNotFoundException("No se pudo borrar $documentId")
-        avisar(id(f.parentFile!!))
+        try {
+            borrarSinSeguirEnlaces(f.toPath())
+        } catch (e: IOException) {
+            throw FileNotFoundException("No se pudo borrar $documentId: ${e.message}")
+        }
+        avisar(idDe(t.dropLast(1)))
+    }
+
+    /** Borra un fichero, un enlace (el enlace) o una carpeta entera sin entrar en sus enlaces. */
+    private fun borrarSinSeguirEnlaces(ruta: Path) {
+        Files.walkFileTree(
+            ruta,
+            object : SimpleFileVisitor<Path>() {
+                override fun visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult {
+                    Files.delete(file)
+                    return FileVisitResult.CONTINUE
+                }
+
+                override fun postVisitDirectory(dir: Path, exc: IOException?): FileVisitResult {
+                    if (exc != null) throw exc
+                    Files.delete(dir)
+                    return FileVisitResult.CONTINUE
+                }
+            },
+        )
     }
 
     override fun renameDocument(documentId: String, displayName: String): String {
+        val t = tramos(documentId)
+        if (t.isEmpty()) throw FileNotFoundException("La raíz no se renombra")
+        if (!nombreValido(displayName)) throw FileNotFoundException("Nombre no válido: $displayName")
         val f = fichero(documentId)
-        if (displayName.isEmpty() || '/' in displayName || displayName == "." || displayName == "..") {
-            throw FileNotFoundException("Nombre no válido: $displayName")
-        }
+        val nuevoId = idDe(t.dropLast(1) + displayName)
+        tramos(nuevoId) // ni `.prdrive` en la raíz
         val destino = File(f.parentFile, displayName)
-        val nuevoId = id(destino)
-        fichero(nuevoId)
-        if (destino.exists() || !f.renameTo(destino)) throw FileNotFoundException("No se pudo renombrar a $displayName")
-        avisar(id(f.parentFile!!))
+        try {
+            // Mueve la entrada misma: si es un enlace, el enlace.
+            Files.move(f.toPath(), destino.toPath(), LinkOption.NOFOLLOW_LINKS)
+        } catch (e: IOException) {
+            throw FileNotFoundException("No se pudo renombrar a $displayName: ${e.message}")
+        }
+        avisar(idDe(t.dropLast(1)))
         return nuevoId
     }
 
     override fun isChildDocument(parentDocumentId: String, documentId: String): Boolean = try {
-        val padre = fichero(parentDocumentId)
-        val hijo = fichero(documentId)
-        hijo != padre && hijo.toPath().startsWith(padre.toPath())
+        val padre = tramos(parentDocumentId)
+        val hijo = tramos(documentId)
+        fichero(parentDocumentId)
+        fichero(documentId)
+        hijo.size > padre.size && hijo.subList(0, padre.size) == padre
     } catch (_: FileNotFoundException) {
         false
     }

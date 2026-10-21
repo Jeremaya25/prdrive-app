@@ -18,6 +18,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -25,9 +26,47 @@ import (
 	"runtime/debug"
 	"strings"
 
+	// El paquete del .aar: así el oráculo tiene las mismas opciones y los
+	// mismos backends que la app.
+	_ "github.com/Jeremaya25/prdrive-app/rclone/go/rclone"
+	"github.com/rclone/rclone/cmd/bisync"
 	"github.com/rclone/rclone/cmd/bisync/bilib"
+	"github.com/rclone/rclone/fs/rc"
 	"github.com/rclone/rclone/lib/encoder"
 )
+
+// llamar hace una llamada rc dentro del proceso y la devuelve como JSON
+// genérico, que es lo que recibe la app por el RPC.
+func llamar(metodo string, entrada rc.Params) map[string]any {
+	call := rc.Calls.Get(metodo)
+	if call == nil {
+		fmt.Fprintln(os.Stderr, "no existe", metodo)
+		os.Exit(1)
+	}
+	salida, err := call.Fn(context.Background(), entrada)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, metodo, err)
+		os.Exit(1)
+	}
+	texto, _ := json.Marshal(salida)
+	var generico map[string]any
+	_ = json.Unmarshal(texto, &generico)
+	return generico
+}
+
+// recortar deja de cada opción lo que usa el motor: nombre, tipo y letra.
+func recortar(lista any) []map[string]any {
+	var salida []map[string]any
+	for _, o := range lista.([]any) {
+		m := o.(map[string]any)
+		r := map[string]any{"Name": m["Name"], "Type": m["Type"]}
+		if corto, ok := m["ShortOpt"]; ok && corto != "" {
+			r["ShortOpt"] = corto
+		}
+		salida = append(salida, r)
+	}
+	return salida
+}
 
 // android es encoder.OS en Android (lib/encoder/os_other.go).
 const android = encoder.Base
@@ -78,6 +117,13 @@ type salida struct {
 	RaizLocal  []map[string]string `json:"raiz_local"`
 	Canonical  []map[string]string `json:"canonical"`
 	SessionAll []map[string]string `json:"session_name"`
+	// DefaultMaxDelete de cmd/bisync/cmd.go: el tope de bisync sin --max-delete.
+	MaxDeleteBisync int `json:"bisync_default_max_delete"`
+	// options/info de los bloques que traduce la pasada, recortado.
+	Opciones map[string][]map[string]any `json:"options_info"`
+	// config/providers recortado: el prefijo de flag de cada backend del .aar
+	// y el nombre de sus opciones.
+	Backends []map[string]any `json:"backends"`
 }
 
 func versionRclone() string {
@@ -120,6 +166,18 @@ func main() {
 			"session": bilib.StripHexString(bilib.CanonicalPath(a)) + ".." + bilib.StripHexString(bilib.CanonicalPath(b)),
 		})
 	}
+	s.MaxDeleteBisync = bisync.DefaultMaxDelete
+	info := llamar("options/info", rc.Params{"blocks": "main,filter,log"})
+	s.Opciones = map[string][]map[string]any{"main": recortar(info["main"]), "filter": recortar(info["filter"]), "log": recortar(info["log"])}
+	for _, p := range llamar("config/providers", rc.Params{})["providers"].([]any) {
+		m := p.(map[string]any)
+		var nombres []any
+		for _, o := range m["Options"].([]any) {
+			nombres = append(nombres, o.(map[string]any)["Name"])
+		}
+		s.Backends = append(s.Backends, map[string]any{"Prefix": m["Prefix"], "Options": nombres})
+	}
+
 	var buf bytes.Buffer
 	enc := json.NewEncoder(&buf)
 	enc.SetEscapeHTML(false)

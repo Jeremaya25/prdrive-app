@@ -6847,6 +6847,43 @@
               "3",
               "--checksum"
             ]
+          },
+          {
+            "name": "sin-tope",
+            "local": "sync-data/sin-tope",
+            "remote_path": "/copia/sin-tope",
+            "flags": {
+              "max_delete": false
+            }
+          },
+          {
+            "name": "tope-negativo",
+            "local": "sync-data/tope-negativo",
+            "remote_path": "/copia/tope-negativo",
+            "flags": {
+              "max_delete": -1
+            }
+          },
+          {
+            "name": "tope-alto",
+            "local": "sync-data/tope-alto",
+            "remote_path": "/copia/tope-alto",
+            "flags": {
+              "max_delete": 200
+            }
+          },
+          {
+            "name": "cortos",
+            "local": "sync-data/cortos",
+            "remote_path": "/copia/cortos",
+            "mode": "down-mirror",
+            "extra_flags": [
+              "-uc",
+              "--exclude-from",
+              "a.txt",
+              "--exclude-from",
+              "b,c.txt"
+            ]
           }
         ]
       },
@@ -13120,6 +13157,3680 @@
           "max_delete_efectivo": 3
         },
         {
+          "pareja": "sin-tope",
+          "pasada": "normal",
+          "kw": {},
+          "filtros": "/volumen/.prdrive/filters/sin-tope.txt",
+          "workdir": "/volumen/.prdrive/state/sin-tope",
+          "tramos": [
+            {
+              "args": [
+                "rclone",
+                "bisync",
+                "disp:sync-data/sin-tope",
+                "nas:/copia/sin-tope"
+              ],
+              "origen": "prdrive",
+              "nombre": null
+            },
+            {
+              "args": [
+                "--filters-file",
+                "/volumen/.prdrive/filters/sin-tope.txt"
+              ],
+              "origen": "prdrive",
+              "nombre": null
+            },
+            {
+              "args": [
+                "--verbose"
+              ],
+              "origen": "base",
+              "nombre": "verbose"
+            },
+            {
+              "args": [
+                "--create-empty-src-dirs"
+              ],
+              "origen": "base",
+              "nombre": "create-empty-src-dirs"
+            },
+            {
+              "args": [
+                "--stats",
+                "2s"
+              ],
+              "origen": "base",
+              "nombre": "stats"
+            },
+            {
+              "args": [
+                "--stats-one-line"
+              ],
+              "origen": "base",
+              "nombre": "stats-one-line"
+            },
+            {
+              "args": [
+                "--modify-window",
+                "2s"
+              ],
+              "origen": "base",
+              "nombre": "modify-window"
+            },
+            {
+              "args": [
+                "--conflict-resolve",
+                "newer"
+              ],
+              "origen": "modo",
+              "nombre": "conflict-resolve"
+            },
+            {
+              "args": [
+                "--conflict-suffix",
+                "conflicto-dispositivo,conflicto-remoto"
+              ],
+              "origen": "modo",
+              "nombre": "conflict-suffix"
+            },
+            {
+              "args": [
+                "--max-delete",
+                "25"
+              ],
+              "origen": "modo",
+              "nombre": "max-delete"
+            },
+            {
+              "args": [
+                "--resilient"
+              ],
+              "origen": "modo",
+              "nombre": "resilient"
+            },
+            {
+              "args": [
+                "--recover"
+              ],
+              "origen": "modo",
+              "nombre": "recover"
+            },
+            {
+              "args": [
+                "--max-lock",
+                "2m"
+              ],
+              "origen": "modo",
+              "nombre": "max-lock"
+            },
+            {
+              "args": [
+                "--transfers",
+                "4"
+              ],
+              "origen": "defaults",
+              "nombre": "transfers"
+            },
+            {
+              "args": [
+                "--config",
+                "/volumen/.prdrive/rclone.conf"
+              ],
+              "origen": "prdrive",
+              "nombre": "config"
+            },
+            {
+              "args": [
+                "--log-file",
+                "/tmp/rclone-sync-x.log"
+              ],
+              "origen": "prdrive",
+              "nombre": "log-file"
+            },
+            {
+              "args": [
+                "--workdir",
+                "/volumen/.prdrive/state/sin-tope"
+              ],
+              "origen": "prdrive",
+              "nombre": "workdir"
+            }
+          ],
+          "pasada_forzada": false,
+          "max_delete_efectivo": null
+        },
+        {
+          "pareja": "sin-tope",
+          "pasada": "simulacro",
+          "kw": {
+            "simulacro": true
+          },
+          "filtros": "/volumen/.prdrive/filters/sin-tope.txt",
+          "workdir": "/volumen/.prdrive/state/sin-tope",
+          "tramos": [
+            {
+              "args": [
+                "rclone",
+                "bisync",
+                "disp:sync-data/sin-tope",
+                "nas:/copia/sin-tope"
+              ],
+              "origen": "prdrive",
+              "nombre": null
+            },
+            {
+              "args": [
+                "--filters-file",
+                "/volumen/.prdrive/filters/sin-tope.txt"
+              ],
+              "origen": "prdrive",
+              "nombre": null
+            },
+            {
+              "args": [
+                "--verbose"
+              ],
+              "origen": "base",
+              "nombre": "verbose"
+            },
+            {
+              "args": [
+                "--create-empty-src-dirs"
+              ],
+              "origen": "base",
+              "nombre": "create-empty-src-dirs"
+            },
+            {
+              "args": [
+                "--stats",
+                "2s"
+              ],
+              "origen": "base",
+              "nombre": "stats"
+            },
+            {
+              "args": [
+                "--stats-one-line"
+              ],
+              "origen": "base",
+              "nombre": "stats-one-line"
+            },
+            {
+              "args": [
+                "--modify-window",
+                "2s"
+              ],
+              "origen": "base",
+              "nombre": "modify-window"
+            },
+            {
+              "args": [
+                "--conflict-resolve",
+                "newer"
+              ],
+              "origen": "modo",
+              "nombre": "conflict-resolve"
+            },
+            {
+              "args": [
+                "--conflict-suffix",
+                "conflicto-dispositivo,conflicto-remoto"
+              ],
+              "origen": "modo",
+              "nombre": "conflict-suffix"
+            },
+            {
+              "args": [
+                "--max-delete",
+                "25"
+              ],
+              "origen": "modo",
+              "nombre": "max-delete"
+            },
+            {
+              "args": [
+                "--resilient"
+              ],
+              "origen": "modo",
+              "nombre": "resilient"
+            },
+            {
+              "args": [
+                "--recover"
+              ],
+              "origen": "modo",
+              "nombre": "recover"
+            },
+            {
+              "args": [
+                "--max-lock",
+                "2m"
+              ],
+              "origen": "modo",
+              "nombre": "max-lock"
+            },
+            {
+              "args": [
+                "--transfers",
+                "4"
+              ],
+              "origen": "defaults",
+              "nombre": "transfers"
+            },
+            {
+              "args": [
+                "--config",
+                "/volumen/.prdrive/rclone.conf"
+              ],
+              "origen": "prdrive",
+              "nombre": "config"
+            },
+            {
+              "args": [
+                "--log-file",
+                "/tmp/rclone-sync-x.log"
+              ],
+              "origen": "prdrive",
+              "nombre": "log-file"
+            },
+            {
+              "args": [
+                "--dry-run"
+              ],
+              "origen": "prdrive",
+              "nombre": "dry-run"
+            },
+            {
+              "args": [
+                "--workdir",
+                "/volumen/.prdrive/state/sin-tope"
+              ],
+              "origen": "prdrive",
+              "nombre": "workdir"
+            }
+          ],
+          "pasada_forzada": false,
+          "max_delete_efectivo": null
+        },
+        {
+          "pareja": "sin-tope",
+          "pasada": "resync",
+          "kw": {
+            "resync": true
+          },
+          "filtros": "/volumen/.prdrive/filters/sin-tope.txt",
+          "workdir": "/volumen/.prdrive/state/sin-tope",
+          "tramos": [
+            {
+              "args": [
+                "rclone",
+                "bisync",
+                "disp:sync-data/sin-tope",
+                "nas:/copia/sin-tope"
+              ],
+              "origen": "prdrive",
+              "nombre": null
+            },
+            {
+              "args": [
+                "--filters-file",
+                "/volumen/.prdrive/filters/sin-tope.txt"
+              ],
+              "origen": "prdrive",
+              "nombre": null
+            },
+            {
+              "args": [
+                "--verbose"
+              ],
+              "origen": "base",
+              "nombre": "verbose"
+            },
+            {
+              "args": [
+                "--create-empty-src-dirs"
+              ],
+              "origen": "base",
+              "nombre": "create-empty-src-dirs"
+            },
+            {
+              "args": [
+                "--stats",
+                "2s"
+              ],
+              "origen": "base",
+              "nombre": "stats"
+            },
+            {
+              "args": [
+                "--stats-one-line"
+              ],
+              "origen": "base",
+              "nombre": "stats-one-line"
+            },
+            {
+              "args": [
+                "--modify-window",
+                "2s"
+              ],
+              "origen": "base",
+              "nombre": "modify-window"
+            },
+            {
+              "args": [
+                "--conflict-resolve",
+                "newer"
+              ],
+              "origen": "modo",
+              "nombre": "conflict-resolve"
+            },
+            {
+              "args": [
+                "--conflict-suffix",
+                "conflicto-dispositivo,conflicto-remoto"
+              ],
+              "origen": "modo",
+              "nombre": "conflict-suffix"
+            },
+            {
+              "args": [
+                "--max-delete",
+                "25"
+              ],
+              "origen": "modo",
+              "nombre": "max-delete"
+            },
+            {
+              "args": [
+                "--resilient"
+              ],
+              "origen": "modo",
+              "nombre": "resilient"
+            },
+            {
+              "args": [
+                "--recover"
+              ],
+              "origen": "modo",
+              "nombre": "recover"
+            },
+            {
+              "args": [
+                "--max-lock",
+                "2m"
+              ],
+              "origen": "modo",
+              "nombre": "max-lock"
+            },
+            {
+              "args": [
+                "--transfers",
+                "4"
+              ],
+              "origen": "defaults",
+              "nombre": "transfers"
+            },
+            {
+              "args": [
+                "--config",
+                "/volumen/.prdrive/rclone.conf"
+              ],
+              "origen": "prdrive",
+              "nombre": "config"
+            },
+            {
+              "args": [
+                "--log-file",
+                "/tmp/rclone-sync-x.log"
+              ],
+              "origen": "prdrive",
+              "nombre": "log-file"
+            },
+            {
+              "args": [
+                "--workdir",
+                "/volumen/.prdrive/state/sin-tope"
+              ],
+              "origen": "prdrive",
+              "nombre": "workdir"
+            },
+            {
+              "args": [
+                "--resync"
+              ],
+              "origen": "prdrive",
+              "nombre": "resync"
+            }
+          ],
+          "pasada_forzada": false,
+          "max_delete_efectivo": null
+        },
+        {
+          "pareja": "sin-tope",
+          "pasada": "forzada",
+          "kw": {
+            "forzar": true
+          },
+          "filtros": "/volumen/.prdrive/filters/sin-tope.txt",
+          "workdir": "/volumen/.prdrive/state/sin-tope",
+          "tramos": [
+            {
+              "args": [
+                "rclone",
+                "bisync",
+                "disp:sync-data/sin-tope",
+                "nas:/copia/sin-tope"
+              ],
+              "origen": "prdrive",
+              "nombre": null
+            },
+            {
+              "args": [
+                "--filters-file",
+                "/volumen/.prdrive/filters/sin-tope.txt"
+              ],
+              "origen": "prdrive",
+              "nombre": null
+            },
+            {
+              "args": [
+                "--verbose"
+              ],
+              "origen": "base",
+              "nombre": "verbose"
+            },
+            {
+              "args": [
+                "--create-empty-src-dirs"
+              ],
+              "origen": "base",
+              "nombre": "create-empty-src-dirs"
+            },
+            {
+              "args": [
+                "--stats",
+                "2s"
+              ],
+              "origen": "base",
+              "nombre": "stats"
+            },
+            {
+              "args": [
+                "--stats-one-line"
+              ],
+              "origen": "base",
+              "nombre": "stats-one-line"
+            },
+            {
+              "args": [
+                "--modify-window",
+                "2s"
+              ],
+              "origen": "base",
+              "nombre": "modify-window"
+            },
+            {
+              "args": [
+                "--conflict-resolve",
+                "newer"
+              ],
+              "origen": "modo",
+              "nombre": "conflict-resolve"
+            },
+            {
+              "args": [
+                "--conflict-suffix",
+                "conflicto-dispositivo,conflicto-remoto"
+              ],
+              "origen": "modo",
+              "nombre": "conflict-suffix"
+            },
+            {
+              "args": [
+                "--max-delete",
+                "25"
+              ],
+              "origen": "modo",
+              "nombre": "max-delete"
+            },
+            {
+              "args": [
+                "--resilient"
+              ],
+              "origen": "modo",
+              "nombre": "resilient"
+            },
+            {
+              "args": [
+                "--recover"
+              ],
+              "origen": "modo",
+              "nombre": "recover"
+            },
+            {
+              "args": [
+                "--max-lock",
+                "2m"
+              ],
+              "origen": "modo",
+              "nombre": "max-lock"
+            },
+            {
+              "args": [
+                "--transfers",
+                "4"
+              ],
+              "origen": "defaults",
+              "nombre": "transfers"
+            },
+            {
+              "args": [
+                "--config",
+                "/volumen/.prdrive/rclone.conf"
+              ],
+              "origen": "prdrive",
+              "nombre": "config"
+            },
+            {
+              "args": [
+                "--log-file",
+                "/tmp/rclone-sync-x.log"
+              ],
+              "origen": "prdrive",
+              "nombre": "log-file"
+            },
+            {
+              "args": [
+                "--workdir",
+                "/volumen/.prdrive/state/sin-tope"
+              ],
+              "origen": "prdrive",
+              "nombre": "workdir"
+            },
+            {
+              "args": [
+                "--force"
+              ],
+              "origen": "prdrive",
+              "nombre": "force"
+            }
+          ],
+          "pasada_forzada": true,
+          "max_delete_efectivo": null
+        },
+        {
+          "pareja": "sin-tope",
+          "pasada": "simulacro forzado",
+          "kw": {
+            "simulacro": true,
+            "forzar": true
+          },
+          "filtros": "/volumen/.prdrive/filters/sin-tope.txt",
+          "workdir": "/volumen/.prdrive/state/sin-tope",
+          "tramos": [
+            {
+              "args": [
+                "rclone",
+                "bisync",
+                "disp:sync-data/sin-tope",
+                "nas:/copia/sin-tope"
+              ],
+              "origen": "prdrive",
+              "nombre": null
+            },
+            {
+              "args": [
+                "--filters-file",
+                "/volumen/.prdrive/filters/sin-tope.txt"
+              ],
+              "origen": "prdrive",
+              "nombre": null
+            },
+            {
+              "args": [
+                "--verbose"
+              ],
+              "origen": "base",
+              "nombre": "verbose"
+            },
+            {
+              "args": [
+                "--create-empty-src-dirs"
+              ],
+              "origen": "base",
+              "nombre": "create-empty-src-dirs"
+            },
+            {
+              "args": [
+                "--stats",
+                "2s"
+              ],
+              "origen": "base",
+              "nombre": "stats"
+            },
+            {
+              "args": [
+                "--stats-one-line"
+              ],
+              "origen": "base",
+              "nombre": "stats-one-line"
+            },
+            {
+              "args": [
+                "--modify-window",
+                "2s"
+              ],
+              "origen": "base",
+              "nombre": "modify-window"
+            },
+            {
+              "args": [
+                "--conflict-resolve",
+                "newer"
+              ],
+              "origen": "modo",
+              "nombre": "conflict-resolve"
+            },
+            {
+              "args": [
+                "--conflict-suffix",
+                "conflicto-dispositivo,conflicto-remoto"
+              ],
+              "origen": "modo",
+              "nombre": "conflict-suffix"
+            },
+            {
+              "args": [
+                "--max-delete",
+                "25"
+              ],
+              "origen": "modo",
+              "nombre": "max-delete"
+            },
+            {
+              "args": [
+                "--resilient"
+              ],
+              "origen": "modo",
+              "nombre": "resilient"
+            },
+            {
+              "args": [
+                "--recover"
+              ],
+              "origen": "modo",
+              "nombre": "recover"
+            },
+            {
+              "args": [
+                "--max-lock",
+                "2m"
+              ],
+              "origen": "modo",
+              "nombre": "max-lock"
+            },
+            {
+              "args": [
+                "--transfers",
+                "4"
+              ],
+              "origen": "defaults",
+              "nombre": "transfers"
+            },
+            {
+              "args": [
+                "--config",
+                "/volumen/.prdrive/rclone.conf"
+              ],
+              "origen": "prdrive",
+              "nombre": "config"
+            },
+            {
+              "args": [
+                "--log-file",
+                "/tmp/rclone-sync-x.log"
+              ],
+              "origen": "prdrive",
+              "nombre": "log-file"
+            },
+            {
+              "args": [
+                "--dry-run"
+              ],
+              "origen": "prdrive",
+              "nombre": "dry-run"
+            },
+            {
+              "args": [
+                "--workdir",
+                "/volumen/.prdrive/state/sin-tope"
+              ],
+              "origen": "prdrive",
+              "nombre": "workdir"
+            },
+            {
+              "args": [
+                "--force"
+              ],
+              "origen": "prdrive",
+              "nombre": "force"
+            }
+          ],
+          "pasada_forzada": true,
+          "max_delete_efectivo": null
+        },
+        {
+          "pareja": "sin-tope",
+          "pasada": "resync forzado",
+          "kw": {
+            "resync": true,
+            "forzar": true
+          },
+          "filtros": "/volumen/.prdrive/filters/sin-tope.txt",
+          "workdir": "/volumen/.prdrive/state/sin-tope",
+          "tramos": [
+            {
+              "args": [
+                "rclone",
+                "bisync",
+                "disp:sync-data/sin-tope",
+                "nas:/copia/sin-tope"
+              ],
+              "origen": "prdrive",
+              "nombre": null
+            },
+            {
+              "args": [
+                "--filters-file",
+                "/volumen/.prdrive/filters/sin-tope.txt"
+              ],
+              "origen": "prdrive",
+              "nombre": null
+            },
+            {
+              "args": [
+                "--verbose"
+              ],
+              "origen": "base",
+              "nombre": "verbose"
+            },
+            {
+              "args": [
+                "--create-empty-src-dirs"
+              ],
+              "origen": "base",
+              "nombre": "create-empty-src-dirs"
+            },
+            {
+              "args": [
+                "--stats",
+                "2s"
+              ],
+              "origen": "base",
+              "nombre": "stats"
+            },
+            {
+              "args": [
+                "--stats-one-line"
+              ],
+              "origen": "base",
+              "nombre": "stats-one-line"
+            },
+            {
+              "args": [
+                "--modify-window",
+                "2s"
+              ],
+              "origen": "base",
+              "nombre": "modify-window"
+            },
+            {
+              "args": [
+                "--conflict-resolve",
+                "newer"
+              ],
+              "origen": "modo",
+              "nombre": "conflict-resolve"
+            },
+            {
+              "args": [
+                "--conflict-suffix",
+                "conflicto-dispositivo,conflicto-remoto"
+              ],
+              "origen": "modo",
+              "nombre": "conflict-suffix"
+            },
+            {
+              "args": [
+                "--max-delete",
+                "25"
+              ],
+              "origen": "modo",
+              "nombre": "max-delete"
+            },
+            {
+              "args": [
+                "--resilient"
+              ],
+              "origen": "modo",
+              "nombre": "resilient"
+            },
+            {
+              "args": [
+                "--recover"
+              ],
+              "origen": "modo",
+              "nombre": "recover"
+            },
+            {
+              "args": [
+                "--max-lock",
+                "2m"
+              ],
+              "origen": "modo",
+              "nombre": "max-lock"
+            },
+            {
+              "args": [
+                "--transfers",
+                "4"
+              ],
+              "origen": "defaults",
+              "nombre": "transfers"
+            },
+            {
+              "args": [
+                "--config",
+                "/volumen/.prdrive/rclone.conf"
+              ],
+              "origen": "prdrive",
+              "nombre": "config"
+            },
+            {
+              "args": [
+                "--log-file",
+                "/tmp/rclone-sync-x.log"
+              ],
+              "origen": "prdrive",
+              "nombre": "log-file"
+            },
+            {
+              "args": [
+                "--workdir",
+                "/volumen/.prdrive/state/sin-tope"
+              ],
+              "origen": "prdrive",
+              "nombre": "workdir"
+            },
+            {
+              "args": [
+                "--resync"
+              ],
+              "origen": "prdrive",
+              "nombre": "resync"
+            }
+          ],
+          "pasada_forzada": false,
+          "max_delete_efectivo": null
+        },
+        {
+          "pareja": "tope-negativo",
+          "pasada": "normal",
+          "kw": {},
+          "filtros": "/volumen/.prdrive/filters/tope-negativo.txt",
+          "workdir": "/volumen/.prdrive/state/tope-negativo",
+          "tramos": [
+            {
+              "args": [
+                "rclone",
+                "bisync",
+                "disp:sync-data/tope-negativo",
+                "nas:/copia/tope-negativo"
+              ],
+              "origen": "prdrive",
+              "nombre": null
+            },
+            {
+              "args": [
+                "--filters-file",
+                "/volumen/.prdrive/filters/tope-negativo.txt"
+              ],
+              "origen": "prdrive",
+              "nombre": null
+            },
+            {
+              "args": [
+                "--verbose"
+              ],
+              "origen": "base",
+              "nombre": "verbose"
+            },
+            {
+              "args": [
+                "--create-empty-src-dirs"
+              ],
+              "origen": "base",
+              "nombre": "create-empty-src-dirs"
+            },
+            {
+              "args": [
+                "--stats",
+                "2s"
+              ],
+              "origen": "base",
+              "nombre": "stats"
+            },
+            {
+              "args": [
+                "--stats-one-line"
+              ],
+              "origen": "base",
+              "nombre": "stats-one-line"
+            },
+            {
+              "args": [
+                "--modify-window",
+                "2s"
+              ],
+              "origen": "base",
+              "nombre": "modify-window"
+            },
+            {
+              "args": [
+                "--conflict-resolve",
+                "newer"
+              ],
+              "origen": "modo",
+              "nombre": "conflict-resolve"
+            },
+            {
+              "args": [
+                "--conflict-suffix",
+                "conflicto-dispositivo,conflicto-remoto"
+              ],
+              "origen": "modo",
+              "nombre": "conflict-suffix"
+            },
+            {
+              "args": [
+                "--max-delete",
+                "25"
+              ],
+              "origen": "modo",
+              "nombre": "max-delete"
+            },
+            {
+              "args": [
+                "--resilient"
+              ],
+              "origen": "modo",
+              "nombre": "resilient"
+            },
+            {
+              "args": [
+                "--recover"
+              ],
+              "origen": "modo",
+              "nombre": "recover"
+            },
+            {
+              "args": [
+                "--max-lock",
+                "2m"
+              ],
+              "origen": "modo",
+              "nombre": "max-lock"
+            },
+            {
+              "args": [
+                "--transfers",
+                "4"
+              ],
+              "origen": "defaults",
+              "nombre": "transfers"
+            },
+            {
+              "args": [
+                "--max-delete",
+                "-1"
+              ],
+              "origen": "pareja",
+              "nombre": "max_delete"
+            },
+            {
+              "args": [
+                "--config",
+                "/volumen/.prdrive/rclone.conf"
+              ],
+              "origen": "prdrive",
+              "nombre": "config"
+            },
+            {
+              "args": [
+                "--log-file",
+                "/tmp/rclone-sync-x.log"
+              ],
+              "origen": "prdrive",
+              "nombre": "log-file"
+            },
+            {
+              "args": [
+                "--workdir",
+                "/volumen/.prdrive/state/tope-negativo"
+              ],
+              "origen": "prdrive",
+              "nombre": "workdir"
+            }
+          ],
+          "pasada_forzada": false,
+          "max_delete_efectivo": -1
+        },
+        {
+          "pareja": "tope-negativo",
+          "pasada": "simulacro",
+          "kw": {
+            "simulacro": true
+          },
+          "filtros": "/volumen/.prdrive/filters/tope-negativo.txt",
+          "workdir": "/volumen/.prdrive/state/tope-negativo",
+          "tramos": [
+            {
+              "args": [
+                "rclone",
+                "bisync",
+                "disp:sync-data/tope-negativo",
+                "nas:/copia/tope-negativo"
+              ],
+              "origen": "prdrive",
+              "nombre": null
+            },
+            {
+              "args": [
+                "--filters-file",
+                "/volumen/.prdrive/filters/tope-negativo.txt"
+              ],
+              "origen": "prdrive",
+              "nombre": null
+            },
+            {
+              "args": [
+                "--verbose"
+              ],
+              "origen": "base",
+              "nombre": "verbose"
+            },
+            {
+              "args": [
+                "--create-empty-src-dirs"
+              ],
+              "origen": "base",
+              "nombre": "create-empty-src-dirs"
+            },
+            {
+              "args": [
+                "--stats",
+                "2s"
+              ],
+              "origen": "base",
+              "nombre": "stats"
+            },
+            {
+              "args": [
+                "--stats-one-line"
+              ],
+              "origen": "base",
+              "nombre": "stats-one-line"
+            },
+            {
+              "args": [
+                "--modify-window",
+                "2s"
+              ],
+              "origen": "base",
+              "nombre": "modify-window"
+            },
+            {
+              "args": [
+                "--conflict-resolve",
+                "newer"
+              ],
+              "origen": "modo",
+              "nombre": "conflict-resolve"
+            },
+            {
+              "args": [
+                "--conflict-suffix",
+                "conflicto-dispositivo,conflicto-remoto"
+              ],
+              "origen": "modo",
+              "nombre": "conflict-suffix"
+            },
+            {
+              "args": [
+                "--max-delete",
+                "25"
+              ],
+              "origen": "modo",
+              "nombre": "max-delete"
+            },
+            {
+              "args": [
+                "--resilient"
+              ],
+              "origen": "modo",
+              "nombre": "resilient"
+            },
+            {
+              "args": [
+                "--recover"
+              ],
+              "origen": "modo",
+              "nombre": "recover"
+            },
+            {
+              "args": [
+                "--max-lock",
+                "2m"
+              ],
+              "origen": "modo",
+              "nombre": "max-lock"
+            },
+            {
+              "args": [
+                "--transfers",
+                "4"
+              ],
+              "origen": "defaults",
+              "nombre": "transfers"
+            },
+            {
+              "args": [
+                "--max-delete",
+                "-1"
+              ],
+              "origen": "pareja",
+              "nombre": "max_delete"
+            },
+            {
+              "args": [
+                "--config",
+                "/volumen/.prdrive/rclone.conf"
+              ],
+              "origen": "prdrive",
+              "nombre": "config"
+            },
+            {
+              "args": [
+                "--log-file",
+                "/tmp/rclone-sync-x.log"
+              ],
+              "origen": "prdrive",
+              "nombre": "log-file"
+            },
+            {
+              "args": [
+                "--dry-run"
+              ],
+              "origen": "prdrive",
+              "nombre": "dry-run"
+            },
+            {
+              "args": [
+                "--workdir",
+                "/volumen/.prdrive/state/tope-negativo"
+              ],
+              "origen": "prdrive",
+              "nombre": "workdir"
+            }
+          ],
+          "pasada_forzada": false,
+          "max_delete_efectivo": -1
+        },
+        {
+          "pareja": "tope-negativo",
+          "pasada": "resync",
+          "kw": {
+            "resync": true
+          },
+          "filtros": "/volumen/.prdrive/filters/tope-negativo.txt",
+          "workdir": "/volumen/.prdrive/state/tope-negativo",
+          "tramos": [
+            {
+              "args": [
+                "rclone",
+                "bisync",
+                "disp:sync-data/tope-negativo",
+                "nas:/copia/tope-negativo"
+              ],
+              "origen": "prdrive",
+              "nombre": null
+            },
+            {
+              "args": [
+                "--filters-file",
+                "/volumen/.prdrive/filters/tope-negativo.txt"
+              ],
+              "origen": "prdrive",
+              "nombre": null
+            },
+            {
+              "args": [
+                "--verbose"
+              ],
+              "origen": "base",
+              "nombre": "verbose"
+            },
+            {
+              "args": [
+                "--create-empty-src-dirs"
+              ],
+              "origen": "base",
+              "nombre": "create-empty-src-dirs"
+            },
+            {
+              "args": [
+                "--stats",
+                "2s"
+              ],
+              "origen": "base",
+              "nombre": "stats"
+            },
+            {
+              "args": [
+                "--stats-one-line"
+              ],
+              "origen": "base",
+              "nombre": "stats-one-line"
+            },
+            {
+              "args": [
+                "--modify-window",
+                "2s"
+              ],
+              "origen": "base",
+              "nombre": "modify-window"
+            },
+            {
+              "args": [
+                "--conflict-resolve",
+                "newer"
+              ],
+              "origen": "modo",
+              "nombre": "conflict-resolve"
+            },
+            {
+              "args": [
+                "--conflict-suffix",
+                "conflicto-dispositivo,conflicto-remoto"
+              ],
+              "origen": "modo",
+              "nombre": "conflict-suffix"
+            },
+            {
+              "args": [
+                "--max-delete",
+                "25"
+              ],
+              "origen": "modo",
+              "nombre": "max-delete"
+            },
+            {
+              "args": [
+                "--resilient"
+              ],
+              "origen": "modo",
+              "nombre": "resilient"
+            },
+            {
+              "args": [
+                "--recover"
+              ],
+              "origen": "modo",
+              "nombre": "recover"
+            },
+            {
+              "args": [
+                "--max-lock",
+                "2m"
+              ],
+              "origen": "modo",
+              "nombre": "max-lock"
+            },
+            {
+              "args": [
+                "--transfers",
+                "4"
+              ],
+              "origen": "defaults",
+              "nombre": "transfers"
+            },
+            {
+              "args": [
+                "--max-delete",
+                "-1"
+              ],
+              "origen": "pareja",
+              "nombre": "max_delete"
+            },
+            {
+              "args": [
+                "--config",
+                "/volumen/.prdrive/rclone.conf"
+              ],
+              "origen": "prdrive",
+              "nombre": "config"
+            },
+            {
+              "args": [
+                "--log-file",
+                "/tmp/rclone-sync-x.log"
+              ],
+              "origen": "prdrive",
+              "nombre": "log-file"
+            },
+            {
+              "args": [
+                "--workdir",
+                "/volumen/.prdrive/state/tope-negativo"
+              ],
+              "origen": "prdrive",
+              "nombre": "workdir"
+            },
+            {
+              "args": [
+                "--resync"
+              ],
+              "origen": "prdrive",
+              "nombre": "resync"
+            }
+          ],
+          "pasada_forzada": false,
+          "max_delete_efectivo": -1
+        },
+        {
+          "pareja": "tope-negativo",
+          "pasada": "forzada",
+          "kw": {
+            "forzar": true
+          },
+          "filtros": "/volumen/.prdrive/filters/tope-negativo.txt",
+          "workdir": "/volumen/.prdrive/state/tope-negativo",
+          "tramos": [
+            {
+              "args": [
+                "rclone",
+                "bisync",
+                "disp:sync-data/tope-negativo",
+                "nas:/copia/tope-negativo"
+              ],
+              "origen": "prdrive",
+              "nombre": null
+            },
+            {
+              "args": [
+                "--filters-file",
+                "/volumen/.prdrive/filters/tope-negativo.txt"
+              ],
+              "origen": "prdrive",
+              "nombre": null
+            },
+            {
+              "args": [
+                "--verbose"
+              ],
+              "origen": "base",
+              "nombre": "verbose"
+            },
+            {
+              "args": [
+                "--create-empty-src-dirs"
+              ],
+              "origen": "base",
+              "nombre": "create-empty-src-dirs"
+            },
+            {
+              "args": [
+                "--stats",
+                "2s"
+              ],
+              "origen": "base",
+              "nombre": "stats"
+            },
+            {
+              "args": [
+                "--stats-one-line"
+              ],
+              "origen": "base",
+              "nombre": "stats-one-line"
+            },
+            {
+              "args": [
+                "--modify-window",
+                "2s"
+              ],
+              "origen": "base",
+              "nombre": "modify-window"
+            },
+            {
+              "args": [
+                "--conflict-resolve",
+                "newer"
+              ],
+              "origen": "modo",
+              "nombre": "conflict-resolve"
+            },
+            {
+              "args": [
+                "--conflict-suffix",
+                "conflicto-dispositivo,conflicto-remoto"
+              ],
+              "origen": "modo",
+              "nombre": "conflict-suffix"
+            },
+            {
+              "args": [
+                "--max-delete",
+                "25"
+              ],
+              "origen": "modo",
+              "nombre": "max-delete"
+            },
+            {
+              "args": [
+                "--resilient"
+              ],
+              "origen": "modo",
+              "nombre": "resilient"
+            },
+            {
+              "args": [
+                "--recover"
+              ],
+              "origen": "modo",
+              "nombre": "recover"
+            },
+            {
+              "args": [
+                "--max-lock",
+                "2m"
+              ],
+              "origen": "modo",
+              "nombre": "max-lock"
+            },
+            {
+              "args": [
+                "--transfers",
+                "4"
+              ],
+              "origen": "defaults",
+              "nombre": "transfers"
+            },
+            {
+              "args": [
+                "--max-delete",
+                "-1"
+              ],
+              "origen": "pareja",
+              "nombre": "max_delete"
+            },
+            {
+              "args": [
+                "--config",
+                "/volumen/.prdrive/rclone.conf"
+              ],
+              "origen": "prdrive",
+              "nombre": "config"
+            },
+            {
+              "args": [
+                "--log-file",
+                "/tmp/rclone-sync-x.log"
+              ],
+              "origen": "prdrive",
+              "nombre": "log-file"
+            },
+            {
+              "args": [
+                "--workdir",
+                "/volumen/.prdrive/state/tope-negativo"
+              ],
+              "origen": "prdrive",
+              "nombre": "workdir"
+            },
+            {
+              "args": [
+                "--force"
+              ],
+              "origen": "prdrive",
+              "nombre": "force"
+            }
+          ],
+          "pasada_forzada": true,
+          "max_delete_efectivo": -1
+        },
+        {
+          "pareja": "tope-negativo",
+          "pasada": "simulacro forzado",
+          "kw": {
+            "simulacro": true,
+            "forzar": true
+          },
+          "filtros": "/volumen/.prdrive/filters/tope-negativo.txt",
+          "workdir": "/volumen/.prdrive/state/tope-negativo",
+          "tramos": [
+            {
+              "args": [
+                "rclone",
+                "bisync",
+                "disp:sync-data/tope-negativo",
+                "nas:/copia/tope-negativo"
+              ],
+              "origen": "prdrive",
+              "nombre": null
+            },
+            {
+              "args": [
+                "--filters-file",
+                "/volumen/.prdrive/filters/tope-negativo.txt"
+              ],
+              "origen": "prdrive",
+              "nombre": null
+            },
+            {
+              "args": [
+                "--verbose"
+              ],
+              "origen": "base",
+              "nombre": "verbose"
+            },
+            {
+              "args": [
+                "--create-empty-src-dirs"
+              ],
+              "origen": "base",
+              "nombre": "create-empty-src-dirs"
+            },
+            {
+              "args": [
+                "--stats",
+                "2s"
+              ],
+              "origen": "base",
+              "nombre": "stats"
+            },
+            {
+              "args": [
+                "--stats-one-line"
+              ],
+              "origen": "base",
+              "nombre": "stats-one-line"
+            },
+            {
+              "args": [
+                "--modify-window",
+                "2s"
+              ],
+              "origen": "base",
+              "nombre": "modify-window"
+            },
+            {
+              "args": [
+                "--conflict-resolve",
+                "newer"
+              ],
+              "origen": "modo",
+              "nombre": "conflict-resolve"
+            },
+            {
+              "args": [
+                "--conflict-suffix",
+                "conflicto-dispositivo,conflicto-remoto"
+              ],
+              "origen": "modo",
+              "nombre": "conflict-suffix"
+            },
+            {
+              "args": [
+                "--max-delete",
+                "25"
+              ],
+              "origen": "modo",
+              "nombre": "max-delete"
+            },
+            {
+              "args": [
+                "--resilient"
+              ],
+              "origen": "modo",
+              "nombre": "resilient"
+            },
+            {
+              "args": [
+                "--recover"
+              ],
+              "origen": "modo",
+              "nombre": "recover"
+            },
+            {
+              "args": [
+                "--max-lock",
+                "2m"
+              ],
+              "origen": "modo",
+              "nombre": "max-lock"
+            },
+            {
+              "args": [
+                "--transfers",
+                "4"
+              ],
+              "origen": "defaults",
+              "nombre": "transfers"
+            },
+            {
+              "args": [
+                "--max-delete",
+                "-1"
+              ],
+              "origen": "pareja",
+              "nombre": "max_delete"
+            },
+            {
+              "args": [
+                "--config",
+                "/volumen/.prdrive/rclone.conf"
+              ],
+              "origen": "prdrive",
+              "nombre": "config"
+            },
+            {
+              "args": [
+                "--log-file",
+                "/tmp/rclone-sync-x.log"
+              ],
+              "origen": "prdrive",
+              "nombre": "log-file"
+            },
+            {
+              "args": [
+                "--dry-run"
+              ],
+              "origen": "prdrive",
+              "nombre": "dry-run"
+            },
+            {
+              "args": [
+                "--workdir",
+                "/volumen/.prdrive/state/tope-negativo"
+              ],
+              "origen": "prdrive",
+              "nombre": "workdir"
+            },
+            {
+              "args": [
+                "--force"
+              ],
+              "origen": "prdrive",
+              "nombre": "force"
+            }
+          ],
+          "pasada_forzada": true,
+          "max_delete_efectivo": -1
+        },
+        {
+          "pareja": "tope-negativo",
+          "pasada": "resync forzado",
+          "kw": {
+            "resync": true,
+            "forzar": true
+          },
+          "filtros": "/volumen/.prdrive/filters/tope-negativo.txt",
+          "workdir": "/volumen/.prdrive/state/tope-negativo",
+          "tramos": [
+            {
+              "args": [
+                "rclone",
+                "bisync",
+                "disp:sync-data/tope-negativo",
+                "nas:/copia/tope-negativo"
+              ],
+              "origen": "prdrive",
+              "nombre": null
+            },
+            {
+              "args": [
+                "--filters-file",
+                "/volumen/.prdrive/filters/tope-negativo.txt"
+              ],
+              "origen": "prdrive",
+              "nombre": null
+            },
+            {
+              "args": [
+                "--verbose"
+              ],
+              "origen": "base",
+              "nombre": "verbose"
+            },
+            {
+              "args": [
+                "--create-empty-src-dirs"
+              ],
+              "origen": "base",
+              "nombre": "create-empty-src-dirs"
+            },
+            {
+              "args": [
+                "--stats",
+                "2s"
+              ],
+              "origen": "base",
+              "nombre": "stats"
+            },
+            {
+              "args": [
+                "--stats-one-line"
+              ],
+              "origen": "base",
+              "nombre": "stats-one-line"
+            },
+            {
+              "args": [
+                "--modify-window",
+                "2s"
+              ],
+              "origen": "base",
+              "nombre": "modify-window"
+            },
+            {
+              "args": [
+                "--conflict-resolve",
+                "newer"
+              ],
+              "origen": "modo",
+              "nombre": "conflict-resolve"
+            },
+            {
+              "args": [
+                "--conflict-suffix",
+                "conflicto-dispositivo,conflicto-remoto"
+              ],
+              "origen": "modo",
+              "nombre": "conflict-suffix"
+            },
+            {
+              "args": [
+                "--max-delete",
+                "25"
+              ],
+              "origen": "modo",
+              "nombre": "max-delete"
+            },
+            {
+              "args": [
+                "--resilient"
+              ],
+              "origen": "modo",
+              "nombre": "resilient"
+            },
+            {
+              "args": [
+                "--recover"
+              ],
+              "origen": "modo",
+              "nombre": "recover"
+            },
+            {
+              "args": [
+                "--max-lock",
+                "2m"
+              ],
+              "origen": "modo",
+              "nombre": "max-lock"
+            },
+            {
+              "args": [
+                "--transfers",
+                "4"
+              ],
+              "origen": "defaults",
+              "nombre": "transfers"
+            },
+            {
+              "args": [
+                "--max-delete",
+                "-1"
+              ],
+              "origen": "pareja",
+              "nombre": "max_delete"
+            },
+            {
+              "args": [
+                "--config",
+                "/volumen/.prdrive/rclone.conf"
+              ],
+              "origen": "prdrive",
+              "nombre": "config"
+            },
+            {
+              "args": [
+                "--log-file",
+                "/tmp/rclone-sync-x.log"
+              ],
+              "origen": "prdrive",
+              "nombre": "log-file"
+            },
+            {
+              "args": [
+                "--workdir",
+                "/volumen/.prdrive/state/tope-negativo"
+              ],
+              "origen": "prdrive",
+              "nombre": "workdir"
+            },
+            {
+              "args": [
+                "--resync"
+              ],
+              "origen": "prdrive",
+              "nombre": "resync"
+            }
+          ],
+          "pasada_forzada": false,
+          "max_delete_efectivo": -1
+        },
+        {
+          "pareja": "tope-alto",
+          "pasada": "normal",
+          "kw": {},
+          "filtros": "/volumen/.prdrive/filters/tope-alto.txt",
+          "workdir": "/volumen/.prdrive/state/tope-alto",
+          "tramos": [
+            {
+              "args": [
+                "rclone",
+                "bisync",
+                "disp:sync-data/tope-alto",
+                "nas:/copia/tope-alto"
+              ],
+              "origen": "prdrive",
+              "nombre": null
+            },
+            {
+              "args": [
+                "--filters-file",
+                "/volumen/.prdrive/filters/tope-alto.txt"
+              ],
+              "origen": "prdrive",
+              "nombre": null
+            },
+            {
+              "args": [
+                "--verbose"
+              ],
+              "origen": "base",
+              "nombre": "verbose"
+            },
+            {
+              "args": [
+                "--create-empty-src-dirs"
+              ],
+              "origen": "base",
+              "nombre": "create-empty-src-dirs"
+            },
+            {
+              "args": [
+                "--stats",
+                "2s"
+              ],
+              "origen": "base",
+              "nombre": "stats"
+            },
+            {
+              "args": [
+                "--stats-one-line"
+              ],
+              "origen": "base",
+              "nombre": "stats-one-line"
+            },
+            {
+              "args": [
+                "--modify-window",
+                "2s"
+              ],
+              "origen": "base",
+              "nombre": "modify-window"
+            },
+            {
+              "args": [
+                "--conflict-resolve",
+                "newer"
+              ],
+              "origen": "modo",
+              "nombre": "conflict-resolve"
+            },
+            {
+              "args": [
+                "--conflict-suffix",
+                "conflicto-dispositivo,conflicto-remoto"
+              ],
+              "origen": "modo",
+              "nombre": "conflict-suffix"
+            },
+            {
+              "args": [
+                "--max-delete",
+                "25"
+              ],
+              "origen": "modo",
+              "nombre": "max-delete"
+            },
+            {
+              "args": [
+                "--resilient"
+              ],
+              "origen": "modo",
+              "nombre": "resilient"
+            },
+            {
+              "args": [
+                "--recover"
+              ],
+              "origen": "modo",
+              "nombre": "recover"
+            },
+            {
+              "args": [
+                "--max-lock",
+                "2m"
+              ],
+              "origen": "modo",
+              "nombre": "max-lock"
+            },
+            {
+              "args": [
+                "--transfers",
+                "4"
+              ],
+              "origen": "defaults",
+              "nombre": "transfers"
+            },
+            {
+              "args": [
+                "--max-delete",
+                "200"
+              ],
+              "origen": "pareja",
+              "nombre": "max_delete"
+            },
+            {
+              "args": [
+                "--config",
+                "/volumen/.prdrive/rclone.conf"
+              ],
+              "origen": "prdrive",
+              "nombre": "config"
+            },
+            {
+              "args": [
+                "--log-file",
+                "/tmp/rclone-sync-x.log"
+              ],
+              "origen": "prdrive",
+              "nombre": "log-file"
+            },
+            {
+              "args": [
+                "--workdir",
+                "/volumen/.prdrive/state/tope-alto"
+              ],
+              "origen": "prdrive",
+              "nombre": "workdir"
+            }
+          ],
+          "pasada_forzada": false,
+          "max_delete_efectivo": 200
+        },
+        {
+          "pareja": "tope-alto",
+          "pasada": "simulacro",
+          "kw": {
+            "simulacro": true
+          },
+          "filtros": "/volumen/.prdrive/filters/tope-alto.txt",
+          "workdir": "/volumen/.prdrive/state/tope-alto",
+          "tramos": [
+            {
+              "args": [
+                "rclone",
+                "bisync",
+                "disp:sync-data/tope-alto",
+                "nas:/copia/tope-alto"
+              ],
+              "origen": "prdrive",
+              "nombre": null
+            },
+            {
+              "args": [
+                "--filters-file",
+                "/volumen/.prdrive/filters/tope-alto.txt"
+              ],
+              "origen": "prdrive",
+              "nombre": null
+            },
+            {
+              "args": [
+                "--verbose"
+              ],
+              "origen": "base",
+              "nombre": "verbose"
+            },
+            {
+              "args": [
+                "--create-empty-src-dirs"
+              ],
+              "origen": "base",
+              "nombre": "create-empty-src-dirs"
+            },
+            {
+              "args": [
+                "--stats",
+                "2s"
+              ],
+              "origen": "base",
+              "nombre": "stats"
+            },
+            {
+              "args": [
+                "--stats-one-line"
+              ],
+              "origen": "base",
+              "nombre": "stats-one-line"
+            },
+            {
+              "args": [
+                "--modify-window",
+                "2s"
+              ],
+              "origen": "base",
+              "nombre": "modify-window"
+            },
+            {
+              "args": [
+                "--conflict-resolve",
+                "newer"
+              ],
+              "origen": "modo",
+              "nombre": "conflict-resolve"
+            },
+            {
+              "args": [
+                "--conflict-suffix",
+                "conflicto-dispositivo,conflicto-remoto"
+              ],
+              "origen": "modo",
+              "nombre": "conflict-suffix"
+            },
+            {
+              "args": [
+                "--max-delete",
+                "25"
+              ],
+              "origen": "modo",
+              "nombre": "max-delete"
+            },
+            {
+              "args": [
+                "--resilient"
+              ],
+              "origen": "modo",
+              "nombre": "resilient"
+            },
+            {
+              "args": [
+                "--recover"
+              ],
+              "origen": "modo",
+              "nombre": "recover"
+            },
+            {
+              "args": [
+                "--max-lock",
+                "2m"
+              ],
+              "origen": "modo",
+              "nombre": "max-lock"
+            },
+            {
+              "args": [
+                "--transfers",
+                "4"
+              ],
+              "origen": "defaults",
+              "nombre": "transfers"
+            },
+            {
+              "args": [
+                "--max-delete",
+                "200"
+              ],
+              "origen": "pareja",
+              "nombre": "max_delete"
+            },
+            {
+              "args": [
+                "--config",
+                "/volumen/.prdrive/rclone.conf"
+              ],
+              "origen": "prdrive",
+              "nombre": "config"
+            },
+            {
+              "args": [
+                "--log-file",
+                "/tmp/rclone-sync-x.log"
+              ],
+              "origen": "prdrive",
+              "nombre": "log-file"
+            },
+            {
+              "args": [
+                "--dry-run"
+              ],
+              "origen": "prdrive",
+              "nombre": "dry-run"
+            },
+            {
+              "args": [
+                "--workdir",
+                "/volumen/.prdrive/state/tope-alto"
+              ],
+              "origen": "prdrive",
+              "nombre": "workdir"
+            }
+          ],
+          "pasada_forzada": false,
+          "max_delete_efectivo": 200
+        },
+        {
+          "pareja": "tope-alto",
+          "pasada": "resync",
+          "kw": {
+            "resync": true
+          },
+          "filtros": "/volumen/.prdrive/filters/tope-alto.txt",
+          "workdir": "/volumen/.prdrive/state/tope-alto",
+          "tramos": [
+            {
+              "args": [
+                "rclone",
+                "bisync",
+                "disp:sync-data/tope-alto",
+                "nas:/copia/tope-alto"
+              ],
+              "origen": "prdrive",
+              "nombre": null
+            },
+            {
+              "args": [
+                "--filters-file",
+                "/volumen/.prdrive/filters/tope-alto.txt"
+              ],
+              "origen": "prdrive",
+              "nombre": null
+            },
+            {
+              "args": [
+                "--verbose"
+              ],
+              "origen": "base",
+              "nombre": "verbose"
+            },
+            {
+              "args": [
+                "--create-empty-src-dirs"
+              ],
+              "origen": "base",
+              "nombre": "create-empty-src-dirs"
+            },
+            {
+              "args": [
+                "--stats",
+                "2s"
+              ],
+              "origen": "base",
+              "nombre": "stats"
+            },
+            {
+              "args": [
+                "--stats-one-line"
+              ],
+              "origen": "base",
+              "nombre": "stats-one-line"
+            },
+            {
+              "args": [
+                "--modify-window",
+                "2s"
+              ],
+              "origen": "base",
+              "nombre": "modify-window"
+            },
+            {
+              "args": [
+                "--conflict-resolve",
+                "newer"
+              ],
+              "origen": "modo",
+              "nombre": "conflict-resolve"
+            },
+            {
+              "args": [
+                "--conflict-suffix",
+                "conflicto-dispositivo,conflicto-remoto"
+              ],
+              "origen": "modo",
+              "nombre": "conflict-suffix"
+            },
+            {
+              "args": [
+                "--max-delete",
+                "25"
+              ],
+              "origen": "modo",
+              "nombre": "max-delete"
+            },
+            {
+              "args": [
+                "--resilient"
+              ],
+              "origen": "modo",
+              "nombre": "resilient"
+            },
+            {
+              "args": [
+                "--recover"
+              ],
+              "origen": "modo",
+              "nombre": "recover"
+            },
+            {
+              "args": [
+                "--max-lock",
+                "2m"
+              ],
+              "origen": "modo",
+              "nombre": "max-lock"
+            },
+            {
+              "args": [
+                "--transfers",
+                "4"
+              ],
+              "origen": "defaults",
+              "nombre": "transfers"
+            },
+            {
+              "args": [
+                "--max-delete",
+                "200"
+              ],
+              "origen": "pareja",
+              "nombre": "max_delete"
+            },
+            {
+              "args": [
+                "--config",
+                "/volumen/.prdrive/rclone.conf"
+              ],
+              "origen": "prdrive",
+              "nombre": "config"
+            },
+            {
+              "args": [
+                "--log-file",
+                "/tmp/rclone-sync-x.log"
+              ],
+              "origen": "prdrive",
+              "nombre": "log-file"
+            },
+            {
+              "args": [
+                "--workdir",
+                "/volumen/.prdrive/state/tope-alto"
+              ],
+              "origen": "prdrive",
+              "nombre": "workdir"
+            },
+            {
+              "args": [
+                "--resync"
+              ],
+              "origen": "prdrive",
+              "nombre": "resync"
+            }
+          ],
+          "pasada_forzada": false,
+          "max_delete_efectivo": 200
+        },
+        {
+          "pareja": "tope-alto",
+          "pasada": "forzada",
+          "kw": {
+            "forzar": true
+          },
+          "filtros": "/volumen/.prdrive/filters/tope-alto.txt",
+          "workdir": "/volumen/.prdrive/state/tope-alto",
+          "tramos": [
+            {
+              "args": [
+                "rclone",
+                "bisync",
+                "disp:sync-data/tope-alto",
+                "nas:/copia/tope-alto"
+              ],
+              "origen": "prdrive",
+              "nombre": null
+            },
+            {
+              "args": [
+                "--filters-file",
+                "/volumen/.prdrive/filters/tope-alto.txt"
+              ],
+              "origen": "prdrive",
+              "nombre": null
+            },
+            {
+              "args": [
+                "--verbose"
+              ],
+              "origen": "base",
+              "nombre": "verbose"
+            },
+            {
+              "args": [
+                "--create-empty-src-dirs"
+              ],
+              "origen": "base",
+              "nombre": "create-empty-src-dirs"
+            },
+            {
+              "args": [
+                "--stats",
+                "2s"
+              ],
+              "origen": "base",
+              "nombre": "stats"
+            },
+            {
+              "args": [
+                "--stats-one-line"
+              ],
+              "origen": "base",
+              "nombre": "stats-one-line"
+            },
+            {
+              "args": [
+                "--modify-window",
+                "2s"
+              ],
+              "origen": "base",
+              "nombre": "modify-window"
+            },
+            {
+              "args": [
+                "--conflict-resolve",
+                "newer"
+              ],
+              "origen": "modo",
+              "nombre": "conflict-resolve"
+            },
+            {
+              "args": [
+                "--conflict-suffix",
+                "conflicto-dispositivo,conflicto-remoto"
+              ],
+              "origen": "modo",
+              "nombre": "conflict-suffix"
+            },
+            {
+              "args": [
+                "--max-delete",
+                "25"
+              ],
+              "origen": "modo",
+              "nombre": "max-delete"
+            },
+            {
+              "args": [
+                "--resilient"
+              ],
+              "origen": "modo",
+              "nombre": "resilient"
+            },
+            {
+              "args": [
+                "--recover"
+              ],
+              "origen": "modo",
+              "nombre": "recover"
+            },
+            {
+              "args": [
+                "--max-lock",
+                "2m"
+              ],
+              "origen": "modo",
+              "nombre": "max-lock"
+            },
+            {
+              "args": [
+                "--transfers",
+                "4"
+              ],
+              "origen": "defaults",
+              "nombre": "transfers"
+            },
+            {
+              "args": [
+                "--max-delete",
+                "200"
+              ],
+              "origen": "pareja",
+              "nombre": "max_delete"
+            },
+            {
+              "args": [
+                "--config",
+                "/volumen/.prdrive/rclone.conf"
+              ],
+              "origen": "prdrive",
+              "nombre": "config"
+            },
+            {
+              "args": [
+                "--log-file",
+                "/tmp/rclone-sync-x.log"
+              ],
+              "origen": "prdrive",
+              "nombre": "log-file"
+            },
+            {
+              "args": [
+                "--workdir",
+                "/volumen/.prdrive/state/tope-alto"
+              ],
+              "origen": "prdrive",
+              "nombre": "workdir"
+            },
+            {
+              "args": [
+                "--force"
+              ],
+              "origen": "prdrive",
+              "nombre": "force"
+            }
+          ],
+          "pasada_forzada": true,
+          "max_delete_efectivo": 200
+        },
+        {
+          "pareja": "tope-alto",
+          "pasada": "simulacro forzado",
+          "kw": {
+            "simulacro": true,
+            "forzar": true
+          },
+          "filtros": "/volumen/.prdrive/filters/tope-alto.txt",
+          "workdir": "/volumen/.prdrive/state/tope-alto",
+          "tramos": [
+            {
+              "args": [
+                "rclone",
+                "bisync",
+                "disp:sync-data/tope-alto",
+                "nas:/copia/tope-alto"
+              ],
+              "origen": "prdrive",
+              "nombre": null
+            },
+            {
+              "args": [
+                "--filters-file",
+                "/volumen/.prdrive/filters/tope-alto.txt"
+              ],
+              "origen": "prdrive",
+              "nombre": null
+            },
+            {
+              "args": [
+                "--verbose"
+              ],
+              "origen": "base",
+              "nombre": "verbose"
+            },
+            {
+              "args": [
+                "--create-empty-src-dirs"
+              ],
+              "origen": "base",
+              "nombre": "create-empty-src-dirs"
+            },
+            {
+              "args": [
+                "--stats",
+                "2s"
+              ],
+              "origen": "base",
+              "nombre": "stats"
+            },
+            {
+              "args": [
+                "--stats-one-line"
+              ],
+              "origen": "base",
+              "nombre": "stats-one-line"
+            },
+            {
+              "args": [
+                "--modify-window",
+                "2s"
+              ],
+              "origen": "base",
+              "nombre": "modify-window"
+            },
+            {
+              "args": [
+                "--conflict-resolve",
+                "newer"
+              ],
+              "origen": "modo",
+              "nombre": "conflict-resolve"
+            },
+            {
+              "args": [
+                "--conflict-suffix",
+                "conflicto-dispositivo,conflicto-remoto"
+              ],
+              "origen": "modo",
+              "nombre": "conflict-suffix"
+            },
+            {
+              "args": [
+                "--max-delete",
+                "25"
+              ],
+              "origen": "modo",
+              "nombre": "max-delete"
+            },
+            {
+              "args": [
+                "--resilient"
+              ],
+              "origen": "modo",
+              "nombre": "resilient"
+            },
+            {
+              "args": [
+                "--recover"
+              ],
+              "origen": "modo",
+              "nombre": "recover"
+            },
+            {
+              "args": [
+                "--max-lock",
+                "2m"
+              ],
+              "origen": "modo",
+              "nombre": "max-lock"
+            },
+            {
+              "args": [
+                "--transfers",
+                "4"
+              ],
+              "origen": "defaults",
+              "nombre": "transfers"
+            },
+            {
+              "args": [
+                "--max-delete",
+                "200"
+              ],
+              "origen": "pareja",
+              "nombre": "max_delete"
+            },
+            {
+              "args": [
+                "--config",
+                "/volumen/.prdrive/rclone.conf"
+              ],
+              "origen": "prdrive",
+              "nombre": "config"
+            },
+            {
+              "args": [
+                "--log-file",
+                "/tmp/rclone-sync-x.log"
+              ],
+              "origen": "prdrive",
+              "nombre": "log-file"
+            },
+            {
+              "args": [
+                "--dry-run"
+              ],
+              "origen": "prdrive",
+              "nombre": "dry-run"
+            },
+            {
+              "args": [
+                "--workdir",
+                "/volumen/.prdrive/state/tope-alto"
+              ],
+              "origen": "prdrive",
+              "nombre": "workdir"
+            },
+            {
+              "args": [
+                "--force"
+              ],
+              "origen": "prdrive",
+              "nombre": "force"
+            }
+          ],
+          "pasada_forzada": true,
+          "max_delete_efectivo": 200
+        },
+        {
+          "pareja": "tope-alto",
+          "pasada": "resync forzado",
+          "kw": {
+            "resync": true,
+            "forzar": true
+          },
+          "filtros": "/volumen/.prdrive/filters/tope-alto.txt",
+          "workdir": "/volumen/.prdrive/state/tope-alto",
+          "tramos": [
+            {
+              "args": [
+                "rclone",
+                "bisync",
+                "disp:sync-data/tope-alto",
+                "nas:/copia/tope-alto"
+              ],
+              "origen": "prdrive",
+              "nombre": null
+            },
+            {
+              "args": [
+                "--filters-file",
+                "/volumen/.prdrive/filters/tope-alto.txt"
+              ],
+              "origen": "prdrive",
+              "nombre": null
+            },
+            {
+              "args": [
+                "--verbose"
+              ],
+              "origen": "base",
+              "nombre": "verbose"
+            },
+            {
+              "args": [
+                "--create-empty-src-dirs"
+              ],
+              "origen": "base",
+              "nombre": "create-empty-src-dirs"
+            },
+            {
+              "args": [
+                "--stats",
+                "2s"
+              ],
+              "origen": "base",
+              "nombre": "stats"
+            },
+            {
+              "args": [
+                "--stats-one-line"
+              ],
+              "origen": "base",
+              "nombre": "stats-one-line"
+            },
+            {
+              "args": [
+                "--modify-window",
+                "2s"
+              ],
+              "origen": "base",
+              "nombre": "modify-window"
+            },
+            {
+              "args": [
+                "--conflict-resolve",
+                "newer"
+              ],
+              "origen": "modo",
+              "nombre": "conflict-resolve"
+            },
+            {
+              "args": [
+                "--conflict-suffix",
+                "conflicto-dispositivo,conflicto-remoto"
+              ],
+              "origen": "modo",
+              "nombre": "conflict-suffix"
+            },
+            {
+              "args": [
+                "--max-delete",
+                "25"
+              ],
+              "origen": "modo",
+              "nombre": "max-delete"
+            },
+            {
+              "args": [
+                "--resilient"
+              ],
+              "origen": "modo",
+              "nombre": "resilient"
+            },
+            {
+              "args": [
+                "--recover"
+              ],
+              "origen": "modo",
+              "nombre": "recover"
+            },
+            {
+              "args": [
+                "--max-lock",
+                "2m"
+              ],
+              "origen": "modo",
+              "nombre": "max-lock"
+            },
+            {
+              "args": [
+                "--transfers",
+                "4"
+              ],
+              "origen": "defaults",
+              "nombre": "transfers"
+            },
+            {
+              "args": [
+                "--max-delete",
+                "200"
+              ],
+              "origen": "pareja",
+              "nombre": "max_delete"
+            },
+            {
+              "args": [
+                "--config",
+                "/volumen/.prdrive/rclone.conf"
+              ],
+              "origen": "prdrive",
+              "nombre": "config"
+            },
+            {
+              "args": [
+                "--log-file",
+                "/tmp/rclone-sync-x.log"
+              ],
+              "origen": "prdrive",
+              "nombre": "log-file"
+            },
+            {
+              "args": [
+                "--workdir",
+                "/volumen/.prdrive/state/tope-alto"
+              ],
+              "origen": "prdrive",
+              "nombre": "workdir"
+            },
+            {
+              "args": [
+                "--resync"
+              ],
+              "origen": "prdrive",
+              "nombre": "resync"
+            }
+          ],
+          "pasada_forzada": false,
+          "max_delete_efectivo": 200
+        },
+        {
+          "pareja": "cortos",
+          "pasada": "normal",
+          "kw": {},
+          "filtros": null,
+          "workdir": "/volumen/.prdrive/state/cortos",
+          "tramos": [
+            {
+              "args": [
+                "rclone",
+                "sync",
+                "nas:/copia/cortos",
+                "disp:sync-data/cortos"
+              ],
+              "origen": "prdrive",
+              "nombre": null
+            },
+            {
+              "args": [
+                "--exclude",
+                "*.tmp"
+              ],
+              "origen": "patrones",
+              "nombre": null
+            },
+            {
+              "args": [
+                "--verbose"
+              ],
+              "origen": "base",
+              "nombre": "verbose"
+            },
+            {
+              "args": [
+                "--create-empty-src-dirs"
+              ],
+              "origen": "base",
+              "nombre": "create-empty-src-dirs"
+            },
+            {
+              "args": [
+                "--stats",
+                "2s"
+              ],
+              "origen": "base",
+              "nombre": "stats"
+            },
+            {
+              "args": [
+                "--stats-one-line"
+              ],
+              "origen": "base",
+              "nombre": "stats-one-line"
+            },
+            {
+              "args": [
+                "--modify-window",
+                "2s"
+              ],
+              "origen": "base",
+              "nombre": "modify-window"
+            },
+            {
+              "args": [
+                "--max-delete",
+                "50"
+              ],
+              "origen": "modo",
+              "nombre": "max-delete"
+            },
+            {
+              "args": [
+                "--transfers",
+                "4"
+              ],
+              "origen": "defaults",
+              "nombre": "transfers"
+            },
+            {
+              "args": [
+                "--config",
+                "/volumen/.prdrive/rclone.conf"
+              ],
+              "origen": "prdrive",
+              "nombre": "config"
+            },
+            {
+              "args": [
+                "--log-file",
+                "/tmp/rclone-sync-x.log"
+              ],
+              "origen": "prdrive",
+              "nombre": "log-file"
+            },
+            {
+              "args": [
+                "-uc"
+              ],
+              "origen": "extra",
+              "nombre": null
+            },
+            {
+              "args": [
+                "--exclude-from"
+              ],
+              "origen": "extra",
+              "nombre": null
+            },
+            {
+              "args": [
+                "a.txt"
+              ],
+              "origen": "extra",
+              "nombre": null
+            },
+            {
+              "args": [
+                "--exclude-from"
+              ],
+              "origen": "extra",
+              "nombre": null
+            },
+            {
+              "args": [
+                "b,c.txt"
+              ],
+              "origen": "extra",
+              "nombre": null
+            }
+          ],
+          "pasada_forzada": false,
+          "max_delete_efectivo": 50
+        },
+        {
+          "pareja": "cortos",
+          "pasada": "simulacro",
+          "kw": {
+            "simulacro": true
+          },
+          "filtros": null,
+          "workdir": "/volumen/.prdrive/state/cortos",
+          "tramos": [
+            {
+              "args": [
+                "rclone",
+                "sync",
+                "nas:/copia/cortos",
+                "disp:sync-data/cortos"
+              ],
+              "origen": "prdrive",
+              "nombre": null
+            },
+            {
+              "args": [
+                "--exclude",
+                "*.tmp"
+              ],
+              "origen": "patrones",
+              "nombre": null
+            },
+            {
+              "args": [
+                "--verbose"
+              ],
+              "origen": "base",
+              "nombre": "verbose"
+            },
+            {
+              "args": [
+                "--create-empty-src-dirs"
+              ],
+              "origen": "base",
+              "nombre": "create-empty-src-dirs"
+            },
+            {
+              "args": [
+                "--stats",
+                "2s"
+              ],
+              "origen": "base",
+              "nombre": "stats"
+            },
+            {
+              "args": [
+                "--stats-one-line"
+              ],
+              "origen": "base",
+              "nombre": "stats-one-line"
+            },
+            {
+              "args": [
+                "--modify-window",
+                "2s"
+              ],
+              "origen": "base",
+              "nombre": "modify-window"
+            },
+            {
+              "args": [
+                "--max-delete",
+                "50"
+              ],
+              "origen": "modo",
+              "nombre": "max-delete"
+            },
+            {
+              "args": [
+                "--transfers",
+                "4"
+              ],
+              "origen": "defaults",
+              "nombre": "transfers"
+            },
+            {
+              "args": [
+                "--config",
+                "/volumen/.prdrive/rclone.conf"
+              ],
+              "origen": "prdrive",
+              "nombre": "config"
+            },
+            {
+              "args": [
+                "--log-file",
+                "/tmp/rclone-sync-x.log"
+              ],
+              "origen": "prdrive",
+              "nombre": "log-file"
+            },
+            {
+              "args": [
+                "--dry-run"
+              ],
+              "origen": "prdrive",
+              "nombre": "dry-run"
+            },
+            {
+              "args": [
+                "-uc"
+              ],
+              "origen": "extra",
+              "nombre": null
+            },
+            {
+              "args": [
+                "--exclude-from"
+              ],
+              "origen": "extra",
+              "nombre": null
+            },
+            {
+              "args": [
+                "a.txt"
+              ],
+              "origen": "extra",
+              "nombre": null
+            },
+            {
+              "args": [
+                "--exclude-from"
+              ],
+              "origen": "extra",
+              "nombre": null
+            },
+            {
+              "args": [
+                "b,c.txt"
+              ],
+              "origen": "extra",
+              "nombre": null
+            }
+          ],
+          "pasada_forzada": false,
+          "max_delete_efectivo": 50
+        },
+        {
+          "pareja": "cortos",
+          "pasada": "resync",
+          "kw": {
+            "resync": true
+          },
+          "filtros": null,
+          "workdir": "/volumen/.prdrive/state/cortos",
+          "tramos": [
+            {
+              "args": [
+                "rclone",
+                "sync",
+                "nas:/copia/cortos",
+                "disp:sync-data/cortos"
+              ],
+              "origen": "prdrive",
+              "nombre": null
+            },
+            {
+              "args": [
+                "--exclude",
+                "*.tmp"
+              ],
+              "origen": "patrones",
+              "nombre": null
+            },
+            {
+              "args": [
+                "--verbose"
+              ],
+              "origen": "base",
+              "nombre": "verbose"
+            },
+            {
+              "args": [
+                "--create-empty-src-dirs"
+              ],
+              "origen": "base",
+              "nombre": "create-empty-src-dirs"
+            },
+            {
+              "args": [
+                "--stats",
+                "2s"
+              ],
+              "origen": "base",
+              "nombre": "stats"
+            },
+            {
+              "args": [
+                "--stats-one-line"
+              ],
+              "origen": "base",
+              "nombre": "stats-one-line"
+            },
+            {
+              "args": [
+                "--modify-window",
+                "2s"
+              ],
+              "origen": "base",
+              "nombre": "modify-window"
+            },
+            {
+              "args": [
+                "--max-delete",
+                "50"
+              ],
+              "origen": "modo",
+              "nombre": "max-delete"
+            },
+            {
+              "args": [
+                "--transfers",
+                "4"
+              ],
+              "origen": "defaults",
+              "nombre": "transfers"
+            },
+            {
+              "args": [
+                "--config",
+                "/volumen/.prdrive/rclone.conf"
+              ],
+              "origen": "prdrive",
+              "nombre": "config"
+            },
+            {
+              "args": [
+                "--log-file",
+                "/tmp/rclone-sync-x.log"
+              ],
+              "origen": "prdrive",
+              "nombre": "log-file"
+            },
+            {
+              "args": [
+                "-uc"
+              ],
+              "origen": "extra",
+              "nombre": null
+            },
+            {
+              "args": [
+                "--exclude-from"
+              ],
+              "origen": "extra",
+              "nombre": null
+            },
+            {
+              "args": [
+                "a.txt"
+              ],
+              "origen": "extra",
+              "nombre": null
+            },
+            {
+              "args": [
+                "--exclude-from"
+              ],
+              "origen": "extra",
+              "nombre": null
+            },
+            {
+              "args": [
+                "b,c.txt"
+              ],
+              "origen": "extra",
+              "nombre": null
+            }
+          ],
+          "pasada_forzada": false,
+          "max_delete_efectivo": 50
+        },
+        {
+          "pareja": "cortos",
+          "pasada": "forzada",
+          "kw": {
+            "forzar": true
+          },
+          "filtros": null,
+          "workdir": "/volumen/.prdrive/state/cortos",
+          "tramos": [
+            {
+              "args": [
+                "rclone",
+                "sync",
+                "nas:/copia/cortos",
+                "disp:sync-data/cortos"
+              ],
+              "origen": "prdrive",
+              "nombre": null
+            },
+            {
+              "args": [
+                "--exclude",
+                "*.tmp"
+              ],
+              "origen": "patrones",
+              "nombre": null
+            },
+            {
+              "args": [
+                "--verbose"
+              ],
+              "origen": "base",
+              "nombre": "verbose"
+            },
+            {
+              "args": [
+                "--create-empty-src-dirs"
+              ],
+              "origen": "base",
+              "nombre": "create-empty-src-dirs"
+            },
+            {
+              "args": [
+                "--stats",
+                "2s"
+              ],
+              "origen": "base",
+              "nombre": "stats"
+            },
+            {
+              "args": [
+                "--stats-one-line"
+              ],
+              "origen": "base",
+              "nombre": "stats-one-line"
+            },
+            {
+              "args": [
+                "--modify-window",
+                "2s"
+              ],
+              "origen": "base",
+              "nombre": "modify-window"
+            },
+            {
+              "args": [
+                "--transfers",
+                "4"
+              ],
+              "origen": "defaults",
+              "nombre": "transfers"
+            },
+            {
+              "args": [
+                "--config",
+                "/volumen/.prdrive/rclone.conf"
+              ],
+              "origen": "prdrive",
+              "nombre": "config"
+            },
+            {
+              "args": [
+                "--log-file",
+                "/tmp/rclone-sync-x.log"
+              ],
+              "origen": "prdrive",
+              "nombre": "log-file"
+            },
+            {
+              "args": [
+                "--max-delete",
+                "-1"
+              ],
+              "origen": "prdrive",
+              "nombre": "max-delete"
+            },
+            {
+              "args": [
+                "-uc"
+              ],
+              "origen": "extra",
+              "nombre": null
+            },
+            {
+              "args": [
+                "--exclude-from"
+              ],
+              "origen": "extra",
+              "nombre": null
+            },
+            {
+              "args": [
+                "a.txt"
+              ],
+              "origen": "extra",
+              "nombre": null
+            },
+            {
+              "args": [
+                "--exclude-from"
+              ],
+              "origen": "extra",
+              "nombre": null
+            },
+            {
+              "args": [
+                "b,c.txt"
+              ],
+              "origen": "extra",
+              "nombre": null
+            }
+          ],
+          "pasada_forzada": true,
+          "max_delete_efectivo": 50
+        },
+        {
+          "pareja": "cortos",
+          "pasada": "simulacro forzado",
+          "kw": {
+            "simulacro": true,
+            "forzar": true
+          },
+          "filtros": null,
+          "workdir": "/volumen/.prdrive/state/cortos",
+          "tramos": [
+            {
+              "args": [
+                "rclone",
+                "sync",
+                "nas:/copia/cortos",
+                "disp:sync-data/cortos"
+              ],
+              "origen": "prdrive",
+              "nombre": null
+            },
+            {
+              "args": [
+                "--exclude",
+                "*.tmp"
+              ],
+              "origen": "patrones",
+              "nombre": null
+            },
+            {
+              "args": [
+                "--verbose"
+              ],
+              "origen": "base",
+              "nombre": "verbose"
+            },
+            {
+              "args": [
+                "--create-empty-src-dirs"
+              ],
+              "origen": "base",
+              "nombre": "create-empty-src-dirs"
+            },
+            {
+              "args": [
+                "--stats",
+                "2s"
+              ],
+              "origen": "base",
+              "nombre": "stats"
+            },
+            {
+              "args": [
+                "--stats-one-line"
+              ],
+              "origen": "base",
+              "nombre": "stats-one-line"
+            },
+            {
+              "args": [
+                "--modify-window",
+                "2s"
+              ],
+              "origen": "base",
+              "nombre": "modify-window"
+            },
+            {
+              "args": [
+                "--transfers",
+                "4"
+              ],
+              "origen": "defaults",
+              "nombre": "transfers"
+            },
+            {
+              "args": [
+                "--config",
+                "/volumen/.prdrive/rclone.conf"
+              ],
+              "origen": "prdrive",
+              "nombre": "config"
+            },
+            {
+              "args": [
+                "--log-file",
+                "/tmp/rclone-sync-x.log"
+              ],
+              "origen": "prdrive",
+              "nombre": "log-file"
+            },
+            {
+              "args": [
+                "--dry-run"
+              ],
+              "origen": "prdrive",
+              "nombre": "dry-run"
+            },
+            {
+              "args": [
+                "--max-delete",
+                "-1"
+              ],
+              "origen": "prdrive",
+              "nombre": "max-delete"
+            },
+            {
+              "args": [
+                "-uc"
+              ],
+              "origen": "extra",
+              "nombre": null
+            },
+            {
+              "args": [
+                "--exclude-from"
+              ],
+              "origen": "extra",
+              "nombre": null
+            },
+            {
+              "args": [
+                "a.txt"
+              ],
+              "origen": "extra",
+              "nombre": null
+            },
+            {
+              "args": [
+                "--exclude-from"
+              ],
+              "origen": "extra",
+              "nombre": null
+            },
+            {
+              "args": [
+                "b,c.txt"
+              ],
+              "origen": "extra",
+              "nombre": null
+            }
+          ],
+          "pasada_forzada": true,
+          "max_delete_efectivo": 50
+        },
+        {
+          "pareja": "cortos",
+          "pasada": "resync forzado",
+          "kw": {
+            "resync": true,
+            "forzar": true
+          },
+          "filtros": null,
+          "workdir": "/volumen/.prdrive/state/cortos",
+          "tramos": [
+            {
+              "args": [
+                "rclone",
+                "sync",
+                "nas:/copia/cortos",
+                "disp:sync-data/cortos"
+              ],
+              "origen": "prdrive",
+              "nombre": null
+            },
+            {
+              "args": [
+                "--exclude",
+                "*.tmp"
+              ],
+              "origen": "patrones",
+              "nombre": null
+            },
+            {
+              "args": [
+                "--verbose"
+              ],
+              "origen": "base",
+              "nombre": "verbose"
+            },
+            {
+              "args": [
+                "--create-empty-src-dirs"
+              ],
+              "origen": "base",
+              "nombre": "create-empty-src-dirs"
+            },
+            {
+              "args": [
+                "--stats",
+                "2s"
+              ],
+              "origen": "base",
+              "nombre": "stats"
+            },
+            {
+              "args": [
+                "--stats-one-line"
+              ],
+              "origen": "base",
+              "nombre": "stats-one-line"
+            },
+            {
+              "args": [
+                "--modify-window",
+                "2s"
+              ],
+              "origen": "base",
+              "nombre": "modify-window"
+            },
+            {
+              "args": [
+                "--max-delete",
+                "50"
+              ],
+              "origen": "modo",
+              "nombre": "max-delete"
+            },
+            {
+              "args": [
+                "--transfers",
+                "4"
+              ],
+              "origen": "defaults",
+              "nombre": "transfers"
+            },
+            {
+              "args": [
+                "--config",
+                "/volumen/.prdrive/rclone.conf"
+              ],
+              "origen": "prdrive",
+              "nombre": "config"
+            },
+            {
+              "args": [
+                "--log-file",
+                "/tmp/rclone-sync-x.log"
+              ],
+              "origen": "prdrive",
+              "nombre": "log-file"
+            },
+            {
+              "args": [
+                "-uc"
+              ],
+              "origen": "extra",
+              "nombre": null
+            },
+            {
+              "args": [
+                "--exclude-from"
+              ],
+              "origen": "extra",
+              "nombre": null
+            },
+            {
+              "args": [
+                "a.txt"
+              ],
+              "origen": "extra",
+              "nombre": null
+            },
+            {
+              "args": [
+                "--exclude-from"
+              ],
+              "origen": "extra",
+              "nombre": null
+            },
+            {
+              "args": [
+                "b,c.txt"
+              ],
+              "origen": "extra",
+              "nombre": null
+            }
+          ],
+          "pasada_forzada": false,
+          "max_delete_efectivo": 50
+        },
+        {
           "pareja": "keychain",
           "pasada": "normal",
           "kw": {},
@@ -14379,6 +18090,67 @@
         }
       ],
       "log_tail_lines": 15,
+      "cola": [
+        {
+          "caso": "corto",
+          "texto": "2026/10/01 10:00:00 INFO  : a.txt: Copied (new)\n\nERROR : algo\n",
+          "cola": [
+            "2026/10/01 10:00:00 INFO  : a.txt: Copied (new)",
+            "",
+            "ERROR : algo"
+          ]
+        },
+        {
+          "caso": "con estadísticas",
+          "texto": "2026/10/01 10:00:00 INFO  :        0 B / 1.086 MiB, 0%, 0 B/s, ETA -\nTransferred:   \t    1.086 MiB / 1.086 MiB, 100%, 512 KiB/s, ETA 0s\nTransferred:            0 / 3, 0%\na.bin: 23% / 1.431 MiB, 0 B/s, -\n2026/10/01 10:00:01 ERROR : fallo de verdad\nx1.5 MiB / 2 MiB, 10%, 1 MiB/s, ETA 1s\n١٫٥ MiB / 2 MiB, 10%, 1 MiB/s, ETA 1s\n1 B / 2 B, 50%, 1 B/s, ETA　x",
+          "cola": [
+            "Transferred:            0 / 3, 0%",
+            "a.bin: 23% / 1.431 MiB, 0 B/s, -",
+            "2026/10/01 10:00:01 ERROR : fallo de verdad",
+            "x1.5 MiB / 2 MiB, 10%, 1 MiB/s, ETA 1s",
+            "1 B / 2 B, 50%, 1 B/s, ETA　x"
+          ]
+        },
+        {
+          "caso": "largo",
+          "texto": "línea 0\nlínea 1\nlínea 2\nlínea 3\nlínea 4\nlínea 5\nlínea 6\nlínea 7\nlínea 8\nlínea 9\nlínea 10\nlínea 11\nlínea 12\nlínea 13\nlínea 14\nlínea 15\nlínea 16\nlínea 17\nlínea 18\nlínea 19\nlínea 20\nlínea 21\nlínea 22\nlínea 23\nlínea 24\nlínea 25\nlínea 26\nlínea 27\nlínea 28\nlínea 29\nlínea 30\nlínea 31\nlínea 32\nlínea 33\nlínea 34\nlínea 35\nlínea 36\nlínea 37\nlínea 38\nlínea 39",
+          "cola": [
+            "línea 25",
+            "línea 26",
+            "línea 27",
+            "línea 28",
+            "línea 29",
+            "línea 30",
+            "línea 31",
+            "línea 32",
+            "línea 33",
+            "línea 34",
+            "línea 35",
+            "línea 36",
+            "línea 37",
+            "línea 38",
+            "línea 39"
+          ]
+        },
+        {
+          "caso": "saltos raros",
+          "texto": "uno\r\ndos tres\fcuatro\r\n\r\ncinco",
+          "cola": [
+            "uno",
+            "dos",
+            "tres",
+            "cuatro",
+            "",
+            "cinco"
+          ]
+        },
+        {
+          "caso": "vacío",
+          "texto": "",
+          "cola": []
+        }
+      ],
+      "tope_bisync_de_fabrica": 50,
       "logs_por_pareja": 20,
       "conflicts_shown": 5
     },
@@ -15307,6 +19079,30 @@
         "valor": {
           "a": 1
         }
+      },
+      {
+        "texto": "a = 1\r",
+        "tomllib_acepta": false,
+        "soportado": true,
+        "valor": null
+      },
+      {
+        "texto": "# c\r",
+        "tomllib_acepta": false,
+        "soportado": true,
+        "valor": null
+      },
+      {
+        "texto": "a = 1\n\r",
+        "tomllib_acepta": false,
+        "soportado": true,
+        "valor": null
+      },
+      {
+        "texto": "a = 1\r\r\n",
+        "tomllib_acepta": false,
+        "soportado": true,
+        "valor": null
       },
       {
         "texto": "a = 1979-05-27\n",

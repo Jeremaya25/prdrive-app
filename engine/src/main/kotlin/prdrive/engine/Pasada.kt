@@ -188,12 +188,27 @@ object Pasada {
     /** La explicación de un fallo, o `null` si ninguna aguja casa (`explain_failure`). */
     fun explicar(texto: String): String? = KNOWN_ERRORS.firstOrNull { it.casaCon(texto) }?.explicacion
 
-    /** Las últimas líneas del log, sin las de progreso (`print_log_tail`). */
+    /**
+     * Las últimas líneas del log, sin las de progreso (`print_log_tail`): con
+     * `splitlines()`, y las vacías se quedan, como allí.
+     */
     fun cola(texto: String, lineas: Int = LOG_TAIL_LINES): List<String> =
-        texto.lines().filter { it.isNotEmpty() && !esProgreso(it) }.takeLast(lineas)
+        splitlinesPy(texto).filter { !esProgreso(it) }.takeLast(lineas)
 
-    // Las líneas de `--stats-one-line` («Transferred: 1 KiB / 1 KiB, 100%…»).
-    private fun esProgreso(linea: String): Boolean = "Transferred:" in linea && "ETA" in linea
+    /**
+     * Si una línea es una estadística de rclone: `progress._ESTADISTICA` de
+     * prdrive, que replica `StatsInfo.String()` (fs/accounting/stats.go). Con el
+     * `\d`, el `\w` y el `\S` de Python, que son Unicode, escritos a mano porque
+     * ICU no admite `(?U)`.
+     */
+    fun esProgreso(linea: String): Boolean = ESTADISTICA.containsMatchIn(linea)
+
+    private val ESTADISTICA: Regex by lazy {
+        val tamano = "(\\p{Nd}+(?:\\.\\p{Nd}+)?) ?([KMGTPE]?)i?B"
+        Regex(
+            "(?<![\\p{L}\\p{N}_.])$tamano / $tamano, (\\p{Nd}+%|-), $tamano/s, ETA [^$CLASE_ESPACIO_PY]",
+        )
+    }
 
     // -----------------------------------------------------------------------
     // Los logs de las pasadas fallidas (sync.py: keep_log, podar_logs)
@@ -258,22 +273,54 @@ object Pasada {
     /** Una llamada a rclone: el método rc y sus parámetros. */
     data class Llamada(val metodo: String, val parametros: Map<String, Any?>)
 
+    /** Una opción global de rclone: su tipo (`bool`, `stringArray`…) y su letra, si la tiene. */
+    data class Opcion(val tipo: String, val corto: String? = null) {
+        val booleana: Boolean get() = tipo == "bool"
+
+        /** Se repite y se acumula (`StringArrayVarP`): `--exclude-from a --exclude-from b` son las dos. */
+        val lista: Boolean get() = tipo == "stringArray"
+    }
+
     /**
-     * Lo que rclone sabe de sus opciones globales (`options/info`): por bloque
-     * (`main`, `filter`), el nombre de cada una y si es booleana. Es lo que dice
-     * si un flag existe y si se lleva el argumento siguiente, como hace la línea
-     * de órdenes de rclone.
+     * Lo que rclone sabe de sus opciones (`options/info`, bloques `main`,
+     * `filter` y `log`) y de los backends que lleva (`config/providers`): si un
+     * flag existe, si se lleva el argumento siguiente, si se acumula, y su letra.
+     * Es lo que usa la línea de órdenes de rclone para leer los argumentos.
      */
-    data class Opciones(val main: Map<String, Boolean>, val filtro: Map<String, Boolean>) {
+    data class Opciones(
+        val main: Map<String, Opcion>,
+        val filtro: Map<String, Opcion>,
+        val log: Map<String, Opcion> = emptyMap(),
+        /** Los flags de los backends (`sftp-set-modtime`), sin los guiones del principio. */
+        val deBackend: Set<String> = emptySet(),
+    ) {
         companion object {
-            /** De la salida de `options/info`: `{bloque: [{Name, Type, ...}]}`. */
-            fun deOptionsInfo(info: Map<String, Any?>): Opciones {
-                fun bloque(nombre: String): Map<String, Boolean> =
+            /**
+             * De la salida de `options/info` (`{bloque: [{Name, Type, ShortOpt}]}`) y
+             * de la lista de backends: su prefijo de flag y el nombre de sus opciones
+             * (lo que da `config/providers`, ver [backendsDeProviders]).
+             */
+            fun deOptionsInfo(
+                info: Map<String, Any?>,
+                backends: List<kotlin.Pair<String, List<String>>> = emptyList(),
+            ): Opciones {
+                fun bloque(nombre: String): Map<String, Opcion> =
                     (info[nombre] as? List<*>).orEmpty().filterIsInstance<Map<*, *>>().associate {
-                        it["Name"].toString() to (it["Type"] == "bool")
+                        it["Name"].toString() to Opcion(it["Type"].toString(), (it["ShortOpt"] as? String)?.ifEmpty { null })
                     }
-                return Opciones(bloque("main"), bloque("filter"))
+                val deBackend = backends.flatMap { (prefijo, nombres) ->
+                    nombres.map { "$prefijo-" + it.replace('_', '-') }
+                }.toSet()
+                return Opciones(bloque("main"), bloque("filter"), bloque("log"), deBackend)
             }
+
+            /** `config/providers` → `[(prefijo, [opción])]`. */
+            fun backendsDeProviders(providers: Map<String, Any?>): List<kotlin.Pair<String, List<String>>> =
+                (providers["providers"] as? List<*>).orEmpty().filterIsInstance<Map<*, *>>().map { p ->
+                    p["Prefix"].toString() to (p["Options"] as? List<*>).orEmpty().map {
+                        if (it is Map<*, *>) it["Name"].toString() else it.toString()
+                    }
+                }
         }
     }
 
@@ -302,31 +349,127 @@ object Pasada {
         "backup-dir1", "backup-dir2",
     )
 
-    /**
-     * Los que pone la pasada del escritorio y aquí no significan nada: rclone ya
-     * lee el `rclone.conf` del volumen, su salida la captura la llamada, el
-     * nivel de log se pone una vez para todas (`options/set`, INFO: `--verbose`)
-     * y `--stats` es de la línea de órdenes (cmd/cmd.go, no una opción global):
-     * con la biblioteca el progreso se pide a `core/stats`.
-     */
-    private val SIN_EQUIVALENTE = setOf("config", "log-file", "verbose", "v", "stats")
+    /** La letra de bisync: `-1` es `--resync` (cmd/bisync/cmd.go). */
+    private const val CORTO_RESYNC = "1"
 
-    /** La orden no se puede pasar a rclone: lo que diría su línea de órdenes. */
-    class OrdenInvalida(mensaje: String) : Exception(mensaje)
+    /**
+     * El `--max-delete` de un bisync, como lo lee su línea de órdenes
+     * (`Options.applyContext()`, cmd/bisync/cmd.go): sin él, o negativo, el de
+     * fábrica ([TOPE_BISYNC_DE_FABRICA], el `DefaultMaxDelete` de rclone); y
+     * entre 0 y 100. El RPC no hace nada de eso: sin `maxDelete` usa 0 (no deja
+     * borrar nada) y fuera de 0..100 se niega (cmd/bisync/rc.go), así que se
+     * manda siempre, ya resuelto.
+     */
+    fun maxDeleteBisync(dado: Long?): Long = when {
+        dado == null || dado < 0 -> TOPE_BISYNC_DE_FABRICA.toLong()
+        else -> minOf(dado, 100L)
+    }
+
+    /** `frenos.TOPE_BISYNC_DE_FABRICA`: el `DefaultMaxDelete` de bisync (un %). */
+    const val TOPE_BISYNC_DE_FABRICA = 50
+
+    /**
+     * Flags de la línea de órdenes de rclone que no son opciones (cmd/cmd.go y
+     * los «not converted into options yet» de fs/config/configflags) y que aquí
+     * no significan nada: rclone ya lee el `rclone.conf` del volumen, el log y su
+     * nivel los lleva la app (INFO para todas, con `options/set`), el progreso
+     * se pide a `core/stats`, y la caché y los temporales los pone la app. Se
+     * leen (con su argumento, si lo llevan) y no viajan. Con `true`, se llevan
+     * argumento.
+     */
+    private val SIN_EQUIVALENTE: Map<String, Boolean> = mapOf(
+        "config" to true, "verbose" to false, "quiet" to false, "stats" to true,
+        "cache-dir" to true, "temp-dir" to true, "cpuprofile" to true, "memprofile" to true,
+        "dump-headers" to false, "dump-bodies" to false,
+    )
+
+    /** Las letras de los de [SIN_EQUIVALENTE] (configflags: `-v` es una cuenta, `-q` un booleano). */
+    private val CORTOS_SIN_EQUIVALENTE = mapOf("v" to "verbose", "q" to "quiet")
+
+    /**
+     * Flags de la línea de órdenes que SÍ cambian lo que hace la pasada pero no
+     * son opciones de rclone, así que por el RPC no hay cómo pasarlos
+     * (fs/config/configflags: «flags we haven't converted into options yet»).
+     * Con `true`, se llevan argumento.
+     */
+    private val SOLO_LINEA_DE_ORDENES: Map<String, Boolean> = mapOf(
+        "delete-before" to false, "delete-during" to false, "delete-after" to false,
+        "bind" to true, "disable" to true, "header" to true, "header-upload" to true,
+        "header-download" to true, "metadata-set" to true,
+    )
+
+    /**
+     * La orden no se puede pasar a rclone. [message] es lo que diría su línea de
+     * órdenes, si lo diría; [explicacion], lo que se le cuenta a la persona
+     * cuando el problema es del teléfono y no del config.
+     */
+    class OrdenInvalida(mensaje: String, val explicacion: String? = null) : Exception(mensaje)
+
+    private fun desdeElTelefono(flag: String, porque: String) = OrdenInvalida(
+        "$flag: no se puede pasar desde el teléfono",
+        "El config de la pareja lleva $flag, que en el ordenador vale pero desde el teléfono " +
+            "no se puede pasar: $porque. Quítalo de la pareja, o llévalo a la conexión del " +
+            "remoto en el rclone.conf si es una opción de su backend.",
+    )
+
+    /** Cómo se llama un flag para rclone: su opción, el bloque en que está y su tipo. */
+    private class Flag(val nombre: String, val opcion: String, val tipo: Opcion, val clase: Clase)
+
+    private enum class Clase { BISYNC, VACIOS, IGNORAR, PRINCIPAL, FILTRO, INCLUIR, EXCLUIR }
+
+    private fun flag(nombre: String, bisync: Boolean, opciones: Opciones): Flag {
+        val opcion = nombre.replace('-', '_')
+        val bool = Opcion("bool")
+        val conValor = Opcion("string")
+        return when {
+            // La línea de órdenes no normaliza `_` (pflag sin NormalizeFunc):
+            // `--max_delete` no existe, aunque su opción se llame así.
+            '_' in nombre -> throw OrdenInvalida("unknown flag: --$nombre")
+            bisync && nombre in PARAMETROS_BISYNC ->
+                Flag(nombre, PARAMETROS_BISYNC.getValue(nombre), if (nombre in BISYNC_CON_VALOR) conValor else bool, Clase.BISYNC)
+            nombre == "create-empty-src-dirs" -> Flag(nombre, "createEmptySrcDirs", bool, Clase.VACIOS)
+            nombre in SIN_EQUIVALENTE -> Flag(nombre, opcion, if (SIN_EQUIVALENTE.getValue(nombre)) conValor else bool, Clase.IGNORAR)
+            opcion in opciones.log -> Flag(nombre, opcion, opciones.log.getValue(opcion), Clase.IGNORAR)
+            nombre == "include" -> Flag(nombre, opcion, Opcion("stringArray"), Clase.INCLUIR)
+            nombre == "exclude" -> Flag(nombre, opcion, Opcion("stringArray"), Clase.EXCLUIR)
+            opcion in opciones.main -> Flag(nombre, opcion, opciones.main.getValue(opcion), Clase.PRINCIPAL)
+            opcion in opciones.filtro -> Flag(nombre, opcion, opciones.filtro.getValue(opcion), Clase.FILTRO)
+            nombre in SOLO_LINEA_DE_ORDENES ->
+                throw desdeElTelefono("--$nombre", "no es una opción de rclone sino de su línea de órdenes")
+            nombre in opciones.deBackend ->
+                throw desdeElTelefono("--$nombre", "es una opción de un backend, y el teléfono no abre los remotes con flags")
+            else -> throw OrdenInvalida("unknown flag: --$nombre")
+        }
+    }
+
+    /** El flag de una letra (`ShortOpt` en `options/info`), o `null` si no hay. */
+    private fun flagCorto(letra: String, bisync: Boolean, opciones: Opciones): String? {
+        if (bisync && letra == CORTO_RESYNC) return "resync"
+        CORTOS_SIN_EQUIVALENTE[letra]?.let { return it }
+        for (bloque in listOf(opciones.main, opciones.filtro, opciones.log)) {
+            bloque.entries.firstOrNull { it.value.corto == letra }?.let { return it.key.replace('_', '-') }
+        }
+        return null
+    }
 
     /**
      * Traduce la orden de una pareja ([Orden.tramos]) a la llamada rc que hace
      * lo mismo.
      *
-     * Los argumentos se leen como los lee rclone: `--x=v`, `--x v` o `--x` si la
-     * opción es booleana, y gana el último. Lo que es de bisync va como sus
-     * parámetros; las opciones globales, como parámetros planos con su nombre de
-     * opción (`modify_window`) y el texto del flag, que rclone interpreta con el
-     * mismo analizador que la línea de órdenes (`fs/rc/context.go`,
-     * `ParseOptions`); `--include`/`--exclude`, en `_filter`.
+     * Los argumentos se leen como los lee rclone (pflag): `--x=v`, `--x v` o
+     * `--x` si la opción es booleana; letras sueltas o juntas (`-u`, `-uc`,
+     * `-f regla`, `-fregla`); gana el último, salvo en las que se acumulan
+     * (`stringArray`), que van todas y en su orden, como lista: un texto plano
+     * rclone lo partiría por las comas (`configstruct.StringToInterface`). Lo
+     * que es de bisync va como sus parámetros; las opciones globales, como
+     * parámetros planos con su nombre de opción (`modify_window`) y el texto del
+     * flag, que rclone interpreta con el mismo analizador que la línea de
+     * órdenes (`fs/rc/context.go`, `ParseOptions`); `--include`/`--exclude`, en
+     * `_filter`.
      *
      * @throws OrdenInvalida con el mensaje de rclone («unknown flag: --x»), para
-     *   que [explicar] diga lo mismo que en el escritorio.
+     *   que [explicar] diga lo mismo que en el escritorio; o con su
+     *   [OrdenInvalida.explicacion] si es algo que el escritorio sí acepta.
      */
     fun llamadaDe(tramos: List<Orden.Tramo>, opciones: Opciones): Llamada {
         val cabeza = tramos.first().args
@@ -334,52 +477,77 @@ object Pasada {
         val args = tramos.drop(1).flatMap { it.args }
         val bisync = verbo == "bisync"
         val parametros = LinkedHashMap<String, Any?>()
+        val listas = LinkedHashMap<String, MutableList<String>>()
         val incluir = ArrayList<String>()
         val excluir = ArrayList<String>()
+        var maxDelete: Long? = null
         when (verbo) {
             "bisync" -> { parametros["path1"] = cabeza[2]; parametros["path2"] = cabeza[3] }
             "copy", "sync" -> { parametros["srcFs"] = cabeza[2]; parametros["dstFs"] = cabeza[3] }
             else -> throw OrdenInvalida("unknown command \"$verbo\" for \"rclone\"")
         }
+
+        fun poner(f: Flag, valor: String) {
+            when (f.clase) {
+                Clase.BISYNC -> parametros[f.opcion] = when {
+                    f.nombre == "max-delete" -> {
+                        maxDelete = intPy(valor)
+                            ?: throw OrdenInvalida("invalid argument \"$valor\" for \"--max-delete\" flag")
+                        return
+                    }
+                    f.tipo.booleana -> valorBooleano(f.nombre, valor)
+                    else -> valor
+                }
+                Clase.VACIOS -> parametros[f.opcion] = valorBooleano(f.nombre, valor)
+                Clase.IGNORAR -> Unit
+                Clase.INCLUIR -> incluir.add(valor)
+                Clase.EXCLUIR -> excluir.add(valor)
+                Clase.PRINCIPAL, Clase.FILTRO ->
+                    if (f.tipo.lista) listas.getOrPut(f.opcion) { ArrayList() }.add(valor) else parametros[f.opcion] = valor
+            }
+        }
+
         var i = 0
         while (i < args.size) {
             val arg = args[i++]
-            if (!arg.startsWith("--")) throw OrdenInvalida("unknown command \"$arg\" for \"rclone $verbo\"")
-            val igual = arg.indexOf('=')
-            val nombre = if (igual < 0) arg.substring(2) else arg.substring(2, igual)
-            val opcion = nombre.replace("-", "_")
-            val esBooleano = when {
-                bisync && nombre in PARAMETROS_BISYNC -> nombre !in BISYNC_CON_VALOR
-                nombre == "create-empty-src-dirs" -> true
-                nombre in SIN_EQUIVALENTE -> nombre == "verbose" || nombre == "v"
-                nombre == "include" || nombre == "exclude" -> false
-                opcion in opciones.main -> opciones.main.getValue(opcion)
-                opcion in opciones.filtro -> opciones.filtro.getValue(opcion)
-                else -> throw OrdenInvalida("unknown flag: --$nombre")
-            }
-            val valor: String = when {
-                igual >= 0 -> arg.substring(igual + 1)
-                esBooleano -> "true"
-                i < args.size -> args[i++]
-                else -> throw OrdenInvalida("flag needs an argument: --$nombre")
-            }
             when {
-                bisync && nombre in PARAMETROS_BISYNC -> {
-                    val clave = PARAMETROS_BISYNC.getValue(nombre)
-                    parametros[clave] = when {
-                        nombre == "max-delete" -> intPy(valor)
-                            ?: throw OrdenInvalida("invalid argument \"$valor\" for \"--max-delete\" flag")
-                        esBooleano -> valorBooleano(nombre, valor)
-                        else -> valor
+                arg.startsWith("--") && arg.length > 2 -> {
+                    val igual = arg.indexOf('=')
+                    val nombre = if (igual < 0) arg.substring(2) else arg.substring(2, igual)
+                    val f = flag(nombre, bisync, opciones)
+                    val valor: String = when {
+                        igual >= 0 -> arg.substring(igual + 1)
+                        f.tipo.booleana || f.nombre == "verbose" -> "true"
+                        i < args.size -> args[i++]
+                        else -> throw OrdenInvalida("flag needs an argument: --$nombre")
+                    }
+                    poner(f, valor)
+                }
+                arg.startsWith("-") && arg.length > 1 && arg != "--" -> {
+                    // pflag, parseSingleShortArg: letra a letra; la que lleva
+                    // valor se queda con el resto (o con el argumento siguiente).
+                    var resto = arg.substring(1)
+                    while (resto.isNotEmpty()) {
+                        val letra = resto.substring(0, resto.offsetByCodePoints(0, 1))
+                        resto = resto.substring(letra.length)
+                        val nombre = flagCorto(letra, bisync, opciones)
+                            ?: throw OrdenInvalida("unknown shorthand flag: '$letra' in $arg")
+                        val f = flag(nombre, bisync, opciones)
+                        val valor: String = when {
+                            resto.startsWith("=") -> resto.substring(1).also { resto = "" }
+                            f.tipo.booleana || f.nombre == "verbose" -> "true"
+                            resto.isNotEmpty() -> resto.also { resto = "" }
+                            i < args.size -> args[i++]
+                            else -> throw OrdenInvalida("flag needs an argument: '$letra' in $arg")
+                        }
+                        poner(f, valor)
                     }
                 }
-                nombre == "create-empty-src-dirs" -> parametros["createEmptySrcDirs"] = valorBooleano(nombre, valor)
-                nombre in SIN_EQUIVALENTE -> Unit
-                nombre == "include" -> incluir.add(valor)
-                nombre == "exclude" -> excluir.add(valor)
-                else -> parametros[opcion] = valor
+                else -> throw OrdenInvalida("unknown command \"$arg\" for \"rclone $verbo\"")
             }
         }
+        if (bisync) parametros["maxDelete"] = maxDeleteBisync(maxDelete)
+        for ((opcion, valores) in listas) parametros[opcion] = valores
         if (incluir.isNotEmpty() || excluir.isNotEmpty()) {
             parametros["_filter"] = linkedMapOf<String, Any?>().apply {
                 if (incluir.isNotEmpty()) put("IncludeRule", incluir)
@@ -563,9 +731,11 @@ object Pasada {
             workdir = volumen.workdir(pareja).absolutePath,
             simulacro = ctx.simulacro, resync = needResync, sello = ctx.sello,
         )
+        var explicacionDeLaOrden: String? = null
         val final = try {
             rclone.ejecutar(llamadaDe(tramos, opciones), alProgreso)
         } catch (e: OrdenInvalida) {
+            explicacionDeLaOrden = e.explicacion
             Final(false, e.message ?: "", "Error: ${e.message}")
         }
         val codigo = if (final.ok) 0 else FALLO
@@ -580,8 +750,16 @@ object Pasada {
         if (codigo == 0) {
             cuenta("[${pareja.name}] OK." + (log?.let { " Log: ${it.name}" } ?: ""))
         } else {
-            cuenta("[${pareja.name}] FALLÓ. " + (log?.let { "Log: ${it.name}" } ?: ""))
-            explicacion = explicar(texto)
+            cuenta("[${pareja.name}] FALLÓ (código $codigo). " + (log?.let { "Log: ${it.name}" } ?: ""))
+            // `print_log_tail()`: lo último del log, sin las líneas de progreso,
+            // para que un error que nadie sabe explicar se vea sin abrir el log.
+            if (log != null) {
+                val ultimas = cola(texto)
+                cuenta("--- últimas ${ultimas.size} líneas de ${log.name} ---")
+                ultimas.forEach { cuenta("  $it") }
+                cuenta("---")
+            }
+            explicacion = explicacionDeLaOrden ?: explicar(texto)
             explicacion?.let { cuenta("  >> $it") }
         }
         val resultado = acabar(codigo, log, explicacion, needResync)

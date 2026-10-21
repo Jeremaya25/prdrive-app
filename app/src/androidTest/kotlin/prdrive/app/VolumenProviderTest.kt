@@ -5,6 +5,8 @@ import android.provider.DocumentsContract.Document
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import java.io.File
 import java.io.FileNotFoundException
+import java.nio.file.Files
+import java.nio.file.LinkOption
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -90,6 +92,44 @@ class VolumenProviderTest {
         val creado = proveedor.createDocument(VolumenProvider.ID_RAIZ, Document.MIME_TYPE_DIR, CARPETA_PROGRAMA)
         assertTrue(creado != "${VolumenProvider.ID_RAIZ}/$CARPETA_PROGRAMA")
         assertEquals("secreto", File(raiz, "$CARPETA_PROGRAMA/keys/id_ed25519").readText())
+    }
+
+    /**
+     * Los enlaces los trae rclone (un `.rclonelink` del remoto en una pareja con
+     * `links`), y apuntan adonde quiera quien los escribió.
+     */
+    @Test
+    fun un_enlace_no_lleva_a_la_carpeta_del_programa_y_borrarlo_no_toca_lo_que_senala() {
+        val notas = "${VolumenProvider.ID_RAIZ}/sync-data/notas"
+        Files.createSymbolicLink(File(raiz, "sync-data/notas/llaves").toPath(), File(raiz, "$CARPETA_PROGRAMA/keys").toPath())
+        Files.createSymbolicLink(File(raiz, "sync-data/notas/fuera").toPath(), File(raiz, "..").toPath())
+        // Ni se lista ni se abre lo que hay detrás.
+        assertEquals(listOf("a.txt"), hijos(notas))
+        for (id in listOf("$notas/llaves/id_ed25519", "$notas/fuera/volumen/$CARPETA_PROGRAMA/keys/id_ed25519")) {
+            try {
+                proveedor.openDocument(id, "r", null).close()
+                fail("se ha podido abrir $id")
+            } catch (_: FileNotFoundException) {
+                // lo esperado
+            }
+        }
+        // Borrar la carpeta que lo contiene se lleva el enlace, no la clave.
+        proveedor.deleteDocument(notas)
+        assertFalse(File(raiz, "sync-data/notas").exists())
+        assertEquals("secreto", File(raiz, "$CARPETA_PROGRAMA/keys/id_ed25519").readText())
+
+        // Un enlace a otra carpeta del volumen sí se ve; borrarlo o renombrarlo
+        // es borrar o renombrar el enlace.
+        File(raiz, "sync-data/docs").mkdirs()
+        File(raiz, "sync-data/docs/b.txt").writeText("b")
+        Files.createSymbolicLink(File(raiz, "sync-data/atajo").toPath(), File(raiz, "sync-data/docs").toPath())
+        assertEquals(listOf("atajo", "docs"), hijos("${VolumenProvider.ID_RAIZ}/sync-data"))
+        val renombrado = proveedor.renameDocument("${VolumenProvider.ID_RAIZ}/sync-data/atajo", "otro")
+        assertTrue(Files.isSymbolicLink(File(raiz, "sync-data/otro").toPath()))
+        assertTrue(File(raiz, "sync-data/docs/b.txt").isFile)
+        proveedor.deleteDocument(renombrado)
+        assertFalse(Files.exists(File(raiz, "sync-data/otro").toPath(), LinkOption.NOFOLLOW_LINKS))
+        assertEquals("b", File(raiz, "sync-data/docs/b.txt").readText())
     }
 
     @Test

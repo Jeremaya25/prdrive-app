@@ -67,92 +67,157 @@ class PasadaTest {
 
     // --- de la orden a la llamada rc -----------------------------------------
 
-    /** Lo que diría `options/info` de las opciones que salen en estas órdenes. */
-    private val opciones = Pasada.Opciones(
-        main = mapOf(
-            "transfers" to false, "checkers" to false, "modify_window" to false,
-            "stats_one_line" to true, "fast_list" to true, "checksum" to true, "max_delete" to false,
-            "suffix" to false, "suffix_keep_extension" to true, "dry_run" to true,
-        ),
-        filtro = mapOf("include" to false, "exclude" to false, "min_size" to false),
-    )
+    private val orden get() = Vectores.objeto(paso3, "orden")
 
-    private fun llamada(pareja: String, pasada: String): Pasada.Llamada {
-        val orden = Vectores.objeto(paso3, "orden")
+    private fun tramos(pareja: String, pasada: String): List<Orden.Tramo> {
         val caso = Vectores.objetos(orden, "pasadas").first { it["pareja"] == pareja && it["pasada"] == pasada }
-        val tramos = Vectores.objetos(caso, "tramos").map {
+        return Vectores.objetos(caso, "tramos").map {
             Orden.Tramo(Vectores.cadenas(it, "args"), Vectores.texto(it, "origen"), it["nombre"]?.toString())
         }
-        return Pasada.llamadaDe(tramos, opciones)
+    }
+
+    private fun llamada(pareja: String, pasada: String) = Pasada.llamadaDe(tramos(pareja, pasada), Oraculo.opciones)
+
+    /** Los argumentos de la orden, sin `rclone <verbo> <origen> <destino>`. */
+    private fun args(pareja: String, pasada: String) = tramos(pareja, pasada).drop(1).flatMap { it.args }
+
+    private fun booleana(flag: String, bisync: Boolean): Boolean {
+        val opcion = flag.replace('-', '_')
+        if (bisync && flag in Pasada.PARAMETROS_BISYNC) {
+            return flag in listOf("resync", "dry-run", "check-access", "force", "create-empty-src-dirs",
+                "remove-empty-dirs", "no-cleanup", "ignore-listing-checksum", "resilient", "recover",
+                "no-slow-hash", "slow-hash-sync-only", "download-hash")
+        }
+        val o = Oraculo.opciones
+        return (o.main[opcion] ?: o.filtro[opcion] ?: o.log[opcion])?.booleana ?: (flag in listOf("verbose", "create-empty-src-dirs"))
+    }
+
+    /**
+     * Cada valor que se le da a un flag largo, en orden: `--x=v`, `--x v`, o
+     * `"true"` si es booleano (lo dice el `options/info` del oráculo).
+     */
+    private fun valores(args: List<String>, flag: String, bisync: Boolean): List<String> {
+        val salida = ArrayList<String>()
+        var i = 0
+        while (i < args.size) {
+            val a = args[i++]
+            if (!a.startsWith("--")) continue
+            val nombre = a.substring(2).substringBefore('=')
+            val valor = when {
+                '=' in a -> a.substringAfter('=')
+                booleana(nombre, bisync) -> "true"
+                else -> args[i++]
+            }
+            if (nombre == flag) salida.add(valor)
+        }
+        return salida
     }
 
     @Test
-    fun `una pareja bisync es una llamada a sync_bisync con sus parametros`() {
-        val l = llamada("notas", "normal")
-        assertEquals("sync/bisync", l.metodo)
-        val p = l.parametros
-        assertEquals("disp:sync-data/notas", p["path1"])
-        assertEquals("nas:/copia/notas", p["path2"])
-        assertEquals("/volumen/.prdrive/filters/notas.txt", p["filtersFile"])
-        assertEquals("/volumen/.prdrive/state/notas", p["workdir"])
-        // El de bisync es un porcentaje y va como su parámetro, no como el global.
-        assertEquals(25L, p["maxDelete"])
-        assertNull(p["max_delete"])
-        assertEquals(true, p["resilient"])
-        assertEquals("2m", p["maxLock"])
-        assertEquals("delete", p["conflictLoser"])
-        // Las opciones globales, planas y con el texto del flag.
-        assertEquals("4", p["transfers"])
-        assertEquals("2s", p["modify_window"])
-        assertEquals("~20261001-110101", p["suffix"])
-        assertEquals("true", p["suffix_keep_extension"])
-        // Lo que no tiene equivalente con la biblioteca no viaja.
-        // `--stats` es de la línea de órdenes de rclone, no una opción global.
-        for (sobra in listOf("config", "log_file", "verbose", "stats")) assertFalse(sobra in p, sobra)
-        assertNull(p["resync"])
+    fun `cada flag de la orden llega con su nombre de rc y su ultimo valor`() {
+        val sinEquivalente = setOf("config", "log-file", "verbose", "stats")
+        for (caso in Vectores.objetos(orden, "pasadas")) {
+            val (pareja, pasada) = Vectores.texto(caso, "pareja") to Vectores.texto(caso, "pasada")
+            val a = args(pareja, pasada)
+            if (a.any { it.startsWith("-") && !it.startsWith("--") }) continue // los de una letra, aparte
+            val cabeza = tramos(pareja, pasada).first().args
+            val bisync = cabeza[1] == "bisync"
+            val p = llamada(pareja, pasada).parametros
+            val donde = "«$pareja» ($pasada)"
+            assertEquals(if (bisync) cabeza[2] else cabeza[2], p[if (bisync) "path1" else "srcFs"], donde)
+            assertEquals(cabeza[3], p[if (bisync) "path2" else "dstFs"], donde)
+            val flags = a.filter { it.startsWith("--") }.map { it.substring(2).substringBefore('=') }.toSet()
+            for (flag in flags) {
+                val ultimo = valores(a, flag, bisync).last()
+                val opcion = flag.replace('-', '_')
+                when {
+                    flag == "max-delete" && bisync -> Unit // tiene su prueba
+                    bisync && flag in Pasada.PARAMETROS_BISYNC -> {
+                        val esperado: Any = if (booleana(flag, true)) ultimo.toBoolean() else ultimo
+                        assertEquals(esperado, p[Pasada.PARAMETROS_BISYNC.getValue(flag)], "$donde --$flag")
+                    }
+                    flag == "create-empty-src-dirs" -> assertEquals(ultimo.toBoolean(), p["createEmptySrcDirs"], donde)
+                    flag in sinEquivalente -> assertFalse(opcion in p, "$donde: --$flag no tiene que viajar")
+                    flag == "include" || flag == "exclude" -> {
+                        val regla = if (flag == "include") "IncludeRule" else "ExcludeRule"
+                        @Suppress("UNCHECKED_CAST")
+                        assertEquals(valores(a, flag, bisync), (p["_filter"] as Map<String, Any?>)[regla], "$donde --$flag")
+                    }
+                    else -> {
+                        val tipo = Oraculo.opciones.main[opcion] ?: Oraculo.opciones.filtro.getValue(opcion)
+                        val esperado: Any = if (tipo.lista) valores(a, flag, bisync) else ultimo
+                        assertEquals(esperado, p[opcion], "$donde --$flag")
+                    }
+                }
+            }
+            assertEquals(if (bisync) "sync/bisync" else if (cabeza[1] == "copy") "sync/copy" else "sync/sync", llamada(pareja, pasada).metodo)
+        }
     }
 
     @Test
-    fun `gana el ultimo valor de un flag, como en la linea de ordenes`() {
-        // `max-delete` sale de la base (25), de la pareja (9) y de extra_flags (7=).
-        val p = llamada("extras", "normal").parametros
-        assertEquals(7L, p["maxDelete"])
-        assertEquals("true", p["fast_list"])
-        assertEquals("pathname", p["conflictLoser"])
-        // `--resync-mode` no llega a una pasada normal: la convertiría en un resync.
-        assertNull(p["resyncMode"])
-        val r = llamada("extras", "resync").parametros
-        assertEquals(true, r["resync"])
-        assertEquals("newer", r["resyncMode"])
+    fun `el tope de bisync va siempre, con el sentido de su linea de ordenes`() {
+        // cmd/bisync/cmd.go (applyContext): sin --max-delete o negativo, el de
+        // fábrica; si no, entre 0 y 100. El RPC no lo hace: sin `maxDelete` usa 0.
+        val tope = Vectores.objeto(paso3, "errores")["tope_bisync_de_fabrica"] as Long
+        assertEquals(tope, Pasada.TOPE_BISYNC_DE_FABRICA.toLong())
+        assertEquals(Oraculo.raiz["bisync_default_max_delete"], tope, "el de prdrive es el DefaultMaxDelete de rclone")
+        for (pareja in listOf("notas", "extras", "sin-tope", "tope-negativo", "tope-alto")) {
+            val dado = valores(args(pareja, "normal"), "max-delete", true).lastOrNull()?.toLong()
+            val esperado = if (dado == null || dado < 0) tope else minOf(dado, 100L)
+            assertEquals(esperado, llamada(pareja, "normal").parametros["maxDelete"], pareja)
+        }
+        // En un espejo es la cuenta de ficheros de siempre, global.
+        assertEquals(valores(args("bajada", "normal"), "max-delete", false).last(), llamada("bajada", "normal").parametros["max_delete"])
+        assertNull(llamada("bajada", "normal").parametros["maxDelete"])
     }
 
     @Test
-    fun `un espejo es sync_sync con su tope como cuenta y los filtros en _filter`() {
-        val l = llamada("bajada", "normal")
-        assertEquals("sync/sync", l.metodo)
-        assertEquals("nas:/copia/bajada", l.parametros["srcFs"])
-        assertEquals("disp:sync-data/bajada", l.parametros["dstFs"])
-        assertEquals("3", l.parametros["max_delete"])
-        assertEquals("true", l.parametros["checksum"])
-        assertEquals(true, l.parametros["createEmptySrcDirs"])
-        assertEquals(mapOf("ExcludeRule" to listOf("*.tmp")), l.parametros["_filter"])
-        // Y forzada, sin tope (-1), como en el escritorio.
-        assertEquals("-1", llamada("bajada", "forzada").parametros["max_delete"])
-        assertEquals("sync/copy", llamada("subida", "normal").metodo)
+    fun `las letras y los flags que se acumulan se leen como en la linea de ordenes`() {
+        val a = args("cortos", "normal")
+        val p = llamada("cortos", "normal").parametros
+        // `-uc` son dos booleanos; cuáles, lo dice el ShortOpt de options/info.
+        val letras = a.first { it.startsWith("-") && !it.startsWith("--") }.substring(1)
+        for (letra in letras.map { it.toString() }) {
+            val opcion = Oraculo.opciones.main.entries.first { it.value.corto == letra }.key
+            assertEquals("true", p[opcion], "-$letra")
+        }
+        // `--exclude-from` se acumula: van los dos, como lista y con su coma.
+        assertEquals(valores(a, "exclude-from", false), p["exclude_from"])
     }
+
+    private fun conExtra(vararg extra: String) = listOf(
+        Orden.Tramo(listOf("rclone", "bisync", "disp:a", "nas:/a"), ORIGEN_PRDRIVE),
+        Orden.Tramo(extra.toList(), ORIGEN_EXTRA),
+    )
 
     @Test
     fun `un flag que rclone no conoce se dice como lo diria rclone`() {
-        val tramos = listOf(
-            Orden.Tramo(listOf("rclone", "bisync", "disp:a", "nas:/a"), ORIGEN_PRDRIVE),
-            Orden.Tramo(listOf("--inventado"), ORIGEN_EXTRA),
-        )
-        val e = assertFailsWith<Pasada.OrdenInvalida> { Pasada.llamadaDe(tramos, opciones) }
-        // Y la explicación es la del escritorio para «unknown flag».
-        assertEquals(
-            Pasada.KNOWN_ERRORS.first { it.aguja == "unknown flag" }.explicacion,
-            Pasada.explicar("Error: ${e.message}"),
-        )
+        val desconocido = Pasada.KNOWN_ERRORS.first { it.aguja == "unknown flag" }.explicacion
+        // Ni uno inventado ni el nombre de la opción con guion bajo: pflag no normaliza.
+        for (flag in listOf("--inventado", "--max_delete=3", "--modify_window=2s")) {
+            val e = assertFailsWith<Pasada.OrdenInvalida> { Pasada.llamadaDe(conExtra(flag), Oraculo.opciones) }
+            assertEquals(desconocido, Pasada.explicar("Error: ${e.message}"), flag)
+            assertNull(e.explicacion, flag)
+        }
+        assertFailsWith<Pasada.OrdenInvalida> { Pasada.llamadaDe(conExtra("-Z"), Oraculo.opciones) }
+    }
+
+    @Test
+    fun `lo que el escritorio acepta y el telefono no puede pasar se explica aparte`() {
+        val backend = Vectores.objetos(Oraculo.raiz, "backends").first { it["Prefix"] == "sftp" }
+        val deBackend = "--sftp-" + Vectores.cadenas(backend, "Options").first().replace('_', '-') + "=x"
+        for (flag in listOf(deBackend, "--delete-after", "--header=X-Y: z")) {
+            val e = assertFailsWith<Pasada.OrdenInvalida> { Pasada.llamadaDe(conExtra(flag), Oraculo.opciones) }
+            assertNotNull(e.explicacion, flag)
+            assertTrue(flag.substringBefore('=') in e.explicacion, flag)
+        }
+    }
+
+    @Test
+    fun `la cola del log es la que imprime sync_py`() {
+        for (caso in Vectores.objetos(Vectores.objeto(paso3, "errores"), "cola")) {
+            assertEquals(Vectores.cadenas(caso, "cola"), Pasada.cola(Vectores.texto(caso, "texto")), "«${caso["caso"]}»")
+        }
     }
 
     // --- la pasada -----------------------------------------------------------
@@ -167,11 +232,7 @@ class PasadaTest {
         }
     }
 
-    private val opcionesDeLaPasada = Pasada.Opciones(
-        main = mapOf("transfers" to false, "modify_window" to false, "stats_one_line" to true,
-            "suffix" to false, "suffix_keep_extension" to true, "max_delete" to false),
-        filtro = emptyMap(),
-    )
+    private val opcionesDeLaPasada get() = Oraculo.opciones
 
     private fun volumen(vararg parejas: Map<String, Any?>): kotlin.Pair<Volumen, Config> {
         val v = Volumen(File(temporal(), "volumen"))

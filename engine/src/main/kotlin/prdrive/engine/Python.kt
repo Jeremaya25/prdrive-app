@@ -48,6 +48,14 @@ fun espacioPy(c: Char): Boolean =
 /** `str.strip()` de Python. */
 fun stripPy(texto: String): String = texto.trim { espacioPy(it) }
 
+/**
+ * Lo de dentro de la clase `\s` de una regex de Python (la de [espacioPy]),
+ * para escribir `[…]` o `[^…]` en una de Java o de ICU, que no la tienen igual.
+ */
+internal val CLASE_ESPACIO_PY: String by lazy {
+    (0..0xffff).filter { espacioPy(it.toChar()) }.joinToString("") { "\\x{${it.toString(16)}}" }
+}
+
 /** Lo que parte líneas en `str.splitlines()`, además de `\r\n` junto. */
 private const val SALTOS_PY = "\n\r\u000b\u000c\u001c\u001d\u001e\u0085  "
 

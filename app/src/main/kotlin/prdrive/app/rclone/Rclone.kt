@@ -80,12 +80,15 @@ object Rclone {
      * falla. El progreso sale de `core/stats` con el grupo del trabajo
      * (`job/<id>`, fs/accounting/stats_groups.go): datos, no líneas de log.
      *
-     * Si el hilo se interrumpe, se para el trabajo (`job/stop`) y se sigue
-     * esperando a que rclone lo dé por acabado, para que no quede una pasada
-     * huérfana con el lock de bisync puesto. Lo mismo si se sale del bucle por
-     * cualquier otra cosa antes de que acabe. rclone olvida un trabajo acabado a
-     * los 60 s (fs/rc/jobs/job.go, `JobExpireDuration`): si para entonces nadie
-     * lo ha mirado, eso es lo que se dice.
+     * Si el hilo se interrumpe, se para el trabajo (`job/stop`), se espera a
+     * que rclone lo dé por acabado —que no quede una pasada huérfana con el
+     * lock de bisync puesto, ni otra que empiece encima— y se lanza
+     * `CancellationException`, con la interrupción repuesta: una pasada
+     * cancelada no es una pasada fallida, como un Ctrl+C en el escritorio. Si se
+     * sale por cualquier otro error antes de que acabe, igual: parar y esperar.
+     * rclone olvida un trabajo acabado a los 60 s (fs/rc/jobs/job.go,
+     * `JobExpireDuration`): si para entonces nadie lo ha mirado, eso es lo que
+     * se dice.
      *
      * Bloquea: nunca desde el hilo principal.
      */
@@ -99,7 +102,6 @@ object Rclone {
         val id = (inicio["jobid"] as? Number)?.toLong()
             ?: throw RcloneError(0, "rclone no ha devuelto el número del trabajo: $inicio")
         var acabado = false
-        var parado = false
         try {
             while (true) {
                 val estado = try {
@@ -123,15 +125,37 @@ object Rclone {
                 try {
                     Thread.sleep(cadaMs)
                 } catch (_: InterruptedException) {
-                    if (!parado) {
-                        runCatching { rpc("job/stop", mapOf("jobid" to id)) }
-                        parado = true
-                    }
+                    pararYEsperar(id)
+                    acabado = true
+                    Thread.currentThread().interrupt()
+                    throw java.util.concurrent.CancellationException("La pasada se ha cancelado.")
                 }
             }
         } finally {
-            if (!acabado && !parado) runCatching { rpc("job/stop", mapOf("jobid" to id)) }
+            if (!acabado) pararYEsperar(id)
         }
+    }
+
+    /**
+     * Para un trabajo y espera a que rclone lo dé por acabado (o lo haya
+     * olvidado), sin dejarse interrumpir mientras: lo que se espera es
+     * precisamente que suelte lo que tiene. Si tarda más de [maxMs], se deja.
+     * Una interrupción que llegue entretanto se repone al salir.
+     */
+    private fun pararYEsperar(id: Long, maxMs: Long = 30_000) {
+        runCatching { rpc("job/stop", mapOf("jobid" to id)) }
+        var interrumpido = false
+        val hasta = System.currentTimeMillis() + maxMs
+        while (System.currentTimeMillis() < hasta) {
+            val estado = runCatching { rpc("job/status", mapOf("jobid" to id)) }.getOrNull()
+            if (estado == null || estado["finished"] == true) break
+            try {
+                Thread.sleep(100)
+            } catch (_: InterruptedException) {
+                interrumpido = true
+            }
+        }
+        if (interrumpido) Thread.currentThread().interrupt()
     }
 
     /** Empieza a guardar el log de rclone (para las llamadas que no lo devuelven). */

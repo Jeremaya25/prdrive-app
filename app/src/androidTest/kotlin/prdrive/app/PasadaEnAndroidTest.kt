@@ -102,6 +102,36 @@ class PasadaEnAndroidTest {
     }
 
     @Test
+    fun una_pasada_cancelada_para_rclone_no_se_apunta_y_no_deja_el_lock_puesto() {
+        val (v, config) = Banco.volumen(Banco.pareja("notas", "sync-data/notas", "flags" to mapOf("transfers" to 1, "checkers" to 1)))
+        val p = config.pairs.single()
+        File(Banco.remoto, "notas").mkdirs()
+        // Muchos ficheros, de uno en uno: lo bastante para cortarla a medias.
+        repeat(3000) { File(Banco.remoto, "notas/f$it.txt").writeText("fichero $it\n".repeat(50)) }
+        var lanzado: Throwable? = null
+        var codigo: Int? = null
+        val hilo = Thread {
+            try {
+                codigo = pasar(v, p, Pasada.Contexto(resyncAprobado = true)).codigo
+            } catch (e: Throwable) {
+                lanzado = e
+            }
+        }
+        hilo.start()
+        Thread.sleep(1500)
+        hilo.interrupt()
+        hilo.join(60_000)
+        assertNull("la pasada acabó antes de cortarla (código $codigo): hacen falta más ficheros", codigo)
+        assertTrue("lanzó $lanzado", lanzado is java.util.concurrent.CancellationException)
+        // No se apunta, ni como buena ni como fallida.
+        assertNull(Resultados.ultimasBuenas(v.state, listOf("notas"))["notas"])
+        assertEquals(emptyList<Any>(), Resultados.fallosDe(v.state, v.logs, listOf("notas")))
+        // Y la siguiente no se encuentra un lock de la cortada.
+        val r = pasar(v, p, Pasada.Contexto(resyncAprobado = true, keepLogs = true))
+        assertEquals(todo(r), 0, r.codigo)
+    }
+
+    @Test
     fun un_espejo_de_bajada_trae_lo_del_remoto_y_su_log_se_captura() {
         val (v, config) = Banco.volumen(Banco.pareja("bajada", "sync-data/bajada", "mode" to "down-mirror"))
         val p = config.pairs.single()

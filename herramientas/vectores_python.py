@@ -222,7 +222,8 @@ TOML_LEER = [
     "a = 0_1\n", "a = 1__000.0\n", "a = 1_000.0_0e1_0\n", "a = 1e06\n", "a = 0e0\n",
     "a = -0.0\n", "a = 1E+2\n", "a = +inf\nb = +nan\n", "a = infinity\n", "a = True\n",
     "# coment\x01ario\n", "# con tab\t vale\na = 1\n", "a = 1 # \x7f\n", "a = 1\r\n",
-    "a = 1\r\nb = 2\r\n", "a = 1\r\n\r\n", "a = 1", "\n\n\na = 1\n\n",
+    "a = 1\r\nb = 2\r\n", "a = 1\r\n\r\n", "a = 1", "\n\n\na = 1\n\n", "a = 1\r", "# c\r",
+    "a = 1\n\r", "a = 1\r\r\n",
 ]
 
 # Lo que tomllib acepta y el lector del motor no cubre, a propósito: tiene que

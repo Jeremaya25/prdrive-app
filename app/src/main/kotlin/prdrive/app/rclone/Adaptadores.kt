@@ -44,8 +44,18 @@ object Adaptadores {
             }
     }
 
-    /** Las opciones globales de rclone, para traducir las órdenes ([Pasada.llamadaDe]). */
-    val opciones: Pasada.Opciones by lazy { Pasada.Opciones.deOptionsInfo(Rclone.rpc("options/info")) }
+    /**
+     * Las opciones de rclone, para traducir las órdenes ([Pasada.llamadaDe]):
+     * las globales (`options/info`, todos los bloques) y los flags de los
+     * backends que lleva el `.aar` (`config/providers`), que el escritorio
+     * acepta y aquí se explican.
+     */
+    val opciones: Pasada.Opciones by lazy {
+        Pasada.Opciones.deOptionsInfo(
+            Rclone.rpc("options/info"),
+            Pasada.Opciones.backendsDeProviders(Rclone.rpc("config/providers")),
+        )
+    }
 
     /**
      * Las opciones de red de `catalog.NET_FLAGS` (`--contimeout 10s --timeout
@@ -69,18 +79,25 @@ object Adaptadores {
      * lista y se concatena, como hace `rclone cat`. Los códigos son los de la
      * línea de órdenes: 0 bien, 3 no existe, 1 cualquier otro fallo (sin red,
      * por ejemplo), que es lo que `catalog.py` distingue.
+     *
+     * Va con el mismo cerrojo que las pasadas: rclone apunta en su log los
+     * errores de cualquier llamada (librclone los escribe en ERROR), y un
+     * «no such host» del catálogo en mitad del log de una pasada haría que
+     * esta se explicara como un problema de red.
      */
     fun catalogo(temporal: File): Catalogo.Ejecutar = Catalogo.Ejecutar { args ->
-        try {
-            when {
-                args.size == 2 && args[0] == "cat" -> cat(args[1], temporal)
-                args.size == 3 && args[0] == "lsjson" && args[1] == "--stat" -> stat(args[2])
-                else -> Catalogo.Resultado(1, "", "orden no soportada: $args")
+        synchronized(unaPasada) {
+            try {
+                when {
+                    args.size == 2 && args[0] == "cat" -> cat(args[1], temporal)
+                    args.size == 3 && args[0] == "lsjson" && args[1] == "--stat" -> stat(args[2])
+                    else -> Catalogo.Resultado(1, "", "orden no soportada: $args")
+                }
+            } catch (e: Rclone.RcloneError) {
+                val mensaje = e.message ?: ""
+                val noExiste = "not found" in mensaje || "doesn't exist" in mensaje
+                Catalogo.Resultado(if (noExiste) 3 else 1, "", mensaje)
             }
-        } catch (e: Rclone.RcloneError) {
-            val mensaje = e.message ?: ""
-            val noExiste = "not found" in mensaje || "doesn't exist" in mensaje
-            Catalogo.Resultado(if (noExiste) 3 else 1, "", mensaje)
         }
     }
 

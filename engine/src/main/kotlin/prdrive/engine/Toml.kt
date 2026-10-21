@@ -105,8 +105,11 @@ fun headerOf(texto: String): String {
  */
 private class Lineas(texto: String) {
     // TOML (y tomllib) solo conoce `\n` y `\r\n` como saltos de línea: un `\r`
-    // suelto no lo es, y `lines()` lo tomaría por uno.
-    private val todas = texto.split("\n").map { it.removeSuffix("\r") }
+    // suelto no lo es, y `lines()` lo tomaría por uno. Solo se quita el `\r` que
+    // va delante de un `\n`; el del final del texto se queda, y no vale.
+    private val todas = texto.split("\n").let { partes ->
+        partes.mapIndexed { i, p -> if (i < partes.lastIndex) p.removeSuffix("\r") else p }
+    }
     private var i = 0
     var numero = 0
         private set
