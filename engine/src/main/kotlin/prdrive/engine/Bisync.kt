@@ -271,21 +271,26 @@ object Bisync {
 
     /**
      * El `Root()` del backend local de rclone (backend/local/local.go) en
-     * POSIX: la ruta limpia (`filepath.Clean`: `a//b` y `a/./b` son `a/b`), con
-     * cada tramo pasado al codificador estándar (`ToStandardPath`, que es
-     * `Standard.Encode(OS.Decode(tramo))`, lib/encoder/encoder.go).
+     * Android, donde `encoder.OS` es `encoder.Base` (lib/encoder/os_other.go).
+     *
+     * rclone lee la ruta como si viniera en su codificación estándar:
+     * `cleanRootPath` pasa cada tramo por `FromStandardName`
+     * (`Base.Encode(Standard.Decode(tramo))`) y luego la limpia
+     * (`filepath.Clean`: `a//b` y `a/./b` son `a/b`), y `Root()` la devuelve con
+     * `ToStandardPath` (`Standard.Encode(Base.Decode(..))`). Como `Base.Decode`
+     * deshace `Base.Encode`, cada tramo acaba siendo
+     * `Standard.Encode(Standard.Decode(tramo))`.
      *
      * prdrive solo replica los tramos `.` y `..` (`．`/`．．`). Aquí también lo
-     * demás que `Standard` codifica —los caracteres de control salen como sus
-     * símbolos (`\u000b` es `␋`), DEL como `␡`, NUL como `␀`—, porque el spike lo
-     * vio en un dispositivo: rclone escribe el prefijo así, y el que manda es él.
-     * Se da por hecho que `OS.Decode` (`Base`: NUL, `/` y los puntos) no cambia
-     * el tramo, que es lo normal en una ruta de verdad.
+     * demás: un carácter de control sale como su símbolo (`\u000b` es `␋`), y
+     * una `‛` suelta sale doble. Lo dice el oráculo de rclone
+     * (rclone/go/oraculo), y el spike lo vio en un dispositivo: rclone escribe
+     * el prefijo así, y el que manda es él.
      */
     fun raizLocal(ruta: String): String {
         var limpia = normpath(ruta.ifEmpty { "." })
         if (limpia.startsWith("//")) limpia = limpia.substring(1)
-        return limpia.split("/").joinToString("/") { codificarEstandar(it) }
+        return limpia.split("/").joinToString("/") { codificarEstandar(decodificarEstandar(it)) }
     }
 
     /** `encoder.QuoteRune`: lo que va delante de un símbolo que ya estaba en el nombre. */
@@ -321,6 +326,42 @@ object Bisync {
                 else -> salida.append(c)
             }
         }
+        return salida.toString()
+    }
+
+    /**
+     * `Standard.Decode` de un tramo (`MultiEncoder.Decode`,
+     * lib/encoder/encoder.go): lo contrario de [codificarEstandar]. Un símbolo
+     * vuelve a ser su carácter, salvo que lleve [COMILLA] delante, que entonces
+     * se queda como está y la comilla se va. Una comilla delante de cualquier
+     * otra cosa se queda, igual que una al final.
+     */
+    private fun decodificarEstandar(tramo: String): String {
+        when (tramo) {
+            "．" -> return "."
+            "．．" -> return ".."
+            "$COMILLA．" -> return "．"
+            "$COMILLA．$COMILLA．" -> return "．．"
+        }
+        val salida = StringBuilder()
+        var comillaPendiente = false
+        for (c in tramo) {
+            val tras = comillaPendiente
+            comillaPendiente = false
+            when {
+                c == SIMBOLO -> salida.append(if (tras) c else '\u0000')
+                c == COMILLA -> if (tras) salida.append(c) else comillaPendiente = true
+                c == '／' -> salida.append(if (tras) c else '/')
+                c == '␡' -> salida.append(if (tras) c else '\u007f')
+                c.code in SIMBOLO.code + 1..SIMBOLO.code + 0x1f ->
+                    salida.append(if (tras) c else (c.code - SIMBOLO.code).toChar())
+                else -> {
+                    if (tras) salida.append(COMILLA)
+                    salida.append(c)
+                }
+            }
+        }
+        if (comillaPendiente) salida.append(COMILLA)
         return salida.toString()
     }
 
@@ -428,7 +469,7 @@ object Bisync {
         if (!workdir.exists()) {
             return EstadoPareja("fresh", "sin workdir (nunca sincronizada)", null)
         }
-        val nombres = (workdir.list() ?: emptyArray()).sorted()
+        val nombres = (workdir.list() ?: emptyArray()).sortedWith(ORDEN_PY)
 
         // Los .lst-err no los limpia nadie (rclone solo renombra .lst -> .lst-err
         // al abortar; cmd/bisync/operations.go): si después hay un juego de
@@ -458,7 +499,7 @@ object Bisync {
             if (comun.size != 1 || pre1.size != 1 || pre2.size != 1) {
                 return EstadoPareja(
                     "broken",
-                    "varios juegos de listados: ${reprPy((pre1 + pre2).sorted())}",
+                    "varios juegos de listados: ${reprPy((pre1 + pre2).sortedWith(ORDEN_PY))}",
                     null,
                 )
             }
@@ -625,21 +666,23 @@ object Bisync {
         nuevo: String,
     ): List<kotlin.Pair<File, File>> {
         val movimientos = ArrayList<kotlin.Pair<File, File>>()
+        fun mover(de: File, a: File) {
+            if (de.renameTo(a)) {
+                movimientos.add(de to a)
+                return
+            }
+            // Media pareja renombrada es peor que ninguna: lo ya movido vuelve
+            // a su sitio antes de contar el fallo. (prdrive deja lo movido.)
+            for ((antes, ahora) in movimientos.asReversed()) ahora.renameTo(antes)
+            throw IOException("No se pudo mover $de a $a")
+        }
         val origen = File(stateDir, viejo)
         val destino = File(stateDir, nuevo)
-        if (origen.isDirectory && !destino.exists()) {
-            // Si el estado no se mueve, los filtros tampoco: media pareja
-            // renombrada es peor que ninguna.
-            if (!origen.renameTo(destino)) throw IOException("No se pudo mover $origen a $destino")
-            movimientos.add(origen to destino)
-        }
+        if (origen.isDirectory && !destino.exists()) mover(origen, destino)
         for (sufijo in listOf(".txt", ".txt.md5")) {
             val fViejo = File(filtersDir, "$viejo$sufijo")
             val fNuevo = File(filtersDir, "$nuevo$sufijo")
-            if (fViejo.exists() && !fNuevo.exists()) {
-                if (!fViejo.renameTo(fNuevo)) throw IOException("No se pudo mover $fViejo a $fNuevo")
-                movimientos.add(fViejo to fNuevo)
-            }
+            if (fViejo.exists() && !fNuevo.exists()) mover(fViejo, fNuevo)
         }
         return movimientos
     }

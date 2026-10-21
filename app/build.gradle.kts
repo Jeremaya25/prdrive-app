@@ -55,9 +55,21 @@ kotlin {
     }
 }
 
+// El .aar no se versiona: sin él, la compilación fallaría con un «unresolved
+// reference» que no dice qué falta. Se comprueba antes de construir nada (y no
+// al configurar, que rompería también `:engine:test`).
+val aarDeRclone = rootProject.file("rclone/build/rclone.aar")
+tasks.named("preBuild") {
+    doFirst {
+        if (!aarDeRclone.isFile) {
+            throw GradleException("Falta $aarDeRclone: constrúyelo con rclone/construir.sh (ver AGENTS.md).")
+        }
+    }
+}
+
 dependencies {
     implementation(project(":engine"))
-    implementation(files("../rclone/build/rclone.aar"))
+    implementation(files(aarDeRclone))
 
     implementation(platform("androidx.compose:compose-bom:2026.09.00"))
     implementation("androidx.compose.ui:ui")

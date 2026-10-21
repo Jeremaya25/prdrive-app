@@ -36,21 +36,36 @@ engine/       Kotlin puro (JVM), SIN una línea de Android
 ├── Conflictos.kt  espejo de common/conflicts.py: los perdedores de bisync
 ├── Store.kt    lo que hace falta de common/store.py: fechas y escritura atómica
 ├── Json.kt     json.dumps/loads de Python, byte a byte (state/ lo lee el PC)
-└── Python.kt   repr(), str(), bool(), int(), strip() y fnmatch de Python, para
-                decir lo mismo que prdrive en sus mensajes
+├── Python.kt   repr(), str(), bool(), int(), strip(), splitlines(), sorted() y
+│               fnmatch de Python, para decir y ordenar lo mismo que prdrive
+├── Orden.kt    espejo de common/orden.py: la orden de rclone de una pareja
+├── Pasada.kt   espejo de sync.py: una pasada entera (preflight, la llamada,
+│               el log, los resultados y los conflictos) contra un `Rclone` que
+│               se pasa, y la traducción de la orden a parámetros del RPC
+└── Volumen.kt  espejo de install/: la carpeta del volumen, su .prdrive/ y lo
+                que se escribe al emparejar
 rclone/
 ├── go/rclone/  el paquete Go del .aar: librclone + sync/bisync + backends
+├── go/oraculo/ lo que dice el código de rclone donde el motor sigue a rclone
+│               y no a prdrive (escribe oraculo_rclone.json)
 ├── construir.sh   gomobile bind -> rclone/build/rclone.aar (no se versiona)
 app/          Android: solo dibuja y llama
+├── Prdrive.kt        dónde vive el volumen y cómo arranca rclone
 ├── rclone/Rclone.kt  el envoltorio del RPC (rpc, trabajo con _async)
-└── androidTest/  el spike contra rclone de verdad, y los vectores del motor
-                  otra vez en Android (MotorEnAndroidTest)
+├── rclone/Adaptadores.kt  el `Rclone` de la pasada y el `cat` del catálogo,
+│                     sobre el RPC
+├── documentos/VolumenProvider.kt  el volumen en la app de Archivos, sin .prdrive/
+└── androidTest/  el spike contra rclone de verdad, la pasada entera, el
+                  proveedor, y los vectores del motor otra vez en Android
+                  (MotorEnAndroidTest)
 herramientas/
-└── vectores.py genera los valores esperados desde el prdrive de verdad
+├── vectores.py        genera los valores esperados desde el prdrive de verdad
+├── vectores_paso3.py  su parte de la pasada y el volumen
+└── vectores_python.py lo que el motor imita del propio Python (y de tomllib)
 ```
 
-Pendiente (ver `PLAN.md`): la pasada (`Pasada.kt`: de una pareja a los
-parámetros de `sync/bisync`), el volumen, el `DocumentsProvider` y las pantallas.
+Pendiente (ver `PLAN.md`, paso 4): las pantallas (primer arranque y la
+principal) y la prueba de punta a punta contra un servidor de verdad.
 
 ## Reglas que no se cruzan
 
@@ -66,9 +81,9 @@ parámetros de `sync/bisync`), el volumen, el `DocumentsProvider` y las pantalla
   (`cmd/bisync/bilib/canonical.go`, `fs/types.go`, `cmd/bisync/resolve.go`…),
   igual que `common/bisync.py`. Si se toca algo de ahí, es contra esas fuentes
   contra lo que se contrasta, no contra lo que parezca razonable.
-- **Ni una dependencia**, como en prdrive, y eso incluye las de test: el lector
-  de JSON de `Vectores.kt` está escrito a mano por esa razón, y solo se compila
-  en los tests.
+- **`engine/` no tiene ni una dependencia**, como prdrive, y eso incluye las de
+  test (solo `kotlin-test`): el JSON y el TOML están escritos a mano por esa
+  razón. `app/` usa lo justo de AndroidX y Compose, y el `.aar` de rclone.
 - **`device_remote` es obligatorio** (diferencia deliberada con prdrive, donde es
   un valor por defecto): la ruta absoluta del volumen es `filesDir`, que cambia
   al reinstalar la app, así que un config sin él rompería los baselines de
@@ -86,8 +101,16 @@ con la versión y el commit de prdrive dentro. **Ningún test lleva un valor
 esperado escrito a mano.** Si añades algo al motor que refleje a Python, añade su
 caso al generador y regenera; no escribas el número.
 
+Lo que el motor imita del propio Python (`repr()` de un float, `fnmatch`,
+`json.loads`, `strptime`, `tomllib`…) también lo contesta Python, desde
+`herramientas/vectores_python.py`. Y donde el motor sigue a rclone y no a
+prdrive (el nombre de sesión con espacios raros, la raíz de un remote `local`),
+lo contesta el código de rclone: `rclone/go/oraculo` escribe
+`engine/src/test/resources/oraculo_rclone.json`.
+
 ```bash
 python herramientas/vectores.py ../prdrive
+cd rclone/go && go run ./oraculo ../../engine/src/test/resources/oraculo_rclone.json
 ```
 
 ## Órdenes
@@ -99,6 +122,10 @@ python herramientas/vectores.py ../prdrive   # regenerar los vectores
 rclone/construir.sh        # el .aar (Go, gomobile y un NDK)
 ./gradlew :app:connectedDebugAndroidTest     # en un emulador o un teléfono
 ```
+
+`connectedDebugAndroidTest` instala y ejecuta en **todos** los dispositivos
+conectados, teléfonos incluidos. Con uno enchufado, se elige el emulador con
+`ANDROID_SERIAL=emulator-5554`.
 
 El módulo `app` solo existe si hay un SDK de Android (`ANDROID_HOME`,
 `ANDROID_SDK_ROOT` o `sdk.dir` en `local.properties`): el CI del motor no lo
@@ -129,7 +156,9 @@ export JAVA_TOOL_OPTIONS='-Djdk.net.unixdomain.tmpdir=C:\Windows\Temp'
   `EstadoPareja`) porque son los del TOML y los de prdrive; lo que es API de
   Kotlin/Java se escribe como se escribe en Kotlin.
 - Los tests se llaman con una frase entre acentos graves que diga qué garantiza,
-  no qué función llama.
+  no qué función llama. En `androidTest` va con guiones bajos
+  (`una_pasada_que_falla_guarda_el_log_y_lo_explica`): el `.dex` de minSdk 26 no
+  admite espacios en los nombres de método.
 
 ## Ojo con Android
 
@@ -140,6 +169,12 @@ export JAVA_TOOL_OPTIONS='-Djdk.net.unixdomain.tmpdir=C:\Windows\Temp'
   vectores en el dispositivo para que no se cuele otra.
 - **`String.format` usa las cifras del idioma del teléfono** (en árabe, `٠١`).
   Nada que acabe en un fichero o en un mensaje comparado pasa por él.
+- **Ni el `.` ni el `$` son los de Python.** El `.` de Java tampoco casa con
+  `\r`, `\u0085`, ` ` ni ` ` (y el de ICU, ni con `\u000b` ni con
+  `\u000c`); el `$` de Python casa también delante de un `\n` final. Donde
+  prdrive dice `^(.+)…$`, aquí va `([^\n]+)…\n?` con `matchEntire`. Y dentro de
+  unos corchetes, `&&` o `[` son sintaxis de Java: `fnmatch` escribe cada
+  carácter como `\x{…}`.
 
 ## Ojo con estas cosas de rclone
 
@@ -164,6 +199,27 @@ export JAVA_TOOL_OPTIONS='-Djdk.net.unixdomain.tmpdir=C:\Windows\Temp'
   el formato del flag (`"modify_window": "2s"`; `fs/rc/context.go`,
   `ParseOptions`).
 - **El nombre de sesión lo manda rclone, no prdrive**, en dos sitios donde
-  prdrive no coincide con él (comprobado en el emulador): el `\s` de
-  `CanonicalPath` es el de RE2 (`[\t\n\f\r ]`, no Unicode), y el `Root()` de un
-  remote `local` codifica los caracteres de control (`\x0b` es `␋`).
+  prdrive no coincide con él (comprobado en el emulador y con el oráculo): el
+  `\s` de `CanonicalPath` es el de RE2 (`[\t\n\f\r ]`, no Unicode), y el
+  `Root()` de un remote `local` lee la ruta como ya codificada y la vuelve a
+  codificar (`Standard.Encode(Standard.Decode(tramo))`: `\x0b` sale `␋`, y una
+  `‛` suelta sale doble).
+- **`--stats` es solo de la línea de órdenes** (`cmd/cmd.go`), no una opción:
+  en el RPC no existe, y la pasada no lo manda. El progreso sale de
+  `core/stats` con el grupo `job/<id>`.
+- **`sync/copy` y `sync/sync` no devuelven su log**; `sync/bisync`, sí. Para los
+  primeros, `Capturar`/`SoltarCaptura` del paquete Go apilan una salida del log
+  de rclone mientras dura la llamada (`fs/log/slog.go`: la salida es una pila),
+  y por eso las pasadas van de una en una.
+- **rclone olvida un trabajo al minuto de acabar** (`JobExpireDuration`): el
+  resultado se recoge en cuanto termina.
+- **Cuando bisync aborta dice «Must run --resync to recover.», con mayúscula**
+  (`cmd/bisync/operations.go`), y la aguja de `KNOWN_ERRORS` de prdrive es «must
+  run --resync»: solo casa con los avisos de los filtros (`cmd/bisync/cmd.go`),
+  que van en minúscula. Se replica tal cual, porque es de prdrive; `PLAN.md` lo
+  apunta como hallazgo.
+- **El lock de bisync es JSON** (`cmd/bisync/lockfile.go`): con `--max-lock`
+  puesto, uno que no se puede leer cuenta como caducado y se pasa por encima.
+- **bisync se para si cambian todos los ficheros de un lado** («Safety abort:
+  all files were changed»). En un test con un solo fichero, cambiarlo es
+  cambiarlos todos: hace falta otro que no se toque.

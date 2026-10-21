@@ -268,13 +268,17 @@ atómicas de fichero que usan `store.py` y el editor de conflictos).
 Comentarios y texto para el usuario en **español**, como el resto del proyecto.
 
 ```
-engine/     Kotlin puro, sin Android: Model, Bisync, Toml, Pairing (+ Catalog,
-            Results). Se prueba con `./gradlew :engine:test`, sin SDK ni
-            dispositivo, y es donde viven las constantes copiadas de prdrive.
-rclone/     el paquete Go que construye el .aar, y el envoltorio Kotlin del RPC
-app/        Android: volumen + DocumentsProvider, setup (QR, perfil,
-            rclone.conf, elegir parejas, resync inicial) y ui (Compose)
-herramientas/ vectores.py — saca de prdrive lo que el motor debe reproducir
+engine/     Kotlin puro, sin Android: Model, Bisync, Toml, Pairing, Catalogo,
+            Resultados, Conflictos, Orden, Pasada y Volumen. Se prueba con
+            `./gradlew :engine:test`, sin SDK ni dispositivo, y es donde viven
+            las constantes copiadas de prdrive.
+rclone/     el paquete Go que construye el .aar, y el oráculo: lo que dice el
+            código de rclone donde el motor le sigue a él y no a prdrive
+app/        Android: el envoltorio del RPC y sus adaptadores, el volumen +
+            DocumentsProvider, setup (QR, perfil, rclone.conf, elegir parejas,
+            resync inicial) y ui (Compose)
+herramientas/ vectores*.py — saca de prdrive (y de Python) lo que el motor
+            debe reproducir
 ```
 
 `engine/` es un módulo aparte y sin una línea de Android **a propósito**: es lo
@@ -314,7 +318,37 @@ dibuja y llama; nada de `engine/` sabe que existe Android.**
     de `common/bisync.py`: con un espacio de ancho completo o un carácter de
     control en el nombre, prdrive calcularía un prefijo que rclone no escribe.
     **Es un hallazgo sobre prdrive** (como el de `max-delete`), y se arregla
-    allí; el motor sigue a rclone.
+    allí; el motor sigue a rclone. El `Root()` no es solo codificar: rclone lee
+    la ruta como ya codificada (`cleanRootPath`, `FromStandardName`) y la
+    vuelve a codificar, así que cada tramo es
+    `Standard.Encode(Standard.Decode(tramo))` (`AC／DC` se queda como está). Lo
+    vigila `rclone/go/oraculo`, que llama al código de rclone.
+- **La pasada entera, en el emulador — hecho (paso 3)**
+  (`PasadaEnAndroidTest`, `VolumenProviderTest`): una pareja nueva se salta
+  hasta que se aprueba su resync y después sincroniza en los dos sentidos; un
+  cambio en los dos lados deja un conflicto que se encuentra y se sabe de qué
+  lado es; una pasada que falla guarda su log y lo explica; un espejo de
+  bajada trae lo del remoto y su log se captura; el catálogo se lee por el RPC;
+  y el volumen sale en la app de Archivos sin `.prdrive/`. Lo que enseñó:
+  - `--stats` es de la línea de órdenes, no una opción: por el RPC no existe;
+  - `sync/sync` y `sync/copy` no devuelven su log, y hay que capturarlo;
+  - el lock de bisync es JSON, y con `--max-lock` uno ilegible cuenta como
+    caducado;
+  - con un solo fichero, cambiarlo es cambiarlos todos, y bisync se para por
+    seguridad («all files were changed»);
+  - cuando bisync aborta dice «Must run --resync to recover.», con mayúscula
+    (`cmd/bisync/operations.go`), y la aguja de `KNOWN_ERRORS` de `sync.py` es
+    «must run --resync»: solo casa con los avisos de los filtros, que van en
+    minúscula. **Otro hallazgo sobre prdrive**: ese abort se queda sin
+    explicación. El motor lo replica tal cual.
+- **Lo que el motor imita de Python, contra Python.** `repr()` de un float,
+  `fnmatch`, `json.loads`, `int()`, `strptime`, `sorted()`, `splitlines()` y
+  `tomllib` dan sus valores esperados desde `herramientas/vectores_python.py`.
+  Al pasar los veredictos de `tomllib` a vectores salieron dos cosas que el
+  lector de TOML aceptaba y `tomllib` no (`01`, `1__0`, un `\r` suelto): el
+  teléfono habría escrito un fichero que el escritorio no lee.
+- **Paso 4, de punta a punta:** las pantallas, y una pareja contra un servidor
+  de verdad (SFTP o WebDAV en el PC, que el emulador ve en `10.0.2.2`).
 - **En un teléfono:** una pareja de verdad contra el remoto: sincronizar, editar
   un fichero en el móvil, sincronizar, y confirmarlo en el PC. Comprobar que el
   baseline sobrevive a una segunda pasada (un prefijo que se mueve aparece como

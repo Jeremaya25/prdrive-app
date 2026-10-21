@@ -26,7 +26,9 @@ dependencyResolutionManagement {
 include(":engine")
 
 val hayAndroidSdk = listOf("ANDROID_HOME", "ANDROID_SDK_ROOT").any { !System.getenv(it).isNullOrBlank() } ||
-    file("local.properties").let { it.isFile && it.readText().contains("sdk.dir") }
+    file("local.properties").let { f ->
+        f.isFile && f.readLines().any { Regex("""^\s*sdk\.dir\s*=""").containsMatchIn(it) }
+    }
 if (hayAndroidSdk) {
     include(":app")
 }

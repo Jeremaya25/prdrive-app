@@ -133,8 +133,9 @@ class CatalogoTest {
             assertEquals(copia["json"], if (json.exists()) json.readText() else null, "«$nombre»: metadatos")
 
             val sinRed = Vectores.objeto(caso, "load_sin_red")
+            val (codigo, salida, error) = Vectores.lista(catalogo, "rclone_sin_red")
             val rcloneSinRed = Catalogo.Ejecutar {
-                Catalogo.Resultado(1, "", "Failed to cat: dial tcp: lookup nas: no such host")
+                Catalogo.Resultado((codigo as Number).toInt(), salida.toString(), error.toString())
             }
             val (cat, aviso) = Catalogo.load(rcloneSinRed, rawLocal, state, relojDe(sellos))
             assertEquals(sinRed["source"], cat?.source, "«$nombre»: de dónde sale sin red")

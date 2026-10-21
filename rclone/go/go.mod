@@ -2,6 +2,9 @@ module github.com/Jeremaya25/prdrive-app/rclone/go
 
 go 1.26.0
 
+// Con el que se midieron los tamaños de PLAN.md.
+toolchain go1.27.3
+
 require (
 	github.com/rclone/rclone v1.75.2
 	golang.org/x/mobile v0.0.0-20260709172247-6129f5bee9d5

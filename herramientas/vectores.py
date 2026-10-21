@@ -42,6 +42,9 @@ from pathlib import Path, PurePosixPath, PureWindowsPath
 
 DESTINO = Path(__file__).resolve().parent.parent / "engine/src/test/resources/vectores.json"
 
+import vectores_paso3  # noqa: E402 — vive junto a este fichero
+import vectores_python  # noqa: E402 — vive junto a este fichero
+
 # La raíz de dispositivo que se le hace creer a prdrive. Fija, para que el JSON
 # no cambie según dónde se ejecute esto.
 RAIZ_FALSA = "/volumen"
@@ -1000,6 +1003,8 @@ def vectores_catalogo(catalog, model, store) -> dict:
         "rc_no_existe": list(catalog.RC_NO_EXISTE),
         "net_flags": list(catalog.NET_FLAGS),
         "sin_fecha": catalog.SIN_FECHA,
+        # Lo que contesta el rclone de mentira sin red, para que el test no lo copie.
+        "rclone_sin_red": _rclone_falso({}, {}, sin_red=True)["por_defecto"],
         "endpoint": [{"raw_local": r, "salida": catalog.endpoint(r)} for r in endpoints],
         "partir": [{"entrada": r, "salida": list(catalog.partir(r))} for r in rutas],
         "candidatos": [{"entrada": r, "salida": list(catalog.candidatos(r))} for r in rutas],
@@ -1098,7 +1103,14 @@ def vectores_conflictos(conflicts, model, store) -> dict:
                "plan.md.conflict1", "plan.md.conflict", "a.tar.gz.c1", "a.c2.tar.gz",
                "x.uno3", "x.uno", "y.a1", "y.b2", "y.c3", "z.c1", "z.c2", "z.c3",
                ".conflicto-remoto1", "datos.conflicto-dispositivo12",
-               "plan.conflict1.md", "uno.conflict1.dos.txt"]
+               "plan.conflict1.md", "uno.conflict1.dos.txt",
+               # Lo que separa el `.` y el `$` de Python de los de Java y Android,
+               # y números que no caben en un Int ni en un Long.
+               "a b.txt.conflict1", "a\rb.conflict2", "a\x85b.conflict3",
+               "a\x0bb.conflict4", "a\x0cb.conflict5", "a b.conflict6",
+               "plan.md.conflict1\n", "plan.conflict1.md\n", "plan.md.conflict1\r",
+               "a\nb.conflict1", "foo.conflict99999999999", "foo.conflict" + "9" * 25,
+               "x.conflict١٢", "x.c١", "IMG.c20240101123456.jpg"]
     esquemas = {n: list(conflicts.esquema(p)) for n, p in parejas.items()}
     lecturas = []
     for n, p in parejas.items():
@@ -1147,6 +1159,13 @@ def vectores_conflictos(conflicts, model, store) -> dict:
                     ruta.parent.mkdir(parents=True, exist_ok=True)
                     ruta.write_text("x", encoding="utf-8")
                 encontrados = conflicts.actualizar_pareja(p)
+                # Este script corre en Windows, donde una ruta se ordena sin
+                # distinguir mayúsculas y con `\`, y en el teléfono es POSIX: el
+                # orden que sale solo vale de vector si es el mismo de las dos
+                # maneras. Un caso nuevo que lo rompa tiene que pararse aquí.
+                relativas = [c.original.relative_to(model.DEVICE_ROOT).as_posix() for c in encontrados]
+                assert sorted(relativas, key=PurePosixPath) == sorted(relativas, key=PureWindowsPath), \
+                    f"«{caso}»: estos nombres no se ordenan igual en Windows que en Android: {relativas}"
                 registro = {"caso": caso, "pareja": crudo, "ficheros": ficheros,
                             "conflictos": [_conflicto(c, model.DEVICE_ROOT) for c in encontrados],
                             "estado": conflicts.ruta_estado().read_text(encoding="utf-8"),
@@ -1201,6 +1220,8 @@ def main() -> int:
         "_no_editar": "Se regenera desde el prdrive citado en 'prdrive'.",
         "prdrive": procedencia(prdrive),
         "raiz_dispositivo": RAIZ_FALSA,
+        # La versión de rclone que fija prdrive, que es la que lleva el .aar.
+        "rclone_version": __import__("common.pins", fromlist=["RCLONE_VERSION"]).RCLONE_VERSION,
         "carpeta_programa": CARPETA_PROGRAMA,
         "base_flags": dict(model.BASE_FLAGS),
         "constantes": {
@@ -1242,6 +1263,10 @@ def main() -> int:
         "catalogo": vectores_catalogo(catalog, model, store),
         "resultados": vectores_resultados(results, model, store),
         "conflictos": vectores_conflictos(conflicts, model, store),
+        # La pasada y el volumen (paso 3), en su propio fichero.
+        "paso3": vectores_paso3.vectores(model, bisync, CONFIG),
+        # Lo que el motor imita del propio Python, también en su fichero.
+        "python": vectores_python.vectores(catalog, pairing, config_file),
     }
 
     DESTINO.parent.mkdir(parents=True, exist_ok=True)

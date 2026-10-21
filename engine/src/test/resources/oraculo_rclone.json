@@ -1,0 +1,250 @@
+{
+ "rclone": "v1.75.2",
+ "explica": "Generado por rclone/go/oraculo desde el código de rclone. No editar a mano.",
+ "raiz_local": [
+  {
+   "raiz": "/data/user/0/prdrive.app/files/remoto-de-prueba/notas",
+   "ruta": "/data/user/0/prdrive.app/files/remoto-de-prueba/notas"
+  },
+  {
+   "raiz": "/r/AC／DC",
+   "ruta": "/r/AC／DC"
+  },
+  {
+   "raiz": "/r/．",
+   "ruta": "/r/．"
+  },
+  {
+   "raiz": "/r/．．",
+   "ruta": "/r/．．"
+  },
+  {
+   "raiz": "/r/‛．",
+   "ruta": "/r/‛．"
+  },
+  {
+   "raiz": "/r/‛．‛．",
+   "ruta": "/r/‛．‛．"
+  },
+  {
+   "raiz": "/r/‛‛．",
+   "ruta": "/r/‛‛．"
+  },
+  {
+   "raiz": "/r/a␀b",
+   "ruta": "/r/a␀b"
+  },
+  {
+   "raiz": "/r/a‛‛b",
+   "ruta": "/r/a‛‛b"
+  },
+  {
+   "raiz": "/r/a␋b",
+   "ruta": "/r/a␋b"
+  },
+  {
+   "raiz": "/r/a␡b",
+   "ruta": "/r/a␡b"
+  },
+  {
+   "raiz": "/r/a‛／b",
+   "ruta": "/r/a‛／b"
+  },
+  {
+   "raiz": "/r/it‛‛s",
+   "ruta": "/r/it‛s"
+  },
+  {
+   "raiz": "/r/a␋b",
+   "ruta": "/r/a\u000bb"
+  },
+  {
+   "raiz": "/r/a␡b",
+   "ruta": "/r/ab"
+  },
+  {
+   "raiz": "/r/a␀b",
+   "ruta": "/r/a\u0000b"
+  },
+  {
+   "raiz": "/r/a␟b",
+   "ruta": "/r/a\u001fb"
+  },
+  {
+   "raiz": "/r/a␟b",
+   "ruta": "/r/a␟b"
+  },
+  {
+   "raiz": "/r/a␠b",
+   "ruta": "/r/a␠b"
+  },
+  {
+   "raiz": "/r/a‛‛",
+   "ruta": "/r/a‛"
+  },
+  {
+   "raiz": "/r/‛‛",
+   "ruta": "/r/‛"
+  },
+  {
+   "raiz": "/r/‛‛",
+   "ruta": "/r/‛‛"
+  },
+  {
+   "raiz": "/r/😀／x",
+   "ruta": "/r/😀／x"
+  },
+  {
+   "raiz": "/r/‛‛😀",
+   "ruta": "/r/‛😀"
+  },
+  {
+   "raiz": "/r/a　b␋c d",
+   "ruta": "/r/a　b\u000bc d"
+  },
+  {
+   "raiz": "a/b/c",
+   "ruta": "a//b/./c/"
+  },
+  {
+   "raiz": "．．/x",
+   "ruta": "../x"
+  },
+  {
+   "raiz": "y",
+   "ruta": "x/../y"
+  },
+  {
+   "raiz": "．",
+   "ruta": "."
+  },
+  {
+   "raiz": "．．",
+   "ruta": ".."
+  },
+  {
+   "raiz": "/",
+   "ruta": "/"
+  },
+  {
+   "raiz": "/",
+   "ruta": "/a/b/../../.."
+  },
+  {
+   "raiz": "/servidor/x",
+   "ruta": "//servidor/x"
+  },
+  {
+   "raiz": "sync-data/notas",
+   "ruta": "sync-data/notas"
+  },
+  {
+   "raiz": "sync-data/．oculta/x",
+   "ruta": "sync-data/．oculta/x"
+  }
+ ],
+ "canonical": [
+  {
+   "canonical": "disp_sync-data_notas",
+   "remote": "disp:sync-data/notas/",
+   "sin_hex": "disp:sync-data/notas/"
+  },
+  {
+   "canonical": "nas__srv_datos_notas",
+   "remote": "nas:/srv/datos/notas/",
+   "sin_hex": "nas:/srv/datos/notas/"
+  },
+  {
+   "canonical": "disp_sync-data_a　b\u000bc_d",
+   "remote": "disp:sync-data/a　b\u000bc d/",
+   "sin_hex": "disp:sync-data/a　b\u000bc d/"
+  },
+  {
+   "canonical": "nas_x�y z\u2028w　v",
+   "remote": "nas:x�y z\u2028w　v/",
+   "sin_hex": "nas:x�y z\u2028w　v/"
+  },
+  {
+   "canonical": "nas_a_b_c_d_e_f_g_h_i_j_k",
+   "remote": "nas:a\tb\nc\fd\re f\\g/h:i?j*k/",
+   "sin_hex": "nas:a\tb\nc\fd\re f\\g/h:i?j*k/"
+  },
+  {
+   "canonical": "nas_x",
+   "remote": "//nas:x//",
+   "sin_hex": "//nas:x//"
+  },
+  {
+   "canonical": "nas_x",
+   "remote": "\\\\nas\\x\\",
+   "sin_hex": "\\\\nas\\x\\"
+  },
+  {
+   "canonical": "nas{AbC12}_x",
+   "remote": "nas{AbC12}:x/",
+   "sin_hex": "nas:x/"
+  },
+  {
+   "canonical": "nas_x{1}y{2}",
+   "remote": "nas:x{1}y{2}/",
+   "sin_hex": "nas:xy{2}/"
+  },
+  {
+   "canonical": "nas_x}y{z",
+   "remote": "nas:x}y{z/",
+   "sin_hex": "nas:x}y{z/"
+  }
+ ],
+ "session_name": [
+  {
+   "path1": "disp:sync-data/notas/",
+   "path2": "nas:/srv/datos/notas/",
+   "session": "disp_sync-data_notas..nas__srv_datos_notas"
+  },
+  {
+   "path1": "nas:/srv/datos/notas/",
+   "path2": "disp:sync-data/a　b\u000bc d/",
+   "session": "nas__srv_datos_notas..disp_sync-data_a　b\u000bc_d"
+  },
+  {
+   "path1": "disp:sync-data/a　b\u000bc d/",
+   "path2": "nas:x�y z\u2028w　v/",
+   "session": "disp_sync-data_a　b\u000bc_d..nas_x�y z\u2028w　v"
+  },
+  {
+   "path1": "nas:x�y z\u2028w　v/",
+   "path2": "nas:a\tb\nc\fd\re f\\g/h:i?j*k/",
+   "session": "nas_x�y z\u2028w　v..nas_a_b_c_d_e_f_g_h_i_j_k"
+  },
+  {
+   "path1": "nas:a\tb\nc\fd\re f\\g/h:i?j*k/",
+   "path2": "//nas:x//",
+   "session": "nas_a_b_c_d_e_f_g_h_i_j_k..nas_x"
+  },
+  {
+   "path1": "//nas:x//",
+   "path2": "\\\\nas\\x\\",
+   "session": "nas_x..nas_x"
+  },
+  {
+   "path1": "\\\\nas\\x\\",
+   "path2": "nas{AbC12}:x/",
+   "session": "nas_x..nas_x"
+  },
+  {
+   "path1": "nas{AbC12}:x/",
+   "path2": "nas:x{1}y{2}/",
+   "session": "nas_x..nas_xy{2}"
+  },
+  {
+   "path1": "nas:x{1}y{2}/",
+   "path2": "nas:x}y{z/",
+   "session": "nas_xy{2}..nas_x}y{z"
+  },
+  {
+   "path1": "nas:x}y{z/",
+   "path2": "disp:sync-data/notas/",
+   "session": "nas_x}y{z..disp_sync-data_notas"
+  }
+ ]
+}

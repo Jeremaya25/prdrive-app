@@ -9,7 +9,6 @@ import java.nio.file.StandardOpenOption
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-import java.time.format.DateTimeParseException
 
 /**
  * Store.kt — Leer y escribir los ficheros pequeños de `state/` sin dejarlos a
@@ -41,13 +40,41 @@ object Store {
      * Los milisegundos de época de un sello de [stamp], en la hora local (como
      * `datetime.strptime(...).timestamp()`), o `null` si no es una fecha suya.
      */
-    fun desdeSello(texto: String?): Long? {
-        if (texto == null) return null
+    fun desdeSello(texto: String?): Long? =
+        leerSello(texto)?.atZone(ZoneId.systemDefault())?.toInstant()?.toEpochMilli()
+
+    /**
+     * `datetime.strptime(texto, FORMATO_PY)`, o `null` donde Python lanzaría.
+     *
+     * strptime es más manso que un `DateTimeFormatter`: cada campo admite una
+     * cifra sola (`2024-1-5 3:4:5`), el espacio del formato casa con cualquier
+     * tira de espacios de Python, y donde su regex dice `\d` vale una cifra de
+     * cualquier alfabeto (el año en cifras de ancho completo, sí; el mes en
+     * árabe, no, porque su regex es `1[0-2]|0[1-9]|[1-9]`). Las regex son las
+     * de `_strptime.TimeRE`; luego `datetime()` rechaza lo que no es una fecha
+     * (un 30 de febrero, el segundo 60, el año 0).
+     */
+    fun leerSello(texto: String?): LocalDateTime? {
+        val m = texto?.let { SELLO_PY.matchEntire(it) } ?: return null
+        val (a, mes, dia, h, min, s) = m.destructured
+        val ano = a.toInt()
+        if (ano < 1) return null
         return try {
-            LocalDateTime.parse(texto, FORMATO).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
-        } catch (_: DateTimeParseException) {
+            LocalDateTime.of(ano, mes.toInt(), dia.trim().toInt(), h.trim().toInt(), min.toInt(), s.toInt())
+        } catch (_: java.time.DateTimeException) {
             null
         }
+    }
+
+    /** `_strptime.TimeRE().pattern(FORMATO_PY)`, con el `\s` y el `\d` de Python. */
+    private val SELLO_PY: Regex by lazy {
+        val d = "\\p{Nd}"
+        val espacio = (0..0xffff).filter { espacioPy(it.toChar()) }
+            .joinToString("", "[", "]+") { "\\x{${it.toString(16)}}" }
+        Regex(
+            "($d$d$d$d)-(1[0-2]|0[1-9]|[1-9])-(3[0-1]|[1-2]$d|0[1-9]|[1-9]| [1-9])" +
+                "$espacio(2[0-3]|[0-1]$d|$d| $d):([0-5]$d|$d):(6[0-1]|[0-5]$d|$d)",
+        )
     }
 
     /**

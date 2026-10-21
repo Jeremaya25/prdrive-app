@@ -2,6 +2,8 @@ package prdrive.engine
 
 import java.io.File
 import java.io.IOException
+import java.math.BigInteger
+import java.nio.file.DirectoryIteratorException
 import java.nio.file.Files
 import java.nio.file.Path
 
@@ -97,14 +99,19 @@ object Conflictos {
      * extensión (`plan.conflict1.md`). Grupos: 1 el nombre, 2 el número, 3 la
      * extensión. El `\d` de Python es Unicode: `\p{Nd}`, escrito así porque
      * Android no admite `(?U)`.
+     *
+     * Lo demás también es lo de Python, que no es lo de Java: su `.` solo se
+     * salta el `\n` (el de Java también `\r`, `\u0085`, ` ` y ` `, y el
+     * de Android además `\u000b` y `\u000c`), y su `$` casa también delante de un
+     * `\n` final, que se queda fuera del nombre. Se usa con `matchEntire`.
      */
     private fun patron(sufijo: String, mantenerExtension: Boolean): Regex {
         val extension = if (mantenerExtension) "((?:\\.[^.]+)+)" else "()"
-        return Regex("^(.+)${Regex.escape(sufijo)}(\\p{Nd}*)$extension$")
+        return Regex("([^\\n]+)${Regex.escape(sufijo)}(\\p{Nd}*)$extension\\n?")
     }
 
     /** Lo que se lee del nombre de un perdedor: su original, su camino y su número. */
-    data class Nombre(val original: String, val camino: String?, val numero: Int)
+    data class Nombre(val original: String, val camino: String?, val numero: BigInteger)
 
     /**
      * Interpreta el nombre de un fichero como el de un perdedor de conflicto, o
@@ -122,12 +129,14 @@ object Conflictos {
             val m = patron(sufijo, esq.mantenerExtension).matchEntire(nombre) ?: continue
             val original = m.groupValues[1] + m.groupValues[3]
             val cifras = m.groupValues[2]
-            val numero = if (cifras.isEmpty()) 0 else cifras.toInt()
+            // Sin tope, como el `int()` de Python: con un sufijo propio, un
+            // `IMG.v20240101123456` también es un número de conflicto.
+            val numero = if (cifras.isEmpty()) BigInteger.ZERO else BigInteger(cifras)
             if (esq.sufijo1 != esq.sufijo2 && (sufijo == esq.sufijo1 || sufijo == esq.sufijo2)) {
                 return Nombre(original, if (sufijo == esq.sufijo1) "path1" else "path2", numero)
             }
             if (cifras.isEmpty()) continue // un solo sufijo sin número no lo escribe rclone
-            if (sufijo == esq.sufijo1 && esq.perdedor == "pathname" && numero in 1..2) {
+            if (sufijo == esq.sufijo1 && esq.perdedor == "pathname" && numero in UNO_O_DOS) {
                 return Nombre(original, "path$numero", numero)
             }
             return Nombre(original, null, numero)
@@ -146,7 +155,14 @@ object Conflictos {
     }
 
     /** Uno de los ficheros de un conflicto. */
-    data class Version(val ruta: File, val lado: String?, val esOriginal: Boolean, val numero: Int = 0)
+    data class Version(
+        val ruta: File,
+        val lado: String?,
+        val esOriginal: Boolean,
+        val numero: BigInteger = BigInteger.ZERO,
+    )
+
+    private val UNO_O_DOS = setOf(BigInteger.ONE, BigInteger.TWO)
 
     /**
      * Un fichero con más de una versión en disco: [original] es el nombre de
@@ -190,7 +206,11 @@ object Conflictos {
         }
         val salida = ArrayList<Conflicto>()
         for ((original, versiones) in grupos.entries.sortedWith(compareBy(PorTramos) { it.key })) {
-            versiones.sortWith(compareBy<Version>({ it.lado ?: "~" }, { it.numero }, { it.ruta.name }))
+            versiones.sortWith(
+                compareBy<Version, String>(ORDEN_PY) { it.lado ?: "~" }
+                    .thenBy { it.numero }
+                    .thenBy(ORDEN_PY) { it.ruta.name },
+            )
             if (original.isFile) {
                 val deducido = if (versiones.size == 1 && versiones[0].lado != null) {
                     if (versiones[0].lado == DISPOSITIVO) REMOTO else DISPOSITIVO
@@ -204,13 +224,16 @@ object Conflictos {
         return salida
     }
 
-    /** Como ordena Python dos rutas: tramo a tramo, no como texto. */
+    /**
+     * Como ordena Python dos rutas POSIX: tramo a tramo, no como texto, y cada
+     * tramo por punto de código ([compararPy]).
+     */
     private object PorTramos : Comparator<File> {
         override fun compare(a: File, b: File): Int {
             val ta = posix(a).split("/")
             val tb = posix(b).split("/")
             for (i in 0 until minOf(ta.size, tb.size)) {
-                val c = ta[i].compareTo(tb[i])
+                val c = compararPy(ta[i], tb[i])
                 if (c != 0) return c
             }
             return ta.size.compareTo(tb.size)
@@ -228,6 +251,9 @@ object Conflictos {
             val entradas = try {
                 Files.newDirectoryStream(carpeta).use { it.toList() }
             } catch (_: IOException) {
+                return
+            } catch (_: DirectoryIteratorException) {
+                // Un error de E/S a mitad del listado; `os.walk` se salta la carpeta.
                 return
             } catch (_: SecurityException) {
                 return
@@ -298,15 +324,23 @@ object Conflictos {
         parejas: Map<String, List<Conflicto>>,
         previas: Map<String, Any?>? = null,
         reloj: () -> String,
-    ) {
+    ) = synchronized(cerrojo) {
         val enDisco = parejasGuardadas(stateDir) ?: emptyMap()
         val guardadas = LinkedHashMap(previas ?: enDisco)
         for ((nombre, encontrados) in parejas) {
             guardadas[nombre] = encontrados.flatMap { it.copias }.map { relativaA(it, volumen) ?: posix(it) }
         }
-        if (guardadas == enDisco) return
-        Store.writeJson(rutaEstado(stateDir), linkedMapOf("cuando" to reloj(), "parejas" to guardadas))
+        if (guardadas != enDisco) {
+            Store.writeJson(rutaEstado(stateDir), linkedMapOf("cuando" to reloj(), "parejas" to guardadas))
+        }
     }
+
+    /**
+     * Leer, mezclar y escribir `conflicts.json` va de una vez: el refresco de la
+     * pantalla puede coincidir con el final de una pasada, y sin esto uno de los
+     * dos perdería lo que apuntó el otro (o chocarían en el mismo `.tmp`).
+     */
+    private val cerrojo = Any()
 
     /**
      * Si el último escaneo de esa pareja se apuntó y no encontró ninguna copia.

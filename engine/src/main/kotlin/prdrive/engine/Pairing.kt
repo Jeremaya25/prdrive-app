@@ -174,7 +174,7 @@ object Pairing {
     fun parseRcloneConf(texto: String): Map<String, Map<String, String>> {
         val remotes = LinkedHashMap<String, MutableMap<String, String>>()
         var actual: MutableMap<String, String>? = null
-        for (cruda in texto.lines()) {
+        for (cruda in splitlinesPy(texto)) {
             val linea = stripPy(cruda)
             if (linea.isEmpty() || linea.startsWith("#") || linea.startsWith(";")) continue
             if (linea.startsWith("[") && linea.endsWith("]")) {
@@ -209,15 +209,81 @@ object Pairing {
         if (carga.remoteName.isEmpty()) {
             throw PairingError("La carga no dice cómo se llama el remote.")
         }
+        // `render_conf()` de install/profile.py: un nombre o un valor que el
+        // formato no sabe escribir metería en el rclone.conf una opción (u otro
+        // remote) que nadie tecleó.
+        if (!NOMBRE_RCLONE.matches(carga.remoteName)) {
+            throw PairingError(
+                "El nombre de remote ${reprPy(carga.remoteName)} no vale en un " +
+                    "rclone.conf: no admite , : = [ ] ni comillas ni saltos de línea, " +
+                    "ni empezar por «-» ni acabar en espacio.",
+            )
+        }
+        val ejecutan = carga.opciones.keys.filter { it in OPCIONES_QUE_EJECUTAN }
+        if (ejecutan.isNotEmpty()) {
+            // En el escritorio, la persona puede teclearlas en su equipo; en el
+            // teléfono no hay programa que lanzar, y rclone fallaría al conectar.
+            throw PairingError(
+                "La conexión usa ${ejecutan.joinToString(", ") { "'$it'" }}, que hace que rclone " +
+                    "lance un programa del ordenador; en el teléfono no lo hay. Quítalo del " +
+                    "rclone.conf del dispositivo que enseña el código.",
+            )
+        }
         val lineas = ArrayList<String>()
         lineas.add("[${carga.remoteName}]")
-        carga.opciones.forEach { (k, v) -> lineas.add("$k = $v") }
-        if (carga.privateKey != null) lineas.add("key_file = keys/${carga.keyName}")
-        // Sin known_hosts se acepta la clave de host a la primera (TOFU). Es
-        // peor, pero escribir la opción apuntando a un fichero vacío es peor
-        // todavía: rclone falla en vez de avisar.
-        if (carga.knownHosts.isNotBlank()) lineas.add("known_hosts_file = keys/known_hosts")
+        carga.opciones.forEach { (k, v) -> lineas.add(linea(k, v)) }
+        if (carga.privateKey != null) {
+            lineas.add(linea("key_file", "keys/${nombreDeClave(carga.keyName)}"))
+            // Sin known_hosts se acepta la clave de host a la primera (TOFU). Es
+            // peor, pero escribir la opción apuntando a un fichero vacío es peor
+            // todavía: rclone falla en vez de avisar.
+            if (carga.knownHosts.isNotBlank()) lineas.add(linea("known_hosts_file", "keys/known_hosts"))
+        }
         val texto = lineas.joinToString("\n") + "\n"
         return if (seccionCombine.isEmpty()) texto else texto + "\n" + seccionCombine
+    }
+
+    /** `NOMBRE_RCLONE` de install/profile.py: la misma regla que [problemaRemote]. */
+    private val NOMBRE_RCLONE get() = NOMBRE_REMOTE
+
+    /** Si un nombre de remote se puede escribir como cabecera de un `rclone.conf`. */
+    fun nombreValido(nombre: String): Boolean = NOMBRE_RCLONE.matches(nombre)
+
+    /** Los nombres de opción que se escriben en un `rclone.conf`. */
+    private val CLAVE_VALIDA = Regex("[A-Za-z0-9_]+")
+
+    /** Lo que parte una línea al leer un `rclone.conf` (`str.splitlines()`). */
+    private val SALTO_DE_LINEA = Regex("[\\r\\n\\u000b\\u000c\\u001c-\\u001e\\u0085\\u2028\\u2029]")
+
+    /** Opciones de rclone cuyo valor es una orden que se ejecuta (`OPCIONES_QUE_EJECUTAN`). */
+    val OPCIONES_QUE_EJECUTAN: Set<String> = setOf("bearer_token_command", "ssh")
+
+    /** `_linea()` de install/profile.py: `clave = valor`, o por qué no se puede escribir. */
+    fun linea(clave: String, valor: String): String {
+        if (!CLAVE_VALIDA.matches(clave)) {
+            throw PairingError(
+                "La opción ${reprPy(clave)} no vale en un rclone.conf: solo letras, " +
+                    "números y guión bajo.",
+            )
+        }
+        if (SALTO_DE_LINEA.containsMatchIn(valor)) {
+            throw PairingError(
+                "El valor de '$clave' lleva un salto de línea y un rclone.conf no " +
+                    "tiene cómo escribirlo.",
+            )
+        }
+        return "$clave = $valor"
+    }
+
+    /**
+     * El nombre del fichero de la clave tal como llega en el QR. En el
+     * escritorio sale siempre de `Path.name`; aquí se comprueba, porque con él
+     * se escribe en `keys/` y un `../` escribiría fuera.
+     */
+    fun nombreDeClave(nombre: String): String {
+        if (nombre.isEmpty() || nombre == "." || nombre == ".." || nombre.any { it in "/\\" || it.code < 32 }) {
+            throw PairingError("El nombre de la clave (${reprPy(nombre)}) no es un nombre de fichero.")
+        }
+        return nombre
     }
 }

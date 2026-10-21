@@ -1,6 +1,7 @@
 package prdrive.engine
 
 import java.io.File
+import java.math.BigInteger
 
 /**
  * Resultados.kt — Cómo acabó la última pasada de cada pareja.
@@ -32,7 +33,7 @@ object Resultados {
     data class Fallo(
         val pareja: String,
         val cuando: String,
-        val codigo: Int,
+        val codigo: BigInteger,
         val log: File?,
         val buena: String? = null,
     )
@@ -46,8 +47,8 @@ object Resultados {
      */
     fun buena(dato: Map<*, *>): String? {
         (dato["buena"] as? String)?.let { return it }
-        val codigo = intPy(if (dato.containsKey("codigo")) dato["codigo"] else 1L) ?: return null
-        if (codigo != 0L) return null
+        val codigo = enteroPy(if (dato.containsKey("codigo")) dato["codigo"] else 1L) ?: return null
+        if (codigo.signum() != 0) return null
         return dato["cuando"] as? String
     }
 
@@ -66,7 +67,7 @@ object Resultados {
         codigo: Int,
         log: File?,
         reloj: () -> String = Store::stamp,
-    ) {
+    ) = synchronized(cerrojo) {
         val parejas = LinkedHashMap<String, Any?>(parejas(stateDir) ?: emptyMap())
         val anterior = parejas[nombre] as? Map<*, *>
         val ahora = reloj()
@@ -77,7 +78,15 @@ object Resultados {
             "buena" to if (codigo == 0) ahora else buena(anterior ?: emptyMap<String, Any?>()),
         )
         Store.writeJson(rutaEstado(stateDir), linkedMapOf("parejas" to parejas))
+        Unit
     }
+
+    /**
+     * Leer, cambiar y escribir `last_run.json` va de una vez: dos pasadas no
+     * corren juntas, pero sin esto dos hilos que apuntan a la vez se pisarían lo
+     * apuntado (o chocarían en el mismo `.tmp`).
+     */
+    private val cerrojo = Any()
 
     /**
      * Cuándo terminó BIEN por última vez cada una de esas parejas, en
@@ -105,14 +114,15 @@ object Resultados {
         val salida = ArrayList<Fallo>()
         for (nombre in nombres) {
             val dato = parejas[nombre] as? Map<*, *> ?: continue
-            val codigo = intPy(if (dato.containsKey("codigo")) dato["codigo"] else 0L) ?: continue
-            if (codigo == 0L) continue
+            // Sin tope, como el `int()` de Python: un código enorme también es un fallo.
+            val codigo = enteroPy(if (dato.containsKey("codigo")) dato["codigo"] else 0L) ?: continue
+            if (codigo.signum() == 0) continue
             // Solo el nombre, aunque el fichero diga una ruta: el log vive en logs/.
             val log = (dato["log"] as? String)
                 ?.let { File(logDir, it.trimEnd('/').substringAfterLast('/')) }
                 ?.takeIf { it.isFile }
             val cuando = strPy(if (dato.containsKey("cuando")) dato["cuando"] else "")
-            salida.add(Fallo(nombre, cuando, codigo.toInt(), log, buena(dato)))
+            salida.add(Fallo(nombre, cuando, codigo, log, buena(dato)))
         }
         return salida
     }

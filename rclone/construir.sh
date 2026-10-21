@@ -4,8 +4,9 @@
 #   rclone/construir.sh            # la lista corta de backends (la que usa la app)
 #   rclone/construir.sh todos      # con backend/all, para medir la diferencia
 #
-# Necesita Go, gomobile/gobind (go install golang.org/x/mobile/cmd/gomobile@latest
-# y lo mismo con gobind), el SDK de Android con un NDK, y un JDK. Lee:
+# Necesita Go, gomobile y gobind de la versión de golang.org/x/mobile que fija
+# go.mod (desde rclone/go: `go install golang.org/x/mobile/cmd/gomobile
+# golang.org/x/mobile/cmd/gobind`), el SDK de Android con un NDK, y un JDK. Lee:
 #
 #   ANDROID_HOME        el SDK (por defecto, el de Android Studio)
 #   ANDROID_NDK_HOME    el NDK (por defecto, el más nuevo del SDK)
@@ -37,7 +38,11 @@ if [[ -z "${JAVA_HOME:-}" ]]; then
         [[ -d "$candidato" ]] && export JAVA_HOME="$candidato" && break
     done
 fi
-export PATH="${JAVA_HOME:+$JAVA_HOME/bin:}$(go env GOPATH 2>/dev/null)/bin:$PATH"
+# En Git Bash, `go env GOPATH` y un JAVA_HOME de Windows llevan `C:\…`, y los
+# dos puntos partirían el PATH: se pasan a la forma de la shell.
+posix() { if command -v cygpath >/dev/null 2>&1; then cygpath -u "$1"; else printf '%s' "$1"; fi; }
+gopath="$(go env GOPATH 2>/dev/null || true)"
+export PATH="${JAVA_HOME:+$(posix "$JAVA_HOME")/bin:}${gopath:+$(posix "$gopath")/bin:}$PATH"
 
 etiquetas=""
 salida="$aqui/build/rclone.aar"

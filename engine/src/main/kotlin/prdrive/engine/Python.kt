@@ -1,6 +1,9 @@
 package prdrive.engine
 
 import java.math.BigDecimal
+import java.math.BigInteger
+import java.math.MathContext
+import java.math.RoundingMode
 
 /**
  * Python.kt — Lo poco de la semántica de Python que hace falta para decir lo
@@ -44,6 +47,31 @@ fun espacioPy(c: Char): Boolean =
 
 /** `str.strip()` de Python. */
 fun stripPy(texto: String): String = texto.trim { espacioPy(it) }
+
+/** Lo que parte líneas en `str.splitlines()`, además de `\r\n` junto. */
+private const val SALTOS_PY = "\n\r\u000b\u000c\u001c\u001d\u001e\u0085  "
+
+/**
+ * `str.splitlines()` de Python: corta en más sitios que `lines()` de Kotlin
+ * (también `\u000b`, `\u000c`, `\u001c`-`\u001e`, `\u0085`, ` ` y ` `)
+ * y no da una línea vacía al final si el texto acaba en salto.
+ */
+fun splitlinesPy(texto: String): List<String> {
+    val salida = ArrayList<String>()
+    var inicio = 0
+    var i = 0
+    while (i < texto.length) {
+        val c = texto[i]
+        if (c in SALTOS_PY) {
+            salida.add(texto.substring(inicio, i))
+            if (c == '\r' && i + 1 < texto.length && texto[i + 1] == '\n') i++
+            inicio = i + 1
+        }
+        i++
+    }
+    if (inicio < texto.length) salida.add(texto.substring(inicio))
+    return salida
+}
 
 /** `str(valor)` de Python. */
 fun strPy(valor: Any?): String = when (valor) {
@@ -115,18 +143,47 @@ private fun imprimible(cp: Int): Boolean {
 /**
  * `int(valor)` de Python, o `null` donde Python lanzaría (`TypeError`,
  * `ValueError`): un booleano es 0 o 1, un float se trunca y un texto se lee
- * entero, con espacios alrededor y `_` entre cifras.
+ * entero, con espacios alrededor y `_` entre cifras. Sin tope, como en Python
+ * (salvo el de cifras de un texto, `sys.int_info.default_max_str_digits`).
  */
-fun intPy(valor: Any?): Long? = when (valor) {
-    is Boolean -> if (valor) 1L else 0L
-    is Long -> valor
-    is Int -> valor.toLong()
-    is Double -> if (valor.isNaN() || valor.isInfinite()) null else valor.toLong()
-    // Python admite las cifras de cualquier alfabeto (`\p{Nd}`), y `toLongOrNull` también.
-    is String -> stripPy(valor).takeIf { Regex("[+-]?\\p{Nd}+(_\\p{Nd}+)*").matches(it) }
-        ?.replace("_", "")?.toLongOrNull()
+fun enteroPy(valor: Any?): BigInteger? = when (valor) {
+    is Boolean -> if (valor) BigInteger.ONE else BigInteger.ZERO
+    is BigInteger -> valor
+    is Long -> BigInteger.valueOf(valor)
+    is Int -> BigInteger.valueOf(valor.toLong())
+    is Double -> if (valor.isNaN() || valor.isInfinite()) null else BigDecimal(valor).toBigInteger()
+    // Python admite las cifras de cualquier alfabeto (`\p{Nd}`), y BigInteger también.
+    is String -> stripPy(valor).takeIf { ENTERO_PY.matches(it) }?.replace("_", "")
+        ?.takeIf { it.trimStart('+', '-').length <= 4300 }?.let { BigInteger(it) }
     else -> null
 }
+
+private val ENTERO_PY = Regex("[+-]?\\p{Nd}+(_\\p{Nd}+)*")
+
+/** [enteroPy] cuando hace falta un `Long`: `null` también si no cabe. */
+fun intPy(valor: Any?): Long? = enteroPy(valor)?.takeIf { it.bitLength() < 64 }?.toLong()
+
+/**
+ * Cómo ordena Python dos cadenas: por punto de código. El `compareTo` de
+ * Kotlin compara unidades UTF-16, y un carácter fuera del plano básico (un
+ * emoji: dos unidades que empiezan por U+D8xx) quedaría delante de los de
+ * ancho completo (U+FFxx), que son justo los que pone rclone en los nombres.
+ */
+fun compararPy(a: String, b: String): Int {
+    var i = 0
+    var j = 0
+    while (i < a.length && j < b.length) {
+        val ca = a.codePointAt(i)
+        val cb = b.codePointAt(j)
+        if (ca != cb) return ca.compareTo(cb)
+        i += Character.charCount(ca)
+        j += Character.charCount(cb)
+    }
+    return (i < a.length).compareTo(j < b.length)
+}
+
+/** `sorted()` de Python para cadenas, como `Comparator`. */
+val ORDEN_PY: Comparator<String> = Comparator(::compararPy)
 
 /**
  * `fnmatch.fnmatchcase(nombre, patron)`: `*`, `?`, `[…]` y `[!…]`, distinguiendo
@@ -136,37 +193,93 @@ fun fnmatchcase(nombre: String, patron: String): Boolean = traducirFnmatch(patro
 
 private val fnmatchCache = java.util.concurrent.ConcurrentHashMap<String, Regex>()
 
+/**
+ * `fnmatch._translate` de Python 3.14, sobre puntos de código. Lo que sale es
+ * una regex de Java, no de Python: los corchetes no se copian como texto (en
+ * Java `&&` es una intersección y un `[` abre otra clase), sino que se
+ * reconstruyen con cada carácter escrito como `\x{…}`. Los `*` seguidos de
+ * Python acaban en grupos atómicos (`(?>.*?…)`), que para casar el nombre
+ * entero dan lo mismo que `.*`.
+ */
 private fun traducirFnmatch(patron: String): Regex = fnmatchCache.getOrPut(patron) {
+    val pat = patron.codePoints().toArray()
+    val n = pat.size
     val salida = StringBuilder()
     var i = 0
-    while (i < patron.length) {
-        val c = patron[i++]
+    while (i < n) {
+        val c = pat[i++]
         when (c) {
-            '*' -> salida.append(".*")
-            '?' -> salida.append('.')
-            '[' -> {
+            '*'.code -> {
+                salida.append(".*")
+                while (i < n && pat[i] == '*'.code) i++
+            }
+            '?'.code -> salida.append('.')
+            '['.code -> {
                 var j = i
-                if (j < patron.length && patron[j] == '!') j++
-                if (j < patron.length && patron[j] == ']') j++
-                while (j < patron.length && patron[j] != ']') j++
-                if (j >= patron.length) {
+                if (j < n && pat[j] == '!'.code) j++
+                if (j < n && pat[j] == ']'.code) j++
+                while (j < n && pat[j] != ']'.code) j++
+                if (j >= n) {
                     salida.append("\\[")
                 } else {
-                    var dentro = patron.substring(i, j).replace("\\", "\\\\")
+                    salida.append(claseFnmatch(pat, i, j))
                     i = j + 1
-                    dentro = when {
-                        dentro.startsWith("!") -> "^" + dentro.substring(1)
-                        dentro.startsWith("^") -> "\\" + dentro
-                        else -> dentro
-                    }
-                    salida.append('[').append(dentro.replace("[", "\\[")).append(']')
                 }
             }
-            else -> salida.append(Regex.escape(c.toString()))
+            else -> salida.append(literalRegex(c))
         }
     }
     Regex(salida.toString(), RegexOption.DOT_MATCHES_ALL)
 }
+
+/**
+ * Lo de dentro de unos corchetes (`pat[i:j]`), como lo trocea Python: los
+ * guiones que hacen rango parten el texto en trozos, y entre el último
+ * carácter de un trozo y el primero del siguiente hay un rango. Un rango al
+ * revés (`z-a`) se quita, y un guion al final es un guion.
+ */
+private fun claseFnmatch(pat: IntArray, desde: Int, hasta: Int): String {
+    val guion = '-'.code
+    val trozos = ArrayList<MutableList<Int>>()
+    if ((desde until hasta).none { pat[it] == guion }) {
+        trozos.add(pat.copyOfRange(desde, hasta).toMutableList())
+    } else {
+        var i = desde
+        var k = if (pat[i] == '!'.code) i + 2 else i + 1
+        while (true) {
+            k = (k until hasta).firstOrNull { pat[it] == guion } ?: break
+            trozos.add(pat.copyOfRange(i, k).toMutableList())
+            i = k + 1
+            k += 3
+        }
+        val ultimo = pat.copyOfRange(i, hasta).toMutableList()
+        if (ultimo.isNotEmpty()) trozos.add(ultimo) else trozos.last().add(guion)
+        // Los rangos vacíos fuera: en una regex no son válidos.
+        for (t in trozos.size - 1 downTo 1) {
+            if (trozos[t - 1].last() > trozos[t][0]) {
+                trozos[t - 1] = (trozos[t - 1].dropLast(1) + trozos[t].drop(1)).toMutableList()
+                trozos.removeAt(t)
+            }
+        }
+    }
+    if (trozos.all { it.isEmpty() }) return "(?!)" // vacío: no casa nada
+    val negada = trozos[0].firstOrNull() == '!'.code
+    if (negada) trozos[0].removeAt(0)
+    if (negada && trozos.all { it.isEmpty() }) return "." // `[!]` vacío: cualquier carácter
+    val clase = StringBuilder(if (negada) "[^" else "[")
+    trozos.forEachIndexed { t, trozo ->
+        if (t > 0) clase.append('-')
+        trozo.forEach { clase.append(literalClase(it)) }
+    }
+    return clase.append(']').toString()
+}
+
+/** Un carácter literal fuera de corchetes. */
+private fun literalRegex(cp: Int): String = Regex.escape(String(Character.toChars(cp)))
+
+/** Un carácter literal dentro de corchetes, sin nada que Java pueda leer como sintaxis. */
+private fun literalClase(cp: Int): String =
+    if (cp < 0x80 && Character.isLetterOrDigit(cp)) cp.toChar().toString() else "\\x{${cp.toString(16)}}"
 
 /**
  * `repr()` de un float: los dígitos mínimos que lo identifican, en notación
@@ -179,6 +292,11 @@ private fun traducirFnmatch(patron: String): Regex = fnmatchCache.getOrPut(patro
  * cifras y se queda con el primero que vuelve a ser el mismo double, que es la
  * respuesta del algoritmo de Python (el más corto, y el más cercano entre los
  * cortos).
+ *
+ * Con cada número de cifras se prueban los dos vecinos, no solo el redondeado:
+ * en una potencia de dos el intervalo de abajo es la mitad de estrecho, y el
+ * más cercano puede quedarse fuera mientras el otro vuelve bien (2^-24 es
+ * `5.960464477539063e-08`, no `5.9604644775390625e-08`).
  */
 fun floatPy(valor: Double): String {
     if (valor.isNaN()) return "nan"
@@ -187,9 +305,12 @@ fun floatPy(valor: Double): String {
     val exacto = BigDecimal(valor)
     var decimal = exacto
     for (cifras in 1..17) {
-        val redondeado = exacto.round(java.math.MathContext(cifras, java.math.RoundingMode.HALF_EVEN))
-        if (redondeado.toDouble() == valor) {
-            decimal = redondeado
+        val candidatos = listOf(RoundingMode.HALF_EVEN, RoundingMode.FLOOR, RoundingMode.CEILING)
+            .map { exacto.round(MathContext(cifras, it)) }
+            .filter { it.toDouble() == valor }
+        if (candidatos.isNotEmpty()) {
+            // El más cercano; a igual distancia, el de HALF_EVEN, que va primero.
+            decimal = candidatos.minWith(compareBy { (it - exacto).abs() })
             break
         }
     }

@@ -128,21 +128,29 @@ class TomlTest {
     }
 
     @Test
-    fun `un array de varias líneas se lee entero`() {
-        // Así los escribe dumps() en cuanto hay más de un elemento.
-        val texto = "exclude = [\n    \"*.tmp\",\n    \"*.bak\",\n]\n"
-        assertEquals(mapOf("exclude" to listOf("*.tmp", "*.bak")), loadRaw(texto))
-    }
-
-    @Test
-    fun `un array vacío y uno de un solo elemento se leen como los escribe dumps`() {
-        assertEquals(mapOf("a" to emptyList<Any?>()), loadRaw("a = []\n"))
-        assertEquals(mapOf("a" to listOf("x")), loadRaw("a = [\"x\"]\n"))
-    }
-
-    @Test
-    fun `una almohadilla dentro de una cadena no es un comentario`() {
-        assertEquals(mapOf("a" to "con # dentro"), loadRaw("a = \"con # dentro\"  # y aquí sí\n"))
+    fun `se lee lo que lee tomllib y se rechaza lo que rechaza`() {
+        // El veredicto y el valor los da tomllib (herramientas/vectores_python.py).
+        // Lo que tomllib acepta y este lector no cubre (fechas, tablas en línea,
+        // claves con punto…) se rechaza en voz alta: callar y seguir sería leer
+        // media pareja, y leer otra cosa, peor.
+        for (caso in Vectores.objetos(Vectores.seccion("python"), "toml_leer")) {
+            val texto = Vectores.texto(caso, "texto")
+            if (caso["tomllib_acepta"] == true && caso["soportado"] == true) {
+                val leido = loadRaw(texto)
+                assertEquals(caso["valor"], leido, reprPy(texto))
+                // Los enteros, siempre Long: es lo que hace comparable un mapa
+                // leído del TOML con otro leído del JSON.
+                fun enteros(v: Any?): List<Any?> = when (v) {
+                    is Map<*, *> -> v.values.flatMap { enteros(it) }
+                    is List<*> -> v.flatMap { enteros(it) }
+                    is Number -> if (v is Double) emptyList() else listOf(v)
+                    else -> emptyList()
+                }
+                assertTrue(enteros(leido).all { it is Long }, "enteros que no son Long en ${reprPy(texto)}")
+            } else {
+                assertFailsWith<TomlError>("${reprPy(texto)} tenía que fallar") { loadRaw(texto) }
+            }
+        }
     }
 
     @Test
@@ -184,36 +192,6 @@ class TomlTest {
     }
 
     @Test
-    fun `lo que no se entiende se rechaza en voz alta`() {
-        // Cada uno de estos es TOML que tomllib aceptaría o casi, y que este
-        // lector no cubre. Callar y seguir sería leer media pareja.
-        val malos = mapOf(
-            "sin igual" to "clave sin igual\n",
-            "clave duplicada" to "a = 1\na = 2\n",
-            "cabecera sin cerrar" to "[defaults\n",
-            "cabecera vacía" to "[]\n",
-            "valor que no existe" to "a = 1979-05-27\n",
-            "cadena sin cerrar" to "a = \"abierta\n",
-            "array sin cerrar" to "a = [1, 2\n",
-            "pair punto flags sin pareja" to "[pair.flags]\na = 1\n",
-            "array de tablas anidado" to "[[a.b]]\nc = 1\n",
-            "tabla sobre un escalar" to "a = 1\n[a]\nb = 2\n",
-            // Lo que tomllib rechaza y un lector más blando dejaría pasar: el
-            // teléfono escribiría después un fichero que el escritorio no lee.
-            "escape u mal formado" to "a = \"\\uZZZZ\"\n",
-            "escape u con signo" to "a = \"\\u+041\"\n",
-            "escape u a medias" to "a = \"\\u12\"\n",
-            "escape que TOML no tiene" to "a = \"\\/\"\n",
-            "carácter de control en una cadena" to "a = \"a\u0001b\"\n",
-            "DEL en una cadena literal" to "a = 'a\u007fb'\n",
-            "cifras de otro alfabeto" to "a = \u0661\u0662\n",
-        )
-        for ((caso, texto) in malos) {
-            assertFailsWith<TomlError>("«$caso» tenía que fallar") { loadRaw(texto) }
-        }
-    }
-
-    @Test
     fun `dumpsChecked se niega a escribir lo que el escritorio no podría leer`() {
         // `dumps` no escapa los caracteres de control (tampoco el de prdrive), y
         // tomllib no los admite: releer tiene que fallar antes de escribir.
@@ -222,25 +200,5 @@ class TomlTest {
             "pair" to listOf(mapOf("name" to "x", "local" to "a", "remote_path" to "/a")),
         )
         assertFailsWith<TomlError> { dumpsChecked(raw) }
-    }
-
-    @Test
-    fun `los escapes de TOML se leen enteros, también los de ocho cifras`() {
-        assertEquals(
-            mapOf("a" to "Aé😀\b\u000c"),
-            loadRaw("a = \"\\u0041\\u00E9\\U0001F600\\b\\f\"\n"),
-        )
-    }
-
-    @Test
-    fun `los enteros llegan siempre como Long`() {
-        // Es lo que hace comparables un mapa leído del TOML y otro del JSON de
-        // los vectores, y lo que hace que normalizar() tenga un destino claro.
-        val leido = loadRaw("a = 1\nb = -2\nc = 1_000\nd = 1.5\ne = true\n")
-        assertEquals(1L, leido["a"])
-        assertEquals(-2L, leido["b"])
-        assertEquals(1000L, leido["c"])
-        assertEquals(1.5, leido["d"])
-        assertEquals(true, leido["e"])
     }
 }

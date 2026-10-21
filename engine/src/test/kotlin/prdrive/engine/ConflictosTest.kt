@@ -63,7 +63,7 @@ class ConflictosTest {
             val esquema = Conflictos.esquema(pareja(Vectores.texto(caso, "esquema")))
             val nombre = Vectores.texto(caso, "nombre")
             val leido = Conflictos.leerNombre(nombre, esquema)
-            val obtenido = leido?.let { listOf(it.original, it.camino, it.numero.toLong()) }
+            val obtenido = leido?.let { listOf(it.original, it.camino, comoJson(it.numero)) }
             assertEquals(caso["salida"], obtenido, "«${caso["esquema"]}» lee «$nombre»")
         }
     }
@@ -120,7 +120,7 @@ class ConflictosTest {
         "versiones" to c.versiones.map {
             linkedMapOf(
                 "ruta" to relativa(it.ruta, volumen), "lado" to it.lado,
-                "es_original" to it.esOriginal, "numero" to it.numero.toLong(),
+                "es_original" to it.esOriginal, "numero" to comoJson(it.numero),
             )
         },
     )

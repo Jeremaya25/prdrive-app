@@ -356,7 +356,7 @@ fun problemaValorFlag(valor: Any?): String? = when (valor) {
  * (con `(?U)` deja pasar marcas combinantes y el ZWJ, y sin él solo es ASCII), y
  * Android no admite `(?U)`.
  */
-private val NOMBRE_REMOTE = Regex("(?!-)[\\p{L}\\p{N}_.+@-]+(?: [\\p{L}\\p{N}_.+@-]+)*")
+internal val NOMBRE_REMOTE = Regex("(?!-)[\\p{L}\\p{N}_.+@-]+(?: [\\p{L}\\p{N}_.+@-]+)*")
 
 /**
  * Por qué un `remote` no vale como nombre de remote de rclone, o `null`. Se
@@ -577,8 +577,6 @@ fun comprobarSeguridad(crudo: Map<String, Any?>) {
  * habla de rutas **relativas a la raíz del volumen**, que es lo que dice el
  * TOML, y quien necesite la absoluta la resuelve.
  *
- * Tampoco hay `origen_flags`: es lo que enseña el editor de flags del
- * escritorio, y la app del paso 1 no edita.
  */
 data class Pareja(
     val name: String,
@@ -606,6 +604,11 @@ data class Pareja(
     /** Es la pareja del llavero, la que construye el código. */
     val llavero: Boolean = false,
     val llaveInterna: Boolean = false,
+    /**
+     * De qué capa (`ORIGEN_*`) sale cada clave de [flags]. Una pareja hecha a
+     * mano que no lo diga cuenta sus flags como de la pareja.
+     */
+    val origenFlags: Map<String, String> = emptyMap(),
 ) {
     val isBisync: Boolean get() = mode.isBisync
 
@@ -708,7 +711,7 @@ data class Config(
         val faltan = queridas - elegidas.map { it.name }.toSet()
         if (faltan.isNotEmpty()) {
             throw ConfigError(
-                "No existen estas parejas en el config: ${faltan.sorted().joinToString(", ")}",
+                "No existen estas parejas en el config: ${faltan.sortedWith(ORDEN_PY).joinToString(", ")}",
             )
         }
         return elegidas
@@ -744,7 +747,7 @@ data class Config(
                 )
             }
         }
-        return tops.keys.sorted().joinToString(" ") { upstream(it, tops.getValue(it)) }
+        return tops.keys.sortedWith(ORDEN_PY).joinToString(" ") { upstream(it, tops.getValue(it)) }
     }
 
     /**
@@ -779,23 +782,53 @@ private fun unir(raiz: String, tramos: List<String>): String {
 fun upstream(nombre: String, ruta: String): String =
     "\"$nombre=${ruta.replace("\"", "\"\"")}\""
 
+/** Capa de [BASE_FLAGS]: lo que lleva toda ejecución. */
+const val ORIGEN_BASE = "base"
+
+/** Capa de [Modo.flags]: lo propio del modo de la pareja. */
+const val ORIGEN_MODO = "modo"
+
+/** Capa de `[defaults.flags]`: lo común a todas las parejas. */
+const val ORIGEN_DEFAULTS = "defaults"
+
+/** Capa de `[pair.flags]`: lo que la pareja pone por su cuenta. */
+const val ORIGEN_PAREJA = "pareja"
+
+/** Lo que la pasada añade y no se configura ([Orden]). */
+const val ORIGEN_PRDRIVE = "prdrive"
+
+/** Los patrones incluir/excluir de la pareja, que salen como `--include`/`--exclude`. */
+const val ORIGEN_PATRONES = "patrones"
+
+/** Los `extra_flags`: argumentos en bruto al final de la orden. */
+const val ORIGEN_EXTRA = "extra"
+
+/** Un flag tal como le llegará a rclone y la capa que lo puso. */
+data class FlagEfectivo(val nombre: String, val valor: Any?, val origen: String)
+
 /**
- * Funde las capas de flags de una pareja: base < modo < `[defaults.flags]` <
- * `[pair.flags]`, la última que nombra una clave se queda con ella. Es
- * `flags_efectivos()` sin el origen de cada uno. Se funde por la clave tal como
+ * Funde las capas de flags de una pareja y recuerda de cuál sale cada uno:
+ * base < modo < `[defaults.flags]` < `[pair.flags]`, la última que nombra una
+ * clave se queda con ella (`flags_efectivos()`). Se funde por la clave tal como
  * está escrita: `max_delete` y `max-delete` son dos claves, y rclone recibe las
  * dos.
  */
-private fun fundirFlags(
-    modo: Modo,
+fun flagsEfectivos(
+    modo: Modo?,
     defaultsFlags: Map<String, Any?>?,
     propios: Map<String, Any?>?,
-): Map<String, Any?> {
-    val flags = LinkedHashMap<String, Any?>(BASE_FLAGS)
-    flags.putAll(modo.flags)
-    defaultsFlags?.let { flags.putAll(it) }
-    propios?.let { flags.putAll(it) }
-    return flags
+): List<FlagEfectivo> {
+    val efectivos = LinkedHashMap<String, FlagEfectivo>()
+    val capas = listOf(
+        ORIGEN_BASE to BASE_FLAGS,
+        ORIGEN_MODO to (modo?.flags ?: emptyMap()),
+        ORIGEN_DEFAULTS to (defaultsFlags ?: emptyMap()),
+        ORIGEN_PAREJA to (propios ?: emptyMap()),
+    )
+    for ((origen, tabla) in capas) {
+        for ((nombre, valor) in tabla) efectivos[nombre] = FlagEfectivo(nombre, valor, origen)
+    }
+    return efectivos.values.toList()
 }
 
 /** `raw.get(clave, por_defecto)`: el valor si la clave está, aunque sea falso. */
@@ -840,7 +873,7 @@ fun construirPareja(raw: Map<String, Any?>, defaults: Map<String, Any?>): Pareja
 
     val modeName = raw.leer("mode", DEFAULT_MODE)
     val mode = (modeName as? String)?.let { MODES[it] } ?: throw ConfigError(
-        "[$name] modo inválido: '${strPy(modeName)}'. Válidos: ${reprPy(MODES.keys.sorted())}",
+        "[$name] modo inválido: '${strPy(modeName)}'. Válidos: ${reprPy(MODES.keys.sortedWith(ORDEN_PY))}",
     )
 
     // El versionado se apoya en `--backup-dir1/2` y en apartar al perdedor de
@@ -862,6 +895,7 @@ fun construirPareja(raw: Map<String, Any?>, defaults: Map<String, Any?>): Pareja
     comprobarRemote("[$name]", remote, "remote")
 
     val donde = "[$name]"
+    val efectivos = flagsEfectivos(mode, tablaDe(defaults, "flags"), tablaDe(raw, "flags"))
     return Pareja(
         name = name,
         mode = mode,
@@ -872,7 +906,8 @@ fun construirPareja(raw: Map<String, Any?>, defaults: Map<String, Any?>): Pareja
             listaDe(donde, "include", raw["include"]),
         excludes = listaDe("[defaults]", "exclude", defaults["exclude"]) +
             listaDe(donde, "exclude", raw["exclude"]),
-        flags = fundirFlags(mode, tablaDe(defaults, "flags"), tablaDe(raw, "flags")),
+        flags = efectivos.associate { it.nombre to it.valor },
+        origenFlags = efectivos.associate { it.nombre to it.origen },
         extraFlags = listaDe("[defaults]", "extra_flags", defaults["extra_flags"]) +
             listaDe(donde, "extra_flags", raw["extra_flags"]),
         useFiltersFile = verdad(raw.leer("use_filters_file", defaults.leer("use_filters_file", true))),
@@ -924,11 +959,13 @@ private fun construirLlavero(tabla: Any?, defaults: Map<String, Any?>): Pareja {
     }
     val (remote, carpeta) = carpetaDelCatalogo(defaults)
     val mode = MODES.getValue("bisync")
+    val efectivos = flagsEfectivos(mode, null, LLAVERO_FLAGS)
     return Pareja(
         name = LLAVERO, mode = mode, local = LLAVERO_LOCAL,
         remotePath = carpeta + LLAVERO_REMOTO, remoteName = remote,
         includes = emptyList(), excludes = emptyList(),
-        flags = fundirFlags(mode, null, LLAVERO_FLAGS),
+        flags = efectivos.associate { it.nombre to it.valor },
+        origenFlags = efectivos.associate { it.nombre to it.origen },
         extraFlags = emptyList(), useFiltersFile = true,
         deviceRemote = nombreDeviceRemote(defaults), versions = true,
         reglas = LLAVERO_REGLAS, llavero = true, llaveInterna = interna,

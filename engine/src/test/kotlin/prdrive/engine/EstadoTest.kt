@@ -116,7 +116,7 @@ class EstadoTest {
     }
 
     private fun comoMapa(f: Resultados.Fallo): Map<String, Any?> = linkedMapOf(
-        "pareja" to f.pareja, "cuando" to f.cuando, "codigo" to f.codigo.toLong(),
+        "pareja" to f.pareja, "cuando" to f.cuando, "codigo" to comoJson(f.codigo),
         "log" to f.log?.name, "buena" to f.buena,
     )
 }

@@ -14,7 +14,9 @@ package prdrive.engine
  * dependencias. Cubre objetos, arrays, cadenas, números, booleanos y null, y
  * devuelve `Map`, `List`, `String`, `Long`, `Double`, `Boolean` y `null` —los
  * mismos tipos que [loadRaw]—, así que un valor del JSON y el mismo leído de un
- * TOML se comparan sin convertir nada.
+ * TOML se comparan sin convertir nada. La excepción es un entero que no cabe
+ * en un `Long`, que sale como `BigInteger`: Python lo lee, y si aquí no se
+ * leyera, todo el fichero que lo lleva contaría como vacío.
  */
 
 /** El texto no es JSON, o no uno que se entienda aquí. */
@@ -22,6 +24,9 @@ class JsonError(mensaje: String) : Exception(mensaje)
 
 /** Lee un documento JSON entero. [JsonError] si no lo es. */
 fun leerJson(texto: String): Any? = LectorJson(texto).leerDocumento()
+
+/** Un entero con el tipo con el que lo devolvería [leerJson]: `Long` si cabe. */
+fun comoJson(n: java.math.BigInteger): Number = if (n.bitLength() < 64) n.toLong() else n
 
 /**
  * `json.dumps(valor, ensure_ascii=False, indent=1)`: un nivel de sangría por
@@ -36,6 +41,7 @@ private fun escribir(salida: StringBuilder, valor: Any?, nivel: Int) {
         is Boolean -> salida.append(if (valor) "true" else "false")
         is Double -> salida.append(numeroJson(valor))
         is Float -> salida.append(numeroJson(valor.toDouble()))
+        is java.math.BigInteger -> salida.append(valor.toString())
         is Number -> salida.append(valor.toLong())
         is String -> cadenaJson(salida, valor)
         is Map<*, *> -> {
@@ -101,7 +107,8 @@ private fun cadenaJson(salida: StringBuilder, texto: String) {
 
 /**
  * El lector. Recursivo descendente, sin estado global, sin sorpresas: los
- * enteros salen como `Long` y los que llevan `.` o exponente como `Double`.
+ * enteros salen como `Long` (o `BigInteger`) y los que llevan `.` o exponente
+ * como `Double`. Lo que acepta es lo que acepta `json.loads`.
  */
 private class LectorJson(private val texto: String) {
     private var i = 0
@@ -236,6 +243,9 @@ private class LectorJson(private val texto: String) {
                     i++
                 }
                 else -> {
+                    // `strict=True`, que es lo de `json.loads`: un carácter de
+                    // control sin escapar no es JSON.
+                    if (c.code < 0x20) fallo("carácter de control U+${hex(c.code, 4).uppercase()} en una cadena")
                     salida.append(c)
                     i++
                 }
@@ -243,24 +253,45 @@ private class LectorJson(private val texto: String) {
         }
     }
 
+    /** Cuántas cifras seguidas hay desde [desde]. */
+    private fun cifrasDesde(desde: Int): Int {
+        var j = desde
+        while (j < texto.length && cifra(texto[j])) j++
+        return j - desde
+    }
+
+    /**
+     * El `NUMBER_RE` de json/scanner.py:
+     * `-?(?:0|[1-9][0-9]*)(\.[0-9]+)?([eE][-+]?[0-9]+)?`. Lo que no casa se
+     * queda sin leer, y entonces sobra: `01`, `1.` o `1e` no son números.
+     */
     private fun leerNumero(): Any {
         val inicio = i
         if (texto[i] == '-') i++
-        while (i < texto.length && cifra(texto[i])) i++
+        if (i >= texto.length || !cifra(texto[i])) fallo("número a medias")
+        i += if (texto[i] == '0') 1 else cifrasDesde(i)
         var decimal = false
-        if (i < texto.length && texto[i] == '.') {
+        if (i + 1 < texto.length && texto[i] == '.' && cifra(texto[i + 1])) {
             decimal = true
-            i++
-            while (i < texto.length && cifra(texto[i])) i++
+            i += 1 + cifrasDesde(i + 1)
         }
         if (i < texto.length && (texto[i] == 'e' || texto[i] == 'E')) {
-            decimal = true
-            i++
-            if (i < texto.length && (texto[i] == '+' || texto[i] == '-')) i++
-            while (i < texto.length && cifra(texto[i])) i++
+            val signo = if (i + 1 < texto.length && (texto[i + 1] == '+' || texto[i + 1] == '-')) 1 else 0
+            val exponente = cifrasDesde(i + 1 + signo)
+            if (exponente > 0) {
+                decimal = true
+                i += 1 + signo + exponente
+            }
         }
         val crudo = texto.substring(inicio, i)
-        return (if (decimal) crudo.toDoubleOrNull() else crudo.toLongOrNull())
-            ?: fallo("número «$crudo»")
+        if (decimal) return crudo.toDouble()
+        // Python no tiene tope para los enteros: los que no caben en un Long
+        // salen como BigInteger. Sí lo tiene para leerlos de un texto
+        // (sys.int_info.default_max_str_digits): pasado ese, `ValueError`.
+        if (crudo.trimStart('-').length > MAX_CIFRAS_PY) fallo("entero de más de $MAX_CIFRAS_PY cifras")
+        return crudo.toLongOrNull() ?: java.math.BigInteger(crudo)
     }
 }
+
+/** `sys.int_info.default_max_str_digits`: Python no lee enteros más largos. */
+private const val MAX_CIFRAS_PY = 4300

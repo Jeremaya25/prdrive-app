@@ -84,15 +84,19 @@ fun loadRaw(texto: String): Map<String, Any?> {
     return raiz
 }
 
-/** El bloque de comentarios del principio de un TOML, tal cual. */
+/**
+ * El bloque de comentarios del principio de un TOML, tal cual
+ * (`config_file.header_of`): con las líneas y los espacios de Python, que no
+ * son los de Kotlin.
+ */
 fun headerOf(texto: String): String {
     val cabecera = ArrayList<String>()
-    for (linea in texto.lines()) {
-        if (linea.isNotBlank() && !linea.trimStart().startsWith("#")) break
+    for (linea in splitlinesPy(texto)) {
+        if (stripPy(linea).isNotEmpty() && !linea.trimStart { espacioPy(it) }.startsWith("#")) break
         cabecera.add(linea)
     }
-    if (cabecera.none { it.isNotBlank() }) return ""
-    return cabecera.joinToString("\n").trimEnd() + "\n"
+    if (cabecera.none { stripPy(it).isNotEmpty() }) return ""
+    return cabecera.joinToString("\n").trimEnd { espacioPy(it) } + "\n"
 }
 
 /**
@@ -100,7 +104,9 @@ fun headerOf(texto: String): String {
  * varias, que es justo como los escribe [dumps].
  */
 private class Lineas(texto: String) {
-    private val todas = texto.lines()
+    // TOML (y tomllib) solo conoce `\n` y `\r\n` como saltos de línea: un `\r`
+    // suelto no lo es, y `lines()` lo tomaría por uno.
+    private val todas = texto.split("\n").map { it.removeSuffix("\r") }
     private var i = 0
     var numero = 0
         private set
@@ -109,7 +115,13 @@ private class Lineas(texto: String) {
 
     fun siguiente(): String {
         numero = i + 1
-        return todas[i++]
+        val linea = todas[i++]
+        // Ni dentro de una cadena ni en un comentario: un carácter de control
+        // que no sea el tabulador no vale en ningún sitio de un TOML.
+        linea.firstOrNull { prohibido(it) }?.let {
+            throw TomlError("Línea $numero: carácter de control U+${hex(it.code, 4).uppercase()}.")
+        }
+        return linea
     }
 }
 
@@ -296,20 +308,22 @@ private fun leerEscalar(texto: String, numero: Int): Any {
         "-inf" -> return Double.NEGATIVE_INFINITY
         "nan", "+nan", "-nan" -> return Double.NaN
     }
-    // Cifras ASCII y nada más, como TOML: en Android `\d` admite las de
-    // cualquier alfabeto, así que se escriben a mano.
-    val sinGuiones = texto.replace("_", "")
-    if (Regex("[+-]?[0-9]+").matches(sinGuiones)) {
-        return sinGuiones.toLongOrNull()
-            ?: throw TomlError("Línea $numero: el entero «$texto» no cabe.")
+    // La parte decimal del `RE_NUMBER` de tomllib (tomllib/_re.py): sin ceros
+    // a la izquierda, y un `_` solo entre dos cifras. Cifras ASCII y nada más,
+    // como TOML: en Android `\d` admite las de cualquier alfabeto, así que se
+    // escriben a mano. Los `0x`, `0o` y `0b` no se cubren: se rechazan.
+    val m = NUMERO_TOML.matchEntire(texto)
+        ?: throw TomlError("Línea $numero: «$texto» no es un valor que se entienda aquí.")
+    val limpio = texto.replace("_", "")
+    if (m.groupValues[1].isEmpty()) {
+        return limpio.toLongOrNull() ?: throw TomlError("Línea $numero: el entero «$texto» no cabe.")
     }
-    if (Regex("[+-]?[0-9]+\\.[0-9]+([eE][+-]?[0-9]+)?").matches(sinGuiones) ||
-        Regex("[+-]?[0-9]+[eE][+-]?[0-9]+").matches(sinGuiones)
-    ) {
-        return sinGuiones.toDouble()
-    }
-    throw TomlError("Línea $numero: «$texto» no es un valor que se entienda aquí.")
+    return limpio.toDouble()
 }
+
+/** Grupo 1: la parte de float (fracción, exponente o los dos); vacío si es un entero. */
+private val NUMERO_TOML =
+    Regex("[+-]?(?:0|[1-9](?:_?[0-9])*)((?:\\.[0-9](?:_?[0-9])*)?(?:[eE][+-]?[0-9](?:_?[0-9])*)?)")
 
 /**
  * Lo que `tomllib` no deja escribir tal cual dentro de una cadena: los
@@ -406,10 +420,9 @@ private fun cuerpoDeTabla(
     orden: List<String> = emptyList(),
 ): List<String> {
     val claves = ArrayList(orden)
-    // `sorted()` de Kotlin compara por unidad de código UTF-16 y `sorted()` de
-    // Python por punto de código: para las claves de este esquema —ASCII— es el
-    // mismo orden, y es lo que hace cuadrar los vectores.
-    claves += tabla.keys.filter { it !in claves && it != "flags" }.sorted()
+    // `sorted()` de Python ordena por punto de código, no por unidad UTF-16:
+    // una clave entre comillas puede llevar cualquier cosa.
+    claves += tabla.keys.filter { it !in claves && it != "flags" }.sortedWith(ORDEN_PY)
     val lineas = ArrayList<String>()
     for (k in claves) {
         if (!tabla.containsKey(k)) continue
@@ -483,7 +496,7 @@ fun dumps(raw: Map<String, Any?>, head: String = ""): String {
     // la ignora al leer, y perderla al reescribir haría que [dumpsChecked] se
     // negara a escribir el fichero entero. Lo que no se sepa escribir (una
     // subtabla) lo sigue parando él.
-    for (nombre in raw.keys.filter { it !in TABLAS_CONOCIDAS && raw[it] is Map<*, *> }.sorted()) {
+    for (nombre in raw.keys.filter { it !in TABLAS_CONOCIDAS && raw[it] is Map<*, *> }.sortedWith(ORDEN_PY)) {
         @Suppress("UNCHECKED_CAST")
         val tabla = raw[nombre] as Map<String, Any?>
         out.add("[${clave(nombre)}]")

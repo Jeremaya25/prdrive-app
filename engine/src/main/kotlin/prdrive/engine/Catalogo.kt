@@ -64,8 +64,17 @@ object Catalogo {
     /** Lo que contesta rclone: el `subprocess.CompletedProcess` del escritorio. */
     data class Resultado(val codigo: Int, val salida: String, val error: String)
 
-    /** Quien le pregunta a rclone: recibe los argumentos de una orden de rclone. */
+    /**
+     * Quien le pregunta a rclone: recibe los argumentos de una orden de rclone.
+     *
+     * Lo que dice rclone va en el [Resultado], con su código. Si no se ha podido
+     * ni preguntar, se lanza `IOException`: es el `OSError` o el
+     * `SubprocessError` (un timeout) del escritorio. Por si acaso, [load] tampoco
+     * se cae con una `RuntimeException`, porque la pantalla que lo usa es la que
+     * tiene que abrirse sin red.
+     */
     fun interface Ejecutar {
+        @Throws(java.io.IOException::class)
         fun ejecutar(args: List<String>): Resultado
     }
 
@@ -191,6 +200,8 @@ object Catalogo {
             return null
         } catch (_: java.io.IOException) {
             return null
+        } catch (_: RuntimeException) {
+            return null
         }
         if (res.codigo != 0) return null
         val info = try {
@@ -245,7 +256,8 @@ object Catalogo {
             val sobra = strOVacio(anterior["duplicado"])
             if (sobra.isNotEmpty() && partir(sobra).first == partir(cat.endpoint).first) {
                 meta["duplicado"] = sobra
-                meta["duplicado_visto"] = anterior["duplicado_visto"] ?: ""
+                // `anterior.get("duplicado_visto", "")`: un `null` que esté se queda.
+                meta["duplicado_visto"] = if ("duplicado_visto" in anterior) anterior["duplicado_visto"] else ""
             }
             Store.writeJson(cacheMeta(stateDir), meta)
         }
@@ -336,6 +348,9 @@ object Catalogo {
         } catch (e: java.io.IOException) {
             // El `OSError` del escritorio: quien habla con rclone no ha podido.
             e.message ?: e.toString()
+        } catch (e: RuntimeException) {
+            // Fuera del contrato de [Ejecutar], pero «nunca lanza» es la promesa.
+            e.message ?: e.toString()
         }
         val copia = cached(stateDir)
         if (copia != null) {
@@ -357,17 +372,43 @@ object Catalogo {
     fun findPair(cat: Catalog?, name: String): Map<String, Any?>? = pairsByName(cat)[name]
 
     /**
-     * Las claves en que difieren dos parejas (o dos `[defaults]`), ordenadas.
-     * Se comparan como Python: `1 == 1.0`.
+     * Las claves en que difieren dos parejas (o dos `[defaults]`), ordenadas
+     * como las ordena Python. Se comparan con su `==` ([igualesPy]).
      */
     fun diffKeys(a: Map<String, Any?>?, b: Map<String, Any?>?): List<String> {
         val uno = a ?: emptyMap()
         val otro = b ?: emptyMap()
-        return (uno.keys + otro.keys).filter { !igualesPy(uno[it], otro[it]) }.sorted()
+        return (uno.keys + otro.keys).filter { !igualesPy(uno[it], otro[it]) }.sortedWith(ORDEN_PY)
     }
 
-    private fun igualesPy(a: Any?, b: Any?): Boolean = when {
-        a is Number && b is Number -> a.toDouble() == b.toDouble()
-        else -> normalizar(a) == normalizar(b)
+    /**
+     * El `==` de Python con lo que sale de un TOML: un booleano es un entero
+     * (`True == 1`), un entero y un float se comparan por su valor exacto
+     * (`2**53 + 1 != 2.0**53`), y las listas y las tablas elemento a elemento
+     * (`[1] == [1.0]`). Un NaN no es igual a nada, ni a sí mismo (Python sí
+     * daría por iguales dos listas con el MISMO objeto NaN dentro, por
+     * identidad; de un TOML no salen así).
+     */
+    private fun igualesPy(a: Any?, b: Any?): Boolean {
+        val na = numeroPy(a)
+        val nb = numeroPy(b)
+        if (na != null || nb != null) return na != null && nb != null && na.compareTo(nb) == 0
+        // Lo que queda de los floats: un infinito es igual al del mismo signo; un NaN, a nada.
+        if (a is Double || b is Double) return a is Double && b is Double && a.isInfinite() && a == b
+        return when {
+            a is List<*> && b is List<*> -> a.size == b.size && a.indices.all { igualesPy(a[it], b[it]) }
+            a is Map<*, *> && b is Map<*, *> -> a.keys == b.keys && a.keys.all { igualesPy(a[it], b[it]) }
+            else -> a == b
+        }
+    }
+
+    /** El valor exacto de un número de Python (un booleano también lo es); `null` si no es uno finito. */
+    private fun numeroPy(v: Any?): java.math.BigDecimal? = when (v) {
+        is Boolean -> if (v) java.math.BigDecimal.ONE else java.math.BigDecimal.ZERO
+        is Double -> if (v.isNaN() || v.isInfinite()) null else java.math.BigDecimal(v)
+        is Float -> if (v.isNaN() || v.isInfinite()) null else java.math.BigDecimal(v.toDouble())
+        is java.math.BigInteger -> java.math.BigDecimal(v)
+        is Number -> java.math.BigDecimal.valueOf(v.toLong())
+        else -> null
     }
 }
