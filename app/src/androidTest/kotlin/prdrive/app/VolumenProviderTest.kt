@@ -132,6 +132,36 @@ class VolumenProviderTest {
         assertEquals("b", File(raiz, "sync-data/docs/b.txt").readText())
     }
 
+    /**
+     * Por un enlace de en medio, una ruta de dentro del volumen puede volver a
+     * su raíz: `x` apunta a la carpeta de la app, y `…/x/volumen` es el volumen
+     * entero. Una app con permiso sobre una carpeta puede pedir ese id.
+     */
+    @Test
+    fun por_un_enlace_de_en_medio_no_se_vuelve_a_la_raiz() {
+        val sync = "${VolumenProvider.ID_RAIZ}/sync-data"
+        Files.createSymbolicLink(File(raiz, "sync-data/x").toPath(), raiz.absoluteFile.parentFile!!.toPath())
+        Files.createSymbolicLink(File(raiz, "sync-data/raiz").toPath(), raiz.absoluteFile.toPath())
+        for (id in listOf("$sync/x/volumen", "$sync/raiz", "$sync/x/volumen/sync-data", "$sync/raiz/sync-data/notas")) {
+            try {
+                proveedor.deleteDocument(id)
+                fail("se ha podido borrar $id")
+            } catch (_: FileNotFoundException) {
+                // lo esperado
+            }
+            assertFalse("$id es hijo", proveedor.isChildDocument(sync, id))
+        }
+        try {
+            proveedor.openDocument("$sync/x/volumen/$CARPETA_PROGRAMA/keys/id_ed25519", "r", null).close()
+            fail("se ha podido abrir la clave")
+        } catch (_: FileNotFoundException) {
+            // lo esperado
+        }
+        assertEquals("secreto", File(raiz, "$CARPETA_PROGRAMA/keys/id_ed25519").readText())
+        assertEquals("hola", File(raiz, "sync-data/notas/a.txt").readText())
+        assertEquals(listOf("notas"), hijos(sync))
+    }
+
     @Test
     fun lo_que_se_crea_desde_fuera_acaba_en_el_volumen() {
         val carpeta = "${VolumenProvider.ID_RAIZ}/sync-data/notas"

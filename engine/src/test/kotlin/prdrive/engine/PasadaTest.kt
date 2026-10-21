@@ -214,6 +214,21 @@ class PasadaTest {
     }
 
     @Test
+    fun `una letra pasa por la misma lista que su flag largo`() {
+        // `problema_extra` solo mira los de dos guiones: `-1` sería un --resync
+        // en cada pasada. Una letra se lee como su flag largo, y se le pregunta
+        // a `problemaFlag` como a él.
+        for ((letra, largo) in listOf("-1" to "resync", "-n" to "dry-run")) {
+            val reservado = problemaFlag(largo)
+            if (reservado == null) continue // solo cuenta si su largo no se admite
+            val e = assertFailsWith<Pasada.OrdenInvalida>(letra) { Pasada.llamadaDe(conExtra(letra), Oraculo.opciones) }
+            assertNotNull(e.explicacion, letra)
+            assertTrue(reservado in e.explicacion, letra)
+        }
+        assertNotNull(problemaFlag("resync"), "el --resync lo pone la pasada, no el config")
+    }
+
+    @Test
     fun `la cola del log es la que imprime sync_py`() {
         for (caso in Vectores.objetos(Vectores.objeto(paso3, "errores"), "cola")) {
             assertEquals(Vectores.cadenas(caso, "cola"), Pasada.cola(Vectores.texto(caso, "texto")), "«${caso["caso"]}»")

@@ -105,17 +105,29 @@ class VolumenProvider : DocumentsProvider() {
      */
     private fun fichero(id: String): File {
         val t = tramos(id)
+        // Un enlace solo puede ser el último tramo: por uno de en medio, una ruta
+        // de dentro del volumen podría volver a su raíz (`x/volumen`, con `x`
+        // apuntando a la carpeta de la app) y borrarla entera, `.prdrive/`
+        // incluida. La carpeta de un enlace se ve vacía, y es el precio.
+        var actual = raiz
+        for (tramo in t.dropLast(1)) {
+            actual = File(actual, tramo)
+            if (Files.isSymbolicLink(actual.toPath())) noExiste(id)
+        }
         val f = if (t.isEmpty()) raiz else File(raiz, t.joinToString("/"))
-        if (!alcanzable(f)) noExiste(id)
+        if (!alcanzable(f, esRaiz = t.isEmpty())) noExiste(id)
         return f
     }
 
-    private fun alcanzable(f: File): Boolean {
+    private fun alcanzable(f: File, esRaiz: Boolean): Boolean {
         val base = raiz.canonicalFile.toPath()
         val programa = File(raiz, CARPETA_PROGRAMA).canonicalFile.toPath()
         // Un enlace roto no tiene destino que resolver: se juzga por su carpeta.
         val existe = Files.exists(f.toPath())
-        val resuelta = (if (existe || f == raiz) f else f.parentFile ?: return false).canonicalFile.toPath()
+        val resuelta = (if (existe || esRaiz) f else f.parentFile ?: return false).canonicalFile.toPath()
+        // Nada que no sea la raíz puede ser la raíz (un enlace a ella): la
+        // contiene a ella y a `.prdrive/`.
+        if (!esRaiz && existe && resuelta == base) return false
         return resuelta.startsWith(base) && !resuelta.startsWith(programa)
     }
 

@@ -341,6 +341,12 @@ dibuja y llama; nada de `engine/` sabe que existe Android.**
     «must run --resync»: solo casa con los avisos de los filtros, que van en
     minúscula. **Otro hallazgo sobre prdrive**: ese abort se queda sin
     explicación. El motor lo replica tal cual.
+  - `problema_extra` solo mira los flags de dos guiones («los cortos de un
+    guion pasan»), y rclone sí lee los de uno: un `-1` en `extra_flags` es un
+    `--resync` en cada pasada, y se salta `FLAGS_RESERVADOS`. **Hallazgo sobre
+    prdrive.** El teléfono traduce cada letra a su flag largo y le pasa la
+    misma lista (`problemaFlag`); con una reservada, la pareja falla y se
+    explica.
 - **Lo que el motor imita de Python, contra Python.** `repr()` de un float,
   `fnmatch`, `json.loads`, `int()`, `strptime`, `sorted()`, `splitlines()` y
   `tomllib` dan sus valores esperados desde `herramientas/vectores_python.py`.

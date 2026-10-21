@@ -532,6 +532,16 @@ object Pasada {
                         resto = resto.substring(letra.length)
                         val nombre = flagCorto(letra, bisync, opciones)
                             ?: throw OrdenInvalida("unknown shorthand flag: '$letra' in $arg")
+                        // Una letra es su flag largo, y pasa por lo mismo que él
+                        // (`problemaFlag`): `problema_extra` solo mira los de dos
+                        // guiones, y `-1` sería un `--resync` en cada pasada.
+                        problemaFlag(nombre)?.let {
+                            throw OrdenInvalida(
+                                "-$letra (--$nombre): no se admite",
+                                "La pareja lleva -$letra en 'extra_flags', que para rclone es --$nombre: $it. " +
+                                    "Quítalo de 'extra_flags'.",
+                            )
+                        }
                         val f = flag(nombre, bisync, opciones)
                         val valor: String = when {
                             resto.startsWith("=") -> resto.substring(1).also { resto = "" }
