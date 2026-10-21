@@ -84,8 +84,9 @@ cómo ha ido**. Los ficheros de Python siguen siendo la especificación.
 | `common/bisync.py` | `engine/Bisync.kt` | **hecho** (0.7.7) |
 | `common/config_file.py` | `engine/Toml.kt` | **hecho** |
 | `common/pairing.py` (la mitad que lee) | `engine/Pairing.kt` | **hecho** |
-| `common/catalog.py` | `engine/Catalog.kt` | pendiente — **solo lectura** en el paso 1, así que nada de la ceremonia de `push()` |
-| `common/results.py`, `common/conflicts.py` | `engine/Results.kt` | pendiente — en el paso 1 los conflictos solo se **detectan y avisan** |
+| `common/catalog.py` | `engine/Catalogo.kt` | **hecho** — **solo lectura** en el paso 1, así que nada de la ceremonia de `push()` |
+| `common/results.py`, `common/conflicts.py` | `engine/Resultados.kt`, `engine/Conflictos.kt` | **hecho** — en el paso 1 los conflictos solo se **detectan y avisan** |
+| `common/store.py` (fechas, JSON atómico) | `engine/Store.kt`, `engine/Json.kt` | **hecho** |
 | `install/deploy.py` (`device_config`, `make_local_dirs`) | `setup/Volumen.kt` | pendiente |
 | `sync.py` (`build_command`, `KNOWN_ERRORS`, `explain_failure`) | `rclone/Pasada.kt` | pendiente — y **no es una línea de órdenes**: ver más abajo |
 
@@ -178,12 +179,19 @@ import (
 )
 ```
 
-**Pregunta abierta, a decidir midiendo:** qué backends entran. `backend/all` son
-~50 y se lleva la mayor parte del tamaño del `.aar`; una lista corta
-(local + combine + sftp + webdav + crypt) da un APK mucho menor a cambio de
-rechazar con un mensaje un `[remote]` del catálogo de otro tipo. Se construye de
-las dos formas, se mide y se elige con el número delante. `combine` y `local`
-no son negociables.
+**Decidido midiendo** (rclone v1.75.2, Go 1.27.3, NDK r28c, `-s -w`): qué
+backends entran.
+
+| | `.aar` | `libgojni.so` arm64 | x86_64 |
+|---|---|---|---|
+| lista corta (local, combine, alias, sftp, webdav, crypt) | **15,6 MB** | 19,9 MB | 21,5 MB |
+| `backend/all` | 54,0 MB | 77,5 MB | 83,9 MB |
+
+Casi cuatro veces más por backends que un catálogo de prdrive no usa: entra la
+lista corta (`rclone/go/rclone/backends_corta.go`), y un `[remote]` de otro
+tipo se rechaza con el mensaje de rclone. La de todos sigue construyéndose con
+`rclone/construir.sh todos`, por si un día hace falta. `combine` y `local` no
+son negociables.
 
 **Otras dos cosas que exige el `.aar`** y que el plan no mencionaba:
 
@@ -294,12 +302,19 @@ dibuja y llama; nada de `engine/` sabe que existe Android.**
   Windows), el nombre de sesión de bisync (también sobre alias y remotes
   locales), `fresh|ok|broken` y la referencia vacía sobre `.lst` de mentira, el
   round-trip del TOML y la vuelta del payload del QR.
-- **Spike del `.aar`, antes de escribir la app:** construirlo con `gomobile
-  bind`, llamar a `RcloneRPC("rc/noop", …)` para ver que arranca, y a
-  `RcloneRPC("sync/bisync", …)` entre **dos carpetas locales** — sin red — para
-  ver que el método está registrado y que devuelve `output` y `session`.
-  Comparar ese `session` con el `expectedPrefix()` del motor: si no coinciden,
-  el problema está aquí y se ve antes de tocar el remoto.
+- **Spike del `.aar`, antes de escribir la app — hecho**
+  (`app/src/androidTest/…/RcloneSpikeTest.kt`, en un emulador API 37 x86_64):
+  arranca, `sync/bisync` está registrado, devuelve `output` y `session`, y el
+  `session` es el `expectedPrefix()` del motor. Lo que enseñó:
+  - el motor no cargaba en Android (`(?U)` no existe en ICU);
+  - la versión salía `v1.75.2-DEV` (se inyecta con `-ldflags -X`);
+  - una pasada buena no dejaba log: el nivel INFO tiene que ser el global
+    (`options/set`), porque `fs.Infof` no mira el de la llamada;
+  - el `\s` de `CanonicalPath` y el `Root()` de un remote `local` no son los
+    de `common/bisync.py`: con un espacio de ancho completo o un carácter de
+    control en el nombre, prdrive calcularía un prefijo que rclone no escribe.
+    **Es un hallazgo sobre prdrive** (como el de `max-delete`), y se arregla
+    allí; el motor sigue a rclone.
 - **En un teléfono:** una pareja de verdad contra el remoto: sincronizar, editar
   un fichero en el móvil, sincronizar, y confirmarlo en el PC. Comprobar que el
   baseline sobrevive a una segunda pasada (un prefijo que se mueve aparece como

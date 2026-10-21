@@ -1,0 +1,4 @@
+# Los scripts de shell y el wrapper de Gradle se ejecutan con bash, también en
+# Windows (Git Bash): con CRLF, `set -euo pipefail` revienta.
+*.sh   text eol=lf
+gradlew text eol=lf

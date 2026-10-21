@@ -30,14 +30,27 @@ engine/       Kotlin puro (JVM), SIN una línea de Android
 ├── Toml.kt     espejo de common/config_file.py: leer Y escribir, con el
 │               round-trip verificado
 ├── Pairing.kt  la mitad que LEE de common/pairing.py: la carga del QR
-└── Python.kt   repr(), str() y bool() de Python, para decir lo mismo que
-                prdrive en sus mensajes
+├── Catalogo.kt la mitad que LEE de common/catalog.py: remote.toml o pairs.toml,
+│               la copia sin red y la carpeta que no es un fichero
+├── Resultados.kt  espejo de common/results.py: state/last_run.json
+├── Conflictos.kt  espejo de common/conflicts.py: los perdedores de bisync
+├── Store.kt    lo que hace falta de common/store.py: fechas y escritura atómica
+├── Json.kt     json.dumps/loads de Python, byte a byte (state/ lo lee el PC)
+└── Python.kt   repr(), str(), bool(), int(), strip() y fnmatch de Python, para
+                decir lo mismo que prdrive en sus mensajes
+rclone/
+├── go/rclone/  el paquete Go del .aar: librclone + sync/bisync + backends
+├── construir.sh   gomobile bind -> rclone/build/rclone.aar (no se versiona)
+app/          Android: solo dibuja y llama
+├── rclone/Rclone.kt  el envoltorio del RPC (rpc, trabajo con _async)
+└── androidTest/  el spike contra rclone de verdad, y los vectores del motor
+                  otra vez en Android (MotorEnAndroidTest)
 herramientas/
 └── vectores.py genera los valores esperados desde el prdrive de verdad
 ```
 
-Pendiente (ver `PLAN.md`): `engine/Catalog.kt`, `engine/Results.kt`, el paquete
-Go que construye el `.aar`, su envoltorio Kotlin, y el módulo `app/`.
+Pendiente (ver `PLAN.md`): la pasada (`Pasada.kt`: de una pareja a los
+parámetros de `sync/bisync`), el volumen, el `DocumentsProvider` y las pantallas.
 
 ## Reglas que no se cruzan
 
@@ -83,7 +96,13 @@ python herramientas/vectores.py ../prdrive
 ./gradlew :engine:test     # todo el motor; no necesita SDK ni dispositivo
 ./gradlew :engine:test --tests 'prdrive.engine.BisyncTest'
 python herramientas/vectores.py ../prdrive   # regenerar los vectores
+rclone/construir.sh        # el .aar (Go, gomobile y un NDK)
+./gradlew :app:connectedDebugAndroidTest     # en un emulador o un teléfono
 ```
+
+El módulo `app` solo existe si hay un SDK de Android (`ANDROID_HOME`,
+`ANDROID_SDK_ROOT` o `sdk.dir` en `local.properties`): el CI del motor no lo
+tiene, y `:engine:test` no lo necesita.
 
 Gradle 9.6 y Kotlin 2.4. `engine/` se construye con cualquier JDK 17 o
 posterior (el JBR 25 de Android Studio vale) y genera bytecode 17. Los avisos
@@ -112,7 +131,17 @@ export JAVA_TOOL_OPTIONS='-Djdk.net.unixdomain.tmpdir=C:\Windows\Temp'
 - Los tests se llaman con una frase entre acentos graves que diga qué garantiza,
   no qué función llama.
 
-## Ojo con estas dos cosas de rclone
+## Ojo con Android
+
+- **Las expresiones regulares son las de ICU, no las de Java.** `\d`, `\w` y
+  `\s` son Unicode, y `(?U)` no existe (el motor no llegaba a cargar en el
+  emulador por eso). En `engine/` se escriben las clases a mano: `[0-9]`,
+  `\p{L}\p{N}_`, `[\t\n\f\r ]`. `MotorEnAndroidTest` vuelve a pasar los
+  vectores en el dispositivo para que no se cuele otra.
+- **`String.format` usa las cifras del idioma del teléfono** (en árabe, `٠١`).
+  Nada que acabe en un fichero o en un mensaje comparado pasa por él.
+
+## Ojo con estas cosas de rclone
 
 - **`max-delete` no mide lo mismo en los dos modos.** En un `bisync` rclone lee
   el `--max-delete` global y lo reinterpreta como **porcentaje**
@@ -124,3 +153,17 @@ export JAVA_TOOL_OPTIONS='-Djdk.net.unixdomain.tmpdir=C:\Windows\Temp'
   documentación de rclone: `librclone.RPC()` rechaza los métodos que necesitan
   request/response, y su implementación lanza un proceso hijo. La ruta es
   `sync/bisync`. Los detalles y las líneas exactas están en `PLAN.md`.
+- **Una pasada se pide como trabajo (`_async`) y se sigue con `job/status`.**
+  La llamada síncrona, si falla, devuelve solo el error; el resultado del
+  trabajo conserva el log de la pasada (`output`) también cuando falla.
+- **El nivel de log es el global**: `fs.Infof` mira `GetConfig(context.TODO())`
+  (`fs/log.go`), no el de la llamada. El `--verbose` de `BASE_FLAGS` se pone una
+  vez al arrancar con `options/set` (`{"main": {"LogLevel": "INFO"}}`); sin él,
+  una pasada buena no deja nada en `output`. Las demás opciones globales sí se
+  pueden pasar con la llamada, como parámetros planos con su nombre de opción y
+  el formato del flag (`"modify_window": "2s"`; `fs/rc/context.go`,
+  `ParseOptions`).
+- **El nombre de sesión lo manda rclone, no prdrive**, en dos sitios donde
+  prdrive no coincide con él (comprobado en el emulador): el `\s` de
+  `CanonicalPath` es el de RE2 (`[\t\n\f\r ]`, no Unicode), y el `Root()` de un
+  remote `local` codifica los caracteres de control (`\x0b` es `␋`).
