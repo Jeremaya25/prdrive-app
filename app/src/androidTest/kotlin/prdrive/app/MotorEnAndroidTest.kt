@@ -340,4 +340,21 @@ class MotorEnAndroidTest {
         }
         base.deleteRecursively()
     }
+
+    /**
+     * Si hay versión nueva: las cifras de una versión las dice `Character.isDigit`,
+     * que en Android es el de ICU y no el de la JVM.
+     */
+    @Test
+    fun las_versiones_se_comparan_igual() {
+        val v = objeto(vectores, "actualizacion")
+        for (c in objetos(v, "parse_version")) {
+            val leida = prdrive.engine.Actualizacion.parseVersion(c["texto"].toString()).map { it.toString() }
+            if (c["rompe"] == null) assertEquals("parse_version «${c["texto"]}»", c["tupla"], leida)
+        }
+        for (c in objetos(v, "is_newer")) {
+            val es = prdrive.engine.Actualizacion.isNewer(c["nueva"].toString(), c["actual"].toString())
+            if (c["rompe"] == null) assertEquals("is_newer «${c["nueva"]}» «${c["actual"]}»", c["es"], es)
+        }
+    }
 }

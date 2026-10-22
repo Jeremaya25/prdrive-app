@@ -28,6 +28,11 @@ Falta:
 - **arm64**, que es lo que llevan los teléfonos. En un Galaxy A35 (Android 16)
   se instala y abre el emparejamiento sin fallos; falta una pasada, que es
   cuando se carga el rclone de arm64.
+- **La autoactualización con la clave de verdad.** En el emulador se ha probado
+  con APK de depuración (bajar de GitHub, la suma, la firma que no cuadra,
+  instalar preguntando y sin preguntar, y Play Protect parando el primer intento
+  en segundo plano). Falta de una release a la siguiente en un teléfono: la
+  primera que la trae se instala a mano, y la siguiente tendría que llegar sola.
 
 ## 2. Hallazgos que se arreglan en prdrive
 
@@ -52,6 +57,12 @@ hacerlo.
   un `-1` en `extra_flags` es un `--resync` en cada pasada, saltándose
   `FLAGS_RESERVADOS`. El teléfono traduce cada letra a su flag largo y le pasa
   `problemaFlag`.
+- **`update.parse_version` lanza con un `²`**, aunque dice que nunca lanza:
+  `str.isdigit()` lo da por cifra y `int()` no lo lee (`ValueError`). Y
+  `update.check()` se cae con un `AttributeError` si GitHub contesta algo que no
+  es un objeto (`_parse_release` llama a `.get()` sin mirar), que no está entre
+  lo que recoge. El teléfono corta el número en el `²` y lo cuenta como una
+  respuesta rara (`Actualizacion.kt`); los vectores apuntan los dos casos.
 
 ## 3. Lo que el paso 1 dejó a medias
 
@@ -87,7 +98,9 @@ hacerlo.
 - **Sincronizar sin abrir la app:** servicio en segundo plano y pasadas
   periódicas, y lo que diga el `[daemon]` del config (que el instalador ya
   escribe). Para empezar ya están la cancelación limpia de una pasada
-  (`job/stop` y esperar a que acabe) y el cerrojo que las pone en fila.
+  (`job/stop` y esperar a que acabe) y el cerrojo que las pone en fila. Con él,
+  la autoactualización también puede mirar y bajar sin que se abra la app; hoy
+  solo lo hace al abrirla, que es cuando la app sirve de algo.
 - **El llavero** (`[keychain]`): el motor construye su pareja, pero la pasada
   la salta.
 - **Resolver conflictos:** hoy se detectan y se avisan (`Conflictos.kt`); falta
@@ -102,5 +115,5 @@ hacerlo.
 
 ## Fuera, salvo que cambie algo
 
-VeraCrypt y BitLocker; el vigilante de montaje, que no tiene disco que vigilar;
-y la autoactualización, que en Android hace la tienda.
+VeraCrypt y BitLocker; y el vigilante de montaje, que no tiene disco que
+vigilar.

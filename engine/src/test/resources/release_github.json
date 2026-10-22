@@ -1,0 +1,37 @@
+{
+  "url": "https://api.github.com/repos/Jeremaya25/prdrive-app/releases/420548422",
+  "assets_url": "https://api.github.com/repos/Jeremaya25/prdrive-app/releases/420548422/assets",
+  "upload_url": "https://uploads.github.com/repos/Jeremaya25/prdrive-app/releases/420548422/assets{?name,label}",
+  "html_url": "https://github.com/Jeremaya25/prdrive-app/releases/tag/v0.1.0",
+  "id": 420548422,
+  "node_id": "RE_kwDOUf1tVc4ZEQ9G",
+  "tag_name": "v0.1.0",
+  "target_commitish": "9f3b9fd0a4167590c588fde01349f9287ecdafa3",
+  "name": "v0.1.0",
+  "draft": false,
+  "immutable": false,
+  "prerelease": false,
+  "created_at": "2026-10-22T09:46:37Z",
+  "updated_at": "2026-10-22T09:48:59Z",
+  "published_at": "2026-10-22T09:48:59Z",
+  "assets": [
+    {
+      "url": "https://api.github.com/repos/Jeremaya25/prdrive-app/releases/assets/665391636",
+      "id": 665391636,
+      "node_id": "RA_kwDOUf1tVc4nqRIU",
+      "name": "prdrive-0.1.0.apk",
+      "label": "",
+      "content_type": "application/vnd.android.package-archive",
+      "state": "uploaded",
+      "size": 50801908,
+      "digest": "sha256:e2279a4752b26b04dd80252c3bb234fe0fc9da308a9d1efbd295192f55e2a7e5",
+      "download_count": 1,
+      "created_at": "2026-10-22T09:48:56Z",
+      "updated_at": "2026-10-22T09:48:58Z",
+      "browser_download_url": "https://github.com/Jeremaya25/prdrive-app/releases/download/v0.1.0/prdrive-0.1.0.apk"
+    }
+  ],
+  "tarball_url": "https://api.github.com/repos/Jeremaya25/prdrive-app/tarball/v0.1.0",
+  "zipball_url": "https://api.github.com/repos/Jeremaya25/prdrive-app/zipball/v0.1.0",
+  "body": "prdrive para Android 0.1.0.\n\n- `prdrive-0.1.0.apk`, SHA-256: `e2279a4752b26b04dd80252c3bb234fe0fc9da308a9d1efbd295192f55e2a7e5`\n- Certificado de la firma, SHA-256: `11ae0d17f38df6c5c75e16b041f09634c78ef64b04b612d306340ce64f02fec2`\n\nAndroid solo lo instala encima de otra versión si las dos llevan esta misma firma.\n\n\n## What's Changed\n* Add Kotlin engine module with prdrive configuration mirroring by @Jeremaya25 in https://github.com/Jeremaya25/prdrive-app/pull/1\n* Paso 1 del plan: la pasada, el volumen y las pantallas, probados en un emulador by @Jeremaya25 in https://github.com/Jeremaya25/prdrive-app/pull/4\n* VERSION y la release que publica el APK firmado by @Jeremaya25 in https://github.com/Jeremaya25/prdrive-app/pull/5\n* La huella del certificado, diga como diga apksigner by @Jeremaya25 in https://github.com/Jeremaya25/prdrive-app/pull/6\n\n## New Contributors\n* @Jeremaya25 made their first contribution in https://github.com/Jeremaya25/prdrive-app/pull/1\n\n**Full Changelog**: https://github.com/Jeremaya25/prdrive-app/commits/v0.1.0"
+}

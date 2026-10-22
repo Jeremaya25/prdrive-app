@@ -10,6 +10,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runInterruptible
+import prdrive.app.Actualizador
 import prdrive.app.Estado
 import prdrive.app.Instalador
 import prdrive.app.Prdrive
@@ -125,9 +126,18 @@ class Modelo(app: Application) : AndroidViewModel(app) {
      * pasada en marcha, el hilo se interrumpe, y eso para el trabajo de rclone
      * y espera a que suelte el lock, sin apuntar la pasada como fallida
      * ([Rclone.trabajo][prdrive.app.rclone.Rclone.trabajo]).
+     *
+     * Y se lo dice al [Actualizador]: mientras haya algo en marcha, la versión
+     * nueva no se instala (instalarse cierra la app y lo cortaría), y con ella
+     * instalándose no empieza nada.
      */
     private fun trabajo(que: String, bloque: () -> Unit) {
         if (ocupado != null) return
+        if (!Actualizador.empezarTrabajo()) {
+            error = "Se está instalando la versión nueva de prdrive y la app se cerrará en un momento. " +
+                "Vuelve a abrirla para seguir."
+            return
+        }
         ocupado = que
         error = null
         viewModelScope.launch {
@@ -145,6 +155,7 @@ class Modelo(app: Application) : AndroidViewModel(app) {
             } finally {
                 ocupado = null
                 progreso = null
+                Actualizador.acabarTrabajo(contexto)
             }
         }
     }

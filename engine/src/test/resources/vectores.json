@@ -3,7 +3,7 @@
   "_no_editar": "Se regenera desde el prdrive citado en 'prdrive'.",
   "prdrive": {
     "version": "0.7.7",
-    "commit": "4bcda9b11e0e7ab6ba07c0cb6bbcca1a49dbf2c5"
+    "commit": "6f7682ea223f7934154f3a0232db40173ee187ca"
   },
   "raiz_dispositivo": "/volumen",
   "rclone_version": "v1.75.2",
@@ -25317,5 +25317,1218 @@
         }
       ]
     }
+  },
+  "actualizacion": {
+    "constantes": {
+      "REPO": "Jeremaya25/prdrive-app",
+      "API_LATEST": "https://api.github.com/repos/Jeremaya25/prdrive-app/releases/latest",
+      "PAGINA": "https://github.com/Jeremaya25/prdrive-app/releases",
+      "USER_AGENT": "prdrive-update (+https://github.com/Jeremaya25/prdrive-app)",
+      "TIMEOUT_API": 8,
+      "TIMEOUT_ZIP": 60,
+      "CACHE_HORAS": 24,
+      "NOTAS_MAX": 4000
+    },
+    "ahora": "2026-10-22 12:00:00",
+    "sello": "2026-10-22 11:00:00",
+    "parse_version": [
+      {
+        "texto": "",
+        "tupla": [
+          "0"
+        ],
+        "rompe": null
+      },
+      {
+        "texto": "0.1.0",
+        "tupla": [
+          "0",
+          "1",
+          "0"
+        ],
+        "rompe": null
+      },
+      {
+        "texto": "v0.1.0",
+        "tupla": [
+          "0",
+          "1",
+          "0"
+        ],
+        "rompe": null
+      },
+      {
+        "texto": "V0.1.0",
+        "tupla": [
+          "0",
+          "1",
+          "0"
+        ],
+        "rompe": null
+      },
+      {
+        "texto": "vv1.2",
+        "tupla": [
+          "1",
+          "2"
+        ],
+        "rompe": null
+      },
+      {
+        "texto": "vV1.2",
+        "tupla": [
+          "1",
+          "2"
+        ],
+        "rompe": null
+      },
+      {
+        "texto": " v1.2.3 \n",
+        "tupla": [
+          "1",
+          "2",
+          "3"
+        ],
+        "rompe": null
+      },
+      {
+        "texto": " 1.0 ",
+        "tupla": [
+          "1",
+          "0"
+        ],
+        "rompe": null
+      },
+      {
+        "texto": "0.0.10",
+        "tupla": [
+          "0",
+          "0",
+          "10"
+        ],
+        "rompe": null
+      },
+      {
+        "texto": "0.0.9",
+        "tupla": [
+          "0",
+          "0",
+          "9"
+        ],
+        "rompe": null
+      },
+      {
+        "texto": "1.2.0-rc1",
+        "tupla": [
+          "1",
+          "2",
+          "0"
+        ],
+        "rompe": null
+      },
+      {
+        "texto": "1.2.0",
+        "tupla": [
+          "1",
+          "2",
+          "0"
+        ],
+        "rompe": null
+      },
+      {
+        "texto": "1.2",
+        "tupla": [
+          "1",
+          "2"
+        ],
+        "rompe": null
+      },
+      {
+        "texto": "1",
+        "tupla": [
+          "1"
+        ],
+        "rompe": null
+      },
+      {
+        "texto": "1.2.3.4",
+        "tupla": [
+          "1",
+          "2",
+          "3",
+          "4"
+        ],
+        "rompe": null
+      },
+      {
+        "texto": "1..2",
+        "tupla": [
+          "1",
+          "0",
+          "2"
+        ],
+        "rompe": null
+      },
+      {
+        "texto": ".",
+        "tupla": [
+          "0",
+          "0"
+        ],
+        "rompe": null
+      },
+      {
+        "texto": "..",
+        "tupla": [
+          "0",
+          "0",
+          "0"
+        ],
+        "rompe": null
+      },
+      {
+        "texto": "abc",
+        "tupla": [
+          "0"
+        ],
+        "rompe": null
+      },
+      {
+        "texto": "v",
+        "tupla": [
+          "0"
+        ],
+        "rompe": null
+      },
+      {
+        "texto": "1a.2b",
+        "tupla": [
+          "1",
+          "2"
+        ],
+        "rompe": null
+      },
+      {
+        "texto": "a1.2",
+        "tupla": [
+          "0",
+          "2"
+        ],
+        "rompe": null
+      },
+      {
+        "texto": "007.010",
+        "tupla": [
+          "7",
+          "10"
+        ],
+        "rompe": null
+      },
+      {
+        "texto": "99999999999999999999999.1",
+        "tupla": [
+          "99999999999999999999999",
+          "1"
+        ],
+        "rompe": null
+      },
+      {
+        "texto": "1.2 .3",
+        "tupla": [
+          "1",
+          "2",
+          "3"
+        ],
+        "rompe": null
+      },
+      {
+        "texto": "١٢.٣",
+        "tupla": [
+          "12",
+          "3"
+        ],
+        "rompe": null
+      },
+      {
+        "texto": "１.２",
+        "tupla": [
+          "1",
+          "2"
+        ],
+        "rompe": null
+      },
+      {
+        "texto": "𝟏.𝟐",
+        "tupla": [
+          "1",
+          "2"
+        ],
+        "rompe": null
+      },
+      {
+        "texto": "1.²",
+        "tupla": null,
+        "rompe": "ValueError"
+      },
+      {
+        "texto": "²",
+        "tupla": null,
+        "rompe": "ValueError"
+      },
+      {
+        "texto": "1.2²",
+        "tupla": null,
+        "rompe": "ValueError"
+      }
+    ],
+    "is_newer": [
+      {
+        "nueva": "0.0.10",
+        "actual": "0.0.9",
+        "es": true,
+        "rompe": null
+      },
+      {
+        "nueva": "0.0.9",
+        "actual": "0.0.10",
+        "es": false,
+        "rompe": null
+      },
+      {
+        "nueva": "1.2",
+        "actual": "1.2.0",
+        "es": false,
+        "rompe": null
+      },
+      {
+        "nueva": "1.2.0",
+        "actual": "1.2",
+        "es": false,
+        "rompe": null
+      },
+      {
+        "nueva": "1.2.1",
+        "actual": "1.2",
+        "es": true,
+        "rompe": null
+      },
+      {
+        "nueva": "",
+        "actual": "1.0",
+        "es": false,
+        "rompe": null
+      },
+      {
+        "nueva": "1.0",
+        "actual": "",
+        "es": true,
+        "rompe": null
+      },
+      {
+        "nueva": "",
+        "actual": "",
+        "es": false,
+        "rompe": null
+      },
+      {
+        "nueva": "v0.2.0",
+        "actual": "0.1.0",
+        "es": true,
+        "rompe": null
+      },
+      {
+        "nueva": "0.1.0",
+        "actual": "0.1.0",
+        "es": false,
+        "rompe": null
+      },
+      {
+        "nueva": "1.2.0",
+        "actual": "1.2.0-rc1",
+        "es": false,
+        "rompe": null
+      },
+      {
+        "nueva": "1.2.0-rc2",
+        "actual": "1.2.0-rc1",
+        "es": false,
+        "rompe": null
+      },
+      {
+        "nueva": "abc",
+        "actual": "0.0.1",
+        "es": false,
+        "rompe": null
+      },
+      {
+        "nueva": "0.0.1",
+        "actual": "abc",
+        "es": true,
+        "rompe": null
+      },
+      {
+        "nueva": "١.٠",
+        "actual": "0.9",
+        "es": true,
+        "rompe": null
+      },
+      {
+        "nueva": "2",
+        "actual": "10",
+        "es": false,
+        "rompe": null
+      },
+      {
+        "nueva": "10",
+        "actual": "9.99",
+        "es": true,
+        "rompe": null
+      },
+      {
+        "nueva": "0.10.0",
+        "actual": "0.9.9",
+        "es": true,
+        "rompe": null
+      },
+      {
+        "nueva": "1.0.0.1",
+        "actual": "1",
+        "es": true,
+        "rompe": null
+      },
+      {
+        "nueva": "v1",
+        "actual": "V1.0",
+        "es": false,
+        "rompe": null
+      },
+      {
+        "nueva": "1.²",
+        "actual": "1.0",
+        "es": null,
+        "rompe": "ValueError"
+      }
+    ],
+    "pagina_segura": [
+      {
+        "url": "",
+        "segura": "https://github.com/Jeremaya25/prdrive-app/releases"
+      },
+      {
+        "url": "https://github.com/Jeremaya25/prdrive-app/releases/tag/v0.1.0",
+        "segura": "https://github.com/Jeremaya25/prdrive-app/releases/tag/v0.1.0"
+      },
+      {
+        "url": "https://github.com/Jeremaya25/prdrive-app/",
+        "segura": "https://github.com/Jeremaya25/prdrive-app/"
+      },
+      {
+        "url": "https://github.com/Jeremaya25/prdrive-app",
+        "segura": "https://github.com/Jeremaya25/prdrive-app/releases"
+      },
+      {
+        "url": "https://github.com/Jeremaya25/prdrive/releases/tag/v0.7.7",
+        "segura": "https://github.com/Jeremaya25/prdrive-app/releases"
+      },
+      {
+        "url": "https://github.com/Jeremaya25/prdrive-appx/releases",
+        "segura": "https://github.com/Jeremaya25/prdrive-app/releases"
+      },
+      {
+        "url": "http://github.com/Jeremaya25/prdrive-app/x",
+        "segura": "https://github.com/Jeremaya25/prdrive-app/releases"
+      },
+      {
+        "url": "https://evil.example/https://github.com/Jeremaya25/prdrive-app/",
+        "segura": "https://github.com/Jeremaya25/prdrive-app/releases"
+      },
+      {
+        "url": "file:///etc/passwd",
+        "segura": "https://github.com/Jeremaya25/prdrive-app/releases"
+      }
+    ],
+    "parse_release": [
+      {
+        "crudo": {
+          "url": "https://api.github.com/repos/Jeremaya25/prdrive-app/releases/420548422",
+          "assets_url": "https://api.github.com/repos/Jeremaya25/prdrive-app/releases/420548422/assets",
+          "upload_url": "https://uploads.github.com/repos/Jeremaya25/prdrive-app/releases/420548422/assets{?name,label}",
+          "html_url": "https://github.com/Jeremaya25/prdrive-app/releases/tag/v0.1.0",
+          "id": 420548422,
+          "node_id": "RE_kwDOUf1tVc4ZEQ9G",
+          "tag_name": "v0.1.0",
+          "target_commitish": "9f3b9fd0a4167590c588fde01349f9287ecdafa3",
+          "name": "v0.1.0",
+          "draft": false,
+          "immutable": false,
+          "prerelease": false,
+          "created_at": "2026-10-22T09:46:37Z",
+          "updated_at": "2026-10-22T09:48:59Z",
+          "published_at": "2026-10-22T09:48:59Z",
+          "assets": [
+            {
+              "url": "https://api.github.com/repos/Jeremaya25/prdrive-app/releases/assets/665391636",
+              "id": 665391636,
+              "node_id": "RA_kwDOUf1tVc4nqRIU",
+              "name": "prdrive-0.1.0.apk",
+              "label": "",
+              "content_type": "application/vnd.android.package-archive",
+              "state": "uploaded",
+              "size": 50801908,
+              "digest": "sha256:e2279a4752b26b04dd80252c3bb234fe0fc9da308a9d1efbd295192f55e2a7e5",
+              "download_count": 1,
+              "created_at": "2026-10-22T09:48:56Z",
+              "updated_at": "2026-10-22T09:48:58Z",
+              "browser_download_url": "https://github.com/Jeremaya25/prdrive-app/releases/download/v0.1.0/prdrive-0.1.0.apk"
+            }
+          ],
+          "tarball_url": "https://api.github.com/repos/Jeremaya25/prdrive-app/tarball/v0.1.0",
+          "zipball_url": "https://api.github.com/repos/Jeremaya25/prdrive-app/zipball/v0.1.0",
+          "body": "prdrive para Android 0.1.0.\n\n- `prdrive-0.1.0.apk`, SHA-256: `e2279a4752b26b04dd80252c3bb234fe0fc9da308a9d1efbd295192f55e2a7e5`\n- Certificado de la firma, SHA-256: `11ae0d17f38df6c5c75e16b041f09634c78ef64b04b612d306340ce64f02fec2`\n\nAndroid solo lo instala encima de otra versión si las dos llevan esta misma firma.\n\n\n## What's Changed\n* Add Kotlin engine module with prdrive configuration mirroring by @Jeremaya25 in https://github.com/Jeremaya25/prdrive-app/pull/1\n* Paso 1 del plan: la pasada, el volumen y las pantallas, probados en un emulador by @Jeremaya25 in https://github.com/Jeremaya25/prdrive-app/pull/4\n* VERSION y la release que publica el APK firmado by @Jeremaya25 in https://github.com/Jeremaya25/prdrive-app/pull/5\n* La huella del certificado, diga como diga apksigner by @Jeremaya25 in https://github.com/Jeremaya25/prdrive-app/pull/6\n\n## New Contributors\n* @Jeremaya25 made their first contribution in https://github.com/Jeremaya25/prdrive-app/pull/1\n\n**Full Changelog**: https://github.com/Jeremaya25/prdrive-app/commits/v0.1.0"
+        },
+        "release": {
+          "tag": "v0.1.0",
+          "version": "0.1.0",
+          "name": "v0.1.0",
+          "url": "https://github.com/Jeremaya25/prdrive-app/releases/tag/v0.1.0",
+          "published": "2026-10-22T09:48:59Z",
+          "notes": "prdrive para Android 0.1.0.\n\n- `prdrive-0.1.0.apk`, SHA-256: `e2279a4752b26b04dd80252c3bb234fe0fc9da308a9d1efbd295192f55e2a7e5`\n- Certificado de la firma, SHA-256: `11ae0d17f38df6c5c75e16b041f09634c78ef64b04b612d306340ce64f02fec2`\n\nAndroid solo lo instala encima de otra versión si las dos llevan esta misma firma.\n\n\n## What's Changed\n* Add Kotlin engine module with prdrive configuration mirroring by @Jeremaya25 in https://github.com/Jeremaya25/prdrive-app/pull/1\n* Paso 1 del plan: la pasada, el volumen y las pantallas, probados en un emulador by @Jeremaya25 in https://github.com/Jeremaya25/prdrive-app/pull/4\n* VERSION y la release que publica el APK firmado by @Jeremaya25 in https://github.com/Jeremaya25/prdrive-app/pull/5\n* La huella del certificado, diga como diga apksigner by @Jeremaya25 in https://github.com/Jeremaya25/prdrive-app/pull/6\n\n## New Contributors\n* @Jeremaya25 made their first contribution in https://github.com/Jeremaya25/prdrive-app/pull/1\n\n**Full Changelog**: https://github.com/Jeremaya25/prdrive-app/commits/v0.1.0"
+        },
+        "error": null,
+        "rompe": null
+      },
+      {
+        "crudo": {
+          "url": "https://api.github.com/repos/Jeremaya25/prdrive-app/releases/420548422",
+          "assets_url": "https://api.github.com/repos/Jeremaya25/prdrive-app/releases/420548422/assets",
+          "upload_url": "https://uploads.github.com/repos/Jeremaya25/prdrive-app/releases/420548422/assets{?name,label}",
+          "html_url": "https://github.com/Jeremaya25/prdrive-app/releases/tag/v0.1.0",
+          "id": 420548422,
+          "node_id": "RE_kwDOUf1tVc4ZEQ9G",
+          "target_commitish": "9f3b9fd0a4167590c588fde01349f9287ecdafa3",
+          "name": "v0.1.0",
+          "draft": false,
+          "immutable": false,
+          "prerelease": false,
+          "created_at": "2026-10-22T09:46:37Z",
+          "updated_at": "2026-10-22T09:48:59Z",
+          "published_at": "2026-10-22T09:48:59Z",
+          "assets": [
+            {
+              "url": "https://api.github.com/repos/Jeremaya25/prdrive-app/releases/assets/665391636",
+              "id": 665391636,
+              "node_id": "RA_kwDOUf1tVc4nqRIU",
+              "name": "prdrive-0.1.0.apk",
+              "label": "",
+              "content_type": "application/vnd.android.package-archive",
+              "state": "uploaded",
+              "size": 50801908,
+              "digest": "sha256:e2279a4752b26b04dd80252c3bb234fe0fc9da308a9d1efbd295192f55e2a7e5",
+              "download_count": 1,
+              "created_at": "2026-10-22T09:48:56Z",
+              "updated_at": "2026-10-22T09:48:58Z",
+              "browser_download_url": "https://github.com/Jeremaya25/prdrive-app/releases/download/v0.1.0/prdrive-0.1.0.apk"
+            }
+          ],
+          "tarball_url": "https://api.github.com/repos/Jeremaya25/prdrive-app/tarball/v0.1.0",
+          "zipball_url": "https://api.github.com/repos/Jeremaya25/prdrive-app/zipball/v0.1.0",
+          "body": "prdrive para Android 0.1.0.\n\n- `prdrive-0.1.0.apk`, SHA-256: `e2279a4752b26b04dd80252c3bb234fe0fc9da308a9d1efbd295192f55e2a7e5`\n- Certificado de la firma, SHA-256: `11ae0d17f38df6c5c75e16b041f09634c78ef64b04b612d306340ce64f02fec2`\n\nAndroid solo lo instala encima de otra versión si las dos llevan esta misma firma.\n\n\n## What's Changed\n* Add Kotlin engine module with prdrive configuration mirroring by @Jeremaya25 in https://github.com/Jeremaya25/prdrive-app/pull/1\n* Paso 1 del plan: la pasada, el volumen y las pantallas, probados en un emulador by @Jeremaya25 in https://github.com/Jeremaya25/prdrive-app/pull/4\n* VERSION y la release que publica el APK firmado by @Jeremaya25 in https://github.com/Jeremaya25/prdrive-app/pull/5\n* La huella del certificado, diga como diga apksigner by @Jeremaya25 in https://github.com/Jeremaya25/prdrive-app/pull/6\n\n## New Contributors\n* @Jeremaya25 made their first contribution in https://github.com/Jeremaya25/prdrive-app/pull/1\n\n**Full Changelog**: https://github.com/Jeremaya25/prdrive-app/commits/v0.1.0"
+        },
+        "release": null,
+        "error": "la respuesta de GitHub no trae tag_name",
+        "rompe": null
+      },
+      {
+        "crudo": {},
+        "release": null,
+        "error": "la respuesta de GitHub no trae tag_name",
+        "rompe": null
+      },
+      {
+        "crudo": {
+          "tag_name": "  "
+        },
+        "release": null,
+        "error": "la respuesta de GitHub no trae tag_name",
+        "rompe": null
+      },
+      {
+        "crudo": {
+          "tag_name": null,
+          "name": "v1"
+        },
+        "release": null,
+        "error": "la respuesta de GitHub no trae tag_name",
+        "rompe": null
+      },
+      {
+        "crudo": {
+          "tag_name": " v0.2.0 ",
+          "name": "",
+          "body": "  notas \n",
+          "html_url": "https://evil.example/x",
+          "published_at": null
+        },
+        "release": {
+          "tag": "v0.2.0",
+          "version": "0.2.0",
+          "name": "v0.2.0",
+          "url": "https://github.com/Jeremaya25/prdrive-app/releases",
+          "published": "",
+          "notes": "notas"
+        },
+        "error": null,
+        "rompe": null
+      },
+      {
+        "crudo": {
+          "tag_name": "V1.0",
+          "name": "  Título  ",
+          "body": "😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀",
+          "html_url": "https://github.com/Jeremaya25/prdrive-app/releases/tag/V1.0",
+          "published_at": "2026-10-22T09:48:59Z"
+        },
+        "release": {
+          "tag": "V1.0",
+          "version": "1.0",
+          "name": "Título",
+          "url": "https://github.com/Jeremaya25/prdrive-app/releases/tag/V1.0",
+          "published": "2026-10-22T09:48:59Z",
+          "notes": "😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀"
+        },
+        "error": null,
+        "rompe": null
+      },
+      {
+        "crudo": {
+          "tag_name": "vv2",
+          "body": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxéé"
+        },
+        "release": {
+          "tag": "vv2",
+          "version": "2",
+          "name": "vv2",
+          "url": "https://github.com/Jeremaya25/prdrive-app/releases",
+          "published": "",
+          "notes": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxé"
+        },
+        "error": null,
+        "rompe": null
+      },
+      {
+        "crudo": {
+          "tag_name": 2,
+          "name": [
+            "a",
+            1
+          ],
+          "body": {
+            "x": 1.5
+          },
+          "html_url": 7
+        },
+        "release": {
+          "tag": "2",
+          "version": "2",
+          "name": "['a', 1]",
+          "url": "https://github.com/Jeremaya25/prdrive-app/releases",
+          "published": "",
+          "notes": "{'x': 1.5}"
+        },
+        "error": null,
+        "rompe": null
+      },
+      {
+        "crudo": {
+          "tag_name": true,
+          "name": false,
+          "body": 0
+        },
+        "release": {
+          "tag": "True",
+          "version": "True",
+          "name": "True",
+          "url": "https://github.com/Jeremaya25/prdrive-app/releases",
+          "published": "",
+          "notes": ""
+        },
+        "error": null,
+        "rompe": null
+      },
+      {
+        "crudo": {
+          "tag_name": 1.0,
+          "name": 0.1
+        },
+        "release": {
+          "tag": "1.0",
+          "version": "1.0",
+          "name": "0.1",
+          "url": "https://github.com/Jeremaya25/prdrive-app/releases",
+          "published": "",
+          "notes": ""
+        },
+        "error": null,
+        "rompe": null
+      },
+      {
+        "crudo": [],
+        "release": null,
+        "error": null,
+        "rompe": "AttributeError"
+      },
+      {
+        "crudo": "texto",
+        "release": null,
+        "error": null,
+        "rompe": "AttributeError"
+      },
+      {
+        "crudo": null,
+        "release": null,
+        "error": null,
+        "rompe": "AttributeError"
+      }
+    ],
+    "cache_escrita": {
+      "release": {
+        "tag": "v0.1.0",
+        "version": "0.1.0",
+        "name": "v0.1.0",
+        "url": "https://github.com/Jeremaya25/prdrive-app/releases/tag/v0.1.0",
+        "published": "2026-10-22T09:48:59Z",
+        "notes": "prdrive para Android 0.1.0.\n\n- `prdrive-0.1.0.apk`, SHA-256: `e2279a4752b26b04dd80252c3bb234fe0fc9da308a9d1efbd295192f55e2a7e5`\n- Certificado de la firma, SHA-256: `11ae0d17f38df6c5c75e16b041f09634c78ef64b04b612d306340ce64f02fec2`\n\nAndroid solo lo instala encima de otra versión si las dos llevan esta misma firma.\n\n\n## What's Changed\n* Add Kotlin engine module with prdrive configuration mirroring by @Jeremaya25 in https://github.com/Jeremaya25/prdrive-app/pull/1\n* Paso 1 del plan: la pasada, el volumen y las pantallas, probados en un emulador by @Jeremaya25 in https://github.com/Jeremaya25/prdrive-app/pull/4\n* VERSION y la release que publica el APK firmado by @Jeremaya25 in https://github.com/Jeremaya25/prdrive-app/pull/5\n* La huella del certificado, diga como diga apksigner by @Jeremaya25 in https://github.com/Jeremaya25/prdrive-app/pull/6\n\n## New Contributors\n* @Jeremaya25 made their first contribution in https://github.com/Jeremaya25/prdrive-app/pull/1\n\n**Full Changelog**: https://github.com/Jeremaya25/prdrive-app/commits/v0.1.0"
+      },
+      "texto": "{\n \"checked\": \"2026-10-22 11:00:00\",\n \"tag\": \"v0.1.0\",\n \"version\": \"0.1.0\",\n \"name\": \"v0.1.0\",\n \"url\": \"https://github.com/Jeremaya25/prdrive-app/releases/tag/v0.1.0\",\n \"published\": \"2026-10-22T09:48:59Z\",\n \"notes\": \"prdrive para Android 0.1.0.\\n\\n- `prdrive-0.1.0.apk`, SHA-256: `e2279a4752b26b04dd80252c3bb234fe0fc9da308a9d1efbd295192f55e2a7e5`\\n- Certificado de la firma, SHA-256: `11ae0d17f38df6c5c75e16b041f09634c78ef64b04b612d306340ce64f02fec2`\\n\\nAndroid solo lo instala encima de otra versión si las dos llevan esta misma firma.\\n\\n\\n## What's Changed\\n* Add Kotlin engine module with prdrive configuration mirroring by @Jeremaya25 in https://github.com/Jeremaya25/prdrive-app/pull/1\\n* Paso 1 del plan: la pasada, el volumen y las pantallas, probados en un emulador by @Jeremaya25 in https://github.com/Jeremaya25/prdrive-app/pull/4\\n* VERSION y la release que publica el APK firmado by @Jeremaya25 in https://github.com/Jeremaya25/prdrive-app/pull/5\\n* La huella del certificado, diga como diga apksigner by @Jeremaya25 in https://github.com/Jeremaya25/prdrive-app/pull/6\\n\\n## New Contributors\\n* @Jeremaya25 made their first contribution in https://github.com/Jeremaya25/prdrive-app/pull/1\\n\\n**Full Changelog**: https://github.com/Jeremaya25/prdrive-app/commits/v0.1.0\"\n}"
+    },
+    "cache_leida": [
+      {
+        "texto": "{\n \"checked\": \"2026-10-22 11:00:00\",\n \"tag\": \"v0.2.0\",\n \"version\": \"0.2.0\",\n \"name\": \"v0.2.0\",\n \"url\": \"https://github.com/Jeremaya25/prdrive-app/releases/tag/v0.2.0\",\n \"published\": \"2026-10-22T09:48:59Z\",\n \"notes\": \"Notas\"\n}",
+        "release": {
+          "tag": "v0.2.0",
+          "version": "0.2.0",
+          "name": "v0.2.0",
+          "url": "https://github.com/Jeremaya25/prdrive-app/releases/tag/v0.2.0",
+          "published": "2026-10-22T09:48:59Z",
+          "notes": "Notas"
+        },
+        "edad": 3600.0,
+        "pending": {
+          "": {
+            "tag": "v0.2.0",
+            "version": "0.2.0",
+            "name": "v0.2.0",
+            "url": "https://github.com/Jeremaya25/prdrive-app/releases/tag/v0.2.0",
+            "published": "2026-10-22T09:48:59Z",
+            "notes": "Notas"
+          },
+          "0.1.0": {
+            "tag": "v0.2.0",
+            "version": "0.2.0",
+            "name": "v0.2.0",
+            "url": "https://github.com/Jeremaya25/prdrive-app/releases/tag/v0.2.0",
+            "published": "2026-10-22T09:48:59Z",
+            "notes": "Notas"
+          },
+          "0.2.0": null,
+          "1.0": null
+        }
+      },
+      {
+        "texto": "{\n \"tag\": \"v0.2.0\",\n \"version\": \"0.2.0\"\n}",
+        "release": {
+          "tag": "v0.2.0",
+          "version": "0.2.0",
+          "name": "v0.2.0",
+          "url": "https://github.com/Jeremaya25/prdrive-app/releases",
+          "published": "",
+          "notes": ""
+        },
+        "edad": null,
+        "pending": {
+          "": {
+            "tag": "v0.2.0",
+            "version": "0.2.0",
+            "name": "v0.2.0",
+            "url": "https://github.com/Jeremaya25/prdrive-app/releases",
+            "published": "",
+            "notes": ""
+          },
+          "0.1.0": {
+            "tag": "v0.2.0",
+            "version": "0.2.0",
+            "name": "v0.2.0",
+            "url": "https://github.com/Jeremaya25/prdrive-app/releases",
+            "published": "",
+            "notes": ""
+          },
+          "0.2.0": null,
+          "1.0": null
+        }
+      },
+      {
+        "texto": "{\n \"checked\": \"ayer\",\n \"tag\": \"v0.2.0\"\n}",
+        "release": {
+          "tag": "v0.2.0",
+          "version": "",
+          "name": "v0.2.0",
+          "url": "https://github.com/Jeremaya25/prdrive-app/releases",
+          "published": "",
+          "notes": ""
+        },
+        "edad": null,
+        "pending": {
+          "": null,
+          "0.1.0": null,
+          "0.2.0": null,
+          "1.0": null
+        }
+      },
+      {
+        "texto": "{\n \"checked\": null,\n \"tag\": \"v0.2.0\"\n}",
+        "release": {
+          "tag": "v0.2.0",
+          "version": "",
+          "name": "v0.2.0",
+          "url": "https://github.com/Jeremaya25/prdrive-app/releases",
+          "published": "",
+          "notes": ""
+        },
+        "edad": null,
+        "pending": {
+          "": null,
+          "0.1.0": null,
+          "0.2.0": null,
+          "1.0": null
+        }
+      },
+      {
+        "texto": "{\n \"checked\": 20261022,\n \"tag\": \"v0.2.0\"\n}",
+        "release": {
+          "tag": "v0.2.0",
+          "version": "",
+          "name": "v0.2.0",
+          "url": "https://github.com/Jeremaya25/prdrive-app/releases",
+          "published": "",
+          "notes": ""
+        },
+        "edad": null,
+        "pending": {
+          "": null,
+          "0.1.0": null,
+          "0.2.0": null,
+          "1.0": null
+        }
+      },
+      {
+        "texto": "{\n \"checked\": \"2026-10-22 12:05:00\",\n \"tag\": \"v0.2.0\",\n \"version\": \" 0.2.0 \"\n}",
+        "release": {
+          "tag": "v0.2.0",
+          "version": "0.2.0",
+          "name": "v0.2.0",
+          "url": "https://github.com/Jeremaya25/prdrive-app/releases",
+          "published": "",
+          "notes": ""
+        },
+        "edad": -300.0,
+        "pending": {
+          "": {
+            "tag": "v0.2.0",
+            "version": "0.2.0",
+            "name": "v0.2.0",
+            "url": "https://github.com/Jeremaya25/prdrive-app/releases",
+            "published": "",
+            "notes": ""
+          },
+          "0.1.0": {
+            "tag": "v0.2.0",
+            "version": "0.2.0",
+            "name": "v0.2.0",
+            "url": "https://github.com/Jeremaya25/prdrive-app/releases",
+            "published": "",
+            "notes": ""
+          },
+          "0.2.0": null,
+          "1.0": null
+        }
+      },
+      {
+        "texto": "{\n \"checked\": \"2026-10-21 12:00:00\",\n \"tag\": \"v0.2.0\",\n \"url\": \"https://evil.example/\"\n}",
+        "release": {
+          "tag": "v0.2.0",
+          "version": "",
+          "name": "v0.2.0",
+          "url": "https://github.com/Jeremaya25/prdrive-app/releases",
+          "published": "",
+          "notes": ""
+        },
+        "edad": 86400.0,
+        "pending": {
+          "": null,
+          "0.1.0": null,
+          "0.2.0": null,
+          "1.0": null
+        }
+      },
+      {
+        "texto": "{\n \"checked\": \"2026-10-22 3:4:5\",\n \"tag\": \"v0.2.0\"\n}",
+        "release": {
+          "tag": "v0.2.0",
+          "version": "",
+          "name": "v0.2.0",
+          "url": "https://github.com/Jeremaya25/prdrive-app/releases",
+          "published": "",
+          "notes": ""
+        },
+        "edad": 32155.0,
+        "pending": {
+          "": null,
+          "0.1.0": null,
+          "0.2.0": null,
+          "1.0": null
+        }
+      },
+      {
+        "texto": "{\n \"checked\": \"2026-10-22 11:00:00\",\n \"tag\": \"\",\n \"version\": \"0.2.0\"\n}",
+        "release": null,
+        "edad": null,
+        "pending": {
+          "": null,
+          "0.1.0": null,
+          "0.2.0": null,
+          "1.0": null
+        }
+      },
+      {
+        "texto": "{\n \"checked\": \"2026-10-22 11:00:00\",\n \"tag\": 1,\n \"version\": 2.5,\n \"name\": null,\n \"notes\": [\n  \"a\"\n ],\n \"published\": false\n}",
+        "release": {
+          "tag": "1",
+          "version": "2.5",
+          "name": "1",
+          "url": "https://github.com/Jeremaya25/prdrive-app/releases",
+          "published": "",
+          "notes": "['a']"
+        },
+        "edad": 3600.0,
+        "pending": {
+          "": {
+            "tag": "1",
+            "version": "2.5",
+            "name": "1",
+            "url": "https://github.com/Jeremaya25/prdrive-app/releases",
+            "published": "",
+            "notes": "['a']"
+          },
+          "0.1.0": {
+            "tag": "1",
+            "version": "2.5",
+            "name": "1",
+            "url": "https://github.com/Jeremaya25/prdrive-app/releases",
+            "published": "",
+            "notes": "['a']"
+          },
+          "0.2.0": {
+            "tag": "1",
+            "version": "2.5",
+            "name": "1",
+            "url": "https://github.com/Jeremaya25/prdrive-app/releases",
+            "published": "",
+            "notes": "['a']"
+          },
+          "1.0": {
+            "tag": "1",
+            "version": "2.5",
+            "name": "1",
+            "url": "https://github.com/Jeremaya25/prdrive-app/releases",
+            "published": "",
+            "notes": "['a']"
+          }
+        }
+      },
+      {
+        "texto": "{\n \"checked\": \"2026-10-22 11:00:00\",\n \"tag\": \" v1 \",\n \"name\": \"\",\n \"version\": null\n}",
+        "release": {
+          "tag": " v1 ",
+          "version": "",
+          "name": " v1 ",
+          "url": "https://github.com/Jeremaya25/prdrive-app/releases",
+          "published": "",
+          "notes": ""
+        },
+        "edad": 3600.0,
+        "pending": {
+          "": null,
+          "0.1.0": null,
+          "0.2.0": null,
+          "1.0": null
+        }
+      },
+      {
+        "texto": "[1, 2]",
+        "release": null,
+        "edad": null,
+        "pending": {
+          "": null,
+          "0.1.0": null,
+          "0.2.0": null,
+          "1.0": null
+        }
+      },
+      {
+        "texto": "no es json",
+        "release": null,
+        "edad": null,
+        "pending": {
+          "": null,
+          "0.1.0": null,
+          "0.2.0": null,
+          "1.0": null
+        }
+      },
+      {
+        "texto": "",
+        "release": null,
+        "edad": null,
+        "pending": {
+          "": null,
+          "0.1.0": null,
+          "0.2.0": null,
+          "1.0": null
+        }
+      }
+    ],
+    "check": [
+      {
+        "cache": "{\n \"checked\": \"2026-10-22 11:00:00\",\n \"tag\": \"v0.2.0\",\n \"version\": \"0.2.0\",\n \"name\": \"v0.2.0\",\n \"url\": \"https://github.com/Jeremaya25/prdrive-app/releases/tag/v0.2.0\",\n \"published\": \"2026-10-22T09:48:59Z\",\n \"notes\": \"Notas\"\n}",
+        "respuesta": "{\n  \"url\": \"https://api.github.com/repos/Jeremaya25/prdrive-app/releases/420548422\",\n  \"assets_url\": \"https://api.github.com/repos/Jeremaya25/prdrive-app/releases/420548422/assets\",\n  \"upload_url\": \"https://uploads.github.com/repos/Jeremaya25/prdrive-app/releases/420548422/assets{?name,label}\",\n  \"html_url\": \"https://github.com/Jeremaya25/prdrive-app/releases/tag/v0.1.0\",\n  \"id\": 420548422,\n  \"node_id\": \"RE_kwDOUf1tVc4ZEQ9G\",\n  \"tag_name\": \"v0.1.0\",\n  \"target_commitish\": \"9f3b9fd0a4167590c588fde01349f9287ecdafa3\",\n  \"name\": \"v0.1.0\",\n  \"draft\": false,\n  \"immutable\": false,\n  \"prerelease\": false,\n  \"created_at\": \"2026-10-22T09:46:37Z\",\n  \"updated_at\": \"2026-10-22T09:48:59Z\",\n  \"published_at\": \"2026-10-22T09:48:59Z\",\n  \"assets\": [\n    {\n      \"url\": \"https://api.github.com/repos/Jeremaya25/prdrive-app/releases/assets/665391636\",\n      \"id\": 665391636,\n      \"node_id\": \"RA_kwDOUf1tVc4nqRIU\",\n      \"name\": \"prdrive-0.1.0.apk\",\n      \"label\": \"\",\n      \"content_type\": \"application/vnd.android.package-archive\",\n      \"state\": \"uploaded\",\n      \"size\": 50801908,\n      \"digest\": \"sha256:e2279a4752b26b04dd80252c3bb234fe0fc9da308a9d1efbd295192f55e2a7e5\",\n      \"download_count\": 1,\n      \"created_at\": \"2026-10-22T09:48:56Z\",\n      \"updated_at\": \"2026-10-22T09:48:58Z\",\n      \"browser_download_url\": \"https://github.com/Jeremaya25/prdrive-app/releases/download/v0.1.0/prdrive-0.1.0.apk\"\n    }\n  ],\n  \"tarball_url\": \"https://api.github.com/repos/Jeremaya25/prdrive-app/tarball/v0.1.0\",\n  \"zipball_url\": \"https://api.github.com/repos/Jeremaya25/prdrive-app/zipball/v0.1.0\",\n  \"body\": \"prdrive para Android 0.1.0.\\n\\n- `prdrive-0.1.0.apk`, SHA-256: `e2279a4752b26b04dd80252c3bb234fe0fc9da308a9d1efbd295192f55e2a7e5`\\n- Certificado de la firma, SHA-256: `11ae0d17f38df6c5c75e16b041f09634c78ef64b04b612d306340ce64f02fec2`\\n\\nAndroid solo lo instala encima de otra versión si las dos llevan esta misma firma.\\n\\n\\n## What's Changed\\n* Add Kotlin engine module with prdrive configuration mirroring by @Jeremaya25 in https://github.com/Jeremaya25/prdrive-app/pull/1\\n* Paso 1 del plan: la pasada, el volumen y las pantallas, probados en un emulador by @Jeremaya25 in https://github.com/Jeremaya25/prdrive-app/pull/4\\n* VERSION y la release que publica el APK firmado by @Jeremaya25 in https://github.com/Jeremaya25/prdrive-app/pull/5\\n* La huella del certificado, diga como diga apksigner by @Jeremaya25 in https://github.com/Jeremaya25/prdrive-app/pull/6\\n\\n## New Contributors\\n* @Jeremaya25 made their first contribution in https://github.com/Jeremaya25/prdrive-app/pull/1\\n\\n**Full Changelog**: https://github.com/Jeremaya25/prdrive-app/commits/v0.1.0\"\n}\n",
+        "nombre": "caché fresca: no sale a la red",
+        "release": {
+          "tag": "v0.2.0",
+          "version": "0.2.0",
+          "name": "v0.2.0",
+          "url": "https://github.com/Jeremaya25/prdrive-app/releases/tag/v0.2.0",
+          "published": "2026-10-22T09:48:59Z",
+          "notes": "Notas"
+        },
+        "motivo": null,
+        "llamadas": [],
+        "cache_despues": "{\n \"checked\": \"2026-10-22 11:00:00\",\n \"tag\": \"v0.2.0\",\n \"version\": \"0.2.0\",\n \"name\": \"v0.2.0\",\n \"url\": \"https://github.com/Jeremaya25/prdrive-app/releases/tag/v0.2.0\",\n \"published\": \"2026-10-22T09:48:59Z\",\n \"notes\": \"Notas\"\n}"
+      },
+      {
+        "cache": "{\n \"checked\": \"2026-10-22 11:00:00\",\n \"tag\": \"v0.2.0\",\n \"version\": \"0.2.0\",\n \"name\": \"v0.2.0\",\n \"url\": \"https://github.com/Jeremaya25/prdrive-app/releases/tag/v0.2.0\",\n \"published\": \"2026-10-22T09:48:59Z\",\n \"notes\": \"Notas\"\n}",
+        "force": true,
+        "respuesta": "{\n  \"url\": \"https://api.github.com/repos/Jeremaya25/prdrive-app/releases/420548422\",\n  \"assets_url\": \"https://api.github.com/repos/Jeremaya25/prdrive-app/releases/420548422/assets\",\n  \"upload_url\": \"https://uploads.github.com/repos/Jeremaya25/prdrive-app/releases/420548422/assets{?name,label}\",\n  \"html_url\": \"https://github.com/Jeremaya25/prdrive-app/releases/tag/v0.1.0\",\n  \"id\": 420548422,\n  \"node_id\": \"RE_kwDOUf1tVc4ZEQ9G\",\n  \"tag_name\": \"v0.1.0\",\n  \"target_commitish\": \"9f3b9fd0a4167590c588fde01349f9287ecdafa3\",\n  \"name\": \"v0.1.0\",\n  \"draft\": false,\n  \"immutable\": false,\n  \"prerelease\": false,\n  \"created_at\": \"2026-10-22T09:46:37Z\",\n  \"updated_at\": \"2026-10-22T09:48:59Z\",\n  \"published_at\": \"2026-10-22T09:48:59Z\",\n  \"assets\": [\n    {\n      \"url\": \"https://api.github.com/repos/Jeremaya25/prdrive-app/releases/assets/665391636\",\n      \"id\": 665391636,\n      \"node_id\": \"RA_kwDOUf1tVc4nqRIU\",\n      \"name\": \"prdrive-0.1.0.apk\",\n      \"label\": \"\",\n      \"content_type\": \"application/vnd.android.package-archive\",\n      \"state\": \"uploaded\",\n      \"size\": 50801908,\n      \"digest\": \"sha256:e2279a4752b26b04dd80252c3bb234fe0fc9da308a9d1efbd295192f55e2a7e5\",\n      \"download_count\": 1,\n      \"created_at\": \"2026-10-22T09:48:56Z\",\n      \"updated_at\": \"2026-10-22T09:48:58Z\",\n      \"browser_download_url\": \"https://github.com/Jeremaya25/prdrive-app/releases/download/v0.1.0/prdrive-0.1.0.apk\"\n    }\n  ],\n  \"tarball_url\": \"https://api.github.com/repos/Jeremaya25/prdrive-app/tarball/v0.1.0\",\n  \"zipball_url\": \"https://api.github.com/repos/Jeremaya25/prdrive-app/zipball/v0.1.0\",\n  \"body\": \"prdrive para Android 0.1.0.\\n\\n- `prdrive-0.1.0.apk`, SHA-256: `e2279a4752b26b04dd80252c3bb234fe0fc9da308a9d1efbd295192f55e2a7e5`\\n- Certificado de la firma, SHA-256: `11ae0d17f38df6c5c75e16b041f09634c78ef64b04b612d306340ce64f02fec2`\\n\\nAndroid solo lo instala encima de otra versión si las dos llevan esta misma firma.\\n\\n\\n## What's Changed\\n* Add Kotlin engine module with prdrive configuration mirroring by @Jeremaya25 in https://github.com/Jeremaya25/prdrive-app/pull/1\\n* Paso 1 del plan: la pasada, el volumen y las pantallas, probados en un emulador by @Jeremaya25 in https://github.com/Jeremaya25/prdrive-app/pull/4\\n* VERSION y la release que publica el APK firmado by @Jeremaya25 in https://github.com/Jeremaya25/prdrive-app/pull/5\\n* La huella del certificado, diga como diga apksigner by @Jeremaya25 in https://github.com/Jeremaya25/prdrive-app/pull/6\\n\\n## New Contributors\\n* @Jeremaya25 made their first contribution in https://github.com/Jeremaya25/prdrive-app/pull/1\\n\\n**Full Changelog**: https://github.com/Jeremaya25/prdrive-app/commits/v0.1.0\"\n}\n",
+        "nombre": "caché fresca y forzado: sale",
+        "release": {
+          "tag": "v0.1.0",
+          "version": "0.1.0",
+          "name": "v0.1.0",
+          "url": "https://github.com/Jeremaya25/prdrive-app/releases/tag/v0.1.0",
+          "published": "2026-10-22T09:48:59Z",
+          "notes": "prdrive para Android 0.1.0.\n\n- `prdrive-0.1.0.apk`, SHA-256: `e2279a4752b26b04dd80252c3bb234fe0fc9da308a9d1efbd295192f55e2a7e5`\n- Certificado de la firma, SHA-256: `11ae0d17f38df6c5c75e16b041f09634c78ef64b04b612d306340ce64f02fec2`\n\nAndroid solo lo instala encima de otra versión si las dos llevan esta misma firma.\n\n\n## What's Changed\n* Add Kotlin engine module with prdrive configuration mirroring by @Jeremaya25 in https://github.com/Jeremaya25/prdrive-app/pull/1\n* Paso 1 del plan: la pasada, el volumen y las pantallas, probados en un emulador by @Jeremaya25 in https://github.com/Jeremaya25/prdrive-app/pull/4\n* VERSION y la release que publica el APK firmado by @Jeremaya25 in https://github.com/Jeremaya25/prdrive-app/pull/5\n* La huella del certificado, diga como diga apksigner by @Jeremaya25 in https://github.com/Jeremaya25/prdrive-app/pull/6\n\n## New Contributors\n* @Jeremaya25 made their first contribution in https://github.com/Jeremaya25/prdrive-app/pull/1\n\n**Full Changelog**: https://github.com/Jeremaya25/prdrive-app/commits/v0.1.0"
+        },
+        "motivo": null,
+        "llamadas": [
+          "https://api.github.com/repos/Jeremaya25/prdrive-app/releases/latest"
+        ],
+        "cache_despues": "{\n \"checked\": \"2026-10-22 11:00:00\",\n \"tag\": \"v0.1.0\",\n \"version\": \"0.1.0\",\n \"name\": \"v0.1.0\",\n \"url\": \"https://github.com/Jeremaya25/prdrive-app/releases/tag/v0.1.0\",\n \"published\": \"2026-10-22T09:48:59Z\",\n \"notes\": \"prdrive para Android 0.1.0.\\n\\n- `prdrive-0.1.0.apk`, SHA-256: `e2279a4752b26b04dd80252c3bb234fe0fc9da308a9d1efbd295192f55e2a7e5`\\n- Certificado de la firma, SHA-256: `11ae0d17f38df6c5c75e16b041f09634c78ef64b04b612d306340ce64f02fec2`\\n\\nAndroid solo lo instala encima de otra versión si las dos llevan esta misma firma.\\n\\n\\n## What's Changed\\n* Add Kotlin engine module with prdrive configuration mirroring by @Jeremaya25 in https://github.com/Jeremaya25/prdrive-app/pull/1\\n* Paso 1 del plan: la pasada, el volumen y las pantallas, probados en un emulador by @Jeremaya25 in https://github.com/Jeremaya25/prdrive-app/pull/4\\n* VERSION y la release que publica el APK firmado by @Jeremaya25 in https://github.com/Jeremaya25/prdrive-app/pull/5\\n* La huella del certificado, diga como diga apksigner by @Jeremaya25 in https://github.com/Jeremaya25/prdrive-app/pull/6\\n\\n## New Contributors\\n* @Jeremaya25 made their first contribution in https://github.com/Jeremaya25/prdrive-app/pull/1\\n\\n**Full Changelog**: https://github.com/Jeremaya25/prdrive-app/commits/v0.1.0\"\n}"
+      },
+      {
+        "cache": "{\n \"checked\": \"2026-10-20 12:00:00\",\n \"tag\": \"v0.0.9\",\n \"version\": \"0.0.9\"\n}",
+        "error": "sin red",
+        "nombre": "caché vieja y sin red: lo último que se supo",
+        "release": {
+          "tag": "v0.0.9",
+          "version": "0.0.9",
+          "name": "v0.0.9",
+          "url": "https://github.com/Jeremaya25/prdrive-app/releases",
+          "published": "",
+          "notes": ""
+        },
+        "motivo": "No he podido preguntarle a GitHub si hay versión nueva: sin red\nSe enseña lo último que se supo.",
+        "llamadas": [
+          "https://api.github.com/repos/Jeremaya25/prdrive-app/releases/latest"
+        ],
+        "cache_despues": "{\n \"checked\": \"2026-10-20 12:00:00\",\n \"tag\": \"v0.0.9\",\n \"version\": \"0.0.9\"\n}"
+      },
+      {
+        "error": "sin red",
+        "nombre": "sin caché y sin red",
+        "release": null,
+        "motivo": "No he podido preguntarle a GitHub si hay versión nueva: sin red",
+        "llamadas": [
+          "https://api.github.com/repos/Jeremaya25/prdrive-app/releases/latest"
+        ],
+        "cache_despues": null
+      },
+      {
+        "respuesta": "{\n  \"url\": \"https://api.github.com/repos/Jeremaya25/prdrive-app/releases/420548422\",\n  \"assets_url\": \"https://api.github.com/repos/Jeremaya25/prdrive-app/releases/420548422/assets\",\n  \"upload_url\": \"https://uploads.github.com/repos/Jeremaya25/prdrive-app/releases/420548422/assets{?name,label}\",\n  \"html_url\": \"https://github.com/Jeremaya25/prdrive-app/releases/tag/v0.1.0\",\n  \"id\": 420548422,\n  \"node_id\": \"RE_kwDOUf1tVc4ZEQ9G\",\n  \"tag_name\": \"v0.1.0\",\n  \"target_commitish\": \"9f3b9fd0a4167590c588fde01349f9287ecdafa3\",\n  \"name\": \"v0.1.0\",\n  \"draft\": false,\n  \"immutable\": false,\n  \"prerelease\": false,\n  \"created_at\": \"2026-10-22T09:46:37Z\",\n  \"updated_at\": \"2026-10-22T09:48:59Z\",\n  \"published_at\": \"2026-10-22T09:48:59Z\",\n  \"assets\": [\n    {\n      \"url\": \"https://api.github.com/repos/Jeremaya25/prdrive-app/releases/assets/665391636\",\n      \"id\": 665391636,\n      \"node_id\": \"RA_kwDOUf1tVc4nqRIU\",\n      \"name\": \"prdrive-0.1.0.apk\",\n      \"label\": \"\",\n      \"content_type\": \"application/vnd.android.package-archive\",\n      \"state\": \"uploaded\",\n      \"size\": 50801908,\n      \"digest\": \"sha256:e2279a4752b26b04dd80252c3bb234fe0fc9da308a9d1efbd295192f55e2a7e5\",\n      \"download_count\": 1,\n      \"created_at\": \"2026-10-22T09:48:56Z\",\n      \"updated_at\": \"2026-10-22T09:48:58Z\",\n      \"browser_download_url\": \"https://github.com/Jeremaya25/prdrive-app/releases/download/v0.1.0/prdrive-0.1.0.apk\"\n    }\n  ],\n  \"tarball_url\": \"https://api.github.com/repos/Jeremaya25/prdrive-app/tarball/v0.1.0\",\n  \"zipball_url\": \"https://api.github.com/repos/Jeremaya25/prdrive-app/zipball/v0.1.0\",\n  \"body\": \"prdrive para Android 0.1.0.\\n\\n- `prdrive-0.1.0.apk`, SHA-256: `e2279a4752b26b04dd80252c3bb234fe0fc9da308a9d1efbd295192f55e2a7e5`\\n- Certificado de la firma, SHA-256: `11ae0d17f38df6c5c75e16b041f09634c78ef64b04b612d306340ce64f02fec2`\\n\\nAndroid solo lo instala encima de otra versión si las dos llevan esta misma firma.\\n\\n\\n## What's Changed\\n* Add Kotlin engine module with prdrive configuration mirroring by @Jeremaya25 in https://github.com/Jeremaya25/prdrive-app/pull/1\\n* Paso 1 del plan: la pasada, el volumen y las pantallas, probados en un emulador by @Jeremaya25 in https://github.com/Jeremaya25/prdrive-app/pull/4\\n* VERSION y la release que publica el APK firmado by @Jeremaya25 in https://github.com/Jeremaya25/prdrive-app/pull/5\\n* La huella del certificado, diga como diga apksigner by @Jeremaya25 in https://github.com/Jeremaya25/prdrive-app/pull/6\\n\\n## New Contributors\\n* @Jeremaya25 made their first contribution in https://github.com/Jeremaya25/prdrive-app/pull/1\\n\\n**Full Changelog**: https://github.com/Jeremaya25/prdrive-app/commits/v0.1.0\"\n}\n",
+        "nombre": "sin caché: pregunta y guarda",
+        "release": {
+          "tag": "v0.1.0",
+          "version": "0.1.0",
+          "name": "v0.1.0",
+          "url": "https://github.com/Jeremaya25/prdrive-app/releases/tag/v0.1.0",
+          "published": "2026-10-22T09:48:59Z",
+          "notes": "prdrive para Android 0.1.0.\n\n- `prdrive-0.1.0.apk`, SHA-256: `e2279a4752b26b04dd80252c3bb234fe0fc9da308a9d1efbd295192f55e2a7e5`\n- Certificado de la firma, SHA-256: `11ae0d17f38df6c5c75e16b041f09634c78ef64b04b612d306340ce64f02fec2`\n\nAndroid solo lo instala encima de otra versión si las dos llevan esta misma firma.\n\n\n## What's Changed\n* Add Kotlin engine module with prdrive configuration mirroring by @Jeremaya25 in https://github.com/Jeremaya25/prdrive-app/pull/1\n* Paso 1 del plan: la pasada, el volumen y las pantallas, probados en un emulador by @Jeremaya25 in https://github.com/Jeremaya25/prdrive-app/pull/4\n* VERSION y la release que publica el APK firmado by @Jeremaya25 in https://github.com/Jeremaya25/prdrive-app/pull/5\n* La huella del certificado, diga como diga apksigner by @Jeremaya25 in https://github.com/Jeremaya25/prdrive-app/pull/6\n\n## New Contributors\n* @Jeremaya25 made their first contribution in https://github.com/Jeremaya25/prdrive-app/pull/1\n\n**Full Changelog**: https://github.com/Jeremaya25/prdrive-app/commits/v0.1.0"
+        },
+        "motivo": null,
+        "llamadas": [
+          "https://api.github.com/repos/Jeremaya25/prdrive-app/releases/latest"
+        ],
+        "cache_despues": "{\n \"checked\": \"2026-10-22 11:00:00\",\n \"tag\": \"v0.1.0\",\n \"version\": \"0.1.0\",\n \"name\": \"v0.1.0\",\n \"url\": \"https://github.com/Jeremaya25/prdrive-app/releases/tag/v0.1.0\",\n \"published\": \"2026-10-22T09:48:59Z\",\n \"notes\": \"prdrive para Android 0.1.0.\\n\\n- `prdrive-0.1.0.apk`, SHA-256: `e2279a4752b26b04dd80252c3bb234fe0fc9da308a9d1efbd295192f55e2a7e5`\\n- Certificado de la firma, SHA-256: `11ae0d17f38df6c5c75e16b041f09634c78ef64b04b612d306340ce64f02fec2`\\n\\nAndroid solo lo instala encima de otra versión si las dos llevan esta misma firma.\\n\\n\\n## What's Changed\\n* Add Kotlin engine module with prdrive configuration mirroring by @Jeremaya25 in https://github.com/Jeremaya25/prdrive-app/pull/1\\n* Paso 1 del plan: la pasada, el volumen y las pantallas, probados en un emulador by @Jeremaya25 in https://github.com/Jeremaya25/prdrive-app/pull/4\\n* VERSION y la release que publica el APK firmado by @Jeremaya25 in https://github.com/Jeremaya25/prdrive-app/pull/5\\n* La huella del certificado, diga como diga apksigner by @Jeremaya25 in https://github.com/Jeremaya25/prdrive-app/pull/6\\n\\n## New Contributors\\n* @Jeremaya25 made their first contribution in https://github.com/Jeremaya25/prdrive-app/pull/1\\n\\n**Full Changelog**: https://github.com/Jeremaya25/prdrive-app/commits/v0.1.0\"\n}"
+      },
+      {
+        "cache": "{\n \"checked\": \"2026-10-22 13:00:00\",\n \"tag\": \"v0.0.9\",\n \"version\": \"0.0.9\"\n}",
+        "respuesta": "{\n  \"url\": \"https://api.github.com/repos/Jeremaya25/prdrive-app/releases/420548422\",\n  \"assets_url\": \"https://api.github.com/repos/Jeremaya25/prdrive-app/releases/420548422/assets\",\n  \"upload_url\": \"https://uploads.github.com/repos/Jeremaya25/prdrive-app/releases/420548422/assets{?name,label}\",\n  \"html_url\": \"https://github.com/Jeremaya25/prdrive-app/releases/tag/v0.1.0\",\n  \"id\": 420548422,\n  \"node_id\": \"RE_kwDOUf1tVc4ZEQ9G\",\n  \"tag_name\": \"v0.1.0\",\n  \"target_commitish\": \"9f3b9fd0a4167590c588fde01349f9287ecdafa3\",\n  \"name\": \"v0.1.0\",\n  \"draft\": false,\n  \"immutable\": false,\n  \"prerelease\": false,\n  \"created_at\": \"2026-10-22T09:46:37Z\",\n  \"updated_at\": \"2026-10-22T09:48:59Z\",\n  \"published_at\": \"2026-10-22T09:48:59Z\",\n  \"assets\": [\n    {\n      \"url\": \"https://api.github.com/repos/Jeremaya25/prdrive-app/releases/assets/665391636\",\n      \"id\": 665391636,\n      \"node_id\": \"RA_kwDOUf1tVc4nqRIU\",\n      \"name\": \"prdrive-0.1.0.apk\",\n      \"label\": \"\",\n      \"content_type\": \"application/vnd.android.package-archive\",\n      \"state\": \"uploaded\",\n      \"size\": 50801908,\n      \"digest\": \"sha256:e2279a4752b26b04dd80252c3bb234fe0fc9da308a9d1efbd295192f55e2a7e5\",\n      \"download_count\": 1,\n      \"created_at\": \"2026-10-22T09:48:56Z\",\n      \"updated_at\": \"2026-10-22T09:48:58Z\",\n      \"browser_download_url\": \"https://github.com/Jeremaya25/prdrive-app/releases/download/v0.1.0/prdrive-0.1.0.apk\"\n    }\n  ],\n  \"tarball_url\": \"https://api.github.com/repos/Jeremaya25/prdrive-app/tarball/v0.1.0\",\n  \"zipball_url\": \"https://api.github.com/repos/Jeremaya25/prdrive-app/zipball/v0.1.0\",\n  \"body\": \"prdrive para Android 0.1.0.\\n\\n- `prdrive-0.1.0.apk`, SHA-256: `e2279a4752b26b04dd80252c3bb234fe0fc9da308a9d1efbd295192f55e2a7e5`\\n- Certificado de la firma, SHA-256: `11ae0d17f38df6c5c75e16b041f09634c78ef64b04b612d306340ce64f02fec2`\\n\\nAndroid solo lo instala encima de otra versión si las dos llevan esta misma firma.\\n\\n\\n## What's Changed\\n* Add Kotlin engine module with prdrive configuration mirroring by @Jeremaya25 in https://github.com/Jeremaya25/prdrive-app/pull/1\\n* Paso 1 del plan: la pasada, el volumen y las pantallas, probados en un emulador by @Jeremaya25 in https://github.com/Jeremaya25/prdrive-app/pull/4\\n* VERSION y la release que publica el APK firmado by @Jeremaya25 in https://github.com/Jeremaya25/prdrive-app/pull/5\\n* La huella del certificado, diga como diga apksigner by @Jeremaya25 in https://github.com/Jeremaya25/prdrive-app/pull/6\\n\\n## New Contributors\\n* @Jeremaya25 made their first contribution in https://github.com/Jeremaya25/prdrive-app/pull/1\\n\\n**Full Changelog**: https://github.com/Jeremaya25/prdrive-app/commits/v0.1.0\"\n}\n",
+        "nombre": "caché del futuro: pregunta",
+        "release": {
+          "tag": "v0.1.0",
+          "version": "0.1.0",
+          "name": "v0.1.0",
+          "url": "https://github.com/Jeremaya25/prdrive-app/releases/tag/v0.1.0",
+          "published": "2026-10-22T09:48:59Z",
+          "notes": "prdrive para Android 0.1.0.\n\n- `prdrive-0.1.0.apk`, SHA-256: `e2279a4752b26b04dd80252c3bb234fe0fc9da308a9d1efbd295192f55e2a7e5`\n- Certificado de la firma, SHA-256: `11ae0d17f38df6c5c75e16b041f09634c78ef64b04b612d306340ce64f02fec2`\n\nAndroid solo lo instala encima de otra versión si las dos llevan esta misma firma.\n\n\n## What's Changed\n* Add Kotlin engine module with prdrive configuration mirroring by @Jeremaya25 in https://github.com/Jeremaya25/prdrive-app/pull/1\n* Paso 1 del plan: la pasada, el volumen y las pantallas, probados en un emulador by @Jeremaya25 in https://github.com/Jeremaya25/prdrive-app/pull/4\n* VERSION y la release que publica el APK firmado by @Jeremaya25 in https://github.com/Jeremaya25/prdrive-app/pull/5\n* La huella del certificado, diga como diga apksigner by @Jeremaya25 in https://github.com/Jeremaya25/prdrive-app/pull/6\n\n## New Contributors\n* @Jeremaya25 made their first contribution in https://github.com/Jeremaya25/prdrive-app/pull/1\n\n**Full Changelog**: https://github.com/Jeremaya25/prdrive-app/commits/v0.1.0"
+        },
+        "motivo": null,
+        "llamadas": [
+          "https://api.github.com/repos/Jeremaya25/prdrive-app/releases/latest"
+        ],
+        "cache_despues": "{\n \"checked\": \"2026-10-22 11:00:00\",\n \"tag\": \"v0.1.0\",\n \"version\": \"0.1.0\",\n \"name\": \"v0.1.0\",\n \"url\": \"https://github.com/Jeremaya25/prdrive-app/releases/tag/v0.1.0\",\n \"published\": \"2026-10-22T09:48:59Z\",\n \"notes\": \"prdrive para Android 0.1.0.\\n\\n- `prdrive-0.1.0.apk`, SHA-256: `e2279a4752b26b04dd80252c3bb234fe0fc9da308a9d1efbd295192f55e2a7e5`\\n- Certificado de la firma, SHA-256: `11ae0d17f38df6c5c75e16b041f09634c78ef64b04b612d306340ce64f02fec2`\\n\\nAndroid solo lo instala encima de otra versión si las dos llevan esta misma firma.\\n\\n\\n## What's Changed\\n* Add Kotlin engine module with prdrive configuration mirroring by @Jeremaya25 in https://github.com/Jeremaya25/prdrive-app/pull/1\\n* Paso 1 del plan: la pasada, el volumen y las pantallas, probados en un emulador by @Jeremaya25 in https://github.com/Jeremaya25/prdrive-app/pull/4\\n* VERSION y la release que publica el APK firmado by @Jeremaya25 in https://github.com/Jeremaya25/prdrive-app/pull/5\\n* La huella del certificado, diga como diga apksigner by @Jeremaya25 in https://github.com/Jeremaya25/prdrive-app/pull/6\\n\\n## New Contributors\\n* @Jeremaya25 made their first contribution in https://github.com/Jeremaya25/prdrive-app/pull/1\\n\\n**Full Changelog**: https://github.com/Jeremaya25/prdrive-app/commits/v0.1.0\"\n}"
+      },
+      {
+        "respuesta": "{\"name\": \"x\"}",
+        "nombre": "respuesta sin tag_name",
+        "release": null,
+        "motivo": "No he podido preguntarle a GitHub si hay versión nueva: la respuesta de GitHub no trae tag_name",
+        "llamadas": [
+          "https://api.github.com/repos/Jeremaya25/prdrive-app/releases/latest"
+        ],
+        "cache_despues": null
+      },
+      {
+        "cache": "{\n \"checked\": \"2026-10-20 12:00:00\",\n \"tag\": \"v0.0.9\",\n \"version\": \"0.0.9\"\n}",
+        "respuesta": "{}",
+        "nombre": "caché vieja y respuesta sin tag_name",
+        "release": {
+          "tag": "v0.0.9",
+          "version": "0.0.9",
+          "name": "v0.0.9",
+          "url": "https://github.com/Jeremaya25/prdrive-app/releases",
+          "published": "",
+          "notes": ""
+        },
+        "motivo": "No he podido preguntarle a GitHub si hay versión nueva: la respuesta de GitHub no trae tag_name\nSe enseña lo último que se supo.",
+        "llamadas": [
+          "https://api.github.com/repos/Jeremaya25/prdrive-app/releases/latest"
+        ],
+        "cache_despues": "{\n \"checked\": \"2026-10-20 12:00:00\",\n \"tag\": \"v0.0.9\",\n \"version\": \"0.0.9\"\n}"
+      }
+    ],
+    "veredicto": [
+      {
+        "release": null,
+        "motivo": null,
+        "actual": "0.1.0",
+        "dice": "No sé qué versión es la última."
+      },
+      {
+        "release": {
+          "tag": "v0.2.0",
+          "version": "0.2.0",
+          "name": "v0.2.0",
+          "url": "https://github.com/Jeremaya25/prdrive-app/releases",
+          "published": "",
+          "notes": ""
+        },
+        "motivo": null,
+        "actual": "0.1.0",
+        "dice": "Hay una versión nueva: v0.2.0"
+      },
+      {
+        "release": {
+          "tag": "v0.2.0",
+          "version": "0.2.0",
+          "name": "v0.2.0",
+          "url": "https://github.com/Jeremaya25/prdrive-app/releases",
+          "published": "",
+          "notes": ""
+        },
+        "motivo": null,
+        "actual": "0.2.0",
+        "dice": "Ya tienes la última versión (0.2.0)"
+      },
+      {
+        "release": {
+          "tag": "v0.2.0",
+          "version": "0.2.0",
+          "name": "v0.2.0",
+          "url": "https://github.com/Jeremaya25/prdrive-app/releases",
+          "published": "",
+          "notes": ""
+        },
+        "motivo": null,
+        "actual": "",
+        "dice": "Hay una versión nueva: v0.2.0"
+      },
+      {
+        "release": {
+          "tag": "v0.2.0",
+          "version": "0.2.0",
+          "name": "v0.2.0",
+          "url": "https://github.com/Jeremaya25/prdrive-app/releases",
+          "published": "",
+          "notes": ""
+        },
+        "motivo": null,
+        "actual": "0.3.0",
+        "dice": "Ya tienes la última versión (0.3.0)"
+      },
+      {
+        "release": {
+          "tag": "v0.2.0",
+          "version": "0.2.0",
+          "name": "v0.2.0",
+          "url": "https://github.com/Jeremaya25/prdrive-app/releases",
+          "published": "",
+          "notes": ""
+        },
+        "motivo": "No he podido: sin red\nSe enseña lo último que se supo.",
+        "actual": "0.1.0",
+        "dice": "No he podido: sin red"
+      },
+      {
+        "release": null,
+        "motivo": "No he podido: sin red",
+        "actual": "0.1.0",
+        "dice": "No he podido: sin red"
+      },
+      {
+        "release": {
+          "tag": "v0.2.0",
+          "version": "0.2.0",
+          "name": "v0.2.0",
+          "url": "https://github.com/Jeremaya25/prdrive-app/releases",
+          "published": "",
+          "notes": ""
+        },
+        "motivo": "",
+        "actual": "0.1.0",
+        "dice": "Hay una versión nueva: v0.2.0"
+      },
+      {
+        "release": {
+          "tag": "v0.2.0",
+          "version": "0.2.0",
+          "name": "v0.2.0",
+          "url": "https://github.com/Jeremaya25/prdrive-app/releases",
+          "published": "",
+          "notes": ""
+        },
+        "motivo": "\n",
+        "actual": "0.1.0",
+        "dice": ""
+      }
+    ]
   }
 }

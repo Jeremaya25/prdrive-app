@@ -10,6 +10,16 @@
          usarlo: se pide al conectar y al sincronizar. -->
     <uses-permission android:name="android.permission.ACCESS_LOCAL_NETWORK" />
 
+    <!-- La app se pone al día sola desde las releases de GitHub (Actualizador.kt).
+         ACCESS_NETWORK_STATE: para no bajar el APK (unos 50 MB) con datos
+         móviles. REQUEST_INSTALL_PACKAGES: para dárselo a instalar a Android;
+         es el «instalar apps desconocidas» que la persona permite una vez.
+         UPDATE_PACKAGES_WITHOUT_USER_ACTION: con él, desde Android 12, Android
+         no pregunta cada vez que la app se pone al día a sí misma. -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+    <uses-permission android:name="android.permission.UPDATE_PACKAGES_WITHOUT_USER_ACTION" />
+
     <application
         android:allowBackup="false"
         android:dataExtractionRules="@xml/extraccion_de_datos"
@@ -31,6 +41,12 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- Lo que contesta Android al instalar la versión nueva. Solo le
+             habla Android, por el PendingIntent explícito de la sesión. -->
+        <receiver
+            android:name=".ResultadoDeInstalacion"
+            android:exported="false" />
 
         <!-- El volumen en la app de Archivos y en los diálogos de abrir y
              guardar de otras apps. MANAGE_DOCUMENTS lo tiene solo el sistema:

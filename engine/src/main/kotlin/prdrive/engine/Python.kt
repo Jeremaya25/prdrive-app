@@ -49,6 +49,17 @@ fun espacioPy(c: Char): Boolean =
 fun stripPy(texto: String): String = texto.trim { espacioPy(it) }
 
 /**
+ * `texto[:n]` de Python: los `n` primeros caracteres contados por punto de
+ * código. `take(n)` de Kotlin cuenta unidades UTF-16 y partiría un emoji por la
+ * mitad, dejando un sustituto suelto que ya no es texto.
+ */
+fun cortarPy(texto: String, n: Int): String {
+    if (n <= 0) return ""
+    val total = texto.codePointCount(0, texto.length)
+    return if (total <= n) texto else texto.substring(0, texto.offsetByCodePoints(0, n))
+}
+
+/**
  * Lo de dentro de la clase `\s` de una regex de Python (la de [espacioPy]),
  * para escribir `[…]` o `[^…]` en una de Java o de ICU, que no la tienen igual.
  */
