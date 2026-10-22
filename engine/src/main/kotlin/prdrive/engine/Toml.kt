@@ -8,13 +8,13 @@ package prdrive.engine
  * `tomllib` solo lee y prdrive no admite dependencias; aquí la razón es la
  * misma más una: lo que se escriba tiene que ser **byte a byte** lo que el
  * programa de escritorio luego relee, porque el `sync_config.toml` se edita a
- * mano y el `pairs.toml` del catálogo lo comparten todos los dispositivos.
+ * mano y el `remote.toml` del catálogo lo comparten todos los dispositivos.
  *
  * **No es un TOML completo y no pretende serlo.** Cubre el esquema que el
  * proyecto usa de verdad: escalares, arrays de cadenas, `[tabla]`,
  * `[[array de tablas]]` y una subtabla `flags`. Lo que no entiende lo **rechaza
  * en voz alta** ([TomlError]) en vez de ignorarlo: `tomllib` acepta más que
- * esto, así que un `pairs.toml` escrito a mano con un TOML legítimo que aquí no
+ * esto, así que un catálogo escrito a mano con un TOML legítimo que aquí no
  * entre tiene que dar un mensaje, nunca una pareja a medio leer.
  *
  * Se trabaja siempre con el mapa **crudo**, nunca con [Config]: sus [Pareja]
@@ -30,6 +30,9 @@ class TomlError(mensaje: String) : Exception(mensaje)
  * identifica, luego lo que la matiza. El resto va detrás, alfabético.
  */
 val PAIR_KEY_ORDER = listOf("name", "local", "remote_path", "remote", "mode")
+
+/** Las tablas que [dumps] escribe en su sitio; cualquier otra va al final, tal cual. */
+val TABLAS_CONOCIDAS = listOf("remote", "defaults", "daemon", "pair")
 
 private val BARE_KEY = Regex("[A-Za-z0-9_-]+")
 
@@ -81,15 +84,19 @@ fun loadRaw(texto: String): Map<String, Any?> {
     return raiz
 }
 
-/** El bloque de comentarios del principio de un TOML, tal cual. */
+/**
+ * El bloque de comentarios del principio de un TOML, tal cual
+ * (`config_file.header_of`): con las líneas y los espacios de Python, que no
+ * son los de Kotlin.
+ */
 fun headerOf(texto: String): String {
     val cabecera = ArrayList<String>()
-    for (linea in texto.lines()) {
-        if (linea.isNotBlank() && !linea.trimStart().startsWith("#")) break
+    for (linea in splitlinesPy(texto)) {
+        if (stripPy(linea).isNotEmpty() && !linea.trimStart { espacioPy(it) }.startsWith("#")) break
         cabecera.add(linea)
     }
-    if (cabecera.none { it.isNotBlank() }) return ""
-    return cabecera.joinToString("\n").trimEnd() + "\n"
+    if (cabecera.none { stripPy(it).isNotEmpty() }) return ""
+    return cabecera.joinToString("\n").trimEnd { espacioPy(it) } + "\n"
 }
 
 /**
@@ -97,7 +104,12 @@ fun headerOf(texto: String): String {
  * varias, que es justo como los escribe [dumps].
  */
 private class Lineas(texto: String) {
-    private val todas = texto.lines()
+    // TOML (y tomllib) solo conoce `\n` y `\r\n` como saltos de línea: un `\r`
+    // suelto no lo es, y `lines()` lo tomaría por uno. Solo se quita el `\r` que
+    // va delante de un `\n`; el del final del texto se queda, y no vale.
+    private val todas = texto.split("\n").let { partes ->
+        partes.mapIndexed { i, p -> if (i < partes.lastIndex) p.removeSuffix("\r") else p }
+    }
     private var i = 0
     var numero = 0
         private set
@@ -106,7 +118,13 @@ private class Lineas(texto: String) {
 
     fun siguiente(): String {
         numero = i + 1
-        return todas[i++]
+        val linea = todas[i++]
+        // Ni dentro de una cadena ni en un comentario: un carácter de control
+        // que no sea el tabulador no vale en ningún sitio de un TOML.
+        linea.firstOrNull { prohibido(it) }?.let {
+            throw TomlError("Línea $numero: carácter de control U+${hex(it.code, 4).uppercase()}.")
+        }
+        return linea
     }
 }
 
@@ -281,22 +299,44 @@ private fun leerEscalar(texto: String, numero: Int): Any {
         if (texto.length < 2 || !texto.endsWith("'")) {
             throw TomlError("Línea $numero: la cadena literal «$texto» no se cierra.")
         }
-        return texto.substring(1, texto.length - 1)
+        val dentro = texto.substring(1, texto.length - 1)
+        dentro.firstOrNull { prohibido(it) }?.let { caracterDeControl(it, numero) }
+        return dentro
     }
     if (texto == "true") return true
     if (texto == "false") return false
-    val sinGuiones = texto.replace("_", "")
-    if (Regex("[+-]?\\d+").matches(sinGuiones)) {
-        return sinGuiones.toLongOrNull()
-            ?: throw TomlError("Línea $numero: el entero «$texto» no cabe.")
+    // Lo que escribe `repr()` de Python para un float que no es un número.
+    when (texto) {
+        "inf", "+inf" -> return Double.POSITIVE_INFINITY
+        "-inf" -> return Double.NEGATIVE_INFINITY
+        "nan", "+nan", "-nan" -> return Double.NaN
     }
-    if (Regex("[+-]?\\d+\\.\\d+([eE][+-]?\\d+)?").matches(sinGuiones) ||
-        Regex("[+-]?\\d+[eE][+-]?\\d+").matches(sinGuiones)
-    ) {
-        return sinGuiones.toDouble()
+    // La parte decimal del `RE_NUMBER` de tomllib (tomllib/_re.py): sin ceros
+    // a la izquierda, y un `_` solo entre dos cifras. Cifras ASCII y nada más,
+    // como TOML: en Android `\d` admite las de cualquier alfabeto, así que se
+    // escriben a mano. Los `0x`, `0o` y `0b` no se cubren: se rechazan.
+    val m = NUMERO_TOML.matchEntire(texto)
+        ?: throw TomlError("Línea $numero: «$texto» no es un valor que se entienda aquí.")
+    val limpio = texto.replace("_", "")
+    if (m.groupValues[1].isEmpty()) {
+        return limpio.toLongOrNull() ?: throw TomlError("Línea $numero: el entero «$texto» no cabe.")
     }
-    throw TomlError("Línea $numero: «$texto» no es un valor que se entienda aquí.")
+    return limpio.toDouble()
 }
+
+/** Grupo 1: la parte de float (fracción, exponente o los dos); vacío si es un entero. */
+private val NUMERO_TOML =
+    Regex("[+-]?(?:0|[1-9](?:_?[0-9])*)((?:\\.[0-9](?:_?[0-9])*)?(?:[eE][+-]?[0-9](?:_?[0-9])*)?)")
+
+/**
+ * Lo que `tomllib` no deja escribir tal cual dentro de una cadena: los
+ * caracteres de control, salvo el tabulador. Aceptarlos aquí haría que el
+ * teléfono escribiera un fichero que el escritorio no puede leer.
+ */
+private fun prohibido(c: Char): Boolean = (c.code < 0x20 && c != '\t') || c.code == 0x7f
+
+private fun caracterDeControl(c: Char, numero: Int): Nothing =
+    throw TomlError("Línea $numero: carácter de control U+${hex(c.code, 4).uppercase()} en una cadena.")
 
 private fun leerCadena(texto: String, numero: Int): String {
     if (texto.length < 2 || !texto.endsWith("\"")) {
@@ -309,27 +349,34 @@ private fun leerCadena(texto: String, numero: Int): String {
         val c = dentro[i]
         if (c != '\\') {
             if (c == '"') throw TomlError("Línea $numero: comilla sin escapar en «$texto».")
+            if (prohibido(c)) caracterDeControl(c, numero)
             salida.append(c)
             i++
             continue
         }
         i++
         if (i >= dentro.length) throw TomlError("Línea $numero: escape a medias en «$texto».")
+        // Los escapes de TOML 1.0, los mismos que acepta `tomllib`.
         when (val e = dentro[i]) {
             '"' -> salida.append('"')
             '\\' -> salida.append('\\')
             'n' -> salida.append('\n')
             'r' -> salida.append('\r')
             't' -> salida.append('\t')
-            'b' -> salida.append('')
-            'f' -> salida.append('')
-            '/' -> salida.append('/')
-            'u' -> {
-                if (i + 5 > dentro.length) {
-                    throw TomlError("Línea $numero: escape \\u a medias en «$texto».")
+            'b' -> salida.append('\b')
+            'f' -> salida.append('\u000c')
+            'u', 'U' -> {
+                val largo = if (e == 'u') 4 else 8
+                val cifras = if (i + 1 + largo <= dentro.length) dentro.substring(i + 1, i + 1 + largo) else ""
+                if (cifras.length != largo || !cifras.all { it in "0123456789abcdefABCDEF" }) {
+                    throw TomlError("Línea $numero: escape «\\$e$cifras» mal formado en «$texto».")
                 }
-                salida.append(dentro.substring(i + 1, i + 5).toInt(16).toChar())
-                i += 4
+                val punto = cifras.toLong(16)
+                if (punto > 0x10FFFF || punto in 0xD800..0xDFFF) {
+                    throw TomlError("Línea $numero: «\\$e$cifras» no es un carácter Unicode.")
+                }
+                salida.appendCodePoint(punto.toInt())
+                i += largo
             }
             else -> throw TomlError("Línea $numero: escape «\\$e» no soportado.")
         }
@@ -357,11 +404,9 @@ private fun cadena(valor: Any?): String {
 private fun escalar(valor: Any?): String = when (valor) {
     is Boolean -> if (valor) "true" else "false"
     is Long, is Int, is Short, is Byte -> valor.toString()
-    // `repr()` de Python para un float siempre lleva parte decimal o exponente,
-    // y `Double.toString()` de Kotlin también, así que «4.0» sale «4.0» en los
-    // dos lados. Es lo que hace que el round-trip cuadre.
-    is Double -> valor.toString()
-    is Float -> valor.toDouble().toString()
+    // `repr()` de Python, que es lo que escribe `_scalar()`: «4.0» y «1e+20».
+    is Double -> floatPy(valor)
+    is Float -> floatPy(valor.toDouble())
     else -> cadena(valor)
 }
 
@@ -378,10 +423,9 @@ private fun cuerpoDeTabla(
     orden: List<String> = emptyList(),
 ): List<String> {
     val claves = ArrayList(orden)
-    // `sorted()` de Kotlin compara por unidad de código UTF-16 y `sorted()` de
-    // Python por punto de código: para las claves de este esquema —ASCII— es el
-    // mismo orden, y es lo que hace cuadrar los vectores.
-    claves += tabla.keys.filter { it !in claves && it != "flags" }.sorted()
+    // `sorted()` de Python ordena por punto de código, no por unidad UTF-16:
+    // una clave entre comillas puede llevar cualquier cosa.
+    claves += tabla.keys.filter { it !in claves && it != "flags" }.sortedWith(ORDEN_PY)
     val lineas = ArrayList<String>()
     for (k in claves) {
         if (!tabla.containsKey(k)) continue
@@ -448,6 +492,19 @@ fun dumps(raw: Map<String, Any?>, head: String = ""): String {
             out += cuerpoDeTabla(it)
             out.add("")
         }
+    }
+
+    // Una tabla que este código no conoce (la de una versión más nueva, o el
+    // `[keychain]`) se escribe tal cual al final, en orden alfabético: el modelo
+    // la ignora al leer, y perderla al reescribir haría que [dumpsChecked] se
+    // negara a escribir el fichero entero. Lo que no se sepa escribir (una
+    // subtabla) lo sigue parando él.
+    for (nombre in raw.keys.filter { it !in TABLAS_CONOCIDAS && raw[it] is Map<*, *> }.sortedWith(ORDEN_PY)) {
+        @Suppress("UNCHECKED_CAST")
+        val tabla = raw[nombre] as Map<String, Any?>
+        out.add("[${clave(nombre)}]")
+        out += cuerpoDeTabla(tabla)
+        out.add("")
     }
 
     return out.joinToString("\n").trimEnd() + "\n"

@@ -29,12 +29,23 @@ class ModelTest {
         assertEquals(Vectores.texto(c, "DEFAULT_REMOTE"), DEFAULT_REMOTE)
         assertEquals(Vectores.texto(c, "DEFAULT_MODE"), DEFAULT_MODE)
         assertEquals(Vectores.texto(c, "DEFAULT_DEVICE_REMOTE"), DEFAULT_DEVICE_REMOTE)
+        assertEquals(Vectores.texto(c, "DEFAULT_CATALOG_PATH"), DEFAULT_CATALOG_PATH)
         assertEquals(Vectores.texto(c, "RAIZ_UPSTREAM"), RAIZ_UPSTREAM)
+        assertEquals(c["VENTANA_HORA"], VENTANA_HORA)
+        assertEquals(Vectores.texto(c, "VERSIONS_DIR"), VERSIONS_DIR)
+        assertEquals(Vectores.texto(c, "LLAVERO"), LLAVERO)
+        assertEquals(Vectores.texto(c, "LLAVERO_LOCAL"), LLAVERO_LOCAL)
+        assertEquals(Vectores.texto(c, "LLAVERO_REMOTO"), LLAVERO_REMOTO)
+        assertEquals(Vectores.cadenas(c, "LLAVERO_REGLAS"), LLAVERO_REGLAS)
+        assertEquals(normalizar(Vectores.objeto(c, "LLAVERO_FLAGS")), normalizar(LLAVERO_FLAGS))
+        assertEquals(Vectores.texto(c, "REGLA_SIN_LLAVERO"), REGLA_SIN_LLAVERO)
+        assertEquals(Vectores.texto(c, "REGLA_SIN_PROGRAMA"), REGLA_SIN_PROGRAMA)
         assertEquals(Vectores.texto(c, "PATH1_SUFFIX"), Bisync.PATH1_SUFFIX)
         assertEquals(Vectores.texto(c, "PATH2_SUFFIX"), Bisync.PATH2_SUFFIX)
         assertEquals(Vectores.texto(c, "ERR_SUFFIX"), Bisync.ERR_SUFFIX)
         assertEquals(Vectores.texto(c, "MISSING_LISTINGS"), Bisync.MISSING_LISTINGS)
         assertEquals(Vectores.texto(c, "FILTERS_HEADER"), Bisync.FILTERS_HEADER)
+        assertEquals(c["TOPE_ALIAS"], Bisync.TOPE_ALIAS.toLong())
     }
 
     @Test
@@ -52,6 +63,8 @@ class ModelTest {
             assertEquals(Vectores.texto(esperado, "verb"), modo.verb, "$nombre: verbo")
             assertEquals(Vectores.texto(esperado, "source"), modo.source, "$nombre: origen")
             assertEquals(Vectores.texto(esperado, "dest"), modo.dest, "$nombre: destino")
+            assertEquals(esperado["origen_local"], modo.origenLocal, "$nombre: origen local")
+            assertEquals(esperado["borra_en_remoto"], modo.borraEnRemoto, "$nombre: borra en el remoto")
             assertEquals(
                 normalizar(Vectores.objeto(esperado, "flags_propios")),
                 normalizar(modo.flags),
@@ -100,6 +113,12 @@ class ModelTest {
         assertEquals(Vectores.cadenas(resueltas, "names"), config.names)
         assertEquals(Vectores.texto(resueltas, "device_remote"), config.deviceRemote)
         assertEquals(resueltas["keep_logs"], config.keepLogs)
+        assertEquals(resueltas["pareja_llavero"], config.parejaLlavero?.name)
+        val catalogo = Vectores.cadenas(resueltas, "carpeta_del_catalogo")
+        assertEquals(
+            catalogo[0] to catalogo[1],
+            carpetaDelCatalogo(Vectores.objeto(Vectores.objeto(resueltas, "config"), "defaults")),
+        )
 
         val esperadas = Vectores.objetos(resueltas, "parejas")
         assertEquals(esperadas.size, config.pairs.size, "número de parejas")
@@ -157,6 +176,18 @@ class ModelTest {
             assertEquals(Vectores.texto(esperada, "source"), pareja.source, "$n: origen")
             assertEquals(Vectores.texto(esperada, "dest"), pareja.dest, "$n: destino")
             assertEquals(Vectores.texto(esperada, "workdir"), pareja.workdir, "$n: workdir")
+            assertEquals(esperada["versions"], pareja.versions, "$n: versions")
+            assertEquals(esperada["watch"], pareja.watch, "$n: watch")
+            assertEquals(Vectores.cadenas(esperada, "reglas"), pareja.reglas, "$n: reglas del código")
+            assertEquals(esperada["llavero"], pareja.llavero, "$n: llavero")
+            assertEquals(esperada["llave_interna"], pareja.llaveInterna, "$n: llave interna")
+            assertEquals(esperada["es_raiz"], pareja.esRaiz, "$n: es la raíz")
+            assertEquals(
+                Vectores.texto(esperada, "versions_path1"), pareja.versionsPath1, "$n: backup-dir1",
+            )
+            assertEquals(
+                Vectores.texto(esperada, "versions_path2"), pareja.versionsPath2, "$n: backup-dir2",
+            )
         }
     }
 
@@ -172,21 +203,22 @@ class ModelTest {
         // el nombre de los listados de bisync.
         val esperado = entorno.getValue("RCLONE_CONFIG_DISP_UPSTREAMS").toString()
         assertEquals(esperado, config.upstreamsDeCombine(raiz))
-        assertEquals("combine", entorno.getValue("RCLONE_CONFIG_DISP_TYPE"))
-
-        assertEquals(
-            "[disp]\ntype = combine\nupstreams = $esperado\n",
-            config.seccionCombine(raiz),
-        )
+        // La sección del rclone.conf lleva el mismo tipo que la variable del escritorio.
+        val tipo = entorno.getValue("RCLONE_CONFIG_DISP_TYPE")
+        assertEquals("[disp]\ntype = $tipo\nupstreams = $esperado\n", config.seccionCombine(raiz))
     }
 
     @Test
     fun `select devuelve las pedidas y se niega con un nombre que no existe`() {
         val resueltas = Vectores.seccion("resueltas")
         val config = parseConfig(Vectores.objeto(resueltas, "config"))
-        assertEquals(listOf("notas", "todo"), config.select(listOf("todo", "notas")).map { it.name })
-        val e = assertFailsWith<ConfigError> { config.select(listOf("notas", "inventada")) }
-        assertTrue("inventada" in (e.message ?: ""), "el mensaje no nombra la pareja que falta")
+        val select = Vectores.objeto(resueltas, "select")
+        assertEquals(
+            Vectores.cadenas(select, "salida"),
+            config.select(Vectores.cadenas(select, "pedidas")).map { it.name },
+        )
+        val e = assertFailsWith<ConfigError> { config.select(Vectores.cadenas(select, "error_con")) }
+        assertEquals(Vectores.texto(select, "error"), e.message)
     }
 
     @Test
@@ -236,16 +268,16 @@ class ModelTest {
         // Solo pasa con la raíz: `local = "."` la declara como RAIZ_UPSTREAM y
         // otra pareja tiene una carpeta llamada justo así. Sería un upstream
         // apuntando a donde no es, callando.
+        val choque = Vectores.objeto(Vectores.seccion("resueltas"), "choque_de_upstreams")
         val config = parseConfig(
             mapOf(
                 "defaults" to mapOf("device_remote" to "disp", "remote" to "nas"),
-                "pair" to listOf(
-                    mapOf("name" to "todo", "local" to ".", "remote_path" to "/a"),
-                    mapOf("name" to "choque", "local" to RAIZ_UPSTREAM, "remote_path" to "/b"),
-                ),
+                "pair" to Vectores.lista(choque, "pair"),
             ),
         )
-        val e = assertFailsWith<ConfigError> { config.upstreamsDeCombine("/volumen") }
-        assertTrue(RAIZ_UPSTREAM in (e.message ?: ""))
+        val e = assertFailsWith<ConfigError> {
+            config.upstreamsDeCombine(Vectores.texto(Vectores.raiz, "raiz_dispositivo"))
+        }
+        assertEquals(Vectores.texto(choque, "error"), e.message)
     }
 }

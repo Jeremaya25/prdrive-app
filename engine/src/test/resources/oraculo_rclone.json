@@ -1,0 +1,937 @@
+{
+ "rclone": "v1.75.2",
+ "explica": "Generado por rclone/go/oraculo desde el código de rclone. No editar a mano.",
+ "raiz_local": [
+  {
+   "raiz": "/data/user/0/prdrive.app/files/remoto-de-prueba/notas",
+   "ruta": "/data/user/0/prdrive.app/files/remoto-de-prueba/notas"
+  },
+  {
+   "raiz": "/r/AC／DC",
+   "ruta": "/r/AC／DC"
+  },
+  {
+   "raiz": "/r/．",
+   "ruta": "/r/．"
+  },
+  {
+   "raiz": "/r/．．",
+   "ruta": "/r/．．"
+  },
+  {
+   "raiz": "/r/‛．",
+   "ruta": "/r/‛．"
+  },
+  {
+   "raiz": "/r/‛．‛．",
+   "ruta": "/r/‛．‛．"
+  },
+  {
+   "raiz": "/r/‛‛．",
+   "ruta": "/r/‛‛．"
+  },
+  {
+   "raiz": "/r/a␀b",
+   "ruta": "/r/a␀b"
+  },
+  {
+   "raiz": "/r/a‛‛b",
+   "ruta": "/r/a‛‛b"
+  },
+  {
+   "raiz": "/r/a␋b",
+   "ruta": "/r/a␋b"
+  },
+  {
+   "raiz": "/r/a␡b",
+   "ruta": "/r/a␡b"
+  },
+  {
+   "raiz": "/r/a‛／b",
+   "ruta": "/r/a‛／b"
+  },
+  {
+   "raiz": "/r/it‛‛s",
+   "ruta": "/r/it‛s"
+  },
+  {
+   "raiz": "/r/a␋b",
+   "ruta": "/r/a\u000bb"
+  },
+  {
+   "raiz": "/r/a␡b",
+   "ruta": "/r/ab"
+  },
+  {
+   "raiz": "/r/a␀b",
+   "ruta": "/r/a\u0000b"
+  },
+  {
+   "raiz": "/r/a␟b",
+   "ruta": "/r/a\u001fb"
+  },
+  {
+   "raiz": "/r/a␟b",
+   "ruta": "/r/a␟b"
+  },
+  {
+   "raiz": "/r/a␠b",
+   "ruta": "/r/a␠b"
+  },
+  {
+   "raiz": "/r/a‛‛",
+   "ruta": "/r/a‛"
+  },
+  {
+   "raiz": "/r/‛‛",
+   "ruta": "/r/‛"
+  },
+  {
+   "raiz": "/r/‛‛",
+   "ruta": "/r/‛‛"
+  },
+  {
+   "raiz": "/r/😀／x",
+   "ruta": "/r/😀／x"
+  },
+  {
+   "raiz": "/r/‛‛😀",
+   "ruta": "/r/‛😀"
+  },
+  {
+   "raiz": "/r/a　b␋c d",
+   "ruta": "/r/a　b\u000bc d"
+  },
+  {
+   "raiz": "a/b/c",
+   "ruta": "a//b/./c/"
+  },
+  {
+   "raiz": "．．/x",
+   "ruta": "../x"
+  },
+  {
+   "raiz": "y",
+   "ruta": "x/../y"
+  },
+  {
+   "raiz": "．",
+   "ruta": "."
+  },
+  {
+   "raiz": "．．",
+   "ruta": ".."
+  },
+  {
+   "raiz": "/",
+   "ruta": "/"
+  },
+  {
+   "raiz": "/",
+   "ruta": "/a/b/../../.."
+  },
+  {
+   "raiz": "/servidor/x",
+   "ruta": "//servidor/x"
+  },
+  {
+   "raiz": "sync-data/notas",
+   "ruta": "sync-data/notas"
+  },
+  {
+   "raiz": "sync-data/．oculta/x",
+   "ruta": "sync-data/．oculta/x"
+  }
+ ],
+ "canonical": [
+  {
+   "canonical": "disp_sync-data_notas",
+   "remote": "disp:sync-data/notas/",
+   "sin_hex": "disp:sync-data/notas/"
+  },
+  {
+   "canonical": "nas__srv_datos_notas",
+   "remote": "nas:/srv/datos/notas/",
+   "sin_hex": "nas:/srv/datos/notas/"
+  },
+  {
+   "canonical": "disp_sync-data_a　b\u000bc_d",
+   "remote": "disp:sync-data/a　b\u000bc d/",
+   "sin_hex": "disp:sync-data/a　b\u000bc d/"
+  },
+  {
+   "canonical": "nas_x�y z\u2028w　v",
+   "remote": "nas:x�y z\u2028w　v/",
+   "sin_hex": "nas:x�y z\u2028w　v/"
+  },
+  {
+   "canonical": "nas_a_b_c_d_e_f_g_h_i_j_k",
+   "remote": "nas:a\tb\nc\fd\re f\\g/h:i?j*k/",
+   "sin_hex": "nas:a\tb\nc\fd\re f\\g/h:i?j*k/"
+  },
+  {
+   "canonical": "nas_x",
+   "remote": "//nas:x//",
+   "sin_hex": "//nas:x//"
+  },
+  {
+   "canonical": "nas_x",
+   "remote": "\\\\nas\\x\\",
+   "sin_hex": "\\\\nas\\x\\"
+  },
+  {
+   "canonical": "nas{AbC12}_x",
+   "remote": "nas{AbC12}:x/",
+   "sin_hex": "nas:x/"
+  },
+  {
+   "canonical": "nas_x{1}y{2}",
+   "remote": "nas:x{1}y{2}/",
+   "sin_hex": "nas:xy{2}/"
+  },
+  {
+   "canonical": "nas_x}y{z",
+   "remote": "nas:x}y{z/",
+   "sin_hex": "nas:x}y{z/"
+  }
+ ],
+ "session_name": [
+  {
+   "path1": "disp:sync-data/notas/",
+   "path2": "nas:/srv/datos/notas/",
+   "session": "disp_sync-data_notas..nas__srv_datos_notas"
+  },
+  {
+   "path1": "nas:/srv/datos/notas/",
+   "path2": "disp:sync-data/a　b\u000bc d/",
+   "session": "nas__srv_datos_notas..disp_sync-data_a　b\u000bc_d"
+  },
+  {
+   "path1": "disp:sync-data/a　b\u000bc d/",
+   "path2": "nas:x�y z\u2028w　v/",
+   "session": "disp_sync-data_a　b\u000bc_d..nas_x�y z\u2028w　v"
+  },
+  {
+   "path1": "nas:x�y z\u2028w　v/",
+   "path2": "nas:a\tb\nc\fd\re f\\g/h:i?j*k/",
+   "session": "nas_x�y z\u2028w　v..nas_a_b_c_d_e_f_g_h_i_j_k"
+  },
+  {
+   "path1": "nas:a\tb\nc\fd\re f\\g/h:i?j*k/",
+   "path2": "//nas:x//",
+   "session": "nas_a_b_c_d_e_f_g_h_i_j_k..nas_x"
+  },
+  {
+   "path1": "//nas:x//",
+   "path2": "\\\\nas\\x\\",
+   "session": "nas_x..nas_x"
+  },
+  {
+   "path1": "\\\\nas\\x\\",
+   "path2": "nas{AbC12}:x/",
+   "session": "nas_x..nas_x"
+  },
+  {
+   "path1": "nas{AbC12}:x/",
+   "path2": "nas:x{1}y{2}/",
+   "session": "nas_x..nas_xy{2}"
+  },
+  {
+   "path1": "nas:x{1}y{2}/",
+   "path2": "nas:x}y{z/",
+   "session": "nas_xy{2}..nas_x}y{z"
+  },
+  {
+   "path1": "nas:x}y{z/",
+   "path2": "disp:sync-data/notas/",
+   "session": "nas_x}y{z..disp_sync-data_notas"
+  }
+ ],
+ "bisync_default_max_delete": 50,
+ "options_info": {
+  "filter": [
+   {
+    "Name": "delete_excluded",
+    "Type": "bool"
+   },
+   {
+    "Name": "exclude_if_present",
+    "Type": "stringArray"
+   },
+   {
+    "Name": "files_from",
+    "Type": "stringArray"
+   },
+   {
+    "Name": "files_from_raw",
+    "Type": "stringArray"
+   },
+   {
+    "Name": "files_from0",
+    "Type": "stringArray"
+   },
+   {
+    "Name": "min_age",
+    "Type": "Duration"
+   },
+   {
+    "Name": "max_age",
+    "Type": "Duration"
+   },
+   {
+    "Name": "min_size",
+    "Type": "SizeSuffix"
+   },
+   {
+    "Name": "max_size",
+    "Type": "SizeSuffix"
+   },
+   {
+    "Name": "ignore_case",
+    "Type": "bool"
+   },
+   {
+    "Name": "hash_filter",
+    "Type": "string"
+   },
+   {
+    "Name": "filter",
+    "ShortOpt": "f",
+    "Type": "stringArray"
+   },
+   {
+    "Name": "filter_from",
+    "Type": "stringArray"
+   },
+   {
+    "Name": "exclude",
+    "Type": "stringArray"
+   },
+   {
+    "Name": "exclude_from",
+    "Type": "stringArray"
+   },
+   {
+    "Name": "include",
+    "Type": "stringArray"
+   },
+   {
+    "Name": "include_from",
+    "Type": "stringArray"
+   },
+   {
+    "Name": "metadata_filter",
+    "Type": "stringArray"
+   },
+   {
+    "Name": "metadata_filter_from",
+    "Type": "stringArray"
+   },
+   {
+    "Name": "metadata_exclude",
+    "Type": "stringArray"
+   },
+   {
+    "Name": "metadata_exclude_from",
+    "Type": "stringArray"
+   },
+   {
+    "Name": "metadata_include",
+    "Type": "stringArray"
+   },
+   {
+    "Name": "metadata_include_from",
+    "Type": "stringArray"
+   }
+  ],
+  "log": [
+   {
+    "Name": "log_file",
+    "Type": "string"
+   },
+   {
+    "Name": "log_file_max_size",
+    "Type": "SizeSuffix"
+   },
+   {
+    "Name": "log_file_max_backups",
+    "Type": "int"
+   },
+   {
+    "Name": "log_file_max_age",
+    "Type": "Duration"
+   },
+   {
+    "Name": "log_file_compress",
+    "Type": "bool"
+   },
+   {
+    "Name": "log_format",
+    "Type": "Bits"
+   },
+   {
+    "Name": "syslog",
+    "Type": "bool"
+   },
+   {
+    "Name": "syslog_facility",
+    "Type": "string"
+   },
+   {
+    "Name": "log_systemd",
+    "Type": "bool"
+   },
+   {
+    "Name": "windows_event_log_level",
+    "Type": "LogLevel"
+   }
+  ],
+  "main": [
+   {
+    "Name": "modify_window",
+    "Type": "Duration"
+   },
+   {
+    "Name": "checkers",
+    "Type": "int"
+   },
+   {
+    "Name": "transfers",
+    "Type": "int"
+   },
+   {
+    "Name": "checksum",
+    "ShortOpt": "c",
+    "Type": "bool"
+   },
+   {
+    "Name": "size_only",
+    "Type": "bool"
+   },
+   {
+    "Name": "ignore_times",
+    "ShortOpt": "I",
+    "Type": "bool"
+   },
+   {
+    "Name": "ignore_existing",
+    "Type": "bool"
+   },
+   {
+    "Name": "ignore_errors",
+    "Type": "bool"
+   },
+   {
+    "Name": "dry_run",
+    "ShortOpt": "n",
+    "Type": "bool"
+   },
+   {
+    "Name": "interactive",
+    "ShortOpt": "i",
+    "Type": "bool"
+   },
+   {
+    "Name": "links",
+    "ShortOpt": "l",
+    "Type": "bool"
+   },
+   {
+    "Name": "contimeout",
+    "Type": "Duration"
+   },
+   {
+    "Name": "timeout",
+    "Type": "Duration"
+   },
+   {
+    "Name": "expect_continue_timeout",
+    "Type": "Duration"
+   },
+   {
+    "Name": "no_check_certificate",
+    "Type": "bool"
+   },
+   {
+    "Name": "ask_password",
+    "Type": "bool"
+   },
+   {
+    "Name": "password_command",
+    "Type": "SpaceSepList"
+   },
+   {
+    "Name": "max_delete",
+    "Type": "int64"
+   },
+   {
+    "Name": "max_delete_size",
+    "Type": "SizeSuffix"
+   },
+   {
+    "Name": "track_renames",
+    "Type": "bool"
+   },
+   {
+    "Name": "track_renames_strategy",
+    "Type": "string"
+   },
+   {
+    "Name": "retries",
+    "Type": "int"
+   },
+   {
+    "Name": "retries_sleep",
+    "Type": "Duration"
+   },
+   {
+    "Name": "low_level_retries",
+    "Type": "int"
+   },
+   {
+    "Name": "update",
+    "ShortOpt": "u",
+    "Type": "bool"
+   },
+   {
+    "Name": "use_server_modtime",
+    "Type": "bool"
+   },
+   {
+    "Name": "no_gzip_encoding",
+    "Type": "bool"
+   },
+   {
+    "Name": "max_depth",
+    "Type": "int"
+   },
+   {
+    "Name": "ignore_size",
+    "Type": "bool"
+   },
+   {
+    "Name": "ignore_checksum",
+    "Type": "bool"
+   },
+   {
+    "Name": "ignore_case_sync",
+    "Type": "bool"
+   },
+   {
+    "Name": "fix_case",
+    "Type": "bool"
+   },
+   {
+    "Name": "no_traverse",
+    "Type": "bool"
+   },
+   {
+    "Name": "check_first",
+    "Type": "bool"
+   },
+   {
+    "Name": "no_check_dest",
+    "Type": "bool"
+   },
+   {
+    "Name": "no_unicode_normalization",
+    "Type": "bool"
+   },
+   {
+    "Name": "no_update_modtime",
+    "Type": "bool"
+   },
+   {
+    "Name": "no_update_dir_modtime",
+    "Type": "bool"
+   },
+   {
+    "Name": "compare_dest",
+    "Type": "stringArray"
+   },
+   {
+    "Name": "copy_dest",
+    "Type": "stringArray"
+   },
+   {
+    "Name": "backup_dir",
+    "Type": "string"
+   },
+   {
+    "Name": "suffix",
+    "Type": "string"
+   },
+   {
+    "Name": "suffix_keep_extension",
+    "Type": "bool"
+   },
+   {
+    "Name": "fast_list",
+    "Type": "bool"
+   },
+   {
+    "Name": "list_cutoff",
+    "Type": "int"
+   },
+   {
+    "Name": "tpslimit",
+    "Type": "float64"
+   },
+   {
+    "Name": "tpslimit_burst",
+    "Type": "int"
+   },
+   {
+    "Name": "user_agent",
+    "Type": "string"
+   },
+   {
+    "Name": "immutable",
+    "Type": "bool"
+   },
+   {
+    "Name": "auto_confirm",
+    "Type": "bool"
+   },
+   {
+    "Name": "stats_unit",
+    "Type": "string"
+   },
+   {
+    "Name": "stats_file_name_length",
+    "Type": "int"
+   },
+   {
+    "Name": "log_level",
+    "Type": "LogLevel"
+   },
+   {
+    "Name": "stats_log_level",
+    "Type": "LogLevel"
+   },
+   {
+    "Name": "bwlimit",
+    "Type": "BwTimetable"
+   },
+   {
+    "Name": "bwlimit_file",
+    "Type": "BwTimetable"
+   },
+   {
+    "Name": "buffer_size",
+    "Type": "SizeSuffix"
+   },
+   {
+    "Name": "streaming_upload_cutoff",
+    "Type": "SizeSuffix"
+   },
+   {
+    "Name": "dump",
+    "Type": "DumpFlags"
+   },
+   {
+    "Name": "max_transfer",
+    "Type": "SizeSuffix"
+   },
+   {
+    "Name": "max_duration",
+    "Type": "Duration"
+   },
+   {
+    "Name": "cutoff_mode",
+    "Type": "HARD|SOFT|CAUTIOUS"
+   },
+   {
+    "Name": "max_backlog",
+    "Type": "int"
+   },
+   {
+    "Name": "max_stats_groups",
+    "Type": "int"
+   },
+   {
+    "Name": "stats_one_line",
+    "Type": "bool"
+   },
+   {
+    "Name": "stats_one_line_date",
+    "Type": "bool"
+   },
+   {
+    "Name": "stats_one_line_date_format",
+    "Type": "string"
+   },
+   {
+    "Name": "error_on_no_transfer",
+    "Type": "bool"
+   },
+   {
+    "Name": "progress",
+    "ShortOpt": "P",
+    "Type": "bool"
+   },
+   {
+    "Name": "progress_terminal_title",
+    "Type": "bool"
+   },
+   {
+    "Name": "use_cookies",
+    "Type": "bool"
+   },
+   {
+    "Name": "use_mmap",
+    "Type": "bool"
+   },
+   {
+    "Name": "max_buffer_memory",
+    "Type": "SizeSuffix"
+   },
+   {
+    "Name": "ca_cert",
+    "Type": "stringArray"
+   },
+   {
+    "Name": "client_cert",
+    "Type": "string"
+   },
+   {
+    "Name": "client_key",
+    "Type": "string"
+   },
+   {
+    "Name": "client_pass",
+    "Type": "string"
+   },
+   {
+    "Name": "multi_thread_cutoff",
+    "Type": "SizeSuffix"
+   },
+   {
+    "Name": "multi_thread_streams",
+    "Type": "int"
+   },
+   {
+    "Name": "multi_thread_write_buffer_size",
+    "Type": "SizeSuffix"
+   },
+   {
+    "Name": "multi_thread_chunk_size",
+    "Type": "SizeSuffix"
+   },
+   {
+    "Name": "use_json_log",
+    "Type": "bool"
+   },
+   {
+    "Name": "order_by",
+    "Type": "string"
+   },
+   {
+    "Name": "refresh_times",
+    "Type": "bool"
+   },
+   {
+    "Name": "no_console",
+    "Type": "bool"
+   },
+   {
+    "Name": "fs_cache_expire_duration",
+    "Type": "Duration"
+   },
+   {
+    "Name": "fs_cache_expire_interval",
+    "Type": "Duration"
+   },
+   {
+    "Name": "disable_http2",
+    "Type": "bool"
+   },
+   {
+    "Name": "human_readable",
+    "Type": "bool"
+   },
+   {
+    "Name": "kv_lock_time",
+    "Type": "Duration"
+   },
+   {
+    "Name": "disable_http_keep_alives",
+    "Type": "bool"
+   },
+   {
+    "Name": "metadata",
+    "ShortOpt": "M",
+    "Type": "bool"
+   },
+   {
+    "Name": "server_side_across_configs",
+    "Type": "bool"
+   },
+   {
+    "Name": "color",
+    "Type": "AUTO|NEVER|ALWAYS"
+   },
+   {
+    "Name": "default_time",
+    "Type": "Time"
+   },
+   {
+    "Name": "inplace",
+    "Type": "bool"
+   },
+   {
+    "Name": "metadata_mapper",
+    "Type": "SpaceSepList"
+   },
+   {
+    "Name": "partial_suffix",
+    "Type": "string"
+   },
+   {
+    "Name": "max_connections",
+    "Type": "int"
+   },
+   {
+    "Name": "name_transform",
+    "Type": "stringArray"
+   },
+   {
+    "Name": "http_proxy",
+    "Type": "string"
+   }
+  ]
+ },
+ "backends": [
+  {
+   "Options": [
+    "remote",
+    "description"
+   ],
+   "Prefix": "alias"
+  },
+  {
+   "Options": [
+    "nounc",
+    "copy_links",
+    "links",
+    "skip_links",
+    "skip_specials",
+    "zero_size_links",
+    "unicode_normalization",
+    "no_check_updated",
+    "one_file_system",
+    "case_sensitive",
+    "case_insensitive",
+    "no_clone",
+    "no_preallocate",
+    "no_sparse",
+    "no_set_modtime",
+    "metadata_restore_special_bits",
+    "fatal_if_no_space",
+    "time_type",
+    "hashes",
+    "encoding",
+    "description"
+   ],
+   "Prefix": "local"
+  },
+  {
+   "Options": [
+    "host",
+    "user",
+    "port",
+    "pass",
+    "key_pem",
+    "key_file",
+    "key_file_pass",
+    "pubkey",
+    "pubkey_file",
+    "known_hosts_file",
+    "pin_host_key",
+    "host_keys",
+    "key_use_agent",
+    "use_insecure_cipher",
+    "disable_hashcheck",
+    "ask_password",
+    "path_override",
+    "encoding",
+    "set_modtime",
+    "shell_type",
+    "hashes",
+    "md5sum_command",
+    "sha1sum_command",
+    "crc32sum_command",
+    "sha256sum_command",
+    "blake3sum_command",
+    "xxh3sum_command",
+    "xxh128sum_command",
+    "skip_links",
+    "subsystem",
+    "server_command",
+    "use_fstat",
+    "disable_concurrent_reads",
+    "disable_concurrent_writes",
+    "idle_timeout",
+    "chunk_size",
+    "concurrency",
+    "connections",
+    "set_env",
+    "ciphers",
+    "key_exchange",
+    "macs",
+    "host_key_algorithms",
+    "ssh",
+    "socks_proxy",
+    "http_proxy",
+    "copy_is_hardlink",
+    "description"
+   ],
+   "Prefix": "sftp"
+  },
+  {
+   "Options": [
+    "remote",
+    "filename_encryption",
+    "directory_name_encryption",
+    "password",
+    "password2",
+    "server_side_across_configs",
+    "show_mapping",
+    "no_data_encryption",
+    "pass_bad_blocks",
+    "strict_names",
+    "filename_encoding",
+    "suffix",
+    "description"
+   ],
+   "Prefix": "crypt"
+  },
+  {
+   "Options": [
+    "url",
+    "vendor",
+    "user",
+    "pass",
+    "bearer_token",
+    "bearer_token_command",
+    "encoding",
+    "headers",
+    "pacer_min_sleep",
+    "nextcloud_chunk_size",
+    "owncloud_exclude_shares",
+    "owncloud_exclude_mounts",
+    "unix_socket",
+    "auth_redirect",
+    "description"
+   ],
+   "Prefix": "webdav"
+  },
+  {
+   "Options": [
+    "upstreams",
+    "description"
+   ],
+   "Prefix": "combine"
+  }
+ ]
+}

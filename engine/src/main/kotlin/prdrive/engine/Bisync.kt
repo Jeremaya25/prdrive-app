@@ -1,6 +1,7 @@
 package prdrive.engine
 
 import java.io.File
+import java.io.IOException
 import java.security.MessageDigest
 
 /**
@@ -24,6 +25,10 @@ import java.security.MessageDigest
  * Desde que el lado local va como remote `combine` el nombre no depende de
  * dónde esté montado el volumen, así que la herida está cerrada y la venda
  * sobra.
+ *
+ * Lo que NO se copia: `migrate_legacy_state()` (un formato de `state/` anterior
+ * a que existiera esta app) y `programa_en_listado()` (un diagnóstico de la
+ * «Reparación» del escritorio).
  */
 object Bisync {
 
@@ -37,7 +42,7 @@ object Bisync {
     // -----------------------------------------------------------------------
     // Nombre de sesión
     //
-    // Réplica exacta de cmd/bisync/bilib/canonical.go (rclone v1.75.1):
+    // Réplica exacta de cmd/bisync/bilib/canonical.go (rclone v1.75.x):
     //
     //   FsPath(f)        -> "remote:ruta/" para todo lo que no es el backend
     //                       local; para él, la ruta con el separador del SO
@@ -56,10 +61,16 @@ object Bisync {
     // nombre de listado en el móvil y en el PC.
     //
     // rclone NO recorta este nombre por longitud (no hay maxBaseNameLen en
-    // v1.75.1), así que aquí tampoco.
+    // v1.75.x), así que aquí tampoco.
     // -----------------------------------------------------------------------
 
-    private val NO_CANONICAL = Regex("[\\s\\\\/:?*]")
+    // El `\s` de canonical.go es el de RE2, que en Go es solo `[\t\n\f\r ]`. Se
+    // escribe a mano porque ni el de Java (que añade `\x0b`) ni el de Android
+    // (ICU: cualquier espacio Unicode) ni el de Python (también Unicode) son ese.
+    // Ojo: aquí el motor se separa de `common/bisync.py` a propósito, y el que
+    // manda es rclone: con un espacio de ancho completo (U+3000) en el nombre,
+    // prdrive calcularía un prefijo que rclone no escribe.
+    private val NO_CANONICAL = Regex("[\\t\\n\\f\\r \\\\/:?*]")
 
     fun canonicalPath(remote: String): String =
         NO_CANONICAL.replace(remote.trim('\\', '/'), "_")
@@ -74,27 +85,285 @@ object Bisync {
         }
     }
 
+    /** `FsPath` del backend local: la ruta acabada en separador (en Android, `/`). */
+    fun fsPathLocal(p: String): String = if (p.endsWith("/")) p else "$p/"
+
     /**
-     * `FsPath` para cualquier remote: `nombre:ruta/`.
+     * `FsPath` para un remote con nombre: `nombre:ruta/`.
      *
-     * No se replica la rama del backend `local` de `FsPath` —la que usa el
-     * separador del sistema y quita el prefijo `\\?\` de Windows— porque en la
-     * app **nunca** se da: el lado local es siempre el remote `combine`
-     * ([DEFAULT_DEVICE_REMOTE]), que para rclone es un remote como otro
-     * cualquiera. Un config sin `device_remote` lo rechaza [parseConfig] antes
-     * de llegar aquí, en vez de calcular un nombre que no sería el que rclone
-     * busca.
+     * Casi siempre `Root()` es la ruta tal cual. Dos tipos de remote son la
+     * excepción, y por eso se pasan los [tipos] del `rclone.conf`
+     * ([tiposDeRemote]): uno `local` tiene por `Root()` la ruta limpia
+     * ([raizLocal]), y uno `alias` ni siquiera es él: se escribe su destino
+     * ([resolverExtremo]). Si pasa por un alias que no se puede seguir, se deja
+     * como viene: es la mejor estimación, y [prefijoComprobable] avisa de que no
+     * es de fiar.
+     *
+     * No se replica la rama de Windows de `FsPath` (el separador `\` y el
+     * prefijo `\\?\`): en Android no se da.
      */
-    fun fsPathRemote(s: String): String = if (s.endsWith("/")) s else "$s/"
+    fun fsPathRemote(s: String, tipos: Map<String, TipoRemote>): String =
+        resolverExtremo(s, tipos) ?: if (s.endsWith("/")) s else "$s/"
 
     fun sessionName(path1: String, path2: String): String =
         stripHexString(canonicalPath(path1)) + ".." + stripHexString(canonicalPath(path2))
 
-    /** Nombre base (.path1.lst / .path2.lst) que rclone buscará para esta pareja. */
-    fun expectedPrefix(pareja: Pareja): String = sessionName(
-        fsPathRemote(pareja.endpoint(pareja.mode.source)),
-        fsPathRemote(pareja.endpoint(pareja.mode.dest)),
-    )
+    /**
+     * Nombre base (.path1.lst / .path2.lst) que rclone buscará para esta pareja.
+     *
+     * El lado local es siempre el remote `combine` ([DEFAULT_DEVICE_REMOTE]),
+     * que para rclone es un remote como otro cualquiera: un config sin
+     * `device_remote` lo rechaza [parseConfig] antes de llegar aquí, en vez de
+     * calcular un nombre que no sería el que rclone busca.
+     */
+    fun expectedPrefix(pareja: Pareja, tipos: Map<String, TipoRemote>): String =
+        sessionName(
+            fsPathRemote(pareja.endpoint(pareja.mode.source), tipos),
+            fsPathRemote(pareja.endpoint(pareja.mode.dest), tipos),
+        )
+
+    /**
+     * Si [expectedPrefix] es el nombre que rclone escribirá y no una
+     * estimación. No lo es cuando un extremo pasa por un alias que no se puede
+     * seguir: comparar con él un baseline que rclone escribió con el destino
+     * daría un «no es de esta pareja» falso, y quien diagnostica no debe acusar
+     * con él.
+     */
+    fun prefijoComprobable(pareja: Pareja, tipos: Map<String, TipoRemote>): Boolean =
+        listOf(pareja.mode.source, pareja.mode.dest)
+            .all { resolverExtremo(pareja.endpoint(it), tipos) != null }
+
+    // -----------------------------------------------------------------------
+    // Tipos de remote
+    //
+    // Lo que ve `FsPath` (cmd/bisync/bilib/canonical.go) cuando el remote no es
+    // uno corriente. prdrive lo contrastó con rclone v1.75.1; aquí solo la rama
+    // POSIX, porque la app no corre en Windows.
+    // -----------------------------------------------------------------------
+
+    /** Cuántos alias encadenados se siguen antes de darlos por un ciclo. */
+    const val TOPE_ALIAS = 8
+
+    /**
+     * Lo que hace falta saber de un remote del `rclone.conf` para nombrar su
+     * extremo: su `type`, si lleva `nounc = true` (solo cuenta en un `local`, y
+     * solo en Windows) y su opción `remote` (el destino de un `alias`).
+     */
+    data class TipoRemote(val tipo: String?, val nounc: Boolean, val destino: String)
+
+    /** `{remote: TipoRemote}` de un `rclone.conf`, leído con [Pairing.parseRcloneConf]. */
+    fun tiposDeRemote(rcloneConf: String): Map<String, TipoRemote> =
+        Pairing.parseRcloneConf(rcloneConf).mapValues { (_, op) ->
+            TipoRemote(op["type"], (op["nounc"] ?: "").lowercase() == "true", op["remote"] ?: "")
+        }
+
+    /**
+     * El extremo `remote:ruta/` tal como lo escribe `FsPath`, o `null` si pasa
+     * por un alias que no se puede seguir: sin `remote`, un ciclo ([TOPE_ALIAS]),
+     * un destino que no está en el `rclone.conf` o una cadena de conexión.
+     *
+     * Un remote `alias` no tiene nombre propio: su `NewFs` devuelve el `Fs` del
+     * destino (`cache.Get(ctx, fspath.JoinRootPath(opt.Remote, root))`,
+     * backend/alias/alias.go). Un destino que es una ruta suelta es el backend
+     * local; uno que es otro remote se nombra con la regla de su tipo. Los demás
+     * envoltorios (`crypt`, `union`, `combine`…) devuelven su propio `Fs`, con
+     * el nombre de su sección, y no necesitan nada de esto.
+     */
+    fun resolverExtremo(s: String, tipos: Map<String, TipoRemote>): String? {
+        val corte = s.indexOf(':')
+        if (corte < 0) return if (s.endsWith("/")) s else "$s/"
+        return extremo(s.substring(0, corte), s.substring(corte + 1), tipos, 0)
+    }
+
+    private fun extremo(
+        nombre: String,
+        ruta: String,
+        tipos: Map<String, TipoRemote>,
+        saltos: Int,
+    ): String? {
+        val tipo = tipos[nombre] ?: TipoRemote(null, false, "")
+        if (tipo.tipo == "alias") return extremoAlias(tipo, ruta, tipos, saltos)
+        val raiz = if (tipo.tipo == "local") raizLocal(ruta) else ruta
+        val extremo = "$nombre:$raiz"
+        return if (extremo.endsWith("/")) extremo else "$extremo/"
+    }
+
+    /** Sigue un alias hasta su destino, con la raíz `ruta` que le llega a su `NewFs`. */
+    private fun extremoAlias(
+        tipo: TipoRemote,
+        ruta: String,
+        tipos: Map<String, TipoRemote>,
+        saltos: Int,
+    ): String? {
+        if (tipo.destino.isEmpty() || saltos >= TOPE_ALIAS) return null
+        val (destino, base) = partirRemote(tipo.destino) ?: return null
+        val raiz = unirRaiz(base, ruta, destino.isNotEmpty())
+        if (destino.isEmpty()) return fsPathLocal(raizLocal(raiz))
+        if (destino !in tipos) return null
+        return extremo(destino, raiz, tipos, saltos + 1)
+    }
+
+    /**
+     * Réplica reducida de `fspath.Parse` (fs/fspath/path.go) para la opción
+     * `remote` de un alias: `(nombre, ruta)`, con el nombre vacío si es una ruta
+     * local; `null` si no hay nada o es una cadena de conexión (`:backend:ruta`,
+     * o con parámetros `nombre,clave=valor:ruta`).
+     */
+    private fun partirRemote(texto: String): kotlin.Pair<String, String>? {
+        if (texto.isEmpty() || texto.startsWith(":")) return null
+        if (':' !in texto) return "" to texto
+        for ((i, letra) in texto.withIndex()) {
+            if (letra == '/' || letra == '\\') return "" to texto   // un `:` tras una barra es de la ruta
+            if (letra == ',') return null
+            if (letra == ':') return texto.substring(0, i) to texto.substring(i + 1)
+        }
+        return null
+    }
+
+    /** `posixpath.normpath`: la ruta sin `.`, sin `..` que se puedan quitar ni barras de más. */
+    private fun normpath(ruta: String): String {
+        if (ruta.isEmpty()) return "."
+        val barras = when {
+            !ruta.startsWith("/") -> 0
+            ruta.startsWith("//") && !ruta.startsWith("///") -> 2
+            else -> 1
+        }
+        val tramos = ArrayList<String>()
+        for (tramo in ruta.split("/")) {
+            if (tramo.isEmpty() || tramo == ".") continue
+            if (tramo != ".." || (barras == 0 && tramos.isEmpty()) ||
+                (tramos.isNotEmpty() && tramos.last() == "..")
+            ) {
+                tramos.add(tramo)
+            } else if (tramos.isNotEmpty()) {
+                tramos.removeAt(tramos.size - 1)
+            }
+        }
+        return ("/".repeat(barras) + tramos.joinToString("/")).ifEmpty { "." }
+    }
+
+    /** `path.Clean` de Go: [normpath] sin guardar las dos barras de POSIX. */
+    private fun limpiar(ruta: String): String {
+        val limpia = normpath(ruta)
+        return if (limpia.startsWith("//")) limpia.substring(1) else limpia
+    }
+
+    /** `path.Join` de Go: ignora lo vacío y limpia el resultado. */
+    private fun unir(vararg partes: String): String {
+        val llenas = partes.filter { it.isNotEmpty() }
+        return if (llenas.isEmpty()) "" else limpiar(llenas.joinToString("/"))
+    }
+
+    /**
+     * `fspath.JoinRootPath` (fs/fspath/path.go) con el remote ya separado de su
+     * ruta: la raíz que llega al alias se hace absoluta antes de unirla
+     * (`makeAbsolute`), para que no pueda salirse de él con `..`.
+     */
+    private fun unirRaiz(base: String, ruta: String, conNombre: Boolean): String {
+        if (ruta.isEmpty()) return base
+        val absoluta = limpiar("/$ruta")
+        val relativa = if (ruta.startsWith("/")) absoluta else absoluta.substring(1)
+        // Las rutas de red de Windows guardan sus dos barras; se conserva por fidelidad.
+        if (!conNombre && base.startsWith("//")) return "/" + unir(base, relativa)
+        val unida = unir(base, relativa)
+        return if (conNombre && unida == ".") "" else unida
+    }
+
+    /**
+     * El `Root()` del backend local de rclone (backend/local/local.go) en
+     * Android, donde `encoder.OS` es `encoder.Base` (lib/encoder/os_other.go).
+     *
+     * rclone lee la ruta como si viniera en su codificación estándar:
+     * `cleanRootPath` pasa cada tramo por `FromStandardName`
+     * (`Base.Encode(Standard.Decode(tramo))`) y luego la limpia
+     * (`filepath.Clean`: `a//b` y `a/./b` son `a/b`), y `Root()` la devuelve con
+     * `ToStandardPath` (`Standard.Encode(Base.Decode(..))`). Como `Base.Decode`
+     * deshace `Base.Encode`, cada tramo acaba siendo
+     * `Standard.Encode(Standard.Decode(tramo))`.
+     *
+     * prdrive solo replica los tramos `.` y `..` (`．`/`．．`). Aquí también lo
+     * demás: un carácter de control sale como su símbolo (`\u000b` es `␋`), y
+     * una `‛` suelta sale doble. Lo dice el oráculo de rclone
+     * (rclone/go/oraculo), y el spike lo vio en un dispositivo: rclone escribe
+     * el prefijo así, y el que manda es él.
+     */
+    fun raizLocal(ruta: String): String {
+        var limpia = normpath(ruta.ifEmpty { "." })
+        if (limpia.startsWith("//")) limpia = limpia.substring(1)
+        return limpia.split("/").joinToString("/") { codificarEstandar(decodificarEstandar(it)) }
+    }
+
+    /** `encoder.QuoteRune`: lo que va delante de un símbolo que ya estaba en el nombre. */
+    private const val COMILLA = '‛'
+
+    /** `encoder.symbolOffset`: el símbolo de NUL, y los de control van detrás. */
+    private const val SIMBOLO = '␀'
+
+    /**
+     * `Standard.Encode` de un tramo: `EncodeZero | EncodeSlash | EncodeCtl |
+     * EncodeDel | EncodeDot`. Un símbolo que ya estaba en el nombre se protege
+     * con [COMILLA], para que la codificación se pueda deshacer.
+     */
+    private fun codificarEstandar(tramo: String): String {
+        when (tramo) {
+            "" -> return ""
+            "." -> return "．"
+            ".." -> return "．．"
+            "．" -> return "$COMILLA．"
+            "．．" -> return "$COMILLA．$COMILLA．"
+        }
+        val salida = StringBuilder()
+        for (c in tramo) {
+            when {
+                c.code == 0 -> salida.append(SIMBOLO)
+                c == SIMBOLO || c == COMILLA -> salida.append(COMILLA).append(c)
+                c == '/' -> salida.append('／')
+                c == '／' -> salida.append(COMILLA).append(c)
+                c.code == 0x7f -> salida.append('␡')
+                c == '␡' -> salida.append(COMILLA).append(c)
+                c.code in 1..0x1f -> salida.append((SIMBOLO.code + c.code).toChar())
+                c.code in SIMBOLO.code + 1..SIMBOLO.code + 0x1f -> salida.append(COMILLA).append(c)
+                else -> salida.append(c)
+            }
+        }
+        return salida.toString()
+    }
+
+    /**
+     * `Standard.Decode` de un tramo (`MultiEncoder.Decode`,
+     * lib/encoder/encoder.go): lo contrario de [codificarEstandar]. Un símbolo
+     * vuelve a ser su carácter, salvo que lleve [COMILLA] delante, que entonces
+     * se queda como está y la comilla se va. Una comilla delante de cualquier
+     * otra cosa se queda, igual que una al final.
+     */
+    private fun decodificarEstandar(tramo: String): String {
+        when (tramo) {
+            "．" -> return "."
+            "．．" -> return ".."
+            "$COMILLA．" -> return "．"
+            "$COMILLA．$COMILLA．" -> return "．．"
+        }
+        val salida = StringBuilder()
+        var comillaPendiente = false
+        for (c in tramo) {
+            val tras = comillaPendiente
+            comillaPendiente = false
+            when {
+                c == SIMBOLO -> salida.append(if (tras) c else '\u0000')
+                c == COMILLA -> if (tras) salida.append(c) else comillaPendiente = true
+                c == '／' -> salida.append(if (tras) c else '/')
+                c == '␡' -> salida.append(if (tras) c else '\u007f')
+                c.code in SIMBOLO.code + 1..SIMBOLO.code + 0x1f ->
+                    salida.append(if (tras) c else (c.code - SIMBOLO.code).toChar())
+                else -> {
+                    if (tras) salida.append(COMILLA)
+                    salida.append(c)
+                }
+            }
+        }
+        if (comillaPendiente) salida.append(COMILLA)
+        return salida.toString()
+    }
 
     // -----------------------------------------------------------------------
     // Filtros
@@ -115,9 +384,24 @@ object Bisync {
         val needsResync: Boolean get() = status != "ok"
     }
 
+    /**
+     * El contenido del fichero de filtros de la pareja. Las reglas van en orden
+     * de prioridad: gana la primera que casa.
+     */
     fun filtersContent(pareja: Pareja): String {
         val lineas = ArrayList<String>()
         lineas.add(FILTERS_HEADER)
+        if (pareja.versions) {
+            // No es filtrado: es la condición de rclone para que `.prversions/`
+            // viva dentro de la pareja. Sin ella `--backup-dir1` solapa con
+            // Path1 y la pasada muere con «destination and parameter to
+            // --backup-dir mustn't overlap». Va PRIMERA: detrás de un `+ **/*.md`
+            // no excluiría nada.
+            lineas.add("- $VERSIONS_DIR/**")
+        }
+        // Las del código van antes que las del TOML: las del llavero son toda su
+        // lista, y la de `.prdrive/` tiene que ganar a cualquier `+` de la pareja.
+        lineas.addAll(pareja.reglas)
         pareja.includes.forEach { lineas.add("+ $it") }
         pareja.excludes.forEach { lineas.add("- $it") }
         if (pareja.includes.isNotEmpty()) {
@@ -131,7 +415,9 @@ object Bisync {
      * Genera (si hace falta) `filters/<pareja>.txt` y devuelve su ruta.
      *
      * El contenido es determinista: si no cambia, no se reescribe el fichero,
-     * para no invalidar el md5 sin motivo.
+     * para no invalidar el md5 sin motivo. Cuando cambia se escribe en un
+     * temporal y se renombra encima: un fichero a medias tendría otro md5 y se
+     * leería como «los filtros han cambiado».
      */
     fun filtersFileFor(pareja: Pareja, filtersDir: File): File? {
         if (!pareja.wantsFiltersFile) return null
@@ -139,7 +425,13 @@ object Bisync {
         filtersDir.mkdirs()
         val fichero = File(filtersDir, "${pareja.name}.txt")
         if (!fichero.exists() || fichero.readText() != contenido) {
-            fichero.writeText(contenido)
+            val temporal = File.createTempFile("${pareja.name}.txt.", ".tmp", filtersDir)
+            try {
+                temporal.writeText(contenido)
+                if (!temporal.renameTo(fichero)) fichero.writeText(contenido)
+            } finally {
+                temporal.delete()
+            }
         }
         return fichero
     }
@@ -150,7 +442,7 @@ object Bisync {
         val digest = md5(ffile.readBytes())
         val hashFile = File(ffile.path + ".md5")
         if (!hashFile.exists()) return EstadoFiltros("new", "${ffile.name} sin hash previo")
-        if (hashFile.readText().trim() != digest) {
+        if (stripPy(hashFile.readText()) != digest) {
             return EstadoFiltros(
                 "changed",
                 "${ffile.name} ha cambiado desde el último resync",
@@ -161,7 +453,7 @@ object Bisync {
 
     private fun md5(datos: ByteArray): String =
         MessageDigest.getInstance("MD5").digest(datos)
-            .joinToString("") { "%02x".format(it) }
+            .joinToString("") { hex(it.toInt() and 0xff, 2) }
 
     // -----------------------------------------------------------------------
     // Estado del baseline
@@ -177,16 +469,28 @@ object Bisync {
         if (!workdir.exists()) {
             return EstadoPareja("fresh", "sin workdir (nunca sincronizada)", null)
         }
-        val nombres = (workdir.list() ?: emptyArray()).sorted()
+        val nombres = (workdir.list() ?: emptyArray()).sortedWith(ORDEN_PY)
 
-        // OJO al orden: los .lst-err NO los limpia nadie (rclone solo renombra
-        // .lst -> .lst-err al abortar; ver cmd/bisync/operations.go). Si después
-        // hay un juego de listados válido, el baseline es bueno y esos son
-        // residuo.
+        // Los .lst-err no los limpia nadie (rclone solo renombra .lst -> .lst-err
+        // al abortar; cmd/bisync/operations.go): si después hay un juego de
+        // listados válido, el baseline es bueno y esos son residuo.
+        //
+        // Contra rclone v1.75.1: ante un error crítico `Bisync()` renombra los
+        // dos listados a .lst-err («the prior listings are renamed to .lst-err
+        // to lock out further runs»), y una interrupción que no se cierra bien
+        // hace lo mismo con `markFailed()` (cmd/bisync/lockfile.go). Con
+        // --recover la pasada siguiente vuelve a los .lst-old y rehace los .lst,
+        // y los -err se quedan como estaban. Se explican, nunca se borran: lo que
+        // hay en el workdir de bisync no es cosa nuestra.
         val path1 = nombres.filter { it.endsWith(PATH1_SUFFIX) }
         val path2 = nombres.filter { it.endsWith(PATH2_SUFFIX) }
         val errores = nombres.filter { it.endsWith(ERR_SUFFIX) }
-        val residuo = if (errores.isEmpty()) "" else " (+${errores.size} $ERR_SUFFIX residuales)"
+        val residuo = if (errores.isEmpty()) {
+            ""
+        } else {
+            " (+${errores.size} $ERR_SUFFIX: el baseline que rclone apartó al " +
+                "abortar una pasada; ya no lo usa y se puede borrar a mano)"
+        }
 
         if (path1.isNotEmpty() && path2.isNotEmpty()) {
             val pre1 = path1.map { it.removeSuffix(PATH1_SUFFIX) }.toSet()
@@ -195,7 +499,7 @@ object Bisync {
             if (comun.size != 1 || pre1.size != 1 || pre2.size != 1) {
                 return EstadoPareja(
                     "broken",
-                    "varios juegos de listados: ${(pre1 + pre2).sorted()}",
+                    "varios juegos de listados: ${reprPy((pre1 + pre2).sortedWith(ORDEN_PY))}",
                     null,
                 )
             }
@@ -206,7 +510,9 @@ object Bisync {
         if (errores.isNotEmpty()) {
             return EstadoPareja(
                 "broken",
-                "${errores.size} listado(s) marcados $ERR_SUFFIX por un fallo crítico previo",
+                "${errores.size} listado(s) $ERR_SUFFIX: rclone aparta así el baseline " +
+                    "cuando una pasada aborta con un error crítico, para bloquear las " +
+                    "siguientes",
                 null,
             )
         }
@@ -235,6 +541,58 @@ object Bisync {
     }
 
     /**
+     * Si un listado de bisync no trae ni un fichero ni una carpeta.
+     *
+     * Es `fileList.empty()` de rclone (`cmd/bisync/listing.go`, igual en v1.75.1
+     * y v1.75.2) sobre lo que `loadListing()` deja en la lista: no cuentan las
+     * líneas en blanco ni las que empiezan por `#` (la cabecera), y sí cuenta
+     * cualquier otra. Una línea que rclone descartaría por rota cuenta aquí como
+     * contenido, a propósito: decir «vacío» de más rehace una referencia que sí
+     * tenía algo que proteger. Un listado que no se puede leer no está vacío.
+     */
+    private fun sinEntradas(lst: File): Boolean = try {
+        lst.useLines(Charsets.UTF_8) { lineas -> lineas.none { it.isNotEmpty() && !it.startsWith("#") } }
+    } catch (_: IOException) {
+        false
+    }
+
+    /**
+     * Si la pasada va a rehacer sola el baseline de la pareja, por estar vacío.
+     *
+     * Un baseline vacío es lo que deja un `--resync` sobre dos lados vacíos, y
+     * rclone aborta con él toda pasada que no sea otro `--resync`
+     * (`checkListing()`, «Empty prior Path1 listing», código 7) porque no sabe
+     * distinguir una carpeta vacía de una sin montar. Con la referencia vacía no
+     * queda nada que proteger, y la pasada la rehace. Tiene que cumplirse todo:
+     *
+     * - El baseline es de ESTA pareja: su prefijo es el esperado y ese prefijo
+     *   se puede comprobar ([prefijoComprobable]). Rehacer contra unos extremos
+     *   que han cambiado es decisión de una persona.
+     * - La carpeta local existe. Sin ella, con baseline, la pasada aborta y no
+     *   crea nada: un lado vacío se lee como «han borrado todo».
+     * - Los DOS listados están vacíos. Si solo lo está uno, un lado se ha
+     *   vaciado desde la última pasada buena y rclone debe pararla.
+     *
+     * A diferencia del escritorio, las rutas se pasan: el motor no sabe dónde
+     * está el volumen.
+     */
+    fun referenciaVacia(
+        pareja: Pareja,
+        estado: EstadoPareja,
+        workdir: File,
+        carpetaLocal: File,
+        tipos: Map<String, TipoRemote>,
+    ): Boolean {
+        if (!pareja.isBisync || !estado.hasBaseline) return false
+        val prefijo = estado.prefix ?: return false
+        if (!prefijoComprobable(pareja, tipos) || prefijo != expectedPrefix(pareja, tipos)) {
+            return false
+        }
+        if (!carpetaLocal.exists()) return false
+        return listOf(PATH1_SUFFIX, PATH2_SUFFIX).all { sinEntradas(File(workdir, prefijo + it)) }
+    }
+
+    /**
      * Por qué esta pareja necesita `--resync`. Lista vacía = no lo necesita.
      *
      * El estado se puede pasar ya calculado: quien acaba de mirarlo no tiene por
@@ -256,6 +614,12 @@ object Bisync {
     // Apartar el baseline
     // -----------------------------------------------------------------------
 
+    private val FORMATO_SELLO = java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")
+
+    /** El sello de un baseline apartado (`%Y%m%d_%H%M%S`), de ahora o de otra fecha. */
+    fun selloApartado(cuando: java.time.LocalDateTime = java.time.LocalDateTime.now()): String =
+        cuando.format(FORMATO_SELLO)
+
     /**
      * Aparta el baseline de una pareja: `state/<n>/` -> `state/<n>.old-<sello>/`.
      *
@@ -272,7 +636,7 @@ object Bisync {
      *
      * Devuelve dónde ha quedado, o `null` si no había baseline que apartar.
      */
-    fun shelveBaseline(stateDir: File, nombre: String, sello: String): File? {
+    fun shelveBaseline(stateDir: File, nombre: String, sello: String = selloApartado()): File? {
         val workdir = File(stateDir, nombre)
         if (!workdir.isDirectory) return null
         var destino = File(stateDir, "$nombre.old-$sello")
@@ -281,7 +645,9 @@ object Bisync {
             destino = File(stateDir, "$nombre.old-${sello}_$n")
             n++
         }
-        return if (workdir.renameTo(destino)) destino else null
+        // Como `Path.rename()`: si no se puede, es un error y no «no había baseline».
+        if (!workdir.renameTo(destino)) throw IOException("No se pudo apartar $workdir a $destino")
+        return destino
     }
 
     /**
@@ -300,17 +666,23 @@ object Bisync {
         nuevo: String,
     ): List<kotlin.Pair<File, File>> {
         val movimientos = ArrayList<kotlin.Pair<File, File>>()
+        fun mover(de: File, a: File) {
+            if (de.renameTo(a)) {
+                movimientos.add(de to a)
+                return
+            }
+            // Media pareja renombrada es peor que ninguna: lo ya movido vuelve
+            // a su sitio antes de contar el fallo. (prdrive deja lo movido.)
+            for ((antes, ahora) in movimientos.asReversed()) ahora.renameTo(antes)
+            throw IOException("No se pudo mover $de a $a")
+        }
         val origen = File(stateDir, viejo)
         val destino = File(stateDir, nuevo)
-        if (origen.isDirectory && !destino.exists() && origen.renameTo(destino)) {
-            movimientos.add(origen to destino)
-        }
+        if (origen.isDirectory && !destino.exists()) mover(origen, destino)
         for (sufijo in listOf(".txt", ".txt.md5")) {
             val fViejo = File(filtersDir, "$viejo$sufijo")
             val fNuevo = File(filtersDir, "$nuevo$sufijo")
-            if (fViejo.exists() && !fNuevo.exists() && fViejo.renameTo(fNuevo)) {
-                movimientos.add(fViejo to fNuevo)
-            }
+            if (fViejo.exists() && !fNuevo.exists()) mover(fViejo, fNuevo)
         }
         return movimientos
     }

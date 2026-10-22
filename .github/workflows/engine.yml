@@ -11,6 +11,11 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    # Las máquinas de GitHub traen un SDK de Android, y con él settings.gradle.kts
+    # metería el módulo app. El motor no lo necesita: que se vea.
+    env:
+      ANDROID_HOME: ""
+      ANDROID_SDK_ROOT: ""
     steps:
       - uses: actions/checkout@v4
 
