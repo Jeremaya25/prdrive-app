@@ -43,8 +43,10 @@ engine/       Kotlin puro (JVM), SIN una línea de Android
 ├── Pasada.kt   espejo de sync.py: una pasada entera (preflight, la llamada,
 │               el log, los resultados y los conflictos) contra un `Rclone` que
 │               se pasa, y la traducción de la orden a parámetros del RPC
-└── Volumen.kt  espejo de install/: la carpeta del volumen, su .prdrive/ y lo
-                que se escribe al emparejar
+├── Volumen.kt  espejo de install/: la carpeta del volumen, su .prdrive/ y lo
+│               que se escribe al emparejar
+└── Actualizacion.kt  espejo de common/update.py: la última release, la caché
+                de un día, comparar versiones, y el APK de la release
 rclone/
 ├── go/rclone/  el paquete Go del .aar: librclone + sync/bisync + backends
 ├── go/oraculo/ lo que dice el código de rclone donde el motor sigue a rclone
@@ -56,6 +58,9 @@ app/          Android: solo dibuja y llama
 ├── Instalador.kt     el primer arranque sin pantallas (espejo del orden de
 │                     install/): conectar, leer el catálogo, sembrar, --resync
 ├── Estado.kt         lo que la principal enseña de cada pareja, leído de state/
+├── Actualizador.kt   la app se pone al día sola: baja el APK de la release, lo
+│                     comprueba y se lo da a PackageInstaller («La
+│                     autoactualización»)
 ├── ui/               Modelo (el ViewModel), Pantallas (Compose) y Escaner (el
 │                     de códigos de Play services)
 ├── rclone/Rclone.kt  el envoltorio del RPC (rpc, trabajo con _async)
@@ -64,12 +69,15 @@ app/          Android: solo dibuja y llama
 ├── documentos/VolumenProvider.kt  el volumen en la app de Archivos, sin .prdrive/
 └── androidTest/  el spike contra rclone de verdad, la pasada entera, el
                   proveedor, los vectores del motor otra vez en Android
-                  (MotorEnAndroidTest) y las pantallas de punta a punta
+                  (MotorEnAndroidTest), lo que el actualizador mira de un APK
+                  (ActualizadorTest) y las pantallas de punta a punta
                   contra un servidor SFTP (PuntaAPuntaTest)
 herramientas/
 ├── vectores.py        genera los valores esperados desde el prdrive de verdad
 ├── vectores_paso3.py  su parte de la pasada y el volumen
 ├── vectores_python.py lo que el motor imita del propio Python (y de tomllib)
+├── vectores_actualizacion.py  su parte de common/update.py, con el
+│                      repositorio de la app y la respuesta de GitHub guardada
 └── punta_a_punta.py   el servidor y la carga del QR de PuntaAPuntaTest
 .github/
 ├── workflows/engine.yml   el motor, en cada push
@@ -303,6 +311,58 @@ no cambien `rclone/go` ni `construir.sh`.
 
 El APK de depuración va firmado con la clave de depuración de cada máquina: no
 se instala encima de una release ni al revés.
+
+## La autoactualización
+
+La app se pone al día sola desde esas releases (`Actualizador.kt`). Qué hay y
+si es más nuevo lo dice el motor (`Actualizacion.kt`), que es el espejo de
+`common/update.py` con el repositorio de la app: la misma caché de un día, la
+misma comparación de versiones y las mismas frases. Lo que trae la versión
+nueva no se parece: el escritorio baja el zip del código y se despliega a sí
+mismo; aquí se baja el APK que cuelga `release.yml` (`prdrive-<VERSION>.apk`) y
+lo instala Android.
+
+- **Cuándo.** Al abrir la app se pregunta a GitHub, como mucho una vez al día. Si
+  hay versión nueva se baja sola, salvo con datos móviles (son unos 50 MB) o en
+  una compilación de depuración, que no la podría poner encima (otra firma): ahí
+  hay un botón. Se instala **al salir de la app**, porque instalarse la cierra,
+  y nunca con una pasada en marcha (`Modelo.trabajo` y
+  `Actualizador.empezarTrabajo`): cortarla deja el lock de bisync puesto. Solo
+  con el volumen sembrado: a medio emparejar, cerrar la app perdería la carga del
+  QR, que no se guarda.
+- **Sin preguntar** solo desde Android 12, y solo si la persona ha permitido una
+  vez que prdrive instale apps (`REQUEST_INSTALL_PACKAGES`, con
+  `UPDATE_PACKAGES_WITHOUT_USER_ACTION` y `setRequireUserAction`). Antes de
+  Android 12, o sin el permiso, Android pregunta, y la tarjeta de la principal
+  tiene «Instalar ahora» y el botón para dar el permiso.
+- **Play Protect** no deja instalar en segundo plano un APK que no ha visto:
+  contesta `INSTALL_FAILED_VERIFICATION_FAILURE: Install not allowed` al medio
+  minuto (veredicto 9 en el log de `Finsky`). Ese intento hace que lo mire, y el
+  siguiente pasa (veredicto 15). Como cada release es un APK que no ha visto
+  nunca, se intenta dos veces por proceso (`fallosSinPreguntar`); si Android pide
+  confirmación aun con el permiso dado, se para a la primera. Con la app
+  delante, «Instalar ahora» pasa a la primera.
+- **Qué se comprueba antes**: el tamaño y la suma SHA-256 que da GitHub
+  (`digest`), que el APK sea de esta app, de la versión de la release, más nuevo
+  (`versionCode`) y con alguna firma en común. Android vuelve a mirar las dos
+  últimas y es quien manda; esto es para decir por qué no antes de pedir nada, y
+  una versión que no se puede poner encima se apunta (`rechazada.json`) para no
+  bajarla cada día.
+- **Dónde**: la caché y lo apuntado en `noBackupFilesDir/actualizacion/`, y el
+  APK en `cacheDir/actualizacion/`. Fuera del volumen: no es del disco de
+  prdrive, y el escritorio no tiene por qué leerlo.
+- **La primera versión con esto se instala a mano**: las anteriores no saben
+  ponerse al día.
+
+Probarlo pide un teléfono o un emulador, porque instalarse cierra el proceso
+del test: `ActualizadorTest` solo prueba lo que se mira de un APK. A mano, con
+APK de depuración (todos llevan la clave de depuración de la máquina, así que
+uno se pone encima de otro): se instala uno con `VERSION` vieja, se deja el de
+la versión nueva en `cache/actualizacion/` y un `update.json` reciente que lo
+describa en `no_backup/actualizacion/` (con `adb shell run-as prdrive.app`), y se
+abre y se sale de la app. Para que se instale sola, el volumen tiene que estar
+sembrado (`sync_config.toml` y `rclone.conf` en `.prdrive/`) y el permiso dado
+(`adb shell appops set prdrive.app REQUEST_INSTALL_PACKAGES allow`).
 
 ## Convenios
 

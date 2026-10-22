@@ -26,6 +26,13 @@ Cada versión se publica como un APK firmado en las
 [releases](https://github.com/Jeremaya25/prdrive-app/releases): basta con
 cambiar `VERSION` en main (AGENTS.md, «Versiones y releases»).
 
+La app **se pone al día sola** desde esas releases: al abrirla pregunta a
+GitHub (una vez al día), baja la versión nueva con wifi y, desde Android 12, la
+instala al salir de la app sin preguntar, si se le ha permitido una vez instalar
+apps. Antes de Android 12, o sin ese permiso, se instala con un toque. La primera
+versión que lo hace hay que instalarla a mano (AGENTS.md, «La
+autoactualización»).
+
 El **motor** (`engine/`) es Kotlin puro, sin nada de Android, y se prueba sin SDK,
 sin emulador y sin teléfono:
 

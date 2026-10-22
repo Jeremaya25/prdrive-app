@@ -42,6 +42,7 @@ from pathlib import Path, PurePosixPath, PureWindowsPath
 
 DESTINO = Path(__file__).resolve().parent.parent / "engine/src/test/resources/vectores.json"
 
+import vectores_actualizacion  # noqa: E402 — vive junto a este fichero
 import vectores_paso3  # noqa: E402 — vive junto a este fichero
 import vectores_python  # noqa: E402 — vive junto a este fichero
 
@@ -1214,7 +1215,7 @@ def main() -> int:
         return 2
 
     bisync, config_file, model, pairing = cargar(prdrive)
-    from common import catalog, conflicts, results, store   # noqa: PLC0415
+    from common import catalog, conflicts, results, store, update   # noqa: PLC0415
     datos = {
         "_generado_por": "herramientas/vectores.py",
         "_no_editar": "Se regenera desde el prdrive citado en 'prdrive'.",
@@ -1267,6 +1268,8 @@ def main() -> int:
         "paso3": vectores_paso3.vectores(model, bisync, CONFIG),
         # Lo que el motor imita del propio Python, también en su fichero.
         "python": vectores_python.vectores(catalog, pairing, config_file),
+        # Si hay versión nueva (common/update.py), con el repositorio de la app.
+        "actualizacion": vectores_actualizacion.vectores(update, store),
     }
 
     DESTINO.parent.mkdir(parents=True, exist_ok=True)

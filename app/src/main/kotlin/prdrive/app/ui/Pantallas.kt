@@ -42,6 +42,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
@@ -59,6 +60,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import prdrive.app.Actualizador
 import prdrive.app.Estado
 import prdrive.app.Prdrive
 import prdrive.app.rclone.Rclone
@@ -404,6 +406,8 @@ private fun Principal(m: Modelo) {
         Ocupado(m.ocupado)
         Error(m.error)
         LazyColumn(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            // Dentro de la lista, para que se pueda desplazar: en horizontal no cabe todo.
+            item { VersionNueva(libre = m.ocupado == null) }
             // Sin clave por nombre: dos parejas que se llamen igual no pueden
             // tumbar la pantalla (Compose no admite claves repetidas).
             items(m.filas) { f ->
@@ -411,11 +415,136 @@ private fun Principal(m: Modelo) {
             }
             item {
                 Spacer(Modifier.height(8.dp))
-                Text("rclone ${Rclone.version()}", style = MaterialTheme.typography.labelSmall)
+                Pie()
             }
         }
     }
     log?.let { f -> DialogoLog(f) { log = null } }
+}
+
+/** Abre una página en el navegador. */
+private fun abrir(contexto: android.content.Context, url: String) {
+    try {
+        contexto.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+    } catch (_: android.content.ActivityNotFoundException) {
+        // Un teléfono sin navegador: no hay a dónde ir.
+    }
+}
+
+/**
+ * La versión nueva de la app, si la hay: cómo va ([Actualizador.fase]) y lo que
+ * se puede hacer con ella. Sola, se baja al abrir y se instala al salir; los
+ * botones son para no esperar, o para cuando Android pide que se confirme.
+ */
+@Composable
+private fun VersionNueva(libre: Boolean) {
+    val rel = Actualizador.nueva ?: return
+    val contexto = LocalContext.current
+    // El permiso de instalar apps se da en los ajustes: al volver, puede haber cambiado. Y un intento
+    // sin preguntar que no sale cambia «se instalará sola» por el botón.
+    var vueltas by remember { mutableIntStateOf(0) }
+    LifecycleResumeEffect(Unit) {
+        vueltas++
+        onPauseOrDispose {}
+    }
+    val sola = remember(vueltas, Actualizador.fallosSinPreguntar) { Actualizador.seInstalaSola(contexto) }
+    val faltaPermiso = remember(vueltas) { Actualizador.faltaPermiso(contexto) }
+    val tamano = { n: Long -> Formatter.formatShortFileSize(contexto, n) }
+    Card(
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
+        modifier = Modifier.fillMaxWidth().testTag("version-nueva"),
+    ) {
+        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("Versión nueva: ${rel.tag}", fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
+                TextButton(onClick = { abrir(contexto, rel.url) }) { Text("Novedades") }
+            }
+            when (Actualizador.fase) {
+                Actualizador.Fase.DESCARGANDO -> {
+                    val total = rel.apk?.tamano ?: 0L
+                    val hecho = Actualizador.bajado
+                    LinearProgressIndicator(
+                        progress = { if (total > 0) (hecho.toFloat() / total).coerceIn(0f, 1f) else 0f },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    Text("Bajándola: ${tamano(hecho)} de ${tamano(total)}", style = MaterialTheme.typography.bodySmall)
+                }
+                Actualizador.Fase.LISTA -> {
+                    Text(
+                        if (sola) "Lista. Se instalará sola cuando salgas de la app." else "Lista para instalar.",
+                        modifier = Modifier.testTag("version-lista"),
+                    )
+                    Button(
+                        onClick = { Actualizador.instalarAhora(contexto) },
+                        enabled = libre,
+                        modifier = Modifier.testTag("instalar-version"),
+                    ) { Text("Instalar ahora") }
+                    Text("Al instalarse, la app se cierra: vuelve a abrirla después.", style = MaterialTheme.typography.bodySmall)
+                    if (faltaPermiso) {
+                        Text(
+                            "Para que se instale sola, sin preguntar, permite que prdrive instale apps.",
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                        OutlinedButton(onClick = {
+                            contexto.startActivity(
+                                Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:${contexto.packageName}")),
+                            )
+                        }) { Text("Permitir") }
+                    }
+                }
+                Actualizador.Fase.INSTALANDO -> Text("Instalando… la app se cerrará en un momento.")
+                Actualizador.Fase.CONFIRMAR -> {
+                    Text("Android pide que confirmes la instalación.")
+                    Button(
+                        onClick = { Actualizador.instalarAhora(contexto) },
+                        enabled = libre,
+                        modifier = Modifier.testTag("instalar-version"),
+                    ) { Text("Instalar") }
+                }
+                Actualizador.Fase.QUIETA, Actualizador.Fase.BUSCANDO -> {
+                    Actualizador.espera?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
+                    rel.apk?.let { apk ->
+                        OutlinedButton(onClick = { Actualizador.descargarAhora(contexto) }) {
+                            Text("Descargar (${tamano(apk.tamano)})")
+                        }
+                    }
+                }
+            }
+            Actualizador.aviso?.let {
+                Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.tertiary)
+            }
+        }
+    }
+}
+
+/** Las versiones, y buscar la nueva sin esperar al día siguiente. */
+@Composable
+private fun Pie() {
+    val contexto = LocalContext.current
+    val version = remember { Actualizador.versionInstalada(contexto) }
+    val ocupado = Actualizador.fase in setOf(
+        Actualizador.Fase.BUSCANDO, Actualizador.Fase.DESCARGANDO, Actualizador.Fase.INSTALANDO,
+    )
+    Column {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                "prdrive $version · rclone ${Rclone.version()}",
+                style = MaterialTheme.typography.labelSmall,
+                modifier = Modifier.weight(1f),
+            )
+            TextButton(
+                onClick = { Actualizador.buscarAhora(contexto) },
+                enabled = !ocupado,
+                modifier = Modifier.testTag("buscar-version"),
+            ) { Text("Buscar actualizaciones") }
+        }
+        // Con una versión nueva, el aviso va en su tarjeta.
+        if (Actualizador.nueva == null) {
+            Actualizador.aviso?.let {
+                Text(it, style = MaterialTheme.typography.bodySmall, modifier = Modifier.testTag("aviso-version"))
+            }
+        }
+    }
 }
 
 @Composable

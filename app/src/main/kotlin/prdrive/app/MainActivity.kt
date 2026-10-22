@@ -16,4 +16,19 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent { PrdriveApp(modelo) }
     }
+
+    /** Al abrirse, la app pregunta si hay versión nueva ([Actualizador]). */
+    override fun onStart() {
+        super.onStart()
+        Actualizador.alAbrir(this)
+    }
+
+    /**
+     * Al salir, es cuando la versión nueva se instala sola: instalarse cierra
+     * la app. Un giro de pantalla también para la actividad, y no es salir.
+     */
+    override fun onStop() {
+        super.onStop()
+        if (!isChangingConfigurations) Actualizador.alSalir(this)
+    }
 }
