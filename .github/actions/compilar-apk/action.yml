@@ -71,11 +71,17 @@ runs:
         path: rclone/build/rclone.aar
         key: rclone-aar-go${{ steps.fijados.outputs.go }}-ndk${{ steps.fijados.outputs.ndk }}-${{ hashFiles('rclone/go/**', 'rclone/construir.sh') }}
 
+    # gomobile y gobind de la versión de golang.org/x/mobile que fija go.mod,
+    # instalados con @versión: así sus dependencias salen del go.mod de
+    # x/mobile. Sin ella, `go install` las busca en el go.sum de rclone/go, que
+    # solo lleva lo que necesita el .aar, y falla («missing go.sum entry» de
+    # golang.org/x/mod).
     - name: Construir el .aar de rclone
       if: steps.aar.outputs.cache-hit != 'true'
       shell: bash
       run: |
-        (cd rclone/go && go install golang.org/x/mobile/cmd/gomobile golang.org/x/mobile/cmd/gobind)
+        version="$(cd rclone/go && go list -m -f '{{.Version}}' golang.org/x/mobile)"
+        go install "golang.org/x/mobile/cmd/gomobile@$version" "golang.org/x/mobile/cmd/gobind@$version"
         rclone/construir.sh
 
     # Fijada al commit, no a la etiqueta: es de otro repositorio, y su etiqueta

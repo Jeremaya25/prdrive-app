@@ -5,8 +5,13 @@
 #   rclone/construir.sh todos      # con backend/all, para medir la diferencia
 #
 # Necesita Go, gomobile y gobind de la versión de golang.org/x/mobile que fija
-# go.mod (desde rclone/go: `go install golang.org/x/mobile/cmd/gomobile
-# golang.org/x/mobile/cmd/gobind`), el SDK de Android con un NDK, y un JDK. Lee:
+# go.mod, instalados con esa versión (sin ella, `go install` busca sus
+# dependencias en el go.sum de rclone/go, que no las lleva):
+#
+#   v="$(cd rclone/go && go list -m -f '{{.Version}}' golang.org/x/mobile)"
+#   go install golang.org/x/mobile/cmd/gomobile@$v golang.org/x/mobile/cmd/gobind@$v
+#
+# y el SDK de Android con un NDK, y un JDK. Lee:
 #
 #   ANDROID_HOME        el SDK (por defecto, el de Android Studio)
 #   ANDROID_NDK_HOME    el NDK (por defecto, el más nuevo del SDK)
