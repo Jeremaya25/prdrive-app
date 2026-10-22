@@ -71,6 +71,15 @@ herramientas/
 ├── vectores_paso3.py  su parte de la pasada y el volumen
 ├── vectores_python.py lo que el motor imita del propio Python (y de tomllib)
 └── punta_a_punta.py   el servidor y la carga del QR de PuntaAPuntaTest
+.github/
+├── workflows/engine.yml   el motor, en cada push
+├── workflows/apk.yml      el APK de release sin firmar, en los PR que lo tocan
+├── workflows/release.yml  la release, cuando un push a main cambia VERSION:
+│                          compila sin firmar, y firma y publica en el entorno
+│                          `release`
+└── actions/compilar-apk/  lo que comparten: el .aar, los tests del motor y el
+                           APK sin firmar
+VERSION       la versión de la app, y la única («Versiones y releases»)
 ```
 
 Lo que queda por hacer está en [`PLAN.md`](PLAN.md).
@@ -181,6 +190,7 @@ cd rclone/go && go run ./oraculo ../../engine/src/test/resources/oraculo_rclone.
 python herramientas/vectores.py ../prdrive   # regenerar los vectores
 rclone/construir.sh        # el .aar (Go, gomobile y un NDK)
 ./gradlew :app:connectedDebugAndroidTest     # en un emulador o un teléfono
+./gradlew :app:assembleRelease  # el APK de release («Versiones y releases»)
 ```
 
 `connectedDebugAndroidTest` instala y ejecuta en **todos** los dispositivos
@@ -214,6 +224,85 @@ otra:
 ```bash
 export JAVA_TOOL_OPTIONS='-Djdk.net.unixdomain.tmpdir=C:\Windows\Temp'
 ```
+
+## Versiones y releases
+
+`VERSION`, en la raíz, es la única fuente de la versión, como en prdrive. De
+ella salen el `versionName` y el `versionCode` del APK (`app/build.gradle.kts`)
+y el tag de la release. El `versionCode` es mayor·1 000 000 + menor·1 000 +
+parche, porque Android solo instala encima una versión con un código igual o
+mayor; un sufijo (`1.2.0-rc1`) no cuenta. Con una `VERSION` que no cabe ahí,
+Gradle no llega a configurar.
+
+**Publicar es subir `VERSION` a main.** Un push a main que toca ese fichero
+lanza `release.yml`, en dos trabajos:
+
+- `compilar`, con el token de solo lectura: construye el `.aar`, pasa los tests
+  del motor y compila el APK de release, que sale **sin firmar** (Gradle no
+  firma nunca). Aquí corre todo lo que bajan Gradle y Go.
+- `publicar`, en el entorno `release`: firma con `apksigner` en un solo paso
+  (la clave existe lo que dura ese paso), comprueba la firma y la alineación y
+  publica `v<VERSION>` con `prdrive-<VERSION>.apk`. No compila nada.
+
+El tag queda en el commit que se ha compilado: el del push, o la punta de main
+si se lanza a mano. Si el tag ya existe no hay versión nueva y sale en verde sin
+publicar; lanzado a mano (para repetir una publicación que falló), eso es un
+error. Si algo falla antes de publicar, no hay tag ni release; si falla al subir
+el APK, puede quedar un borrador de release, que se borra a mano antes de
+repetir. Y GitHub solo deja una pasada en espera: con una publicando y otra
+esperando, una tercera subida de `VERSION` cancela la que esperaba, y esa
+versión intermedia no se publica.
+
+**La firma es una y para siempre.** Android solo instala una versión encima de
+otra si las dos llevan la misma firma: perder la clave es que nadie pueda
+actualizar sin desinstalar, y desinstalar borra el volumen. Vive en el
+**entorno `release`** del repositorio, limitado a la rama main, y no en los
+secretos del repositorio: esos los ve cualquier workflow lanzado desde
+cualquier rama del repositorio (un PR de una rama propia, o una copia de
+`release.yml` sin la comprobación de main), y los del entorno, no.
+
+- `FIRMA_ALMACEN_B64` (secreto): un almacén PKCS12 con la clave `prdrive`, en
+  base64.
+- `FIRMA_CONTRASENA` (secreto): su contraseña (en un PKCS12, la misma para la
+  clave).
+- `FIRMA_SHA256` (variable, opcional pero recomendable): la huella del
+  certificado. Con ella, una release firmada con otra clave no sale; sin ella,
+  la primera release decide cuál es.
+
+Se crean una vez, **antes de juntar el PR que trae `VERSION`**: ese push a main
+ya es una release. El almacén se guarda fuera del repositorio y con copia (el
+`.gitignore` no deja entrar `*.p12`, `*.jks` ni `*.keystore`):
+
+```bash
+keytool -genkeypair -storetype PKCS12 -keystore prdrive.p12 -alias prdrive \
+    -keyalg RSA -keysize 4096 -validity 10000 -dname "CN=prdrive"
+gh api -X PUT repos/Jeremaya25/prdrive-app/environments/release --input - \
+    <<< '{"deployment_branch_policy":{"protected_branches":false,"custom_branch_policies":true}}'
+gh api -X POST repos/Jeremaya25/prdrive-app/environments/release/deployment-branch-policies \
+    -f name=main -f type=branch
+base64 -w0 prdrive.p12 | gh secret set FIRMA_ALMACEN_B64 --env release
+gh secret set FIRMA_CONTRASENA --env release
+keytool -list -v -keystore prdrive.p12 -alias prdrive   # la línea SHA256:
+gh variable set FIRMA_SHA256 --env release --body "<esa huella>"
+```
+
+Para firmar en local, lo mismo que hace el CI:
+
+```bash
+./gradlew :app:assembleRelease
+apksigner sign --ks prdrive.p12 --ks-key-alias prdrive --out prdrive.apk \
+    app/build/outputs/apk/release/app-release-unsigned.apk
+```
+
+`apk.yml` compila ese mismo APK sin firmar en los PR que lo tocan, para saber
+antes de juntar que la release saldrá. Las dos usan la acción
+`.github/actions/compilar-apk`, con el Go del `toolchain` de
+`rclone/go/go.mod` y el NDK r28c, los de los tamaños de «Arquitectura»; el
+`.aar` sale de una caché (la de main: la de un PR solo la ve ese PR) mientras
+no cambien `rclone/go` ni `construir.sh`.
+
+El APK de depuración va firmado con la clave de depuración de cada máquina: no
+se instala encima de una release ni al revés.
 
 ## Convenios
 

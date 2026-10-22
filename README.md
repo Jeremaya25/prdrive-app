@@ -22,6 +22,10 @@ QR, elegir parejas del catálogo y un «Sincronizar» que cuenta qué pasa, con 
 motor alineado con prdrive 0.7.7, que fija rclone v1.75.2. Cómo está y por qué,
 en [`AGENTS.md`](AGENTS.md); lo que queda, en [`PLAN.md`](PLAN.md).
 
+Cada versión se publica como un APK firmado en las
+[releases](https://github.com/Jeremaya25/prdrive-app/releases): basta con
+cambiar `VERSION` en main (AGENTS.md, «Versiones y releases»).
+
 El **motor** (`engine/`) es Kotlin puro, sin nada de Android, y se prueba sin SDK,
 sin emulador y sin teléfono:
 
