@@ -208,11 +208,18 @@ jobs:
             echo "::error::El APK no lleva una firma, y solo una."
             exit 1
           fi
-          huella="$(sed -n 's/^Signer #1 certificate SHA-256 digest: //p' <<< "$certificados")"
-          if [[ ! "$huella" =~ ^[0-9a-f]{64}$ ]]; then
-            echo "::error::apksigner no ha dado la huella SHA-256 del certificado."
+          # Cómo se llama la línea depende de la versión de build-tools: «Signer
+          # #1 certificate SHA-256 digest: …» en la 36.0, «V3.0 Signer:
+          # certificate SHA-256 digest: …» en la de las máquinas de GitHub (la
+          # primera release se paró aquí). Se leen todas, se llamen como se
+          # llamen, y tienen que ser una sola huella: la de cada esquema de
+          # firma (v2, v3) es la del mismo certificado.
+          huellas="$(grep -oE 'certificate SHA-256 digest: [0-9a-f]{64}$' <<< "$certificados" | sed 's/.*: //' | sort -u || true)"
+          if [[ "$(grep -c . <<< "$huellas" || true)" != 1 ]]; then
+            echo "::error::apksigner no ha dado la huella SHA-256 del certificado, y solo una (${huellas//$'\n'/, })."
             exit 1
           fi
+          huella="$huellas"
           fijada="$(tr -d ': ' <<< "${FIJADA,,}")"
           if [[ -n "$fijada" && "$fijada" != "$huella" ]]; then
             echo "::error::El certificado de la firma ($huella) no es el que fija FIRMA_SHA256 ($fijada)."
