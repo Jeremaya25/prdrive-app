@@ -25,7 +25,7 @@ import org.junit.runner.RunWith
 import prdrive.app.rclone.Rclone
 
 /**
- * PuntaAPuntaTest.kt — El paso 4 (PLAN.md): las pantallas de verdad contra un
+ * PuntaAPuntaTest.kt — Las pantallas de verdad contra un
  * servidor de verdad, de la carga del QR a una segunda pasada.
  *
  * Necesita un servidor SFTP que el emulador vea en `10.0.2.2` con un catálogo

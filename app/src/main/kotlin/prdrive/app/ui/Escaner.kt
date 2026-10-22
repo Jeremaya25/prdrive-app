@@ -8,7 +8,7 @@ import com.google.mlkit.vision.codescanner.GmsBarcodeScanning
 
 /**
  * Escaner.kt — Leer el QR de emparejamiento con el escáner de códigos de
- * Google Play services (PLAN.md, «Pantallas del paso 1»).
+ * Google Play services.
  *
  * Ese escáner es una pantalla de Play services: la app no pide permiso de
  * cámara ni ve la imagen, solo recibe el texto. Si el teléfono no lo tiene

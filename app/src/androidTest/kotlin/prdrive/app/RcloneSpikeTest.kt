@@ -16,7 +16,7 @@ import prdrive.engine.Pairing
 import prdrive.engine.Volumen
 
 /**
- * RcloneSpikeTest.kt — El spike del `.aar` (PLAN.md, «Cómo se comprueba»):
+ * RcloneSpikeTest.kt — El spike del `.aar`:
  * la biblioteca arranca, `sync/bisync` está registrado, devuelve `output` y
  * `session`, y ese `session` es el que calcula el motor.
  *

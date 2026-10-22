@@ -14,8 +14,9 @@ como biblioteca, no como binario.
 es lo que hace `sync.py` — montar la orden correcta y contar cómo ha ido.
 **Los ficheros de Python de prdrive son la especificación.**
 
-El plan del paso 1, con todo lo comprobado contra el código de rclone, está en
-[`PLAN.md`](PLAN.md). Léelo antes de tocar arquitectura.
+Por qué la arquitectura es la que es, comprobado contra el código de rclone,
+está más abajo («Arquitectura»): léelo antes de tocarla. Lo que queda por hacer,
+en [`PLAN.md`](PLAN.md).
 
 ## Distribución
 
@@ -72,8 +73,59 @@ herramientas/
 └── punta_a_punta.py   el servidor y la carga del QR de PuntaAPuntaTest
 ```
 
-El paso 1 de `PLAN.md` está hecho. Lo que queda fuera está en su último
-apartado («Fuera del paso 1»).
+Lo que queda por hacer está en [`PLAN.md`](PLAN.md).
+
+## Arquitectura
+
+Lo decidido y por qué. Lo que se afirma de rclone está comprobado contra el
+código de la versión que fija prdrive (`common/pins.py`, hoy v1.75.2), no
+contra su documentación, y se cita el sitio.
+
+- **Decisiones de partida:** reescritura entera en Kotlin, repositorio aparte,
+  emparejamiento por QR y volumen visible en la app de Archivos. El QR lo
+  enseña un dispositivo de prdrive ya provisionado (`common/pairing.py`), y su
+  `leer()` es la definición ejecutable del formato que reproduce `Pairing.kt`.
+- **rclone como biblioteca, por `sync/bisync`.** `core/command` no sirve, por
+  dos razones independientes:
+  - Está declarado con `NeedsRequest` y `NeedsResponse`
+    (`fs/rc/internal.go:487`), y `librclone.RPC()` rechaza esos métodos («core/command
+    are not supported as they need request or response object»,
+    `librclone/librclone/librclone.go`).
+  - Su implementación (`rcRunCommand`) lanza rclone como proceso hijo con
+    `os.Executable()`, que en Android es la app.
+
+  `sync/bisync` (`cmd/bisync/rc.go`) devuelve `output`, que es el log de la
+  pasada y lo que lee `KNOWN_ERRORS`, y `session` (`bilib.SessionName`), que se
+  compara con el prefijo que calcula el motor antes de ejecutar.
+  `bilib.CaptureOutput` redirige la salida del proceso entero: las parejas van
+  de una en una, como en `sync.py`.
+- **El `.aar` es propio** (`rclone/go/rclone`). El de serie
+  (`librclone/gomobile`) solo importa `backend/all` y `lib/plugin`, así que
+  `sync/bisync` no está registrado: los métodos rc se registran en el `init()`
+  de su paquete. Los backends, medido con Go 1.27.3, NDK r28c y `-s -w`:
+
+  | | `.aar` | `libgojni.so` arm64 | x86_64 |
+  |---|---|---|---|
+  | lista corta (local, combine, alias, sftp, webdav, crypt) | 15,6 MB | 19,9 MB | 21,5 MB |
+  | `backend/all` | 54,0 MB | 77,5 MB | 83,9 MB |
+
+  Entra la corta (`backends_corta.go`). Un `[remote]` de otro tipo se rechaza
+  con el mensaje de rclone, y `rclone/construir.sh todos` construye la otra.
+  `local` y `combine` no son negociables.
+- **El volumen** es `filesDir/volumen/`: las carpetas de las parejas, y en
+  `.prdrive/` el `rclone.conf`, `keys/`, `state/`, `filters/` y `logs/`. Es la
+  distribución de un disco de prdrive, a propósito: el escritorio lee el estado
+  que escribe el teléfono.
+- **El remote `combine` va en el `rclone.conf`** (`[disp]`,
+  `Config.seccionCombine()`), no en el entorno como en el escritorio
+  (`pen_environment()`): una biblioteca no tiene proceso hijo al que pasarle
+  variables. Y sale mejor: con la configuración en flags o en el entorno,
+  rclone añade un `{hexstring}` al nombre del Fs que `StripHexString` quita
+  después (`cmd/bisync/bilib/canonical.go`). Definido en el fichero, no hay nada
+  que quitar, y el nombre de los listados es el del escritorio.
+- **La app de Archivos**: un `DocumentsProvider` publica el volumen sin pedir
+  permisos. Al ser almacenamiento de la app, las fechas de modificación se
+  conservan, que es lo que hace poco fiable a bisync en una SD o un USB.
 
 ## Reglas que no se cruzan
 
@@ -234,7 +286,7 @@ export JAVA_TOOL_OPTIONS='-Djdk.net.unixdomain.tmpdir=C:\Windows\Temp'
 - **`core/command` no sirve desde la biblioteca**, ni aunque lo veas en la
   documentación de rclone: `librclone.RPC()` rechaza los métodos que necesitan
   request/response, y su implementación lanza un proceso hijo. La ruta es
-  `sync/bisync`. Los detalles y las líneas exactas están en `PLAN.md`.
+  `sync/bisync`. Las líneas exactas, en «Arquitectura».
 - **Una pasada se pide como trabajo (`_async`) y se sigue con `job/status`.**
   La llamada síncrona, si falla, devuelve solo el error; el resultado del
   trabajo conserva el log de la pasada (`output`) también cuando falla.

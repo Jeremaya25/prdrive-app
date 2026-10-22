@@ -66,7 +66,7 @@ import prdrive.engine.MODES
 import prdrive.engine.Pasada
 
 /**
- * Pantallas.kt — Las dos pantallas del paso 1 (PLAN.md): el primer arranque y
+ * Pantallas.kt — Las dos pantallas: el primer arranque y
  * la principal. Solo dibujan y llaman al [Modelo]; lo que deciden lo deciden el
  * motor y el instalador.
  *

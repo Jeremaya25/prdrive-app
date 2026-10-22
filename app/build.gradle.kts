@@ -80,7 +80,7 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.11.0")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.11.0")
     // El escáner de códigos de Play services: lee el QR sin que la app pida la
-    // cámara (PLAN.md, «Pantallas del paso 1»).
+    // cámara.
     implementation("com.google.android.gms:play-services-code-scanner:16.1.0")
 
     androidTestImplementation("androidx.test.ext:junit:1.3.0")

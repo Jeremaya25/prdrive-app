@@ -12,7 +12,7 @@ import prdrive.lib.rclone.Rclone as Biblioteca
  * JSON, igual que se le hablaría al servidor rc (`rclone rcd`). No hay línea de
  * órdenes: `core/command` no sirve desde la biblioteca (lanzaría un proceso
  * hijo), y la ruta buena es el método de cada cosa (`sync/bisync`,
- * `operations/stat`…). Ver PLAN.md.
+ * `operations/stat`…). Ver AGENTS.md, «Arquitectura».
  *
  * Los JSON los escribe y los lee el motor ([escribirJson], [leerJson]), con los
  * mismos tipos que el TOML: enteros `Long`, mapas, listas.

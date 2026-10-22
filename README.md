@@ -17,19 +17,17 @@ lleva la clave privada dentro, y quien lo enseña avisa.
 
 ## Estado
 
-En construcción. El plan del paso 1 —con todo lo que se ha comprobado contra el
-código de rclone, y con el motor alineado con prdrive 0.7.7, que fija rclone v1.75.2— está en
-[`PLAN.md`](PLAN.md).
+El paso 1 está hecho y probado en un emulador: el volumen, el emparejamiento por
+QR, elegir parejas del catálogo y un «Sincronizar» que cuenta qué pasa, con el
+motor alineado con prdrive 0.7.7, que fija rclone v1.75.2. Cómo está y por qué,
+en [`AGENTS.md`](AGENTS.md); lo que queda, en [`PLAN.md`](PLAN.md).
 
-Hecho: el **motor** (`engine/`), que es Kotlin puro y sin nada de Android — las
-capas de flags, el `upstreams` del remote `combine`, el nombre de sesión de
-bisync, el estado del baseline, el TOML y la lectura del payload del QR.
+El **motor** (`engine/`) es Kotlin puro, sin nada de Android, y se prueba sin SDK,
+sin emulador y sin teléfono:
 
 ```bash
 ./gradlew :engine:test
 ```
-
-No necesita SDK de Android, ni emulador, ni teléfono.
 
 ## Por qué el motor se prueba contra prdrive y no contra sí mismo
 
