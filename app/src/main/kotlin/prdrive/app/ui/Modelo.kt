@@ -28,7 +28,8 @@ import prdrive.engine.Volumen
  * hilo de la pantalla, y de uno en uno: [ocupado] dice qué se está haciendo, y
  * mientras lo diga no empieza nada más (las pasadas, además, las serializa
  * [Adaptadores.pasada]). El estado son `mutableStateOf`, que Compose deja
- * escribir desde cualquier hilo.
+ * escribir desde cualquier hilo, siempre que el modelo no se cree dentro de una
+ * composición (`MainActivity.onCreate` dice por qué).
  */
 class Modelo(app: Application) : AndroidViewModel(app) {
 
