@@ -1,0 +1,117 @@
+name: Compilar el APK
+description: >-
+  Construye rclone/build/rclone.aar con el Go y el NDK fijados, pasa los tests
+  del motor y compila el APK de release, sin firmar, con la versión de VERSION.
+  La firma se pone después, fuera de aquí (release.yml): nada de lo que corre en
+  esta acción ve la clave. Solo en máquinas Linux, con el repositorio en
+  GITHUB_WORKSPACE.
+
+# Es una acción compuesta: sus pasos no admiten `timeout-minutes`, así que el
+# tope va en el paso que la usa (apk.yml y release.yml).
+
+outputs:
+  apk:
+    description: Ruta completa del APK compilado.
+    value: ${{ steps.apk.outputs.apk }}
+  version:
+    description: La versión que lleva el APK (su versionName, que sale de VERSION).
+    value: ${{ steps.apk.outputs.version }}
+
+runs:
+  using: composite
+  steps:
+    # Con lo que se midieron los tamaños de AGENTS.md («Arquitectura»): el Go
+    # del `toolchain` de rclone/go/go.mod (el `go` de más arriba es el mínimo) y
+    # el NDK r28c. Las máquinas de GitHub traen otros NDK, y su ANDROID_NDK_HOME
+    # apunta a uno de ellos.
+    - name: Go y NDK fijados
+      id: fijados
+      shell: bash
+      run: |
+        go="$(sed -n 's/^toolchain go//p' rclone/go/go.mod)"
+        if [[ -z "$go" ]]; then
+          echo "::error::rclone/go/go.mod no fija un toolchain."
+          exit 1
+        fi
+        echo "go=$go" >> "$GITHUB_OUTPUT"
+        echo "ndk=28.2.13676358" >> "$GITHUB_OUTPUT"
+
+    - uses: actions/setup-java@v6
+      with:
+        distribution: temurin
+        java-version: "21"
+
+    - uses: actions/setup-go@v7
+      with:
+        go-version: ${{ steps.fijados.outputs.go }}
+        cache-dependency-path: rclone/go/go.sum
+
+    # La plataforma de compileSdk y el NDK fijado. Las licencias ya están
+    # aceptadas en las máquinas de GitHub.
+    - name: SDK de Android
+      shell: bash
+      env:
+        NDK: ${{ steps.fijados.outputs.ndk }}
+      run: |
+        registro="$RUNNER_TEMP/sdkmanager.log"
+        if ! "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "ndk;$NDK" "platforms;android-37.0" > "$registro" 2>&1; then
+          tail -n 50 "$registro"
+          echo "::error::sdkmanager no ha podido instalar el NDK $NDK o la plataforma android-37.0."
+          exit 1
+        fi
+        echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/$NDK" >> "$GITHUB_ENV"
+
+    # El .aar solo depende de rclone/go, de construir.sh y de lo fijado: si nada
+    # de eso cambia, se reutiliza (son unos minutos de compilar rclone dos veces,
+    # una por arquitectura). Una release en main solo ve las cachés de main.
+    - name: Caché del .aar
+      id: aar
+      uses: actions/cache@v6
+      with:
+        path: rclone/build/rclone.aar
+        key: rclone-aar-go${{ steps.fijados.outputs.go }}-ndk${{ steps.fijados.outputs.ndk }}-${{ hashFiles('rclone/go/**', 'rclone/construir.sh') }}
+
+    - name: Construir el .aar de rclone
+      if: steps.aar.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        (cd rclone/go && go install golang.org/x/mobile/cmd/gomobile golang.org/x/mobile/cmd/gobind)
+        rclone/construir.sh
+
+    # Fijada al commit, no a la etiqueta: es de otro repositorio, y su etiqueta
+    # se puede mover. Lo que compila aquí acaba firmado en la release.
+    - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+
+    # Los tests del motor van delante: lo que el APK lleva dentro tiene que
+    # seguir diciendo lo mismo que prdrive.
+    - name: Tests del motor y APK de release
+      shell: bash
+      run: ./gradlew --console=plain :engine:test :app:assembleRelease
+
+    # El APK es el que dice output-metadata.json, no el primero que aparezca en
+    # la carpeta, y tiene que llevar la versión de VERSION.
+    - name: El APK
+      id: apk
+      shell: bash
+      run: |
+        carpeta="$GITHUB_WORKSPACE/app/build/outputs/apk/release"
+        meta="$carpeta/output-metadata.json"
+        if [[ ! -f "$meta" || "$(jq '.elements | length' "$meta")" != 1 ]]; then
+          echo "::error::Gradle no ha dejado un APK, y solo uno, en $carpeta."
+          exit 1
+        fi
+        apk="$carpeta/$(jq -r '.elements[0].outputFile' "$meta")"
+        version="$(jq -r '.elements[0].versionName' "$meta")"
+        codigo="$(jq -r '.elements[0].versionCode' "$meta")"
+        esperada="$(python3 -c 'print(open("VERSION", encoding="utf-8").read().strip())')"
+        if [[ ! -f "$apk" ]]; then
+          echo "::error::output-metadata.json dice $apk, y no está."
+          exit 1
+        fi
+        if [[ "$version" != "$esperada" ]]; then
+          echo "::error::El APK dice $version, y VERSION, $esperada."
+          exit 1
+        fi
+        echo "$apk: $(du -h "$apk" | cut -f1), versión $version (versionCode $codigo)"
+        echo "apk=$apk" >> "$GITHUB_OUTPUT"
+        echo "version=$version" >> "$GITHUB_OUTPUT"

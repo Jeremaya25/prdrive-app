@@ -25,7 +25,9 @@ Falta:
   genera con corrección L porque con M no cabe en ninguna versión.
 - **El permiso de red local** en un Android 17 de verdad, contra un NAS en
   `192.168.…`, y en uno anterior, que no lo pide.
-- **arm64**, que es lo que llevan los teléfonos.
+- **arm64**, que es lo que llevan los teléfonos. En un Galaxy A35 (Android 16)
+  se instala y abre el emparejamiento sin fallos; falta una pasada, que es
+  cuando se carga el rclone de arm64.
 
 ## 2. Hallazgos que se arreglan en prdrive
 
@@ -75,8 +77,10 @@ hacerlo.
   volver a la raíz del volumen.
 - **Lógica pura que vive en `app/`.** `Estado.filas` e `Instalador.aInicializar`
   irían mejor en el motor, con sus pruebas.
-- **CI.** Hoy solo prueba el motor (`engine.yml`). Las pruebas del emulador y la
-  construcción del `.aar` se hacen a mano.
+- **CI.** El motor se prueba en cada push (`engine.yml`), y el `.aar` y el APK
+  se construyen en los PR que los tocan (`apk.yml`). Las pruebas del emulador
+  (`connectedDebugAndroidTest`, `PuntaAPuntaTest` con su servidor) se pasan a
+  mano.
 
 ## 4. Lo siguiente
 

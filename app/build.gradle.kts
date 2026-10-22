@@ -7,6 +7,33 @@ plugins {
     id("org.jetbrains.kotlin.plugin.compose")
 }
 
+// VERSION, en la raíz, es la única fuente de la versión, como en prdrive: de
+// ella salen el versionName, el versionCode y el tag de la release
+// (.github/workflows/release.yml publica v<VERSION> cuando un push a main la
+// cambia). Con dos sitios, el APK y su release podrían decir cosas distintas.
+val versionDeLaApp: String =
+    providers.fileContents(rootProject.layout.projectDirectory.file("VERSION")).asText.get().trim()
+
+// El versionCode es mayor·1 000 000 + menor·1 000 + parche: Android solo
+// instala encima una versión con un código igual o mayor, y así sube siempre
+// que sube la versión. Un sufijo (1.2.0-rc1) no cuenta: 1.2.0 se instala encima
+// de su rc porque el código es el mismo. El tope es el de Google Play.
+val codigoDeVersion: Int = run {
+    val partes = Regex("""([0-9]+)\.([0-9]+)\.([0-9]+)[-.0-9A-Za-z]*""").matchEntire(versionDeLaApp)
+        ?: throw GradleException("VERSION ('$versionDeLaApp') no parece una versión. Se esperaba algo como 1.2.3.")
+    val (mayor, menor, parche) = partes.destructured.toList().map { it.toLongOrNull() ?: Long.MAX_VALUE }
+    if (mayor > 2100 || menor > 999 || parche > 999) {
+        throw GradleException(
+            "VERSION ('$versionDeLaApp') no cabe en un versionCode: el mayor va hasta 2100, y el menor y el parche, hasta 999.",
+        )
+    }
+    val codigo = mayor * 1_000_000 + menor * 1_000 + parche
+    if (codigo !in 1..2_100_000_000) {
+        throw GradleException("VERSION ('$versionDeLaApp') da un versionCode ($codigo) fuera de 1..2100000000.")
+    }
+    codigo.toInt()
+}
+
 android {
     namespace = "prdrive.app"
     compileSdk = 37
@@ -16,11 +43,15 @@ android {
         // 26: java.nio.file, y con él las operaciones atómicas de fichero.
         minSdk = 26
         targetSdk = 37
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = codigoDeVersion
+        versionName = versionDeLaApp
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    // La release sale sin firmar, siempre: la firma se pone después, con
+    // apksigner, en un paso aparte del CI que es el único que ve la clave
+    // (.github/workflows/release.yml). Así Gradle, sus plugins y los tests nunca
+    // la tienen a mano.
     buildTypes {
         release {
             isMinifyEnabled = false

@@ -1,0 +1,254 @@
+name: Release
+
+# VERSION es la única fuente de la versión, como en prdrive: de ella salen el
+# versionName y el versionCode del APK (app/build.gradle.kts) y el tag de la
+# release. Por eso el disparador es ese fichero: al subir a main un commit que
+# lo toque, se compila el APK, se firma y se publica la release v<VERSION> con
+# él. El workflow_dispatch se queda como salida manual (repetir una publicación
+# fallida sin tener que tocar VERSION otra vez).
+#
+# Dos trabajos, para que la clave de la firma y el permiso de escribir en el
+# repositorio no lleguen a lo que no los necesita:
+#   compilar  — el APK sin firmar, con el token de solo lectura. Aquí corre todo
+#               lo que bajan Gradle y Go, y las acciones de otros.
+#   publicar  — en el entorno `release`, que solo se abre a main: firma con
+#               apksigner, comprueba la firma y publica. No compila nada.
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - VERSION
+  workflow_dispatch:
+    inputs:
+      release_name:
+        description: "Título de la release (por defecto, el tag)"
+        required: false
+        type: string
+      draft:
+        description: "Crearla como borrador"
+        required: false
+        type: boolean
+        default: false
+      prerelease:
+        description: "Marcarla como prerelease"
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+# Dos commits seguidos a VERSION no pueden publicar a la vez: el segundo espera,
+# y así ve el tag del primero ya creado. GitHub solo guarda uno en espera: si
+# llega un tercero, el que esperaba se cancela y esa versión intermedia no se
+# publica (AGENTS.md, «Versiones y releases»).
+concurrency:
+  group: release-apk
+  cancel-in-progress: false
+
+jobs:
+  compilar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
+      publicar: ${{ steps.version.outputs.publicar }}
+      apk: ${{ steps.comprobar.outputs.apk }}
+
+    steps:
+      # Lo que de verdad impide firmar otra rama es el entorno `release` (ver
+      # `publicar`); esto solo lo dice antes de compilar en balde.
+      - name: Solo desde main
+        if: github.ref != 'refs/heads/main'
+        shell: bash
+        run: |
+          echo "::error::Una release sale de main, y esto es $GITHUB_REF."
+          exit 1
+
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      # El tag sale de VERSION, no se pide: si se pidiera, habría dos sitios
+      # donde equivocarse. Si ese tag ya existe no hay nada que publicar; en un
+      # push eso es normal (un commit que toca VERSION sin subirla) y se sale en
+      # verde, pero lanzado a mano es un error: hay que subir VERSION primero.
+      - name: Resolver versión y tag
+        id: version
+        shell: bash
+        env:
+          EVENTO: ${{ github.event_name }}
+        run: |
+          version="$(python3 -c 'print(open("VERSION", encoding="utf-8").read().strip())')"
+          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+[-.0-9A-Za-z]*$ ]]; then
+            echo "::error::VERSION ('$version') no parece una versión. Se esperaba algo como 1.2.3."
+            exit 1
+          fi
+          tag="v$version"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
+          if [[ -n "$(git tag --list "$tag")" ]]; then
+            if [[ "$EVENTO" == "workflow_dispatch" ]]; then
+              echo "::error::El tag $tag ya existe. Sube VERSION en un commit para publicar una nueva release."
+              exit 1
+            fi
+            echo "publicar=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::El tag $tag ya existe; no hay versión nueva que publicar."
+          else
+            echo "publicar=true" >> "$GITHUB_OUTPUT"
+            echo "Se publicará $tag"
+          fi
+
+      # La misma acción que la comprobación de los PR (apk.yml): si el .aar,
+      # los tests del motor o el APK fallan, no hay tag ni release.
+      - name: Compilar el APK
+        id: apk
+        if: steps.version.outputs.publicar == 'true'
+        uses: ./.github/actions/compilar-apk
+        timeout-minutes: 50
+
+      - name: El APK lleva la versión del tag
+        id: comprobar
+        if: steps.version.outputs.publicar == 'true'
+        shell: bash
+        env:
+          APK: ${{ steps.apk.outputs.apk }}
+          VERSION_APK: ${{ steps.apk.outputs.version }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          if [[ "$VERSION_APK" != "$VERSION" ]]; then
+            echo "::error::El APK dice $VERSION_APK, y el tag es v$VERSION."
+            exit 1
+          fi
+          echo "apk=$(basename "$APK")" >> "$GITHUB_OUTPUT"
+
+      - name: Guardar el APK sin firmar
+        if: steps.version.outputs.publicar == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: apk-sin-firmar
+          path: ${{ steps.apk.outputs.apk }}
+          if-no-files-found: error
+          retention-days: 1
+
+  publicar:
+    needs: compilar
+    if: needs.compilar.outputs.publicar == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Los secretos de la firma y la variable FIRMA_SHA256 viven en este
+    # entorno, que solo se abre a main: un workflow lanzado desde otra rama, o
+    # un PR, no los ve por mucho que se edite. Los secretos del repositorio sí
+    # los vería.
+    environment: release
+    permissions:
+      contents: write
+
+    steps:
+      - name: Bajar el APK sin firmar
+        uses: actions/download-artifact@v8
+        with:
+          name: apk-sin-firmar
+          path: ${{ runner.temp }}/sin-firmar
+
+      # La clave solo existe en este paso: se escribe, se firma con ella y se
+      # borra al salir, acabe como acabe. Android solo instala una versión
+      # encima de otra si las dos llevan la misma firma, así que sin ella no se
+      # publica: un APK firmado con otra clave no sirve de release.
+      - name: Firmar
+        id: firmar
+        shell: bash
+        env:
+          ALMACEN_B64: ${{ secrets.FIRMA_ALMACEN_B64 }}
+          FIRMA_CONTRASENA: ${{ secrets.FIRMA_CONTRASENA }}
+          SIN_FIRMAR: ${{ runner.temp }}/sin-firmar/${{ needs.compilar.outputs.apk }}
+          VERSION: ${{ needs.compilar.outputs.version }}
+        run: |
+          if [[ -z "$ALMACEN_B64" || -z "$FIRMA_CONTRASENA" ]]; then
+            echo "::error::Faltan los secretos FIRMA_ALMACEN_B64 y FIRMA_CONTRASENA del entorno release (AGENTS.md, «Versiones y releases»)."
+            exit 1
+          fi
+          almacen="$RUNNER_TEMP/firma.p12"
+          trap 'rm -f "$almacen"' EXIT
+          if ! printf '%s' "$ALMACEN_B64" | base64 --decode > "$almacen"; then
+            echo "::error::FIRMA_ALMACEN_B64 no es base64."
+            exit 1
+          fi
+          herramientas="$(ls -d "$ANDROID_HOME"/build-tools/*/ | sort -V | tail -n 1)"
+          firmado="$RUNNER_TEMP/prdrive-$VERSION.apk"
+          "${herramientas}apksigner" sign --ks "$almacen" --ks-pass env:FIRMA_CONTRASENA \
+            --ks-key-alias prdrive --out "$firmado" "$SIN_FIRMAR"
+          echo "apk=$firmado" >> "$GITHUB_OUTPUT"
+
+      # Firmado, por un solo firmante, alineado (las bibliotecas a 16 KB, que
+      # piden los teléfonos con páginas de 16 KB) y con qué certificado. Si el
+      # entorno fija la huella (la variable FIRMA_SHA256), tiene que ser esa:
+      # una release firmada con otra clave no se instalaría encima de las
+      # anteriores.
+      - name: Comprobar el APK firmado
+        id: firma
+        shell: bash
+        env:
+          APK: ${{ steps.firmar.outputs.apk }}
+          FIJADA: ${{ vars.FIRMA_SHA256 }}
+        run: |
+          herramientas="$(ls -d "$ANDROID_HOME"/build-tools/*/ | sort -V | tail -n 1)"
+          if ! "${herramientas}zipalign" -c -P 16 4 "$APK"; then
+            echo "::error::El APK firmado no está alineado."
+            exit 1
+          fi
+          certificados="$("${herramientas}apksigner" verify -v --print-certs "$APK")"
+          echo "$certificados"
+          if ! grep -qx 'Number of signers: 1' <<< "$certificados"; then
+            echo "::error::El APK no lleva una firma, y solo una."
+            exit 1
+          fi
+          huella="$(sed -n 's/^Signer #1 certificate SHA-256 digest: //p' <<< "$certificados")"
+          if [[ ! "$huella" =~ ^[0-9a-f]{64}$ ]]; then
+            echo "::error::apksigner no ha dado la huella SHA-256 del certificado."
+            exit 1
+          fi
+          fijada="$(tr -d ': ' <<< "${FIJADA,,}")"
+          if [[ -n "$fijada" && "$fijada" != "$huella" ]]; then
+            echo "::error::El certificado de la firma ($huella) no es el que fija FIRMA_SHA256 ($fijada)."
+            exit 1
+          fi
+          if [[ -z "$fijada" ]]; then
+            echo "::notice::Sin la variable FIRMA_SHA256 no se comprueba con qué clave se firma. Esta es $huella."
+          fi
+          echo "huella=$huella" >> "$GITHUB_OUTPUT"
+
+      # --target fija el tag en el commit que se ha compilado (el del push, o la
+      # punta de main al lanzarlo a mano), no en la de ahora: si mientras tanto
+      # entró otro commit, la release seguiría apuntando al código cuya versión
+      # dice llevar. Las notas que escribe GitHub van detrás de las de aquí.
+      - name: Publicar la release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ needs.compilar.outputs.tag }}
+          VERSION: ${{ needs.compilar.outputs.version }}
+          APK: ${{ steps.firmar.outputs.apk }}
+          HUELLA: ${{ steps.firma.outputs.huella }}
+          TITULO: ${{ inputs.release_name }}
+          BORRADOR: ${{ inputs.draft }}
+          PRERELEASE: ${{ inputs.prerelease }}
+        run: |
+          suma="$(sha256sum "$APK" | cut -d' ' -f1)"
+          printf -v notas 'prdrive para Android %s.\n\n- `%s`, SHA-256: `%s`\n- Certificado de la firma, SHA-256: `%s`\n\nAndroid solo lo instala encima de otra versión si las dos llevan esta misma firma.\n' \
+            "$VERSION" "$(basename "$APK")" "$suma" "$HUELLA"
+
+          args=(release create "$TAG" "$APK"
+            --target "$GITHUB_SHA"
+            --title "${TITULO:-$TAG}"
+            --notes "$notas"
+            --generate-notes)
+          if [[ "$BORRADOR" == "true" ]]; then args+=(--draft); fi
+          if [[ "$PRERELEASE" == "true" ]]; then args+=(--prerelease); fi
+          gh "${args[@]}"

@@ -37,8 +37,14 @@ local.properties
 captures/
 .cxx/
 
-# El .aar de rclone se construye, no se versiona (ver PLAN.md).
+# El .aar de rclone se construye, no se versiona (ver AGENTS.md).
 rclone/build/
+
+# La clave de la firma de las releases vive en los secretos del repositorio y
+# en una copia fuera de él, nunca aquí (AGENTS.md, «Versiones y releases»).
+*.p12
+*.jks
+*.keystore
 
 # El jar del wrapper SÍ va al repositorio: es lo que fija la versión de Gradle
 # para todo el mundo. Lo excluía el `*.jar` de arriba.

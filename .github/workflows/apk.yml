@@ -1,0 +1,72 @@
+name: apk
+
+# Compila el APK como lo compila la release (la acción
+# .github/actions/compilar-apk: el .aar de rclone con el Go y el NDK fijados, los
+# tests del motor y assembleRelease), que también sale sin firmar: la release lo
+# firma después, en un trabajo del entorno `release`, que solo se abre a main.
+# Es lo que dice, antes de juntar, que la release saldrá.
+#
+# También en main, para que haya una caché del .aar que los PR puedan leer: la
+# que crea un PR solo la ve ese PR.
+on:
+  pull_request:
+    paths:
+      - VERSION
+      - "app/**"
+      - "engine/**"
+      - "rclone/**"
+      - "gradle/**"
+      - "*.gradle.kts"
+      - gradle.properties
+      - ".github/actions/compilar-apk/**"
+      - ".github/workflows/apk.yml"
+      - ".github/workflows/release.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - VERSION
+      - "app/**"
+      - "engine/**"
+      - "rclone/**"
+      - "gradle/**"
+      - "*.gradle.kts"
+      - gradle.properties
+      - ".github/actions/compilar-apk/**"
+      - ".github/workflows/apk.yml"
+      - ".github/workflows/release.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: apk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  compilar:
+    name: apk (release, sin firmar)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Compilar el APK
+        id: apk
+        uses: ./.github/actions/compilar-apk
+        timeout-minutes: 50
+
+      - name: Lo que ha salido
+        shell: bash
+        env:
+          APK: ${{ steps.apk.outputs.apk }}
+          VERSION: ${{ steps.apk.outputs.version }}
+        run: |
+          {
+            echo "### APK"
+            echo
+            echo "$(basename "$APK"): $(du -h "$APK" | cut -f1), versión $VERSION, sin firmar."
+          } >> "$GITHUB_STEP_SUMMARY"
