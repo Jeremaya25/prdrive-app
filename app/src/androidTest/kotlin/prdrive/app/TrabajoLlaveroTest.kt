@@ -193,7 +193,7 @@ class TrabajoLlaveroTest {
     }
 
     @Test
-    fun cada_guardado_aplaza_la_subida_y_leer_no_encola_si_es_reciente() {
+    fun cada_guardado_aplaza_la_subida_y_tras_una_pasada_buena_no_queda_nada() {
         conLlaveroEnElRemoto()
 
         // Cada guardado sustituye al trabajo que esperaba: queda uno, con su
@@ -207,24 +207,14 @@ class TrabajoLlaveroTest {
         assertEquals(Disparos.CALMA.toMillis(), segundo.initialDelayMillis)
         assertEquals(NetworkType.CONNECTED, segundo.constraints.requiredNetworkType)
 
-        // Leer sin una pasada reciente encola uno sin retraso, que se queda
-        // aunque se vuelva a leer.
-        WorkManager.getInstance(contexto).cancelUniqueWork(Disparos.NOMBRE).result.get()
-        Disparos.alLeer(contexto)
-        val leido = encolados().single()
-        assertEquals(0L, leido.initialDelayMillis)
-        Disparos.alLeer(contexto)
-        assertEquals(leido.id, encolados().single().id)
         WorkManager.getInstance(contexto).cancelUniqueWork(Disparos.NOMBRE).result.get()
 
-        // Tras una pasada buena no queda nada pendiente, y leer no encola.
+        // Tras una pasada buena no queda nada pendiente, y no se encola nada.
         val r = LlaveroApp.pasar(contexto)
         assertEquals(r?.lineas?.joinToString("\n"), 0, r?.codigo)
         assertTrue(LlaveroApp.reciente(contexto))
         assertFalse(LlaveroApp.pendiente(contexto))
         assertTrue(encolados().isEmpty())
-        Disparos.alLeer(contexto)
-        assertTrue("leer ha encolado una pasada justo después de otra", encolados().isEmpty())
     }
 
     /** Espera a que [hecho] sea cierto, o falla diciendo [que]. */

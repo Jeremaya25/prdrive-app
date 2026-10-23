@@ -1,6 +1,7 @@
 # El llavero en el teléfono
 
-Fecha: 2026-10-22. Estado: diseño aprobado, pendiente de plan.
+Fecha: 2026-10-22. Estado: implementado (plan `2026-10-23-llavero-android.md`).
+Revisado el 2026-10-23: leer la base ya no lanza una pasada (sección 3).
 
 ## Qué y para qué
 
@@ -17,8 +18,8 @@ quiere:
   con una app de KeePass de Android (KeePassDX, Keepass2Android), y lo que se
   guarda en el móvil llega al remoto como lo que se guarda en el PC.
 - **La subida es sola, al guardar.** No hace falta abrir prdrive.
-- **La bajada, solo al abrir**: con «Abrir llavero» y cuando la app de KeePass
-  lee la base. Sin pasadas periódicas.
+- **La bajada, solo al abrir**: con «Abrir llavero», que trae lo último antes
+  de abrir la base. Ni al leerla la app de KeePass ni con pasadas periódicas.
 - **Los conflictos se avisan y se combinan fuera**: en el PC («Abrir llavero»
   ofrece «Combinar») o a mano en la app de KeePass.
 - **El modo «sin contraseña»** (`llave_interna = true`) se admite: Android
@@ -168,12 +169,20 @@ nombre único (`llavero`), así que nunca hay dos:
 
 - **Al guardar** (el cambio atómico de la sección 4): `REPLACE` con un retraso
   de `calma` (20 s). Cada guardado nuevo lo aplaza, como `Vigilancia`.
-- **Al leer la base por el proveedor**: `KEEP`, sin retraso; vale para la
-  próxima vez. No se encola si la última pasada buena es de hace menos de
-  2 min, para que «Abrir llavero» no lance otra.
 - **Al arrancar la app y al acabar una pasada**, si `pendiente()` dice que hay
   algo sin subir: un guardado hecho durante una pasada, o uno cuyo trabajo se
   perdió.
+
+**Leer la base no lanza ninguna pasada.** La primera versión de este diseño
+encolaba una al leer la base por el proveedor, para que la próxima vez estuviera
+al día, y la revisión final la quitó: esa pasada puede traer una versión más
+nueva del remoto mientras la app de KeePass tiene la vieja en memoria, y si la
+app no ve el cambio en disco, su guardado siguiente sube la vieja como un cambio
+normal. El del otro dispositivo queda entonces solo en `.prversions/`, sin copia
+de conflicto ni aviso. Sin esa pasada, el mismo caso sale como una copia de
+conflicto avisada, y no se pierde nada. Lo último del remoto lo trae «Abrir
+llavero», antes de abrir; abrir la base desde los recientes de la app de KeePass
+enseña la de la última pasada.
 
 **Una pasada a la vez en todo el proceso**: el worker va con el cerrojo de las
 pasadas (`unaPasada`, `rclone/Adaptadores.kt`) y avisa a
@@ -200,7 +209,7 @@ para los `.kdbx` que cuelgan directamente de `.keychain/`** (la base y las
 copias de conflicto), el proveedor hace el guardado atómico. El resto del
 volumen no cambia.
 
-- **Leer** (`"r"`): el fichero tal cual, y se encola la pasada de lectura.
+- **Leer** (`"r"`): el fichero tal cual, sin encolar nada (sección 3).
 - **Escribir** (cualquier modo con `w`): el cliente recibe un temporal en
   `.prdrive/tmp/` (el mismo sistema de ficheros, y fuera de `.keychain/`, donde
   ninguna pasada lo ve), nunca la base.
@@ -293,6 +302,7 @@ lo pasa, el último, como `sync.py` sin nombres.
 - Crear un llavero desde el teléfono, o activarlo con una base propia.
 - Combinar copias de conflicto en el teléfono (haría falta leer y escribir
   KDBX 4 con su cifrado).
+- Una pasada al leer la base: quitada a propósito (sección 3).
 - Pasadas periódicas del llavero, y el servicio en segundo plano general
   (PLAN.md §4), del que esto es la primera pieza.
 - Comprobar que la llave de `llave_interna` abre la base.

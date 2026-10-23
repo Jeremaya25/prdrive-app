@@ -48,12 +48,12 @@ Falta:
     Keepass2Android para abrir la base desde el `content://` del proveedor; si no
     abre ninguna, la app lo dice y nombra cuáles valen.
   - **Si la app de KeePass ve que la base ha cambiado antes de guardar.** Leer
-    la base por el proveedor lanza una pasada, que puede bajar una base más
-    nueva del remoto mientras KeePassDX o Keepass2Android tienen abierta la
-    vieja. Si al guardar no se dan cuenta de que ha cambiado en el disco, el
-    guardado pisa el cambio del otro dispositivo, que solo queda en
-    `.prversions/`. Qué hacer con el disparo al leer está pendiente de decidir
-    con el usuario, y depende de esto.
+    la base ya no lanza ninguna pasada, por esto mismo, pero «Sincronizar» o una
+    pasada pendiente al arrancar todavía pueden bajar una base más nueva del
+    remoto mientras KeePassDX o Keepass2Android tienen abierta la vieja. Si al
+    guardar no se dan cuenta de que ha cambiado en el disco, el guardado pisa el
+    cambio del otro dispositivo, que solo queda en `.prversions/`. Ver qué hacen,
+    y, si pisan, decidir si «Sincronizar» debe saltarse el llavero o avisar.
   - **Una pasada que sigue tras parar WorkManager su trabajo** (un guardado que
     lo sustituye con `REPLACE`): desde Android 14, con el proceso en caché y sin
     trabajo que lo retenga, el sistema puede congelarlo, y la pasada se queda

@@ -12,8 +12,7 @@ import prdrive.engine.Pasada
 
 /**
  * TrabajoLlavero.kt — La pasada del llavero en segundo plano, con WorkManager:
- * la que encolan [Disparos] al guardar la base, al leerla y si algo quedó sin
- * subir.
+ * la que encolan [Disparos] al guardar la base y si algo quedó sin subir.
  *
  * Qué se reintenta, como en `Vigilancia` (`common/llavero.py`): una pasada que
  * falla, sí (sin red, un remoto que no contesta), con la espera de [Disparos].

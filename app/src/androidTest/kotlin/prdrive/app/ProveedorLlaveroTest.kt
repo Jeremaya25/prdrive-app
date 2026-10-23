@@ -223,13 +223,13 @@ class ProveedorLlaveroTest {
     }
 
     @Test
-    fun leer_una_base_encola_la_pasada_de_lectura_y_no_la_toca() {
+    fun leer_una_base_no_encola_ninguna_pasada_ni_la_toca() {
+        // Lo último del remoto solo lo trae «Abrir llavero»: una pasada al leer
+        // podría cambiar la base debajo de la app de KeePass ([Disparos]).
         val pfd = resolver.openFileDescriptor(uriBase, "r")!!
         assertArrayEquals(Banco.base(entera = true), FileInputStream(pfd.fileDescriptor).readBytes())
         pfd.close()
-        val trabajo = encolados().singleOrNull()
-        assertNotNull("leer no ha encolado la pasada", trabajo)
-        assertEquals(0L, trabajo!!.initialDelayMillis)
+        assertTrue("leer ha encolado una pasada", encolados().isEmpty())
         assertTrue((temporales.list() ?: emptyArray()).isEmpty())
     }
 

@@ -453,10 +453,16 @@ decisiones que no se ven en el código:
   WorkManager con nombre fijo y con red (`CONNECTED`; en el escritorio una red de
   pago tampoco retiene al llavero). *Al guardar*, `REPLACE` con 20 s de calma,
   así que cada guardado aplaza la subida, como la vigilancia del escritorio. *Al
-  leer la base* por el proveedor, `KEEP` y sin espera (y nada si la última pasada
-  buena tiene menos de 2 min, para que «Abrir llavero» no lance otra): vale para
-  la próxima vez. *Al arrancar la app y al acabar una pasada*, si `pendiente()`
-  dice que hay algo sin subir. No hay pasadas periódicas: la bajada es al abrir.
+  arrancar la app y al acabar una pasada*, si `pendiente()` dice que hay algo sin
+  subir. No hay pasadas periódicas: lo último del remoto lo trae «Abrir llavero»,
+  antes de abrir.
+- **Leer la base no lanza ninguna pasada**, a propósito. Una pasada al leer
+  traería una base más nueva del remoto mientras la app de KeePass tiene la
+  vieja en memoria; si la app no ve el cambio en disco, su guardado siguiente
+  sube la vieja como un cambio normal, y el del otro dispositivo queda solo en
+  `.prversions/`, sin copia de conflicto ni aviso. Sin esa pasada, el mismo caso
+  sale como una copia de conflicto avisada. El precio: abrir la base desde los
+  recientes de la app de KeePass enseña la de la última pasada, no la del remoto.
 - **Una pasada del llavero en marcha no se corta nunca**, como en el escritorio.
   Cortarla dejaría el lock de bisync puesto, y una escritura del motor sobre un
   canal interrumpido fallaría. El trabajo corre la pasada sin interrupción;
@@ -472,8 +478,7 @@ decisiones que no se ven en el código:
 - **Los reintentos.** Una pasada que falla se repite con espera exponencial
   desde 2 min. El escritorio la topa en 30 min (`llavero.TOPE_REINTENTO`);
   WorkManager no deja poner tope y el suyo es de 5 h. Diferencia aceptada: un
-  llavero sin red espera más entre intentos, y cada guardado o lectura lo vuelve
-  a lanzar. No se reintenta lo que repetir no arregla (una base rota y un freno
+  llavero sin red espera más entre intentos, y cada guardado lo vuelve a lanzar. No se reintenta lo que repetir no arregla (una base rota y un freno
   que no se pudo repetir): esperan al siguiente guardado o a «Abrir llavero».
   Una base rota vale 2, lo mismo que una pasada que aborta antes de llamar a
   rclone (`Pasada.ABORTO`, como en prdrive): con un 2 se mira si hay de verdad

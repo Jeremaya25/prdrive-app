@@ -56,8 +56,8 @@ import prdrive.engine.LLAVERO_LOCAL
  * **El llavero** (`.keychain/`) lo abre una app de KeePass por aquí. Sus bases
  * se guardan de forma atómica ([GuardadoAtomico]): el cliente escribe en un
  * temporal de `.prdrive/tmp/`, que solo se pone encima de la base al cerrar y si
- * llega entera. Guardar una base encola la subida, y leerla, la pasada de
- * lectura ([Disparos]). La llave (`llave.keyx`) se ve, porque la app de KeePass
+ * llega entera. Guardar una base encola la subida ([Disparos]); leerla no
+ * encola nada (lo último del remoto lo trae «Abrir llavero»). La llave (`llave.keyx`) se ve, porque la app de KeePass
  * la necesita para abrir la base. Mientras el llavero está activo
  * ([GuardadoAtomico.llaveroActivo]), la llave no se escribe, ni se borra ni se
  * renombra, ni por su ruta ni por un enlace que lleve a ella; `.keychain/` no
@@ -248,10 +248,7 @@ class VolumenProvider : DocumentsProvider() {
         if (escribe && (GuardadoAtomico.esLlave(t) || llevaALaLlave(f)) && llaveroActivo()) {
             throw FileNotFoundException("La llave del llavero no se escribe")
         }
-        if (GuardadoAtomico.esBase(t)) {
-            if (escribe) return guardarBase(f, mode)
-            despues { Disparos.alLeer(context!!) }
-        }
+        if (escribe && GuardadoAtomico.esBase(t)) return guardarBase(f, mode)
         // Se abre lo comprobado: el destino ya resuelto, no la ruta del enlace.
         return ParcelFileDescriptor.open(f.canonicalFile, ParcelFileDescriptor.parseMode(mode))
     }
@@ -292,15 +289,6 @@ class VolumenProvider : DocumentsProvider() {
             )
         } catch (e: IOException) {
             throw FileNotFoundException("No se puede guardar ${f.name}: ${e.message}")
-        }
-    }
-
-    /** Encolar una pasada no puede impedir abrir la base. */
-    private fun despues(que: () -> Unit) {
-        try {
-            que()
-        } catch (e: RuntimeException) {
-            Log.w("VolumenProvider", "Encolando la pasada del llavero", e)
         }
     }
 

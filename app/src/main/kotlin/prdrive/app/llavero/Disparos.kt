@@ -22,7 +22,14 @@ import java.time.Duration
  * Una pasada que falla se reintenta con espera exponencial desde [SEPARACION].
  * El escritorio la topa en 30 min (`llavero.TOPE_REINTENTO`); WorkManager no
  * deja poner un tope, y el suyo es de 5 h. Diferencia aceptada: un llavero sin
- * red espera más entre intentos, y cada guardado o lectura lo vuelve a lanzar.
+ * red espera más entre intentos, y cada guardado lo vuelve a lanzar.
+ *
+ * Leer la base no encola nada: lo último del remoto solo se trae con «Abrir
+ * llavero», antes de abrir. Una pasada lanzada al leer traería una versión más
+ * nueva mientras la app de KeePass tiene la vieja en memoria, y si la app no ve
+ * el cambio en disco, su guardado siguiente subiría la vieja: el cambio del otro
+ * dispositivo quedaría solo en `.prversions/`, sin copia de conflicto ni aviso.
+ * Sin esa pasada, el mismo caso sale como una copia de conflicto avisada.
  */
 object Disparos {
 
@@ -43,17 +50,6 @@ object Disparos {
      * sube lo guardado durante ella.
      */
     fun alGuardar(c: Context) = encolar(c, ExistingWorkPolicy.REPLACE, CALMA)
-
-    /**
-     * Al leer una base por el proveedor: una pasada ya, que vale para la
-     * próxima vez que se abra. Nada si la última buena es reciente
-     * ([LlaveroApp.reciente]): es la que acaba de hacer «Abrir llavero». Si ya
-     * hay un trabajo, se queda ese.
-     */
-    fun alLeer(c: Context) {
-        if (LlaveroApp.reciente(c)) return
-        encolar(c, ExistingWorkPolicy.KEEP, Duration.ZERO)
-    }
 
     /**
      * Al arrancar la app y al acabar una pasada: una ya, si hay algo sin subir
