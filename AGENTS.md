@@ -453,6 +453,19 @@ sembrado (`sync_config.toml` y `rclone.conf` en `.prdrive/`) y el permiso dado
   (`job/stop` y `job/status` hasta `finished`): si no, el lock de bisync se
   queda puesto y la captura del log se cruza con la de la pasada siguiente.
   Una pasada cancelada no se apunta, como un Ctrl+C en el escritorio.
+- **Y una bisync parada puede decir que ha ido bien sin haberlo hecho.** `sync`
+  se traga el `context.Canceled` de un `job/stop` si no hay una transferencia
+  en vuelo (`fs/sync/sync.go`, `processError`: su `inCtx` cuelga del contexto
+  cancelado, y lo toma por un corte suyo). bisync da por hechas las copias que
+  le quedaban, dice «Bisync successful» y escribe unos listados con ellas: la
+  pasada siguiente ve «borrados» en un lado los ficheros que no llegaron, y los
+  borra del otro (comprobado con 3000 ficheros: solo lo para el 25 % de
+  `max-delete`). Cortada al listar o a media copia, aborta como debe. Por eso,
+  si hubo que pararla y rclone no dice que falló, la app aparta los listados
+  como hace rclone con una pasada interrumpida (`.lst` → `.lst-err`,
+  `markFailed` en `cmd/bisync/lockfile.go`; `Adaptadores.apartarListados`), y
+  la siguiente pide `--resync`, que no borra nada. En el escritorio no pasa: un
+  Ctrl+C va por `atexit`, no por el contexto.
 - **`core/command` no sirve desde la biblioteca**, ni aunque lo veas en la
   documentación de rclone: `librclone.RPC()` rechaza los métodos que necesitan
   request/response, y su implementación lanza un proceso hijo. La ruta es

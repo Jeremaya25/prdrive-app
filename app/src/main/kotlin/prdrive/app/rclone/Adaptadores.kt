@@ -1,6 +1,7 @@
 package prdrive.app.rclone
 
 import java.io.File
+import prdrive.engine.Bisync
 import prdrive.engine.Catalogo
 import prdrive.engine.Pasada
 import prdrive.engine.escribirJson
@@ -36,12 +37,45 @@ object Adaptadores {
                     Rclone.trabajo(llamada.metodo, llamada.parametros, alProgreso = alProgreso)
                 } catch (e: Rclone.RcloneError) {
                     Rclone.Final(false, e.message ?: "", e.salida)
+                } catch (e: Rclone.Cancelada) {
+                    if (bisync && e.parada && e.final?.ok != false) apartarListados(llamada, e.final)
+                    throw e
                 } finally {
                     if (!bisync) capturado = Rclone.soltarCaptura()
                 }
                 val log = if (bisync) final.salida["output"]?.toString() ?: "" else capturado
                 Pasada.Final(final.ok, final.error, log, final.salida)
             }
+    }
+
+    /**
+     * Aparta los listados de una bisync parada a medias que rclone ha dado por
+     * buena (o de la que no se sabe cómo acabó), como hace rclone con una pasada
+     * interrumpida que no ha podido cerrar bien: `.lst` → `.lst-err`
+     * (cmd/bisync/lockfile.go, `markFailed`). La siguiente pide --resync, que no
+     * borra nada.
+     *
+     * Esos listados pueden apuntar como hechas copias que no se hicieron
+     * ([Rclone.Cancelada]), y con ellos la pasada siguiente vería «borrados» en
+     * un lado los ficheros que no llegaron, y los borraría del otro. Si rclone
+     * dice que falló, ya los ha apartado él (un error crítico) o no los ha
+     * tocado, y no se hace nada.
+     */
+    private fun apartarListados(llamada: Pasada.Llamada, final: Rclone.Final?) {
+        val base = final?.salida?.get("basePath") as? String
+        val listados = if (base != null) {
+            listOf(File(base + Bisync.PATH1_SUFFIX), File(base + Bisync.PATH2_SUFFIX))
+        } else {
+            // Sin su `basePath`, todos los del workdir, que es de la pareja.
+            val workdir = llamada.parametros["workdir"] as? String ?: return
+            File(workdir).listFiles { f -> f.name.endsWith(Bisync.PATH1_SUFFIX) || f.name.endsWith(Bisync.PATH2_SUFFIX) }
+                ?.toList().orEmpty()
+        }
+        for (lst in listados.filter { it.isFile }) {
+            val err = File(lst.path + "-err")
+            err.delete()
+            lst.renameTo(err)
+        }
     }
 
     /**
