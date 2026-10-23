@@ -23,6 +23,7 @@ import java.nio.file.SimpleFileVisitor
 import java.nio.file.attribute.BasicFileAttributes
 import prdrive.app.Prdrive
 import prdrive.app.R
+import prdrive.app.llavero.Avisos
 import prdrive.app.llavero.Disparos
 import prdrive.engine.CARPETA_PROGRAMA
 import prdrive.engine.LLAVERO_LLAVE
@@ -257,7 +258,8 @@ class VolumenProvider : DocumentsProvider() {
     /**
      * El guardado de una base del llavero ([f], la entrada de `.keychain/`): un
      * temporal que se pone encima al cerrar, si llega entero. Uno roto se apunta
-     * en `state/` para avisar, y uno bueno quita ese aviso y encola la subida.
+     * en `state/` y se notifica ([Avisos.guardadoCortado]), y uno bueno quita
+     * ese aviso y encola la subida.
      */
     private fun guardarBase(f: File, mode: String): ParcelFileDescriptor {
         val c = context!!
@@ -270,9 +272,13 @@ class VolumenProvider : DocumentsProvider() {
                 handler = guardados,
                 alPoner = {
                     GuardadoAtomico.quitarCortado(state)
+                    Avisos.guardadoBueno(c)
                     Disparos.alGuardar(c)
                 },
-                alCortar = { motivo -> GuardadoAtomico.apuntarCortado(state, f.name, motivo) },
+                alCortar = { motivo ->
+                    GuardadoAtomico.apuntarCortado(state, f.name, motivo)
+                    Avisos.guardadoCortado(c, f.name)
+                },
             )
         } catch (e: IOException) {
             throw FileNotFoundException("No se puede guardar ${f.name}: ${e.message}")

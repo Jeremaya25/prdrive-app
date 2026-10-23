@@ -9,6 +9,11 @@
          conexión se queda colgada hasta el timeout. Es de los que se piden al
          usarlo: se pide al conectar y al sincronizar. -->
     <uses-permission android:name="android.permission.ACCESS_LOCAL_NETWORK" />
+    <!-- Las notificaciones del llavero (llavero/Avisos.kt): una copia de
+         conflicto nueva y un guardado que llegó cortado. Desde Android 13 se
+         pide al usarlo: al activar el llavero. Sin él, lo dice la fila de la
+         principal. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <!-- La app se pone al día sola desde las releases de GitHub (Actualizador.kt).
          ACCESS_NETWORK_STATE: para no bajar el APK (unos 50 MB) con datos

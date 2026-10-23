@@ -1060,8 +1060,19 @@ def vectores_activar(model, llavero, cifrada) -> dict:
     return {"llave": model.LLAVERO_LLAVE, "casos": casos, "baja_sin_llavero": sin_llavero}
 
 
+def vectores_avisos(agente) -> dict:
+    """El principio del aviso de una copia de conflicto del llavero (`agente.py`).
+
+    El teléfono lo acaba con su frase (`Avisos.COMBINAR_FUERA`): las dos de
+    prdrive (`COMBINAR_AQUI`, `COMBINAR_A_MANO`) hablan de su ventana y de
+    KeePassXC.
+    """
+    return {"LLAVERO_EN_CONFLICTO": agente.LLAVERO_EN_CONFLICTO}
+
+
 def vectores(kdbx, llavero, model, bisync) -> dict:
     """La sección `llavero` del JSON."""
+    import agente   # noqa: PLC0415 — prdrive ya está en el path
     import sync   # noqa: PLC0415 — prdrive ya está en el path
     from common import cifrada, frenos   # noqa: PLC0415 — prdrive ya está en el path
     config = model.parse_config(CONFIG_LLAVERO)
@@ -1074,4 +1085,5 @@ def vectores(kdbx, llavero, model, bisync) -> dict:
         "activar": vectores_activar(model, llavero, cifrada),
         "repeticiones": vectores_repeticiones(
             sync, model, model.parse_config(CONFIG_FRENOS).pareja_llavero),
+        "avisos": vectores_avisos(agente),
     }

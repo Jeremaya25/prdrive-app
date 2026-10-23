@@ -1,6 +1,8 @@
 package prdrive.app.ui
 
 import android.app.Application
+import android.net.Uri
+import android.provider.DocumentsContract
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -14,12 +16,20 @@ import prdrive.app.Actualizador
 import prdrive.app.Estado
 import prdrive.app.Instalador
 import prdrive.app.Prdrive
+import prdrive.app.documentos.VolumenProvider
+import prdrive.app.llavero.Avisos
+import prdrive.app.llavero.LlaveroApp
 import prdrive.app.rclone.Adaptadores
 import prdrive.engine.Catalogo
 import prdrive.engine.Config
+import prdrive.engine.ConfigError
+import prdrive.engine.Conflictos
+import prdrive.engine.LLAVERO
+import prdrive.engine.LLAVERO_LOCAL
 import prdrive.engine.Pairing
 import prdrive.engine.Pasada
 import prdrive.engine.Volumen
+import prdrive.engine.loadRaw
 
 /**
  * Modelo.kt — El estado de las dos pantallas y lo que hacen sus botones.
@@ -87,6 +97,14 @@ class Modelo(app: Application) : AndroidViewModel(app) {
     var elegidas by mutableStateOf<Set<String>>(emptySet())
         private set
 
+    /** Si al instalar se trae también el llavero (la casilla «El llavero»). */
+    var conLlavero by mutableStateOf(false)
+        private set
+
+    /** El fichero llave elegido para un llavero sin contraseña (`llave_interna`). */
+    var llaveDelLlavero by mutableStateOf<Uri?>(null)
+        private set
+
     /** Si el `--resync` inicial ha terminado (bien o mal). */
     var inicioTerminado by mutableStateOf(false)
         private set
@@ -112,6 +130,20 @@ class Modelo(app: Application) : AndroidViewModel(app) {
 
     var filas by mutableStateOf<List<Estado.Fila>>(emptyList())
         private set
+
+    /** La fila del llavero; `null` si no lo lleva ni se puede traer. */
+    var llavero by mutableStateOf<Estado.FilaLlavero?>(null)
+        private set
+
+    /**
+     * Lo que «Abrir llavero» dice antes de abrir (copias de conflicto, la llave
+     * que falta); al cerrarlo, se abre.
+     */
+    var avisoLlavero by mutableStateOf<String?>(null)
+        private set
+
+    /** Lo que se hace al cerrar [avisoLlavero]: abrir la base. */
+    private var alCerrarAviso: (() -> Unit)? = null
 
     init {
         if (sembrado) trabajo("Preparando…") { refrescar() }
@@ -189,6 +221,9 @@ class Modelo(app: Application) : AndroidViewModel(app) {
             val cat = Instalador.leerCatalogo(contexto, c)
             catalogo = cat
             elegidas = cat.names.toSet()
+            // El llavero, desmarcado: es un paso opcional, como en el instalador.
+            conLlavero = false
+            llaveDelLlavero = null
             paso = Paso.PAREJAS
         }
     }
@@ -197,27 +232,61 @@ class Modelo(app: Application) : AndroidViewModel(app) {
         elegidas = if (si) elegidas + nombre else elegidas - nombre
     }
 
-    /** Siembra el volumen con las elegidas y hace el `--resync` inicial de las bisync. */
+    /** Marca o desmarca «El llavero»; con [llave], el fichero llave de uno sin contraseña. */
+    fun elegirLlavero(si: Boolean, llave: Uri? = null) {
+        conLlavero = si
+        llaveDelLlavero = if (si) llave else null
+    }
+
+    /**
+     * Siembra el volumen con las elegidas y hace el `--resync` inicial de las
+     * bisync.
+     *
+     * Con «El llavero», lo activa antes de las pasadas (así una pareja de la
+     * raíz entera ya empieza sin `.keychain/`, y no pide otro `--resync`) y lo
+     * pasa el último, como `sync.py`. Si activarlo falla, las parejas siguen, y
+     * el error se dice al final: el llavero se puede traer después desde la
+     * principal.
+     */
     fun instalar() {
         val c = carga ?: return
         val cat = catalogo ?: return
         val orden = cat.names.filter { it in elegidas }
+        val remota = if (conLlavero) tablaLlavero(cat) else null
+        val llave = llaveDelLlavero
         trabajo("Instalando…") {
             val hecho = Instalador.instalar(contexto, c, cat, orden)
             instalado = hecho
             paso = Paso.INICIANDO
             lineas = emptyList()
+            var falloLlavero: Exception? = null
+            val activado = remota != null && try {
+                LlaveroApp.enExclusiva { Instalador.activarLlavero(contexto, remota, llave) }
+                true
+            } catch (e: ConfigError) {
+                falloLlavero = e
+                false
+            } catch (e: java.io.IOException) {
+                falloLlavero = e
+                false
+            }
             try {
                 for (nombre in Instalador.aInicializar(hecho.config, cat)) {
                     val r = Instalador.inicializar(contexto, hecho.config, nombre, { progreso = Progreso.de(nombre, it) }, ::decir)
                     resultados = resultados + (nombre to r)
                 }
+                if (activado) pasarLlavero()
             } finally {
                 // Bien o mal, el volumen ya está sembrado: se puede ir a la principal.
                 inicioTerminado = true
             }
+            falloLlavero?.let { throw Exception("No se ha podido traer el llavero: ${it.message}", it) }
         }
     }
+
+    /** La tabla `[keychain]` de un catálogo, o `null` si no la tiene. */
+    @Suppress("UNCHECKED_CAST")
+    private fun tablaLlavero(cat: Catalogo.Catalog): Map<String, Any?>? = cat.raw["keychain"] as? Map<String, Any?>
 
     /** Del primer arranque a la pantalla principal. */
     fun empezar() {
@@ -231,7 +300,32 @@ class Modelo(app: Application) : AndroidViewModel(app) {
 
     private fun refrescar() {
         val v = Prdrive.iniciarRclone(contexto)
-        filas = Estado.filas(v, config())
+        val config = config()
+        filas = Estado.filas(v, config)
+        llavero = Estado.llavero(v, config, Prdrive.faltaRedLocal(contexto))
+    }
+
+    /** La fila del llavero otra vez, de `state/` y del disco. */
+    private fun releerLlavero() {
+        llavero = Estado.llavero(volumen, config(), Prdrive.faltaRedLocal(contexto))
+    }
+
+    /**
+     * Al volver a la app (de la app de KeePass, por ejemplo), la fila del
+     * llavero puede haber cambiado: un guardado sin subir, uno cortado, una
+     * pasada de fondo. Solo se lee, sin red; con algo en marcha no hace falta,
+     * que al acabar se relee.
+     */
+    fun alVolver() {
+        if (!sembrado || ocupado != null) return
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                releerLlavero()
+            } catch (e: Exception) {
+                // Un config a medio escribir: la próxima vez.
+                android.util.Log.w("Modelo", "Releyendo la fila del llavero", e)
+            }
+        }
     }
 
     /**
@@ -253,8 +347,139 @@ class Modelo(app: Application) : AndroidViewModel(app) {
                     )
                     resultados = resultados + (p.name to r)
                 }
+                // El llavero, el último, como `sync.py` sin nombres: no sale
+                // entre las parejas, pero «Sincronizar» lo pasa.
+                if (config.parejaLlavero != null) pasarLlavero()
             } finally {
                 filas = Estado.filas(v, config)
+                releerLlavero()
+            }
+        }
+    }
+
+    // --- el llavero -----------------------------------------------------------------
+
+    /**
+     * Pasa el llavero con el progreso de siempre ([LlaveroApp.pasar]: su
+     * cerrojo, `cifrado = true` y los avisos), y apunta cómo ha ido.
+     *
+     * @return su código, o `null` si no había llavero que pasar.
+     */
+    private fun pasarLlavero(): Int? {
+        val r = LlaveroApp.pasar(contexto, { progreso = Progreso.de(LLAVERO, it) }, ::decir) ?: return null
+        resultados = resultados + (LLAVERO to r)
+        return r.codigo
+    }
+
+    /**
+     * «Abrir llavero», en el orden de `llavero_editor.abrir()`:
+     *
+     * 1. Si la última pasada buena no es reciente ([LlaveroApp.reciente]), trae
+     *    lo último. Si falla, se abre igual y se dice.
+     * 2. Sin base tras la pasada, se dice por qué y no se abre.
+     * 3. Con copias de conflicto de la base, o sin el fichero llave de un
+     *    llavero sin contraseña, un aviso ([avisoLlavero]) que al cerrarse abre.
+     * 4. [abrir] con el `content://` de la base en [VolumenProvider], en el
+     *    hilo de la pantalla.
+     */
+    fun abrirLlavero(abrir: (Uri) -> Unit) {
+        trabajo("Abriendo el llavero…") {
+            val v = Prdrive.volumen(contexto)
+            val config = config()
+            val pareja = config.parejaLlavero ?: throw ConfigError(Volumen.SIN_LLAVERO)
+            val base = config.llavero?.get("base")?.toString() ?: throw ConfigError(Volumen.SIN_LLAVERO)
+            val fichero = java.io.File(pareja.carpetaEn(v.raiz), base)
+            var codigo = 0
+            if (!LlaveroApp.reciente(contexto)) {
+                ocupado = TextosLlavero.TRAYENDO
+                lineas = emptyList()
+                try {
+                    codigo = pasarLlavero() ?: 0
+                } finally {
+                    ocupado = "Abriendo el llavero…"
+                    progreso = null
+                    releerLlavero()
+                }
+            }
+            if (!fichero.isFile) {
+                error = if (codigo == 0) TextosLlavero.SIN_BASE else TextosLlavero.sinTraerBase(codigo)
+                return@trabajo
+            }
+            if (codigo != 0) error = TextosLlavero.sinTraer(codigo)
+            // Las copias de la base, de nuevo del disco (`conflicto_de_la_base()`):
+            // pueden haberse combinado fuera desde la última pasada. Con el
+            // cerrojo del llavero, que también apunta en `state/`.
+            val copias = LlaveroApp.enExclusiva { Conflictos.actualizarPareja(pareja, v.raiz, v.state) }
+                .filter { it.original.name == base }.flatMap { it.copias }
+            releerLlavero()
+            val avisos = listOfNotNull(
+                if (llavero?.faltaLlave == true) TextosLlavero.FALTA_LLAVE else null,
+                if (copias.isNotEmpty()) {
+                    Avisos.LLAVERO_EN_CONFLICTO + Avisos.COMBINAR_FUERA + "\n\n" +
+                        copias.joinToString("\n") { "· ${it.name}" }
+                } else {
+                    null
+                },
+            )
+            val uri = DocumentsContract.buildDocumentUri(
+                VolumenProvider.AUTORIDAD, "${VolumenProvider.ID_RAIZ}/$LLAVERO_LOCAL/$base",
+            )
+            if (avisos.isEmpty()) {
+                viewModelScope.launch(Dispatchers.Main) { abrir(uri) }
+            } else {
+                alCerrarAviso = { abrir(uri) }
+                avisoLlavero = avisos.joinToString("\n\n")
+            }
+        }
+    }
+
+    /** Se ha leído [avisoLlavero]: se abre la base. Desde el hilo de la pantalla. */
+    fun cerrarAvisoLlavero() {
+        val accion = alCerrarAviso
+        alCerrarAviso = null
+        avisoLlavero = null
+        accion?.invoke()
+    }
+
+    /**
+     * «Traer el llavero»: relee el catálogo del remoto y, si tiene llavero, lo
+     * activa en el teléfono ([Instalador.activarLlavero], con [llave] si va sin
+     * contraseña) y lo pasa por primera vez, que trae la base.
+     *
+     * Activarlo reescribe el `rclone.conf` y recarga rclone: va con el cerrojo
+     * del llavero, para no hacerlo con una pasada suya en marcha.
+     */
+    fun traerLlavero(llave: Uri?) {
+        trabajo("Leyendo el catálogo del remoto…") {
+            val v = Prdrive.iniciarRclone(contexto)
+            try {
+                val cat = Catalogo.pull(
+                    Adaptadores.catalogo(Prdrive.temporal(contexto)),
+                    loadRaw(v.config.readText(Charsets.UTF_8)),
+                    v.state,
+                )
+                val remota = tablaLlavero(cat) ?: throw ConfigError(TextosLlavero.SIN_LLAVERO_REMOTO)
+                ocupado = "Activando el llavero…"
+                LlaveroApp.enExclusiva { Instalador.activarLlavero(contexto, remota, llave) }
+                ocupado = TextosLlavero.TRAYENDO
+                lineas = emptyList()
+                pasarLlavero()
+            } finally {
+                releerLlavero()
+            }
+        }
+    }
+
+    /**
+     * «Quitar el llavero de este teléfono» ([Instalador.quitarLlavero]): con el
+     * cerrojo del llavero, como [traerLlavero]. `.keychain/` se queda.
+     */
+    fun quitarLlavero() {
+        trabajo("Quitando el llavero…") {
+            try {
+                LlaveroApp.enExclusiva { Instalador.quitarLlavero(contexto) }
+            } finally {
+                releerLlavero()
             }
         }
     }

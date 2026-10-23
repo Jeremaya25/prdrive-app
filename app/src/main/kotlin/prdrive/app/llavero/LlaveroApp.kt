@@ -1,6 +1,7 @@
 package prdrive.app.llavero
 
 import android.content.Context
+import android.util.Log
 import java.io.IOException
 import java.time.Duration
 import java.util.concurrent.locks.ReentrantLock
@@ -8,6 +9,7 @@ import prdrive.app.Prdrive
 import prdrive.app.rclone.Adaptadores
 import prdrive.engine.Bisync
 import prdrive.engine.ConfigError
+import prdrive.engine.Conflictos
 import prdrive.engine.LLAVERO
 import prdrive.engine.Llavero
 import prdrive.engine.Pareja
@@ -64,7 +66,7 @@ object LlaveroApp {
      * Pasa la pareja del llavero, apunta cómo ha ido (`state/`) y guarda el log
      * si falla, como cualquier pareja.
      *
-     * Al acabar se lo dice a los avisos ([trasPasada]) y, si algo ha quedado sin
+     * Al acabar se lo dice a los avisos ([Avisos.trasPasada]) y, si algo ha quedado sin
      * subir (se guardó durante la pasada, o no ha salido), encola otra si no
      * hay ya un trabajo del llavero ([Disparos.siPendiente]).
      *
@@ -77,21 +79,25 @@ object LlaveroApp {
         alProgreso: (Map<String, Any?>) -> Unit = {},
         decir: (String) -> Unit = {},
     ): Pasada.Resultado? {
-        val resultado = enExclusiva {
+        val (resultado, conflictos) = enExclusiva {
             val v = Prdrive.volumen(contexto)
             if (!v.sembrado) return@enExclusiva null
             val config = v.leerConfig()
             val pareja = config.parejaLlavero ?: return@enExclusiva null
             Prdrive.iniciarRclone(contexto)
-            Pasada.pasarOFallar(
+            val r = Pasada.pasarOFallar(
                 v, pareja, Adaptadores.pasada, Adaptadores.opciones,
                 // Android cifra el almacenamiento de la app: el teléfono cuenta
                 // como cifrado (el motor, por defecto, no).
                 Pasada.Contexto(cifrado = true, keepLogs = config.keepLogs),
                 alProgreso, decir,
             )
+            // Las copias, de `state/` (lo que la pasada acaba de apuntar), como
+            // `Agente._copias_del_llavero()`: una pasada que se ha caído a
+            // medias no trae las suyas en el resultado, y no por eso se han ido.
+            r to Conflictos.cargar(config, v.raiz, v.state)[LLAVERO].orEmpty()
         } ?: return null
-        trasPasada(contexto, resultado)
+        avisar { Avisos.trasPasada(contexto, conflictos) }
         Disparos.siPendiente(contexto)
         return resultado
     }
@@ -130,11 +136,12 @@ object LlaveroApp {
         }
     }
 
-    /**
-     * Lo que se avisa tras una pasada del llavero (`Avisos.trasPasada`, que
-     * trae Task 9: la notificación de un fallo o de un conflicto). Hasta
-     * entonces, nada.
-     */
-    @Suppress("UNUSED_PARAMETER")
-    private fun trasPasada(contexto: Context, resultado: Pasada.Resultado) = Unit
+    /** Un aviso que no sale no tumba la pasada, que ya está apuntada. */
+    private fun avisar(que: () -> Unit) {
+        try {
+            que()
+        } catch (e: RuntimeException) {
+            Log.w("LlaveroApp", "Avisando tras una pasada del llavero", e)
+        }
+    }
 }

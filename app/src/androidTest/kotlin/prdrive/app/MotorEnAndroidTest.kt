@@ -15,6 +15,7 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import prdrive.app.llavero.Avisos
 import prdrive.engine.Catalogo
 import prdrive.engine.Resultados
 import prdrive.engine.Store
@@ -555,5 +556,16 @@ class MotorEnAndroidTest {
         } finally {
             raiz.deleteRecursively()
         }
+    }
+
+    /**
+     * El principio del aviso de una copia de conflicto del llavero es el de
+     * prdrive (`agente.LLAVERO_EN_CONFLICTO`): [Avisos] lo lleva escrito, y
+     * aquí se comprueba contra el vector. Lo de detrás es del teléfono.
+     */
+    @Test
+    fun el_aviso_de_un_conflicto_del_llavero_empieza_como_el_de_prdrive() {
+        val avisos = objeto(objeto(vectores, "llavero"), "avisos")
+        assertEquals(avisos["LLAVERO_EN_CONFLICTO"], Avisos.LLAVERO_EN_CONFLICTO)
     }
 }

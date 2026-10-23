@@ -16,10 +16,17 @@ class MainActivity : ComponentActivity() {
     /**
      * Al arrancar, si algo del llavero quedó sin subir (un guardado cuyo
      * trabajo se perdió), se encola su pasada ([Disparos.siPendiente]).
+     *
+     * El modelo se crea aquí y no dentro de `setContent`: creado en mitad de
+     * la primera composición, su estado nace dentro de la instantánea de esa
+     * composición, y lo que su primer trabajo escribe desde otro hilo antes
+     * de que esa instantánea se aplique se pierde (la principal se quedaba
+     * sin filas si leer `state/` iba más deprisa que el primer dibujo).
      */
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContent { PrdriveApp(modelo) }
+        val m = modelo
+        setContent { PrdriveApp(m) }
         Disparos.siPendiente(this)
     }
 

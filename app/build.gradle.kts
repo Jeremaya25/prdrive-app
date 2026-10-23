@@ -128,5 +128,8 @@ dependencies {
     // El Espresso que trae ui-test busca `InputManager.getInstance`, que ya no
     // existe en API 37; el 3.7 (el de androidx.test 1.7) no.
     androidTestImplementation("androidx.test.espresso:espresso-core:3.7.0")
+    // «Abrir llavero» lanza un ACTION_VIEW: PantallaLlaveroTest lo intercepta
+    // y lo comprueba sin necesitar una app de KeePass en el emulador.
+    androidTestImplementation("androidx.test.espresso:espresso-intents:3.7.0")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
 }

@@ -41,9 +41,15 @@ object Banco {
      * durante cinco minutos los de la prueba anterior.
      *
      * Con [llavero] (el nombre de su base) el config lleva `[keychain]`, y su
-     * carpeta en el remoto es `catalogo/keychain` dentro de [remoto].
+     * carpeta en el remoto es `catalogo/keychain` dentro de [remoto]. Con
+     * [catalogo], el config dice dónde está el catálogo (`catalogo/remote.toml`
+     * dentro de [remoto]) aunque no lleve el llavero.
      */
-    fun volumen(vararg parejas: Map<String, Any?>, llavero: String? = null): kotlin.Pair<Volumen, Config> {
+    fun volumen(
+        vararg parejas: Map<String, Any?>,
+        llavero: String? = null,
+        catalogo: Boolean = llavero != null,
+    ): kotlin.Pair<Volumen, Config> {
         val v = Prdrive.volumen(contexto)
         v.raiz.deleteRecursively()
         remoto.deleteRecursively()
@@ -51,7 +57,7 @@ object Banco {
         v.escribirConfig(
             mapOf(
                 "defaults" to mapOf("device_remote" to "disp", "remote" to "nas") +
-                    if (llavero != null) mapOf("catalog_path" to File(remoto, "catalogo/remote.toml").absolutePath) else emptyMap(),
+                    if (catalogo) mapOf("catalog_path" to File(remoto, "catalogo/remote.toml").absolutePath) else emptyMap(),
                 "pair" to parejas.toList(),
             ) + if (llavero != null) mapOf("keychain" to mapOf("base" to llavero)) else emptyMap(),
             "# Para los tests.\n",
