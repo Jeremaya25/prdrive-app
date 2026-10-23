@@ -20,19 +20,8 @@ Falta:
   --resync» cada vez.
 - **La app de Archivos.** Un fichero guardado desde otra app se sincroniza en la
   pasada siguiente.
-- **El escáner con la cámara**, delante de la ventana de Doctor (la prueba pega
-  el texto). Con una clave RSA-3072 el QR es de los más densos: prdrive lo
-  genera con corrección L porque con M no cabe en ninguna versión.
 - **El permiso de red local** en un Android 17 de verdad, contra un NAS en
   `192.168.…`, y en uno anterior, que no lo pide.
-- **arm64**, que es lo que llevan los teléfonos. En un Galaxy A35 (Android 16)
-  se instala y abre el emparejamiento sin fallos; falta una pasada, que es
-  cuando se carga el rclone de arm64.
-- **La autoactualización con la clave de verdad.** En el emulador se ha probado
-  con APK de depuración (bajar de GitHub, la suma, la firma que no cuadra,
-  instalar preguntando y sin preguntar, y Play Protect parando el primer intento
-  en segundo plano). Falta de una release a la siguiente en un teléfono: la
-  primera que la trae se instala a mano, y la siguiente tendría que llegar sola.
 
 ## 2. Hallazgos que se arreglan en prdrive
 
