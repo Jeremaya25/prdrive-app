@@ -23919,6 +23919,210 @@
         }
       ]
     },
+    "activar": {
+      "llave": "llave.keyx",
+      "casos": [
+        {
+          "caso": "sin ninguna pareja de la raíz",
+          "sin_llavero": {
+            "defaults": {
+              "device_remote": "disp",
+              "remote": "nas"
+            },
+            "pair": [
+              {
+                "name": "notas",
+                "local": "sync-data/notas",
+                "remote_path": "/copia/notas"
+              }
+            ]
+          },
+          "remota": {
+            "base": "personal.kdbx"
+          },
+          "avisos_alta": [],
+          "avisos_baja": []
+        },
+        {
+          "caso": "una pareja bisync de la raíz",
+          "sin_llavero": {
+            "defaults": {
+              "device_remote": "disp",
+              "remote": "nas"
+            },
+            "pair": [
+              {
+                "name": "todo",
+                "local": ".",
+                "remote_path": "/copia/todo"
+              },
+              {
+                "name": "notas",
+                "local": "sync-data/notas",
+                "remote_path": "/copia/notas"
+              }
+            ]
+          },
+          "remota": {
+            "base": "personal.kdbx"
+          },
+          "avisos_alta": [
+            "«todo» sincroniza la raíz entera: desde ahora deja fuera .keychain/, y por eso pedirá un --resync."
+          ],
+          "avisos_baja": [
+            "«todo» sincroniza la raíz entera: sin llavero, .keychain/ viajará con ella, y pedirá un --resync."
+          ]
+        },
+        {
+          "caso": "dos parejas bisync de la raíz",
+          "sin_llavero": {
+            "defaults": {
+              "device_remote": "disp",
+              "remote": "nas"
+            },
+            "pair": [
+              {
+                "name": "todo",
+                "local": ".",
+                "remote_path": "/copia/todo"
+              },
+              {
+                "name": "otra",
+                "local": "./",
+                "remote_path": "/copia/otra"
+              },
+              {
+                "name": "notas",
+                "local": "sync-data/notas",
+                "remote_path": "/copia/notas"
+              }
+            ]
+          },
+          "remota": {
+            "base": "personal.kdbx"
+          },
+          "avisos_alta": [
+            "«todo», «otra» sincroniza la raíz entera: desde ahora deja fuera .keychain/, y por eso pedirá un --resync."
+          ],
+          "avisos_baja": [
+            "«todo», «otra» sincroniza la raíz entera: sin llavero, .keychain/ viajará con ella, y pedirá un --resync."
+          ]
+        },
+        {
+          "caso": "una raíz que es un espejo no pide resync",
+          "sin_llavero": {
+            "defaults": {
+              "device_remote": "disp",
+              "remote": "nas"
+            },
+            "pair": [
+              {
+                "name": "todo",
+                "local": ".",
+                "remote_path": "/copia/todo",
+                "mode": "down-mirror"
+              },
+              {
+                "name": "notas",
+                "local": "sync-data/notas",
+                "remote_path": "/copia/notas"
+              }
+            ]
+          },
+          "remota": {
+            "base": "personal.kdbx"
+          },
+          "avisos_alta": [],
+          "avisos_baja": []
+        },
+        {
+          "caso": "un llavero con llave interna sin parejas de la raíz",
+          "sin_llavero": {
+            "defaults": {
+              "device_remote": "disp",
+              "remote": "nas"
+            },
+            "pair": [
+              {
+                "name": "notas",
+                "local": "sync-data/notas",
+                "remote_path": "/copia/notas"
+              }
+            ]
+          },
+          "remota": {
+            "base": "personal.kdbx",
+            "fichero_llave": true,
+            "llave_interna": true
+          },
+          "avisos_alta": [],
+          "avisos_baja": [
+            "El fichero llave (.keychain/llave.keyx) se queda en el dispositivo: sin él la base no se abre. Bórralo tú si ya no lo quieres aquí."
+          ]
+        },
+        {
+          "caso": "un llavero con llave interna y una pareja de la raíz",
+          "sin_llavero": {
+            "defaults": {
+              "device_remote": "disp",
+              "remote": "nas"
+            },
+            "pair": [
+              {
+                "name": "todo",
+                "local": ".",
+                "remote_path": "/copia/todo"
+              },
+              {
+                "name": "notas",
+                "local": "sync-data/notas",
+                "remote_path": "/copia/notas"
+              }
+            ]
+          },
+          "remota": {
+            "base": "personal.kdbx",
+            "fichero_llave": true,
+            "llave_interna": true
+          },
+          "avisos_alta": [
+            "«todo» sincroniza la raíz entera: desde ahora deja fuera .keychain/, y por eso pedirá un --resync."
+          ],
+          "avisos_baja": [
+            "El fichero llave (.keychain/llave.keyx) se queda en el dispositivo: sin él la base no se abre. Bórralo tú si ya no lo quieres aquí.",
+            "«todo» sincroniza la raíz entera: sin llavero, .keychain/ viajará con ella, y pedirá un --resync. Con ella subiría también el fichero llave: quítala de ahí antes."
+          ]
+        },
+        {
+          "caso": "un llavero con fichero llave que no es interna",
+          "sin_llavero": {
+            "defaults": {
+              "device_remote": "disp",
+              "remote": "nas"
+            },
+            "pair": [
+              {
+                "name": "todo",
+                "local": ".",
+                "remote_path": "/copia/todo"
+              }
+            ]
+          },
+          "remota": {
+            "base": "personal.kdbx",
+            "fichero_llave": true,
+            "nombre_llave": "clave.keyx"
+          },
+          "avisos_alta": [
+            "«todo» sincroniza la raíz entera: desde ahora deja fuera .keychain/, y por eso pedirá un --resync."
+          ],
+          "avisos_baja": [
+            "«todo» sincroniza la raíz entera: sin llavero, .keychain/ viajará con ella, y pedirá un --resync."
+          ]
+        }
+      ],
+      "baja_sin_llavero": "Este dispositivo no lleva el llavero."
+    },
     "repeticiones": {
       "config": {
         "defaults": {

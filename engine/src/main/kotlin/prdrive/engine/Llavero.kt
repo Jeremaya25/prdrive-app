@@ -2,14 +2,18 @@ package prdrive.engine
 
 import java.io.File
 import java.io.IOException
+import java.io.InputStream
 import java.nio.ByteBuffer
 import java.nio.charset.CharacterCodingException
 import java.nio.charset.CodingErrorAction
+import java.nio.file.AtomicMoveNotSupportedException
 import java.nio.file.FileAlreadyExistsException
 import java.nio.file.Files
+import java.nio.file.StandardCopyOption
 import java.nio.file.StandardOpenOption
 import java.nio.file.attribute.BasicFileAttributes
 import java.nio.file.attribute.FileTime
+import java.security.MessageDigest
 import java.time.LocalDate
 import java.util.concurrent.TimeUnit
 import kotlin.math.abs
@@ -43,8 +47,8 @@ import kotlin.math.abs
  * escritorio y no del teléfono. El vigilante y su registro, los procesos de
  * KeePassXC y su `Vigilancia` (la app no lanza KeePassXC ni vigila una carpeta:
  * quien dice cuándo toca una pasada es el planificador de la app), los
- * lanzadores `Llavero.bat` y `llavero.sh`, «Combinar», «Expulsar», la copia del
- * fichero llave y, de `decidir_alta`, la rama de una base propia y el chequeo del
+ * lanzadores `Llavero.bat` y `llavero.sh`, «Combinar», «Expulsar», la copia de la
+ * base (`poner_base`; el fichero llave sí, [ponerLlave]) y, de `decidir_alta`, la rama de una base propia y el chequeo del
  * cifrado (Android cuenta como cifrado). Y tampoco
  * `huella()`, que existe solo para el vigilante.
  *
@@ -301,6 +305,76 @@ object Llavero {
         }
         asegurarLeeme(donde)
         return donde
+    }
+
+    /**
+     * Copia el fichero llave de un llavero sin contraseña a `.keychain/llave.keyx`
+     * (`llavero.poner_llave()`, con `poner_base()`): la única copia que guarda la
+     * app, dentro del almacenamiento privado, y nunca sube (ningún filtro de
+     * [LLAVERO_REGLAS] la deja pasar).
+     *
+     * Se copia a un temporal al lado y se renombra, de una vez: una copia cortada
+     * no queda con el nombre de la llave. Se relee entera antes del renombrado y
+     * tiene que ser igual a lo leído. Lo único que se retiene es una suma
+     * SHA-256 para esa comprobación: la llave no se guarda en memoria, ni se
+     * dice en ningún mensaje. Sea cual sea el fallo, no queda ni la llave ni el
+     * temporal. Luego se deja solo legible por la app, donde el sistema de
+     * ficheros lo permite.
+     *
+     * Es el [InputStream] y no un fichero porque en Android la llave llega de un
+     * `content://`; quien lo abre es quien lo cierra.
+     *
+     * @param origen El contenido del fichero llave que da la persona.
+     * @param raiz La raíz del volumen.
+     * @return `.keychain/llave.keyx`.
+     * @throws IOException Si no se puede copiar, o la copia no ha quedado igual.
+     */
+    fun ponerLlave(origen: InputStream, raiz: File): File {
+        val destino = File(prepararCarpeta(raiz), LLAVERO_LLAVE)
+        val temporal = File(destino.parentFile, "$LLAVERO_LLAVE.copiando")
+        try {
+            Files.deleteIfExists(temporal.toPath())
+            val suma = MessageDigest.getInstance("SHA-256")
+            Files.newOutputStream(temporal.toPath(), StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)
+                .use { salida ->
+                    val bloque = ByteArray(8192)
+                    while (true) {
+                        val n = origen.read(bloque)
+                        if (n < 0) break
+                        suma.update(bloque, 0, n)
+                        salida.write(bloque, 0, n)
+                    }
+                }
+            val releida = MessageDigest.getInstance("SHA-256")
+            Files.newInputStream(temporal.toPath()).use { entrada ->
+                val bloque = ByteArray(8192)
+                while (true) {
+                    val n = entrada.read(bloque)
+                    if (n < 0) break
+                    releida.update(bloque, 0, n)
+                }
+            }
+            if (!MessageDigest.isEqual(suma.digest(), releida.digest())) {
+                throw IOException("la copia del fichero llave no ha quedado igual")
+            }
+            try {
+                Files.move(
+                    temporal.toPath(), destino.toPath(),
+                    StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING,
+                )
+            } catch (_: AtomicMoveNotSupportedException) {
+                Files.move(temporal.toPath(), destino.toPath(), StandardCopyOption.REPLACE_EXISTING)
+            }
+        } catch (e: Throwable) {
+            Files.deleteIfExists(temporal.toPath())
+            throw e
+        }
+        // Solo para la app, como el `chmod 0o600`; donde no se pueda, se queda como está.
+        destino.setReadable(false, false)
+        destino.setReadable(true, true)
+        destino.setWritable(false, false)
+        destino.setWritable(true, true)
+        return destino
     }
 
     // -----------------------------------------------------------------------

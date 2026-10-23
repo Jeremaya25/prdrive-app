@@ -1,6 +1,8 @@
 package prdrive.engine
 
 import java.io.File
+import java.io.IOException
+import java.io.InputStream
 import java.nio.file.Files
 import java.nio.file.attribute.FileTime
 import java.util.concurrent.TimeUnit
@@ -8,6 +10,7 @@ import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 /**
@@ -340,5 +343,42 @@ class LlaveroTest {
                 assertTrue(alta !== remota, nombre)
             }
         }
+    }
+
+    // --- el fichero llave de un llavero sin contraseña -----------------------
+
+    @Test
+    fun `la llave se copia a keychain con sus bytes y no deja temporal`() {
+        val raiz = temporal()
+        val llave = ByteArray(300) { (it * 7).toByte() }   // no es texto: también bytes raros
+        val destino = Llavero.ponerLlave(llave.inputStream(), raiz)
+        assertEquals(File(File(raiz, LLAVERO_LOCAL), LLAVERO_LLAVE), destino)
+        assertTrue(llave.contentEquals(destino.readBytes()))
+        // La carpeta queda preparada (con su compañero) y sin restos.
+        assertTrue(File(destino.parentFile, Llavero.LEEME).isFile)
+        assertEquals(setOf(LLAVERO_LLAVE, Llavero.LEEME), destino.parentFile.list()!!.toSet())
+        // Copiar otra encima la sustituye entera.
+        val otra = "otra llave".toByteArray()
+        Llavero.ponerLlave(otra.inputStream(), raiz)
+        assertTrue(otra.contentEquals(destino.readBytes()))
+    }
+
+    @Test
+    fun `una llave que se corta a medias no deja llave ni temporal y respeta la que hubiera`() {
+        val raiz = temporal()
+        val buena = "la buena".toByteArray()
+        val destino = Llavero.ponerLlave(buena.inputStream(), raiz)
+        fun cortada() = object : InputStream() {
+            private var n = 0
+            override fun read(): Int = if (n++ < 10) 65 else throw IOException("se ha cortado")
+        }
+        assertFailsWith<IOException> { Llavero.ponerLlave(cortada(), raiz) }
+        assertTrue(buena.contentEquals(destino.readBytes()))
+        assertEquals(setOf(LLAVERO_LLAVE, Llavero.LEEME), destino.parentFile.list()!!.toSet())
+        // Y sin ninguna de antes, no aparece una a medias.
+        val otra = temporal()
+        assertFailsWith<IOException> { Llavero.ponerLlave(cortada(), otra) }
+        assertFalse(File(File(otra, LLAVERO_LOCAL), LLAVERO_LLAVE).exists())
+        assertEquals(setOf(Llavero.LEEME), File(otra, LLAVERO_LOCAL).list()!!.toSet())
     }
 }

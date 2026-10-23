@@ -1,17 +1,21 @@
 package prdrive.app
 
 import android.content.Context
+import android.net.Uri
+import java.io.IOException
 import prdrive.app.rclone.Adaptadores
 import prdrive.engine.Catalogo
 import prdrive.engine.Config
 import prdrive.engine.ConfigError
 import prdrive.engine.DEFAULT_MODE
+import prdrive.engine.Llavero
 import prdrive.engine.MODES
 import prdrive.engine.Pairing
 import prdrive.engine.Pasada
 import prdrive.engine.Volumen
 import prdrive.engine.dumpsChecked
 import prdrive.engine.headerOf
+import prdrive.engine.loadRaw
 import prdrive.engine.parseConfig
 import prdrive.engine.strPy
 
@@ -28,6 +32,10 @@ import prdrive.engine.strPy
  * 4. [inicializar]: el `--resync` inicial de las bisync, como
  *    `deploy.resync_targets()`: un espejo no se inicializa, porque propagaría
  *    el vacío.
+ *
+ * Y, ya sembrado, [activarLlavero] y [quitarLlavero]: el teléfono entra en el
+ * llavero que el remoto ya tiene («Traer el del remoto» de prdrive; nunca crea
+ * uno) y sale de él.
  *
  * Todo bloquea: se llama fuera del hilo de la pantalla.
  */
@@ -132,5 +140,90 @@ object Instalador {
             v, pareja, Adaptadores.pasada, Adaptadores.opciones,
             Pasada.Contexto(resyncAprobado = true, keepLogs = config.keepLogs), alProgreso, decir,
         )
+    }
+
+    /**
+     * Activa en el teléfono el llavero que ya tiene el remoto (`plan_activar()`
+     * con `origen = None`; `hacer()`). No hace la pasada: la lanza quien llama,
+     * que es quien la hace con la pantalla delante.
+     *
+     * En este orden: lo que puede fallar antes de tocar nada (la tabla del
+     * remoto, que el config con ella vale y se relee igual, y la llave si hace
+     * falta), la carpeta `.keychain/` y la llave, el `rclone.conf` con el
+     * `upstreams` del `combine` al día y, el último, el `sync_config.toml`. El
+     * `combine` va antes que el config porque un `.keychain` de más en él no
+     * hace nada, y un config con `[keychain]` sin él haría fallar cada pasada;
+     * y el config va el último, como en [instalar], porque es el que marca lo
+     * hecho. Si algo falla antes de él, activar se puede repetir.
+     *
+     * La llave se copia con el content resolver (`content://`, `file://`) a
+     * `.keychain/llave.keyx`, de una vez. Su contenido no pasa por ningún
+     * mensaje ni por ningún sitio que no sea ese fichero.
+     *
+     * @param remota La tabla `[keychain]` del catálogo del remoto
+     *   (`Catalogo.Catalog.raw["keychain"]`).
+     * @param llave El fichero llave que da la persona. Hace falta si la tabla
+     *   dice `llave_interna`, y si no se ignora.
+     * @return El config con el llavero.
+     * @throws ConfigError si el remoto no tiene llavero, la tabla no vale, o
+     *   el llavero va sin contraseña y no hay fichero llave (entonces no se ha
+     *   escrito nada).
+     * @throws IOException si no se puede abrir o copiar la llave, o escribir.
+     */
+    fun activarLlavero(contexto: Context, remota: Map<String, Any?>, llave: Uri?): Config {
+        val v = Prdrive.volumen(contexto)
+        val texto = v.config.readText(Charsets.UTF_8)
+        val raw = Volumen.conLlavero(loadRaw(texto), remota)
+        val config = parseConfig(raw)
+        val interna = config.parejaLlavero?.llaveInterna == true
+        if (interna && llave == null) {
+            throw ConfigError("Este llavero va sin contraseña: hace falta su fichero llave.")
+        }
+        val cabecera = headerOf(texto)
+        dumpsChecked(raw, cabecera)
+        // Lo que puede fallar al generarlo, antes de tocar el disco.
+        config.seccionCombine(v.raiz.absolutePath)
+
+        Llavero.prepararCarpeta(v.raiz)
+        if (interna) {
+            val entrada = try {
+                contexto.contentResolver.openInputStream(llave!!)
+            } catch (e: SecurityException) {
+                throw IOException("No tengo permiso para leer el fichero llave.", e)
+            } catch (e: java.io.FileNotFoundException) {
+                throw IOException("No he podido abrir el fichero llave.", e)
+            } ?: throw IOException("No he podido abrir el fichero llave.")
+            entrada.use { Llavero.ponerLlave(it, v.raiz) }
+        }
+        v.actualizarCombine(config)
+        v.escribirConfig(raw, cabecera)
+        Prdrive.recargarRclone(contexto)
+        return config
+    }
+
+    /**
+     * Quita el llavero de este teléfono (`plan_desactivar()`; `hacer()`): el
+     * config pierde `[keychain]` y el `combine` su `.keychain`. La carpeta
+     * `.keychain/` se queda (con la base y, si la hay, la llave) y el remoto no
+     * se toca: los demás dispositivos siguen con él. Lo que avisa prdrive antes
+     * de hacerlo sale de [Volumen.avisosBaja], con el config de antes.
+     *
+     * Aquí el config va primero y el `combine` después: si el segundo falla,
+     * queda un `.keychain` de más en el `combine`, que no hace nada.
+     *
+     * @return El config sin llavero.
+     * @throws ConfigError si el teléfono no lleva el llavero.
+     */
+    fun quitarLlavero(contexto: Context): Config {
+        val v = Prdrive.volumen(contexto)
+        val texto = v.config.readText(Charsets.UTF_8)
+        val actual = loadRaw(texto)
+        if (!actual.containsKey("keychain")) throw ConfigError(Volumen.SIN_LLAVERO)
+        val raw = Volumen.sinLlavero(actual)
+        val config = parseConfig(raw)
+        v.escribirConfig(raw, headerOf(texto))
+        v.actualizarCombine(config)
+        Prdrive.recargarRclone(contexto)
+        return config
     }
 }

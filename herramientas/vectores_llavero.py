@@ -985,6 +985,81 @@ def vectores_repeticiones(sync, model, pair) -> dict:
     }
 
 
+# --- activar y quitar el llavero: lo que avisa la ventana --------------------------
+
+def _pareja(nombre: str, local: str, **extra) -> dict:
+    return {"name": nombre, "local": local, "remote_path": "/copia/" + nombre, **extra}
+
+
+CASOS_AVISOS = [
+    ("sin ninguna pareja de la raíz",
+     [_pareja("notas", "sync-data/notas")], {"base": "personal.kdbx"}),
+    ("una pareja bisync de la raíz",
+     [_pareja("todo", "."), _pareja("notas", "sync-data/notas")], {"base": "personal.kdbx"}),
+    ("dos parejas bisync de la raíz",
+     [_pareja("todo", "."), _pareja("otra", "./"), _pareja("notas", "sync-data/notas")],
+     {"base": "personal.kdbx"}),
+    ("una raíz que es un espejo no pide resync",
+     [_pareja("todo", ".", mode="down-mirror"), _pareja("notas", "sync-data/notas")],
+     {"base": "personal.kdbx"}),
+    ("un llavero con llave interna sin parejas de la raíz",
+     [_pareja("notas", "sync-data/notas")],
+     {"base": "personal.kdbx", "fichero_llave": True, "llave_interna": True}),
+    ("un llavero con llave interna y una pareja de la raíz",
+     [_pareja("todo", "."), _pareja("notas", "sync-data/notas")],
+     {"base": "personal.kdbx", "fichero_llave": True, "llave_interna": True}),
+    ("un llavero con fichero llave que no es interna",
+     [_pareja("todo", ".")],
+     {"base": "personal.kdbx", "fichero_llave": True, "nombre_llave": "clave.keyx"}),
+]
+"""Los configs de los avisos: (caso, parejas, `[keychain]` del remoto)."""
+
+
+def vectores_activar(model, llavero, cifrada) -> dict:
+    """Lo que dicen `plan_activar()` y `plan_desactivar()` en sus `warnings`.
+
+    Son los de la ventana de prdrive, con dobles para lo que no es del teléfono:
+    el catálogo es un objeto con `editable` y `raw`, y «KeePassXC no está en
+    este equipo» y «KeePassXC está abierto» (que dependen del equipo que genera
+    esto) se apagan. Lo que queda es lo que aplica aquí: la pareja de la raíz
+    que pedirá un `--resync` y, con `llave_interna`, que el fichero llave se
+    queda. Se recogen los `warnings` enteros, sin escribir una frase.
+    """
+    from types import SimpleNamespace   # noqa: PLC0415
+    from ui import llavero_editor   # noqa: PLC0415 — prdrive ya está en el path
+
+    viejos = (llavero_editor._sin_keepassxc, llavero.keepassxc_abierto)
+    llavero_editor._sin_keepassxc = lambda: None
+    llavero.keepassxc_abierto = lambda: False
+    casos = []
+    try:
+        for caso, parejas, tabla in CASOS_AVISOS:
+            sin = {"defaults": {"device_remote": "disp", "remote": "nas"}, "pair": parejas}
+            con = {**sin, "keychain": tabla}
+            entrada = {"caso": caso, "sin_llavero": sin, "remota": tabla}
+            with _montado(model, llavero, []) as raiz:
+                llave = raiz / "llave.keyx"
+                llave.write_bytes(b"x")
+                cat = SimpleNamespace(editable=True, raw={"keychain": tabla}, endpoint="x")
+                plan = llavero_editor.plan_activar(
+                    sin, cat, None, llave=llave, cifrado=cifrada.Cifrado(True, "VERACRYPT"))
+                entrada["avisos_alta"] = list(plan.warnings)
+                entrada["avisos_baja"] = list(llavero_editor.plan_desactivar(con).warnings)
+            casos.append(entrada)
+        with _montado(model, llavero, []):
+            sin = {"defaults": {"device_remote": "disp", "remote": "nas"},
+                   "pair": [_pareja("notas", "sync-data/notas")]}
+            try:
+                llavero_editor.plan_desactivar(sin)
+            except model.ConfigError as e:
+                sin_llavero = str(e)
+            else:
+                raise AssertionError("plan_desactivar() sin llavero tenía que fallar")
+    finally:
+        llavero_editor._sin_keepassxc, llavero.keepassxc_abierto = viejos
+    return {"llave": model.LLAVERO_LLAVE, "casos": casos, "baja_sin_llavero": sin_llavero}
+
+
 def vectores(kdbx, llavero, model, bisync) -> dict:
     """La sección `llavero` del JSON."""
     import sync   # noqa: PLC0415 — prdrive ya está en el path
@@ -996,6 +1071,7 @@ def vectores(kdbx, llavero, model, bisync) -> dict:
         "leeme": vectores_leeme(kdbx, llavero, model, config),
         "listado": vectores_listado(llavero, model, bisync, config),
         "frenos": vectores_frenos(llavero, model, frenos, cifrada),
+        "activar": vectores_activar(model, llavero, cifrada),
         "repeticiones": vectores_repeticiones(
             sync, model, model.parse_config(CONFIG_FRENOS).pareja_llavero),
     }
