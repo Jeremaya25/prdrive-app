@@ -240,9 +240,22 @@ El módulo `app` solo existe si hay un SDK de Android (`ANDROID_HOME`,
 `ANDROID_SDK_ROOT` o `sdk.dir` en `local.properties`): el CI del motor no lo
 tiene, y `:engine:test` no lo necesita.
 
-Gradle 9.6 y Kotlin 2.4. `engine/` se construye con cualquier JDK 17 o
+Gradle 9.8 y Kotlin 2.4. `engine/` se construye con cualquier JDK 17 o
 posterior (el JBR 25 de Android Studio vale) y genera bytecode 17. Los avisos
 del compilador son errores (`allWarningsAsErrors`). No hay linter aparte.
+
+El wrapper fija la suma SHA-256 de la distribución (`distributionSha256Sum`):
+cambiar solo la URL de `gradle-wrapper.properties` deja a Gradle sin arrancar.
+Se sube con la tarea del wrapper y la suma que publica Gradle
+(`https://services.gradle.org/distributions/gradle-<versión>-bin.zip.sha256`),
+y se pasa otra vez ya con la versión nueva, que es la que regenera el jar y los
+scripts:
+
+```bash
+./gradlew :wrapper --gradle-version=<versión> --distribution-type=bin \
+    --gradle-distribution-sha256-sum=<la suma>
+./gradlew :wrapper
+```
 
 El generador de vectores sale igual en Windows que en Linux: le hace creer a
 prdrive que corre en un dispositivo POSIX con la raíz en `/volumen`.
