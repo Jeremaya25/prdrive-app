@@ -143,6 +143,34 @@ class VolumenTest {
     }
 
     @Test
+    fun `un rclone conf que no se puede leer no se reescribe con solo el combine`() {
+        val v = Volumen(File(temporal(), "volumen"))
+        v.programa.mkdirs()
+        val config = parseConfig(
+            mapOf(
+                "defaults" to mapOf("device_remote" to "disp", "remote" to "nas"),
+                "pair" to listOf(mapOf("name" to "notas", "local" to "notas", "remote_path" to "/n")),
+            ),
+        )
+        // Que no está: reescribirlo dejaría un conf sin el remoto.
+        assertFailsWith<java.io.IOException> { v.actualizarCombine(config) }
+        assertFalse(v.rcloneConf.exists())
+        assertNull(v.leerRcloneConfSiSePuede())
+        assertEquals("", v.leerRcloneConf())
+
+        // Que no se puede leer (aquí, porque es una carpeta): tampoco se toca.
+        assertTrue(v.rcloneConf.mkdirs())
+        assertFailsWith<java.io.IOException> { v.actualizarCombine(config) }
+        assertTrue(v.rcloneConf.isDirectory)
+        assertNull(v.leerRcloneConfSiSePuede())
+
+        // Vacío no es lo mismo que sin leer.
+        assertTrue(v.rcloneConf.delete())
+        v.rcloneConf.writeText("")
+        assertEquals("", v.leerRcloneConfSiSePuede())
+    }
+
+    @Test
     fun `una carpeta local que es un enlace a la del programa se detecta`() {
         val v = Volumen(File(temporal(), "volumen"))
         v.programa.mkdirs()

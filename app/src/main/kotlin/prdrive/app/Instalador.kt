@@ -200,7 +200,7 @@ object Instalador {
         val antes = Antes(
             carpeta = Files.exists(carpeta.toPath(), LinkOption.NOFOLLOW_LINKS),
             llave = Files.exists(File(carpeta, LLAVERO_LLAVE).toPath(), LinkOption.NOFOLLOW_LINKS),
-            rcloneConf = v.leerRcloneConf(),
+            rcloneConf = v.leerRcloneConfSiSePuede(),
         )
         try {
             Llavero.prepararCarpeta(v.raiz)
@@ -224,8 +224,11 @@ object Instalador {
         return config
     }
 
-    /** Lo que había antes de activar el llavero, para deshacerlo si no se acaba. */
-    private class Antes(val carpeta: Boolean, val llave: Boolean, val rcloneConf: String)
+    /**
+     * Lo que había antes de activar el llavero, para deshacerlo si no se acaba.
+     * [rcloneConf] es `null` si no se pudo leer: entonces no se devuelve.
+     */
+    private class Antes(val carpeta: Boolean, val llave: Boolean, val rcloneConf: String?)
 
     /**
      * Deshace un [activarLlavero] que no ha llegado a escribir el config: la
@@ -245,7 +248,12 @@ object Instalador {
         } catch (e: IOException) {
             Log.w("Instalador", "Deshaciendo la carpeta del llavero", e)
         }
-        if (v.leerRcloneConf() != antes.rcloneConf && !Store.writeText(v.rcloneConf, antes.rcloneConf)) {
+        // Uno que no se pudo leer antes no se devuelve: sería escribir un vacío
+        // encima. Tampoco se ha podido cambiar (`actualizarCombine` lo lee primero).
+        val conf = antes.rcloneConf
+        if (conf == null) {
+            Log.w("Instalador", "El rclone.conf de antes no se pudo leer: se deja como está")
+        } else if (v.leerRcloneConfSiSePuede() != conf && !Store.writeText(v.rcloneConf, conf)) {
             Log.w("Instalador", "No se ha podido devolver el rclone.conf de antes")
         }
     }

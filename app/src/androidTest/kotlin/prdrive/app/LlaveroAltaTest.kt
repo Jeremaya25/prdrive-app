@@ -144,6 +144,25 @@ class LlaveroAltaTest {
         }
     }
 
+    @Test
+    fun un_rclone_conf_que_no_se_puede_leer_no_se_pisa_al_activar() {
+        val (v, _) = Banco.volumen(Banco.pareja("notas"))
+        val antes = v.config.readText()
+        val confAntes = v.rcloneConf.readText()
+        assertTrue(v.rcloneConf.setReadable(false, false))
+        try {
+            assertNull("se puede leer: la prueba no prueba nada", v.leerRcloneConfSiSePuede())
+            Instalador.activarLlavero(contexto, remota(interna = false), null)
+            fail("con el rclone.conf sin leer, activar tenía que fallar")
+        } catch (_: java.io.IOException) {
+        } finally {
+            v.rcloneConf.setReadable(true, true)
+        }
+        assertEquals(confAntes, v.rcloneConf.readText())
+        assertEquals(antes, v.config.readText())
+        assertFalse(File(v.raiz, LLAVERO_LOCAL).exists())
+    }
+
     /** Lo que rclone ve en la raíz del `combine`: una carpeta por upstream. */
     private fun carpetasDelCombine(): Set<String> {
         @Suppress("UNCHECKED_CAST")

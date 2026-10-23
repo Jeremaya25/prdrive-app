@@ -55,11 +55,22 @@ class Volumen(val raiz: File) {
     /** El `sync_config.toml` del volumen, resuelto. */
     fun leerConfig(): Config = parseConfig(loadRaw(config.readText(Charsets.UTF_8)))
 
-    /** El `rclone.conf` del volumen, o vacío si no hay. */
-    fun leerRcloneConf(): String = try {
+    /**
+     * El `rclone.conf` del volumen, o vacío si no hay. Para mirarlo (los tipos
+     * de los remotes); lo que lo reescribe usa [leerRcloneConfSiSePuede]: aquí
+     * no se distingue «vacío» de «no se ha podido leer».
+     */
+    fun leerRcloneConf(): String = leerRcloneConfSiSePuede() ?: ""
+
+    /**
+     * El `rclone.conf` del volumen tal cual, o `null` si no se ha podido leer
+     * (no está, o la lectura falla). Lo que no se ha leído no se vuelve a
+     * escribir: escribir un vacío en su lugar borraría el remoto y la clave.
+     */
+    fun leerRcloneConfSiSePuede(): String? = try {
         rcloneConf.readText(Charsets.UTF_8)
     } catch (_: IOException) {
-        ""
+        null
     }
 
     /**
@@ -126,9 +137,13 @@ class Volumen(val raiz: File) {
     /**
      * Reescribe la sección `[disp]` del `rclone.conf` cuando cambian las parejas
      * del config, dejando la del remoto como estaba.
+     *
+     * @throws IOException si no se puede leer (o no está) o escribir: uno que
+     *   no se ha leído se deja como está.
      */
     fun actualizarCombine(config: Config) {
-        val actual = leerRcloneConf()
+        // Uno que no se puede leer no se rehace solo con el `combine`: se iría el remoto.
+        val actual = leerRcloneConfSiSePuede() ?: throw IOException("No he podido leer $rcloneConf")
         val nombre = config.deviceRemote ?: return
         val sinCombine = quitarSeccion(actual, nombre).trimEnd('\n')
         val texto = (if (sinCombine.isEmpty()) "" else sinCombine + "\n\n") + config.seccionCombine(raiz.absolutePath)
