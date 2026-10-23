@@ -12,11 +12,14 @@ import androidx.work.testing.WorkManagerTestInitHelper
 import java.io.File
 import java.net.ServerSocket
 import java.util.Collections
+import java.util.UUID
 import java.util.concurrent.CyclicBarrier
+import java.util.concurrent.Executors
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -202,5 +205,96 @@ class TrabajoLlaveroTest {
         assertTrue(encolados().isEmpty())
         Disparos.alLeer(contexto)
         assertTrue("leer ha encolado una pasada justo después de otra", encolados().isEmpty())
+    }
+
+    /** Espera a que [hecho] sea cierto, o falla diciendo [que]. */
+    private fun esperar(que: String, maxMs: Long = 60_000, hecho: () -> Boolean) {
+        val hasta = System.currentTimeMillis() + maxMs
+        while (!hecho()) {
+            if (System.currentTimeMillis() > hasta) throw AssertionError("no ha pasado: $que")
+            Thread.sleep(50)
+        }
+    }
+
+    /** Los locks de bisync que haya en el workdir del llavero. */
+    private fun locks(v: Volumen): List<File> =
+        v.workdir(v.leerConfig().parejaLlavero!!).walkTopDown().filter { it.name.endsWith(".lck") }.toList()
+
+    @Test
+    fun un_guardado_durante_una_pasada_no_la_corta_y_el_trabajo_nuevo_corre_despues() {
+        // Un WorkManager de prueba que ejecuta los trabajos en otro hilo: el
+        // trabajo tiene que estar corriendo mientras se guarda.
+        WorkManagerTestInitHelper.initializeTestWorkManager(
+            contexto,
+            Configuration.Builder().setExecutor(Executors.newSingleThreadExecutor()).build(),
+        )
+        val driver = WorkManagerTestInitHelper.getTestDriver(contexto)!!
+        val wm = WorkManager.getInstance(contexto)
+        fun soltar(id: UUID) {
+            driver.setInitialDelayMet(id)
+            driver.setAllConstraintsMet(id)
+        }
+
+        val v = conLlaveroEnElRemoto()
+        val primera = LlaveroApp.pasar(contexto)
+        assertEquals(primera?.lineas?.joinToString("\n"), 0, primera?.codigo)
+        val antes = Resultados.ultimasBuenas(v.state, listOf(LLAVERO)).getValue(LLAVERO)
+        val local = File(v.raiz, ".keychain")
+        val remoto = File(Banco.remoto, "catalogo/keychain")
+
+        // La base cambia en el remoto (otro contenido: con el mismo, rclone solo
+        // le pondría la hora), y bajarla va despacio (rclone a 50 B/s): la
+        // pasada dura unos segundos.
+        val baseRemota = File(remoto, "personal.kdbx")
+        val hora = baseRemota.lastModified() + 60_000
+        baseRemota.writeBytes(Banco.otraBase())
+        assertTrue(baseRemota.setLastModified(hora))
+        Rclone.rpc("core/bwlimit", mapOf("rate" to "50B"))
+        try {
+            Disparos.alGuardar(contexto)
+            val trabajo = encolados().single().id
+            soltar(trabajo)
+            try {
+                esperar("la pasada del trabajo no ha empezado") { locks(v).isNotEmpty() }
+            } catch (e: AssertionError) {
+                val estado = Resultados.rutaEstado(v.state).takeIf { it.isFile }?.readText()
+                val logs = v.logs.listFiles()?.sortedBy { it.name }?.lastOrNull()?.readText()
+                throw AssertionError(
+                    "${e.message}: ${wm.getWorkInfoById(trabajo).get()?.state}; base remota " +
+                        "${baseRemota.lastModified()}, local ${File(local, "personal.kdbx").lastModified()}; " +
+                        "state: $estado; log: $logs",
+                )
+            }
+            assertEquals(WorkInfo.State.RUNNING, wm.getWorkInfoById(trabajo).get()?.state)
+
+            // Se guarda otra base en mitad de la pasada: el guardado sustituye al
+            // trabajo que está corriendo.
+            File(local, "otra.kdbx").writeBytes(Banco.base(entera = true))
+            Disparos.alGuardar(contexto)
+            val siguiente = encolados().single().id
+            assertNotEquals(trabajo, siguiente)
+
+            // La pasada en marcha acaba entera: se apunta, trae la base y no deja
+            // el lock de bisync puesto.
+            LlaveroApp.enExclusiva { }
+            val despues = Resultados.ultimasBuenas(v.state, listOf(LLAVERO))[LLAVERO]
+            assertNotNull(despues)
+            assertTrue("la pasada cortada no se ha apuntado como buena", despues!! > antes)
+            assertTrue("la pasada no ha traído la base", Banco.otraBase().contentEquals(File(local, "personal.kdbx").readBytes()))
+            assertEquals(emptyList<File>(), locks(v))
+
+            // Y el trabajo que la sustituyó corre después, tras su calma, y acaba
+            // bien con lo guardado arriba. (La propia pasada puede haberlo subido
+            // ya: el reapunte del llavero repite la pasada si una base no está en
+            // su listado.)
+            Rclone.rpc("core/bwlimit", mapOf("rate" to "off"))
+            soltar(siguiente)
+            esperar("el trabajo siguiente no ha acabado") { wm.getWorkInfoById(siguiente).get()?.state?.isFinished == true }
+            assertEquals(WorkInfo.State.SUCCEEDED, wm.getWorkInfoById(siguiente).get()?.state)
+            assertTrue("lo guardado durante la pasada no ha subido", File(remoto, "otra.kdbx").isFile)
+            assertTrue(Banco.base(entera = true).contentEquals(File(remoto, "otra.kdbx").readBytes()))
+        } finally {
+            Rclone.rpc("core/bwlimit", mapOf("rate" to "off"))
+        }
     }
 }

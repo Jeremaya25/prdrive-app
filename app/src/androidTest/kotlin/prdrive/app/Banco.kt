@@ -67,14 +67,23 @@ object Banco {
      * Una base de KeePassXC de los vectores de `kdbx.py`: la de KDBX 4.1 entera,
      * o la primera que no lo está.
      */
-    fun base(entera: Boolean): ByteArray {
-        @Suppress("UNCHECKED_CAST")
-        val casos = (vectores["llavero"] as Map<String, Any?>)["kdbx"] as List<Map<String, Any?>>
-        val caso = if (entera) {
-            casos.first { it["entera"] == true && it["version"] == "4.1" }
-        } else {
-            casos.first { it["entera"] == false }
-        }
+    fun base(entera: Boolean): ByteArray =
+        bytes(
+            if (entera) {
+                casosKdbx.first { it["entera"] == true && it["version"] == "4.1" }
+            } else {
+                casosKdbx.first { it["entera"] == false }
+            },
+        )
+
+    /** Otra base entera, distinta de la de [base]: la de KDBX 4.1 con otra semilla. */
+    fun otraBase(): ByteArray = bytes(casosKdbx.first { it["caso"] == "KDBX 4 con otra semilla" && it["entera"] == true })
+
+    @Suppress("UNCHECKED_CAST")
+    private val casosKdbx: List<Map<String, Any?>>
+        get() = (vectores["llavero"] as Map<String, Any?>)["kdbx"] as List<Map<String, Any?>>
+
+    private fun bytes(caso: Map<String, Any?>): ByteArray {
         val hexa = caso["hex"].toString()
         return ByteArray(hexa.length / 2) { hexa.substring(2 * it, 2 * it + 2).toInt(16).toByte() }
     }

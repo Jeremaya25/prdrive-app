@@ -6,7 +6,7 @@ import androidx.work.WorkerParameters
 import java.io.IOException
 import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.runInterruptible
+import kotlinx.coroutines.withContext
 import prdrive.app.Actualizador
 import prdrive.engine.Pasada
 
@@ -36,15 +36,21 @@ class TrabajoLlavero(contexto: Context, params: WorkerParameters) : CoroutineWor
      * versión nueva y cerrar el proceso antes de que WorkManager apunte este
      * resultado, y entonces WorkManager repite el trabajo, que no pierde nada.
      *
-     * Si WorkManager para el trabajo (un guardado que lo sustituye, la red que
-     * se va), el hilo se interrumpe: rclone para la pasada, suelta el lock de
-     * bisync y la pasada no se apunta, como un Ctrl+C en el escritorio.
+     * Una pasada en marcha no se corta nunca, como en el escritorio (la
+     * vigilancia de `common/llavero.py` deja acabar la pasada y recoge después
+     * lo guardado durante ella). Si WorkManager para el trabajo (un guardado
+     * que lo sustituye, [Disparos.cancelar], la red que se va), la pasada sigue
+     * hasta el final, se apunta como cualquier otra y suelta el lock de bisync;
+     * su resultado ya no cuenta para WorkManager, pero `acabarTrabajo` se llama
+     * igual. Por eso va con `withContext` y no con `runInterruptible`: cortar el
+     * hilo pararía rclone a mitad de una transferencia, y una escritura del
+     * motor sobre un canal interrumpido fallaría (`ClosedByInterruptException`).
      */
     override suspend fun doWork(): Result {
         if (!Actualizador.empezarTrabajo()) return Result.retry()
         try {
             val resultado = try {
-                runInterruptible(Dispatchers.IO) { LlaveroApp.pasar(applicationContext) }
+                withContext(Dispatchers.IO) { LlaveroApp.pasar(applicationContext) }
             } catch (e: CancellationException) {
                 throw e
             } catch (_: Exception) {

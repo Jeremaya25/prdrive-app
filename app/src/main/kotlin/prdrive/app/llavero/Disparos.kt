@@ -38,8 +38,9 @@ object Disparos {
     /**
      * Al guardar una base: sustituye al trabajo que hubiera, con [CALMA] por
      * delante, así que cada guardado aplaza la subida. Si había una pasada en
-     * marcha, se para (rclone acaba lo suyo y suelta el lock de bisync) y la
-     * nueva sube también este guardado.
+     * marcha, no se corta ([TrabajoLlavero.doWork]): acaba y se apunta, y el
+     * trabajo nuevo espera a que suelte el cerrojo ([LlaveroApp.enExclusiva]) y
+     * sube lo guardado durante ella.
      */
     fun alGuardar(c: Context) = encolar(c, ExistingWorkPolicy.REPLACE, CALMA)
 
@@ -59,10 +60,12 @@ object Disparos {
      * ([LlaveroApp.pendiente]): un guardado hecho durante una pasada, o uno cuyo
      * trabajo se perdió. Si ya hay un trabajo, se queda ese.
      *
-     * Desde el propio trabajo no encola nada: el suyo está en marcha, y `KEEP`
-     * se lo queda. Es lo que evita que una base rota, que sigue pendiente, se
-     * vuelva a pasar en bucle; lo guardado durante esa pasada ya encoló el suyo
-     * ([alGuardar]).
+     * Al acabar la pasada de un trabajo, ese trabajo aún cuenta como en marcha
+     * y `KEEP` se lo queda: no se encola otro. Es lo que evita que una base
+     * rota, que sigue pendiente, se vuelva a pasar en bucle. Lo guardado
+     * durante esa pasada ya encoló el suyo ([alGuardar]), que sigue esperando
+     * (y `KEEP` lo conserva). Desde una pasada de la pantalla, o desde la de
+     * un trabajo que ya ha sido sustituido, sí encola si no hay ninguno.
      */
     fun siPendiente(c: Context) {
         if (LlaveroApp.pendiente(c)) encolar(c, ExistingWorkPolicy.KEEP, Duration.ZERO)

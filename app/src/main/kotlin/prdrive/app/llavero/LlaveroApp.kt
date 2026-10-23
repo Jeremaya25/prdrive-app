@@ -47,7 +47,9 @@ object LlaveroApp {
      * Ejecuta [bloque] sin ninguna pasada del llavero en marcha, y sin que
      * empiece otra mientras. Lo usa [pasar], y lo que cambia el llavero con la
      * app delante (activarlo o quitarlo reescribe el `rclone.conf`) lo envuelve
-     * en él. Es reentrante; la espera se corta si se interrumpe el hilo.
+     * en él. Es reentrante; la espera se corta si se interrumpe el hilo (la
+     * pantalla, con `runInterruptible`). [TrabajoLlavero] no interrumpe: una
+     * vez dentro, una pasada del llavero no se corta nunca.
      */
     fun <T> enExclusiva(bloque: () -> T): T {
         cerrojo.lockInterruptibly()
@@ -63,8 +65,8 @@ object LlaveroApp {
      * si falla, como cualquier pareja.
      *
      * Al acabar se lo dice a los avisos ([trasPasada]) y, si algo ha quedado sin
-     * subir (se guardó durante la pasada, o no ha salido), encola otra
-     * ([Disparos.siPendiente]).
+     * subir (se guardó durante la pasada, o no ha salido), encola otra si no
+     * hay ya un trabajo del llavero ([Disparos.siPendiente]).
      *
      * @return cómo ha ido, o `null` si no hay nada que pasar: el volumen aún no
      *   está sembrado, o el config no lleva el llavero (se ha quitado con un
