@@ -539,16 +539,21 @@ decisiones que no se ven en el código:
   `fichero_llave = true` (contraseña y fichero) el teléfono no apunta nada: la
   app de KeePass lo pide y lo recuerda.
 
+- **«Abrir llavero»** lanza un `ACTION_VIEW` del `content://` de la base con
+  tipo `application/x-kdbx` (lo declaran las apps de KeePass, así que el
+  selector sale solo con ellas; si ninguna lo acepta, se repite con
+  `application/octet-stream`), en su propia tarea (`FLAG_ACTIVITY_NEW_TASK`: si
+  no, la app de KeePass se apila encima de prdrive) y con permiso persistible
+  (`FLAG_GRANT_PERSISTABLE_URI_PERMISSION`: KeePassDX se lo queda y vuelve a
+  abrir la base desde sus recientes; sin él, Android le niega el proveedor).
+
 Probado en un emulador: el motor contra sus vectores y en el dispositivo, la
 pasada contra un rclone de verdad, el proveedor, los trabajos, la pantalla y el
-alta por el QR contra un servidor SFTP. **Por comprobar en un teléfono de
-verdad**, y apuntado en `PLAN.md` §1: KeePassDX abriendo con el botón y
-guardando (y verlo en el PC), un conflicto avisado y combinado en el PC,
-`llave_interna` con la llave copiada, **qué modo de escritura usa de verdad
-KeePassDX** al guardar (de eso depende el guardado atómico), si la app de
-Archivos enseña las carpetas con punto, y qué tipo MIME aceptan KeePassDX y
-Keepass2Android en `ACTION_VIEW`. Y una cosa que la app no puede arreglar: si el
-proceso muere con un temporal abierto, ese guardado se pierde sin aviso.
+alta por el QR contra un servidor SFTP, y con KeePassDX 4.5.6 (abrir y guardar,
+que escribe con `"wt"`; un conflicto; combinar en el PC; el cambio en disco con
+la base abierta). Lo que salió y lo que falta, en `PLAN.md` §1. Y una cosa que
+la app no puede arreglar: si el proceso muere con un temporal abierto, ese
+guardado se pierde sin aviso.
 
 ## Convenios
 
@@ -650,6 +655,15 @@ proceso muere con un temporal abierto, ese guardado se pierde sin aviso.
   pueden pasar con la llamada, como parámetros planos con su nombre de opción y
   el formato del flag (`"modify_window": "2s"`; `fs/rc/context.go`,
   `ParseOptions`).
+- **Y sin colores**, también al arrancar (`"TerminalColorMode": "NEVER"`):
+  bisync colorea su log cuando el modo es `AUTO` y el log no va a un fichero
+  (`cmd/bisync/operations.go`, `!log.Redirected()`), que en la biblioteca es
+  siempre, y ya no lo apaga (`bisync.Colors` es global). Con colores, las líneas
+  que lee la pasada («File was deleted») llevan códigos ANSI en medio y no casan:
+  el llavero se quedaba parado en el freno de borrados tras combinar en el PC
+  (visto con KeePassDX en el emulador). El escritorio no lo ve: su log va a un
+  fichero. Lo vigila
+  `PasadaEnAndroidTest.combinar_en_el_pc_quita_la_copia_de_conflicto_sin_que_el_freno_pare_el_llavero`.
 - **El nombre de sesión lo manda rclone, no prdrive**, en dos sitios donde
   prdrive no coincide con él (comprobado en el emulador y con el oráculo): el
   `\s` de `CanonicalPath` es el de RE2 (`[\t\n\f\r ]`, no Unicode), y el

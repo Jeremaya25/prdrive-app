@@ -251,6 +251,41 @@ class PasadaEnAndroidTest {
     }
 
     @Test
+    fun combinar_en_el_pc_quita_la_copia_de_conflicto_sin_que_el_freno_pare_el_llavero() {
+        val (v, config) = Banco.volumen(Banco.pareja("notas"), llavero = "personal.kdbx")
+        val p = config.parejaLlavero!!
+        // El teléfono y el remoto tienen la base y una copia de conflicto de ella.
+        val remoto = File(Banco.remoto, "catalogo/keychain").apply { mkdirs() }
+        val copia = "personal.conflicto-remoto1.kdbx"
+        File(remoto, "personal.kdbx").writeBytes(baseEntera())
+        File(remoto, copia).writeBytes(Banco.otraBase())
+        val primera = pasarLlavero(v, p)
+        assertEquals(todo(primera), 0, primera.codigo)
+        val local = p.carpetaEn(v.raiz)
+        assertTrue(File(local, copia).isFile)
+
+        // En el PC, «Combinar» junta la copia en la base y la aparta a
+        // `.prversions/`: en el remoto cambia la base y se va la copia. Es 1 de 3
+        // ficheros, más que el 25 % del freno de borrados: la pasada para, y como
+        // lo borrado es solo una copia, se repite sin el freno. Para verlo hay que
+        // leer «File was deleted» en el log, que no casa si bisync lo colorea.
+        File(remoto, ".prversions").mkdirs()
+        assertTrue(File(remoto, copia).renameTo(File(remoto, ".prversions/personal.conflicto-remoto1~1.kdbx")))
+        // Las dos bases miden lo mismo: con menos de 2 s entre ellas, bisync las
+        // daría por iguales (`modify-window`). El guardado del PC es más tarde.
+        File(remoto, "personal.kdbx").apply {
+            writeBytes(Banco.otraBase())
+            setLastModified(System.currentTimeMillis() + 60_000)
+        }
+        val r = pasarLlavero(v, p)
+        assertEquals(todo(r), 0, r.codigo)
+        assertFalse("la copia sigue en el teléfono: ${local.list()?.toList()}", File(local, copia).exists())
+        assertTrue(Banco.otraBase().contentEquals(File(local, "personal.kdbx").readBytes()))
+        // Y el log, sin códigos de color: es lo que lee la pasada.
+        assertFalse("el log lleva colores ANSI", r.log!!.readText().contains('\u001b'))
+    }
+
+    @Test
     fun el_catalogo_se_lee_del_remoto_con_el_rpc() {
         val (v, _) = Banco.volumen(Banco.pareja("notas"))
         val carpeta = File(Banco.remoto, "prdrive-catalog").apply { mkdirs() }

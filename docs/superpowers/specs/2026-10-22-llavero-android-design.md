@@ -158,8 +158,14 @@ Avisa si una pareja de la raíz pasaría a llevar `.keychain/`, llave incluida.
 2. Sin base tras la pasada: se dice por qué y se para.
 3. Con copias de conflicto de la base: un aviso de que no se pierde nada y de
    cómo combinarlas (en el PC, o en la app de KeePass). Se cierra y se abre.
-4. `ACTION_VIEW` con el `content://` de la base en `VolumenProvider` y permiso
-   de lectura y escritura. Si ninguna app lo abre, se dice cuáles valen.
+4. `ACTION_VIEW` con el `content://` de la base en `VolumenProvider`, tipo
+   `application/x-kdbx` (y `application/octet-stream` si ninguna app acepta
+   el primero), permiso de lectura y escritura persistible (para que la app de
+   KeePass la vuelva a abrir desde sus recientes) y en su propia tarea. Si
+   ninguna app lo abre, se dice cuáles valen. (Ajustado el 2026-10-23 tras
+   probarlo con KeePassDX: con el genérico el selector mezclaba otras apps, sin
+   permiso persistible los recientes fallaban, y sin tarea propia KeePassDX
+   quedaba encima de prdrive.)
 
 **Los trabajos** (WorkManager, `androidx.work`, dependencia nueva de `app/`):
 un `CoroutineWorker`, `PasadaLlavero`, que pasa la pareja del llavero con la

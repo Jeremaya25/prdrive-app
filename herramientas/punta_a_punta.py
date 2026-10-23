@@ -139,6 +139,10 @@ def main() -> int:
         "--authorized-keys", str(claves / "authorized_keys"),
         "--key", str(claves / "host_ed25519"),
         "--config", str(trabajo / "sin-config.conf"),
+        # Sin caché de carpetas: para probar a mano, un cambio hecho en el disco
+        # del remoto por detrás (el «PC», con keepassxc-cli) se ve en seguida.
+        # Con los 5 min de serie, el teléfono no lo veía.
+        "--dir-cache-time", "0s",
         "-v",
     ])
 

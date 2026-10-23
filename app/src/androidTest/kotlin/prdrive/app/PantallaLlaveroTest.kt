@@ -407,8 +407,14 @@ class PantallaLlaveroTest {
                     allOf(
                         hasAction(Intent.ACTION_VIEW),
                         hasData(uri),
-                        hasType("application/octet-stream"),
-                        hasFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION),
+                        // El tipo de las apps de KeePass, no el genérico: el selector sale solo con ellas.
+                        hasType("application/x-kdbx"),
+                        // Persistible, para que la app de KeePass pueda volver a abrirla desde sus
+                        // recientes, y en su propia tarea, no encima de prdrive.
+                        hasFlags(
+                            Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION or
+                                Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK,
+                        ),
                     ),
                 )
                 compose.onNodeWithTag("aviso-llavero").assertDoesNotExist()

@@ -97,10 +97,13 @@ internal object TextosLlavero {
             "abre con «Abrir llavero», en tu app de KeePass."
 
     /**
-     * El tipo con que se pide abrir la base. No hay uno oficial para `.kdbx`, y
-     * las apps de KeePass se apuntan al genérico.
+     * Los tipos con que se pide abrir la base, en orden. No hay uno oficial para
+     * `.kdbx`: `application/x-kdbx` lo declaran las apps de KeePass (KeePassDX
+     * 4.5.6, visto en el emulador), así que el selector sale solo con ellas; el
+     * genérico queda de reserva para una que solo declare ese, y con él Android
+     * mezcla en el selector cualquier app que abra ficheros (Google, Wallet…).
      */
-    const val TIPO = "application/octet-stream"
+    val TIPOS = listOf("application/x-kdbx", "application/octet-stream")
 }
 
 /** El ámbar de la fila: el mismo en claro y en oscuro, con su texto. */
@@ -215,16 +218,35 @@ internal fun AbrirLaBase(m: Modelo) {
     val uri = m.porAbrir ?: return
     LaunchedEffect(uri) {
         m.abierta()
-        val intent = Intent(Intent.ACTION_VIEW)
-            .setDataAndType(uri, TextosLlavero.TIPO)
-            .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
-        try {
-            contexto.startActivity(intent)
-        } catch (_: ActivityNotFoundException) {
-            m.avisar(TextosLlavero.SIN_APP)
+        for (tipo in TextosLlavero.TIPOS) {
+            try {
+                contexto.startActivity(intentDeAbrir(uri, tipo))
+                return@LaunchedEffect
+            } catch (_: ActivityNotFoundException) {
+                // Ninguna app para este tipo: el siguiente.
+            }
         }
+        m.avisar(TextosLlavero.SIN_APP)
     }
 }
+
+/**
+ * El `ACTION_VIEW` de la base, con permiso de leerla y escribirla.
+ *
+ * - **Persistible** (`FLAG_GRANT_PERSISTABLE_URI_PERMISSION`): la app de KeePass
+ *   se queda el permiso y puede volver a abrir la base desde su lista de
+ *   recientes. Sin él, KeePassDX lo intenta («No persistable permission grants»)
+ *   y Android le niega el proveedor la vez siguiente.
+ * - **En su propia tarea** (`FLAG_ACTIVITY_NEW_TASK`): si no, la app de KeePass
+ *   se apila encima de prdrive, y volver a prdrive la enseña a ella.
+ */
+internal fun intentDeAbrir(uri: Uri, tipo: String): Intent =
+    Intent(Intent.ACTION_VIEW)
+        .setDataAndType(uri, tipo)
+        .addFlags(
+            Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION or
+                Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK,
+        )
 
 /** Cómo está el llavero: la línea de siempre y, si los hay, los motivos del ámbar. */
 @Composable

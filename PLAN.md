@@ -36,17 +36,18 @@ Falta:
   - **Un conflicto: se avisa bien.** Dos guardados cruzados dejan
     `personal.conflicto-remoto1.kdbx` en los dos lados (la base viva es la del
     móvil y la copia la del PC), la notificación y la fila que lo explica.
-  - **Combinar en el PC deja el llavero del teléfono atascado (fallo).** Tras
-    combinar y apartar la copia en el remoto, la pasada del teléfono para en el
-    freno de borrados (1 de 3) y no se repite sin él: la línea «File was
-    deleted» del log lleva colores ANSI, y `soloCopiasBorradas` no la reconoce.
-    bisync los pone con `TerminalColorMode = AUTO` cuando el log no va a un
-    fichero (`cmd/bisync/operations.go`, `!log.Redirected()`), que en la
-    biblioteca es siempre. Arreglo: `TerminalColorMode = NEVER` al arrancar
-    rclone, como el `LogLevel`, y una prueba contra el rclone de verdad que
-    borre una copia de conflicto del remoto. Ver también que las demás agujas
-    que leen el log del llavero (la simulación de `--force`, el remoto vacío)
-    no dependen de colores.
+  - **Combinar en el PC dejaba el llavero del teléfono atascado (arreglado).**
+    Tras combinar y apartar la copia en el remoto, la pasada del teléfono paraba
+    en el freno de borrados (1 de 3) y no se repetía sin él: la línea «File was
+    deleted» del log llevaba colores ANSI, y `soloCopiasBorradas` no la
+    reconocía. bisync los pone con `TerminalColorMode = AUTO` cuando el log no va
+    a un fichero (`cmd/bisync/operations.go`, `!log.Redirected()`), que en la
+    biblioteca es siempre. Ahora `Rclone.iniciar` pone `NEVER`, lo vigila
+    `PasadaEnAndroidTest.combinar_en_el_pc_quita_la_copia_de_conflicto_sin_que_el_freno_pare_el_llavero`
+    (falla sin el arreglo), y con KeePassDX la copia desaparece en la pasada
+    siguiente y la base queda como la combinada. Las demás agujas del llavero
+    (el remoto vacío, `Skipped delete` de la simulación) son de líneas sin
+    colores, pero ya no dependen de ello.
   - **KeePassDX ve el cambio en disco, pero se puede pisar.** Con la base abierta
     y una versión más nueva bajada por «Sincronizar», al volver avisa («modified
     outside the app») y ofrece combinar, guardar encima o recargar. Si se cierra
@@ -54,29 +55,29 @@ Falta:
     solo en `.prversions/`, sin copia de conflicto ni aviso de prdrive. Decidir
     si «Sincronizar» debe saltarse el llavero, o avisar, con la app de KeePass
     abierta.
-  - **Abrir desde los recientes de KeePassDX falla.** El permiso de
-    `ACTION_VIEW` no es persistible: KeePassDX lo intenta tomar («No persistable
-    permission grants») y Android le niega el proveedor. Hoy solo se abre con
-    «Abrir llavero» o eligiéndola en el selector de Archivos (que sí da un
-    permiso persistible). Arreglo probable: `FLAG_GRANT_PERSISTABLE_URI_PERMISSION`
-    en el `Intent`.
-  - **«Abrir llavero» mete KeePassDX en la tarea de prdrive.** Sin
-    `FLAG_ACTIVITY_NEW_TASK`, volver a prdrive enseña KeePassDX encima, y su
-    lista de recientes es la de prdrive. Mejor en su propia tarea.
-  - **El tipo MIME.** Con `application/octet-stream` sale el selector «Abrir
-    con» mezclando KeePassDX con Google Wallet y Google. KeePassDX declara
-    `application/x-kdbx` (y `x-keepass`, `x-kdb`): con ese tipo, primero, el
-    selector sería solo de apps de KeePass. Falta ver Keepass2Android.
+  - **Abrir desde los recientes de KeePassDX fallaba (arreglado).** El permiso
+    de `ACTION_VIEW` no era persistible: KeePassDX lo intentaba tomar («No
+    persistable permission grants») y Android le negaba el proveedor. Con
+    `FLAG_GRANT_PERSISTABLE_URI_PERMISSION` se lo queda (`persisted=0x3`), y tras
+    cerrarlo del todo vuelve a abrir y leer la base desde sus recientes.
+  - **«Abrir llavero» metía KeePassDX en la tarea de prdrive (arreglado).** Con
+    `FLAG_ACTIVITY_NEW_TASK` va en la suya, y volver a prdrive enseña prdrive.
+  - **El tipo MIME (arreglado).** Con `application/octet-stream` salía el
+    selector «Abrir con» mezclando KeePassDX con Google Wallet y Google. Ahora
+    va primero `application/x-kdbx`, que declaran las apps de KeePass, y abre
+    KeePassDX sin selector; el genérico queda de reserva. Falta ver qué declara
+    Keepass2Android.
   - **Las carpetas con punto.** En el selector de Archivos, `.keychain` no se ve
     hasta activar «Show hidden files»; entonces se ve con `.prversions/`,
     `LEEME.txt` y la base.
   - **Falta todavía**, porque el emulador no lo da: `llave_interna` con la llave
     copiada; Keepass2Android; el congelador de Android 14+ con una pasada que
     sigue tras parar WorkManager su trabajo; y todo en un teléfono arm64.
-  - **Para repetirlo:** el servidor de `punta_a_punta.py` usa la caché de
-    carpetas de `rclone serve` (5 min): un cambio hecho en el disco del remoto
-    por detrás no se ve hasta entonces. Para simular el PC hay que lanzarlo con
-    `--dir-cache-time 0s`.
+  - **Para repetirlo:** el servidor de `punta_a_punta.py` va ahora con
+    `--dir-cache-time 0s`, así que un cambio hecho en el disco del remoto por
+    detrás (el «PC», con `keepassxc-cli`) se ve en seguida; con los 5 min de
+    serie de `rclone serve`, no. La base de la prueba es sintética y no se
+    puede abrir: para KeePassDX hay que poner en `keychain/` una de verdad.
 
 ## 2. Hallazgos que se arreglan en prdrive
 
