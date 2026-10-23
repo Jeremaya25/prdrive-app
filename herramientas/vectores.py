@@ -1216,7 +1216,7 @@ def main() -> int:
         return 2
 
     bisync, config_file, model, pairing = cargar(prdrive)
-    from common import catalog, conflicts, kdbx, results, store, update   # noqa: PLC0415
+    from common import catalog, conflicts, kdbx, llavero, results, store, update   # noqa: PLC0415
     datos = {
         "_generado_por": "herramientas/vectores.py",
         "_no_editar": "Se regenera desde el prdrive citado en 'prdrive'.",
@@ -1268,7 +1268,7 @@ def main() -> int:
         # La pasada y el volumen (paso 3), en su propio fichero.
         "paso3": vectores_paso3.vectores(model, bisync, CONFIG),
         # El llavero (la base de KeePassXC), también en su fichero.
-        "llavero": vectores_llavero.vectores(kdbx),
+        "llavero": vectores_llavero.vectores(kdbx, llavero, model, bisync),
         # Lo que el motor imita del propio Python, también en su fichero.
         "python": vectores_python.vectores(catalog, pairing, config_file),
         # Si hay versión nueva (common/update.py), con el repositorio de la app.
