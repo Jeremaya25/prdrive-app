@@ -10,6 +10,7 @@ import java.io.File
 import java.io.IOException
 import java.nio.channels.FileChannel
 import java.nio.file.Files
+import java.nio.file.LinkOption
 import java.nio.file.StandardCopyOption
 import java.nio.file.StandardOpenOption
 import java.time.Duration
@@ -17,6 +18,8 @@ import prdrive.engine.Kdbx
 import prdrive.engine.LLAVERO_LLAVE
 import prdrive.engine.LLAVERO_LOCAL
 import prdrive.engine.Store
+import prdrive.engine.TomlError
+import prdrive.engine.loadRaw
 
 /**
  * GuardadoAtomico.kt — Las bases del llavero, guardadas enteras o no guardadas.
@@ -43,7 +46,16 @@ import prdrive.engine.Store
  * - Al cerrar: con error o con el cliente muerto, fuera el temporal; limpio,
  *   `fsync`, [Kdbx.comprobar] y, si no está rota (entera o de formato
  *   desconocido, como en el escritorio), encima de la base con `ATOMIC_MOVE`.
- *   Rota, fuera y se avisa ([AVISO]).
+ *   Rota, fuera y se avisa ([AVISO]). Si el cliente se queda el descriptor
+ *   (`detachFd`), el proveedor no sabe cuándo acaba: tampoco se pone, y se
+ *   avisa ([MOTIVO_SOLTADO]).
+ * - Abrir y cerrar sin escribir no es un guardado: un temporal vacío, o igual
+ *   byte a byte que la base, se tira sin tocarla. Si no, un `"rw"` de solo
+ *   mirar le cambiaría la hora y encolaría una subida que, cruzada con un
+ *   cambio en otro dispositivo, fabricaría un conflicto.
+ * - Si el primer guardado de una base nueva no llega, se quita también el
+ *   marcador vacío que deja `createDocument`: `Llavero.rotas` lo contaría como
+ *   base rota y pararía el llavero entero.
  *
  * Dos escritores a la vez llevan cada uno su temporal: gana el último que
  * cierra, como con dos KeePassXC.
@@ -54,6 +66,10 @@ internal object GuardadoAtomico {
 
     /** El aviso de un guardado que llegó roto, en `state/`. Lo lee la pantalla. */
     const val AVISO = "llavero-cortado.json"
+
+    /** El motivo del aviso cuando el cliente se queda el descriptor (`detachFd`). */
+    const val MOTIVO_SOLTADO =
+        "la app se ha quedado el fichero sin cerrarlo, así que no se puede saber si el guardado acabó"
 
     /** La carpeta de los temporales dentro de `.prdrive/`. */
     const val TEMPORALES = "tmp"
@@ -69,8 +85,26 @@ internal object GuardadoAtomico {
         tramos.size == 2 && tramos[0] == LLAVERO_LOCAL &&
             tramos[1].endsWith(".kdbx") && !tramos[1].endsWith(".old.kdbx")
 
-    /** Si el id es la llave del llavero (`.keychain/llave.keyx`): se ve y no se toca. */
+    /** Si el id es la llave del llavero (`.keychain/llave.keyx`): se ve y, con el llavero activo, no se toca. */
     fun esLlave(tramos: List<String>): Boolean = tramos == listOf(LLAVERO_LOCAL, LLAVERO_LLAVE)
+
+    /** Si el id es la carpeta del llavero (`.keychain/`): con el llavero activo, ni se borra ni se renombra. */
+    fun esCarpeta(tramos: List<String>): Boolean = tramos == listOf(LLAVERO_LOCAL)
+
+    /**
+     * Si el llavero está activo: el `sync_config.toml` ([config]) tiene
+     * `[keychain]`. Mientras lo está, la llave y su carpeta se protegen; sin él
+     * son ficheros normales, y `Volumen.avisosBaja` aconseja borrar la llave a
+     * mano. Se lee cada vez, porque el llavero se activa y se quita con la app
+     * abierta. Un config que no se puede leer cuenta como activo: falla cerrado.
+     */
+    fun llaveroActivo(config: File): Boolean = try {
+        loadRaw(config.readText(Charsets.UTF_8)).containsKey("keychain")
+    } catch (_: IOException) {
+        true
+    } catch (_: TomlError) {
+        true
+    }
 
     /**
      * Abre para escribir un temporal en [temporales] en lugar de [base], y lo
@@ -97,7 +131,10 @@ internal object GuardadoAtomico {
         val tmp = File.createTempFile("guardado-", ".tmp", temporales)
         try {
             if (modo.startsWith("rw") || modo.contains('a')) {
-                Files.copy(base.toPath(), tmp.toPath(), StandardCopyOption.REPLACE_EXISTING)
+                // Con su hora: si no se escribe nada, no se pone ([alCerrar]).
+                Files.copy(
+                    base.toPath(), tmp.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES,
+                )
             }
             return ParcelFileDescriptor.open(tmp, ParcelFileDescriptor.parseMode(modo), handler) { error ->
                 alCerrar(tmp, base, error, alPoner, alCortar)
@@ -109,23 +146,38 @@ internal object GuardadoAtomico {
     }
 
     private fun alCerrar(tmp: File, base: File, error: IOException?, alPoner: () -> Unit, alCortar: (String) -> Unit) {
+        if (error is ParcelFileDescriptor.FileDescriptorDetachedException) {
+            // El cliente sigue con el descriptor y puede seguir escribiendo: no
+            // hay un final que comprobar. Se pierde, y se dice.
+            tmp.delete()
+            quitarMarcador(base)
+            avisar { alCortar(MOTIVO_SOLTADO) }
+            return
+        }
         if (error != null) {
             // El cliente cerró con error o murió: lo que haya en el temporal no
             // es un guardado acabado.
             Log.i(ETIQUETA, "Guardado de ${base.name} sin acabar: ${error.message}")
             tmp.delete()
+            quitarMarcador(base)
             return
         }
         val estado = try {
             // Lo escrito, en el disco antes de mirarlo y de ponerlo: si se va la
             // luz justo después del cambio de nombre, que no quede una base vacía.
             FileChannel.open(tmp.toPath(), StandardOpenOption.WRITE).use { it.force(true) }
+            if (tmp.length() == 0L || iguales(tmp, base)) {
+                // No se ha escrito nada: ni se pone ni se avisa.
+                tmp.delete()
+                return
+            }
             Kdbx.comprobar(tmp)
         } catch (e: IOException) {
             Kdbx.Estado(false, motivo = "no se ha podido guardar (${e.message})")
         }
         if (estado.entera == false) {
             tmp.delete()
+            quitarMarcador(base)
             avisar { alCortar(estado.motivo) }
             return
         }
@@ -138,6 +190,24 @@ internal object GuardadoAtomico {
         }
         sincronizarCarpeta(base.parentFile)
         avisar(alPoner)
+    }
+
+    /** Si el temporal dice lo mismo que la base, byte a byte. Una base son unos cientos de KB. */
+    private fun iguales(tmp: File, base: File): Boolean =
+        base.isFile && tmp.length() == base.length() && tmp.readBytes().contentEquals(base.readBytes())
+
+    /**
+     * Quita la base si es el marcador vacío de `createDocument`: un primer
+     * guardado que no ha llegado no deja una base rota en `.keychain/`. La
+     * entrada misma, y solo si es un fichero (un enlace no se sigue).
+     */
+    private fun quitarMarcador(base: File) {
+        val ruta = base.toPath()
+        try {
+            if (Files.isRegularFile(ruta, LinkOption.NOFOLLOW_LINKS) && Files.size(ruta) == 0L) Files.delete(ruta)
+        } catch (e: IOException) {
+            Log.w(ETIQUETA, "Quitando el marcador vacío de ${base.name}", e)
+        }
     }
 
     /** Lo de después no tumba el proceso: el listener corre en el hilo del proveedor. */

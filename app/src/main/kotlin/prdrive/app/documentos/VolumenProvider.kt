@@ -25,6 +25,7 @@ import prdrive.app.Prdrive
 import prdrive.app.R
 import prdrive.app.llavero.Disparos
 import prdrive.engine.CARPETA_PROGRAMA
+import prdrive.engine.LLAVERO_LOCAL
 
 /**
  * VolumenProvider.kt — El volumen, como una ubicación más de la app de Archivos.
@@ -54,8 +55,11 @@ import prdrive.engine.CARPETA_PROGRAMA
  * temporal de `.prdrive/tmp/`, que solo se pone encima de la base al cerrar y si
  * llega entera. Guardar una base encola la subida, y leerla, la pasada de
  * lectura ([Disparos]). La llave (`llave.keyx`) se ve, porque la app de KeePass
- * la necesita para abrir la base, pero no se escribe, ni se borra ni se
- * renombra.
+ * la necesita para abrir la base. Mientras el llavero está activo
+ * ([GuardadoAtomico.llaveroActivo]), la llave no se escribe, ni se borra ni se
+ * renombra; `.keychain/` no se borra ni se renombra (se llevaría la llave); y
+ * nada se crea ni se renombra como `llave.keyx`, que se haría pasar por ella.
+ * Sin llavero son ficheros normales: al quitarlo se aconseja borrar la llave.
  */
 class VolumenProvider : DocumentsProvider() {
 
@@ -81,6 +85,13 @@ class VolumenProvider : DocumentsProvider() {
 
     /** Los temporales de los guardados del llavero: `.prdrive/tmp/`. */
     private val temporales: File get() = File(Prdrive.volumen(context!!).programa, GuardadoAtomico.TEMPORALES)
+
+    /** Si el llavero está activo, leído ahora del config del volumen. */
+    private fun llaveroActivo(): Boolean = GuardadoAtomico.llaveroActivo(Prdrive.volumen(context!!).config)
+
+    /** La llave o la carpeta del llavero, con el llavero activo: ni se borran ni se renombran. */
+    private fun protegido(t: List<String>): Boolean =
+        (GuardadoAtomico.esLlave(t) || GuardadoAtomico.esCarpeta(t)) && llaveroActivo()
 
     override fun onCreate(): Boolean {
         guardados = Handler(HandlerThread("guardado-atomico").apply { start() }.looper)
@@ -168,9 +179,11 @@ class VolumenProvider : DocumentsProvider() {
         val esRaiz = id == ID_RAIZ
         var flags = if (f.isDirectory) Document.FLAG_DIR_SUPPORTS_CREATE else Document.FLAG_SUPPORTS_WRITE
         if (!esRaiz) flags = flags or Document.FLAG_SUPPORTS_DELETE or Document.FLAG_SUPPORTS_RENAME
-        // La llave del llavero, de solo lectura.
-        if (GuardadoAtomico.esLlave(tramos(id))) {
-            flags = flags and (Document.FLAG_SUPPORTS_WRITE or Document.FLAG_SUPPORTS_DELETE or Document.FLAG_SUPPORTS_RENAME).inv()
+        // Con el llavero activo, la llave es de solo lectura y su carpeta se queda.
+        val t = tramos(id)
+        if (protegido(t)) {
+            flags = flags and (Document.FLAG_SUPPORTS_DELETE or Document.FLAG_SUPPORTS_RENAME).inv()
+            if (GuardadoAtomico.esLlave(t)) flags = flags and Document.FLAG_SUPPORTS_WRITE.inv()
         }
         cursor.newRow().apply {
             add(Document.COLUMN_DOCUMENT_ID, id)
@@ -216,7 +229,7 @@ class VolumenProvider : DocumentsProvider() {
         val f = fichero(documentId)
         if (f.isDirectory || !Files.exists(f.toPath())) throw FileNotFoundException("No se puede abrir: $documentId")
         val escribe = 'w' in mode
-        if (escribe && GuardadoAtomico.esLlave(t)) throw FileNotFoundException("La llave del llavero no se escribe")
+        if (escribe && GuardadoAtomico.esLlave(t) && llaveroActivo()) throw FileNotFoundException("La llave del llavero no se escribe")
         if (GuardadoAtomico.esBase(t)) {
             if (escribe) return guardarBase(f, mode)
             despues { Disparos.alLeer(context!!) }
@@ -269,6 +282,11 @@ class VolumenProvider : DocumentsProvider() {
         val tramosPadre = tramos(parentDocumentId)
         val punto = displayName.lastIndexOf('.')
         val (base, ext) = if (punto > 0) displayName.substring(0, punto) to displayName.substring(punto) else displayName to ""
+        // Con el llavero activo, nada se crea como su llave: se haría pasar por
+        // ella. Solo el primer nombre puede serlo (los demás llevan « (n)»).
+        if (GuardadoAtomico.esLlave(tramosPadre + displayName) && llaveroActivo()) {
+            throw FileNotFoundException("Con el llavero activo, no se crea otra llave")
+        }
         var nombre = displayName
         var n = 1
         while (true) {
@@ -300,7 +318,7 @@ class VolumenProvider : DocumentsProvider() {
     override fun deleteDocument(documentId: String) {
         val t = tramos(documentId)
         if (t.isEmpty()) throw FileNotFoundException("La raíz no se borra")
-        if (GuardadoAtomico.esLlave(t)) throw FileNotFoundException("La llave del llavero no se borra")
+        if (protegido(t)) throw FileNotFoundException("Con el llavero activo, $LLAVERO_LOCAL y su llave no se borran")
         val f = fichero(documentId)
         try {
             borrarSinSeguirEnlaces(f.toPath())
@@ -332,11 +350,14 @@ class VolumenProvider : DocumentsProvider() {
     override fun renameDocument(documentId: String, displayName: String): String {
         val t = tramos(documentId)
         if (t.isEmpty()) throw FileNotFoundException("La raíz no se renombra")
-        if (GuardadoAtomico.esLlave(t)) throw FileNotFoundException("La llave del llavero no se renombra")
+        if (protegido(t)) throw FileNotFoundException("Con el llavero activo, $LLAVERO_LOCAL y su llave no se renombran")
         if (!nombreValido(displayName)) throw FileNotFoundException("Nombre no válido: $displayName")
         val f = fichero(documentId)
         val nuevoId = idDe(t.dropLast(1) + displayName)
         tramos(nuevoId) // ni `.prdrive` en la raíz
+        if (GuardadoAtomico.esLlave(tramos(nuevoId)) && llaveroActivo()) {
+            throw FileNotFoundException("Con el llavero activo, nada se renombra como su llave")
+        }
         val destino = File(f.parentFile, displayName)
         try {
             // Mueve la entrada misma: si es un enlace, el enlace.

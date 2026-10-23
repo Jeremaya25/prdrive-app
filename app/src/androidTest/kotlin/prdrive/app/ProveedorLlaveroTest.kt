@@ -176,12 +176,50 @@ class ProveedorLlaveroTest {
         val nueva = File(llavero, "nueva.kdbx")
         assertTrue(nueva.isFile)
 
+        // El primer guardado, cortado: ni bytes rotos ni el marcador vacío de
+        // `createDocument`, que `Llavero.rotas` contaría como base rota y
+        // pararía el llavero entero.
         val datos = Banco.otraBase()
         escribir(creada, "w", datos.copyOf(datos.size / 2))
-        assertEquals("han quedado bytes rotos en nueva.kdbx", 0L, nueva.length())
+        esperar("no se ha avisado del guardado cortado") { aviso.exists() }
+        assertFalse("ha quedado nueva.kdbx tras un primer guardado cortado", nueva.exists())
 
-        escribir(creada, "w", datos)
+        val otraVez = DocumentsContract.createDocument(
+            resolver, uri(LLAVERO_LOCAL), "application/octet-stream", "nueva.kdbx",
+        ) ?: error("no se ha creado")
+        escribir(otraVez, "w", datos)
         assertArrayEquals(datos, nueva.readBytes())
+    }
+
+    @Test
+    fun abrir_y_cerrar_sin_escribir_no_es_un_guardado() {
+        // Una hora de antes, en segundos enteros: que se note si se toca.
+        val hora = (System.currentTimeMillis() / 1000 - 3600) * 1000
+        base.setLastModified(hora)
+        val antes = base.readBytes()
+        for (modo in listOf("rw", "wa", "w", "wt")) {
+            resolver.openFileDescriptor(uriBase, modo)!!.close()
+            esperarAlCierre()
+            assertArrayEquals("con \"$modo\"", antes, base.readBytes())
+            assertEquals("con \"$modo\" ha cambiado la hora de la base", hora, base.lastModified())
+            assertFalse("con \"$modo\" se ha avisado de un guardado cortado", aviso.exists())
+        }
+        assertTrue("se ha encolado una subida sin guardar nada", encolados().isEmpty())
+    }
+
+    @Test
+    fun un_descriptor_soltado_es_un_guardado_cortado() {
+        val antes = base.readBytes()
+        val pfd = resolver.openFileDescriptor(uriBase, "wt")!!
+        FileOutputStream(pfd.fileDescriptor).write(Banco.otraBase())
+        // El cliente se queda el descriptor (`detachFd`): el proveedor ya no
+        // sabe cuándo acaba, y no puede ponerlo.
+        ParcelFileDescriptor.adoptFd(pfd.detachFd()).close()
+        esperar("no se ha avisado del descriptor soltado") { aviso.exists() }
+        esperarAlCierre()
+        assertArrayEquals(antes, base.readBytes())
+        assertEquals(GuardadoAtomico.MOTIVO_SOLTADO, Store.readJson(aviso)["motivo"])
+        assertTrue(encolados().isEmpty())
     }
 
     @Test
@@ -195,16 +233,33 @@ class ProveedorLlaveroTest {
         assertTrue((temporales.list() ?: emptyArray()).isEmpty())
     }
 
-    @Test
-    fun la_llave_se_ve_pero_no_se_escribe_ni_se_borra() {
-        val c = resolver.query(DocumentsContract.buildChildDocumentsUri(VolumenProvider.AUTORIDAD, "${VolumenProvider.ID_RAIZ}/$LLAVERO_LOCAL"), null, null, null, null)!!
+    /** Los flags de [nombre] en el listado de la carpeta [padre] (relativa al volumen; vacía, la raíz). */
+    private fun flagsDe(padre: String, nombre: String): Int? {
+        val id = if (padre.isEmpty()) VolumenProvider.ID_RAIZ else "${VolumenProvider.ID_RAIZ}/$padre"
+        val c = resolver.query(DocumentsContract.buildChildDocumentsUri(VolumenProvider.AUTORIDAD, id), null, null, null, null)!!
         var flags: Int? = null
         while (c.moveToNext()) {
-            if (c.getString(c.getColumnIndexOrThrow(Document.COLUMN_DISPLAY_NAME)) == LLAVERO_LLAVE) {
+            if (c.getString(c.getColumnIndexOrThrow(Document.COLUMN_DISPLAY_NAME)) == nombre) {
                 flags = c.getInt(c.getColumnIndexOrThrow(Document.COLUMN_FLAGS))
             }
         }
         c.close()
+        return flags
+    }
+
+    /** Que [accion] falle con `FileNotFoundException`, que es como el proveedor se niega. */
+    private fun seNiega(que: String, accion: () -> Unit) {
+        try {
+            accion()
+            fail("se ha podido $que")
+        } catch (_: FileNotFoundException) {
+            // lo esperado
+        }
+    }
+
+    @Test
+    fun la_llave_se_ve_pero_no_se_escribe_ni_se_borra() {
+        val flags = flagsDe(LLAVERO_LOCAL, LLAVERO_LLAVE)
         assertNotNull("la llave no está en el listado", flags)
         for (flag in listOf(Document.FLAG_SUPPORTS_WRITE, Document.FLAG_SUPPORTS_DELETE, Document.FLAG_SUPPORTS_RENAME)) {
             assertEquals("la llave lleva el flag $flag", 0, flags!! and flag)
@@ -267,5 +322,52 @@ class ProveedorLlaveroTest {
         GuardadoAtomico.limpiar(temporales, ahora)
         assertFalse("el huérfano sigue ahí", viejo.exists())
         assertTrue("se ha borrado uno reciente", reciente.exists())
+    }
+
+    @Test
+    fun con_el_llavero_activo_ni_su_carpeta_se_borra_ni_nada_se_hace_pasar_por_la_llave() {
+        val carpeta = uri(LLAVERO_LOCAL)
+        val flags = flagsDe("", LLAVERO_LOCAL)
+        assertNotNull(".keychain no está en el listado", flags)
+        assertEquals("se puede borrar .keychain", 0, flags!! and Document.FLAG_SUPPORTS_DELETE)
+        assertEquals("se puede renombrar .keychain", 0, flags and Document.FLAG_SUPPORTS_RENAME)
+        assertTrue("no se puede crear en .keychain", (flags and Document.FLAG_DIR_SUPPORTS_CREATE) != 0)
+
+        seNiega("borrar .keychain") { DocumentsContract.deleteDocument(resolver, carpeta) }
+        seNiega("renombrar .keychain") { DocumentsContract.renameDocument(resolver, carpeta, "otra") }
+        seNiega("crear otra llave") {
+            DocumentsContract.createDocument(resolver, carpeta, "application/octet-stream", LLAVERO_LLAVE)
+        }
+        val otro = File(llavero, "otro.keyx").apply { writeBytes(byteArrayOf(9, 9)) }
+        seNiega("renombrar otro fichero a la llave") {
+            DocumentsContract.renameDocument(resolver, uri("$LLAVERO_LOCAL/otro.keyx"), LLAVERO_LLAVE)
+        }
+        assertTrue(otro.exists())
+        assertArrayEquals(byteArrayOf(1, 2, 3, 4), File(llavero, LLAVERO_LLAVE).readBytes())
+
+        // Un config que no se puede leer cuenta como llavero activo.
+        v.config.writeText("[[[ esto no es TOML")
+        seNiega("borrar .keychain con un config que no se lee") { DocumentsContract.deleteDocument(resolver, carpeta) }
+        assertTrue(File(llavero, LLAVERO_LLAVE).exists())
+    }
+
+    @Test
+    fun sin_el_llavero_la_llave_es_un_fichero_mas() {
+        // Tras quitar el llavero, `Volumen.avisosBaja` dice «bórralo tú».
+        v = Banco.volumen(Banco.pareja("notas")).first
+        llavero.mkdirs()
+        File(llavero, LLAVERO_LLAVE).writeBytes(byteArrayOf(1, 2, 3, 4))
+        val flags = flagsDe(LLAVERO_LOCAL, LLAVERO_LLAVE)
+        assertNotNull(flags)
+        for (flag in listOf(Document.FLAG_SUPPORTS_WRITE, Document.FLAG_SUPPORTS_DELETE, Document.FLAG_SUPPORTS_RENAME)) {
+            assertTrue("sin llavero, a la llave le falta el flag $flag", (flags!! and flag) != 0)
+        }
+        val carpeta = flagsDe("", LLAVERO_LOCAL)!!
+        assertTrue((carpeta and Document.FLAG_SUPPORTS_DELETE) != 0)
+
+        DocumentsContract.deleteDocument(resolver, uri("$LLAVERO_LOCAL/$LLAVERO_LLAVE"))
+        assertFalse(File(llavero, LLAVERO_LLAVE).exists())
+        DocumentsContract.deleteDocument(resolver, uri(LLAVERO_LOCAL))
+        assertFalse(llavero.exists())
     }
 }
