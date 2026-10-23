@@ -148,12 +148,7 @@ class PasadaEnAndroidTest {
     // --- el llavero ------------------------------------------------------------
 
     /** Una base de KeePassXC entera, de los vectores de `kdbx.py` (la de KDBX 4.1). */
-    private fun baseEntera(): ByteArray {
-        @Suppress("UNCHECKED_CAST")
-        val casos = (Banco.vectores["llavero"] as Map<String, Any?>)["kdbx"] as List<Map<String, Any?>>
-        val hexa = casos.first { it["entera"] == true && it["version"] == "4.1" }["hex"].toString()
-        return ByteArray(hexa.length / 2) { hexa.substring(2 * it, 2 * it + 2).toInt(16).toByte() }
-    }
+    private fun baseEntera(): ByteArray = Banco.base(entera = true)
 
     /** La pasada del llavero, como la lanza la app: Android cuenta como cifrado. */
     private fun pasarLlavero(v: prdrive.engine.Volumen, p: prdrive.engine.Pareja) =

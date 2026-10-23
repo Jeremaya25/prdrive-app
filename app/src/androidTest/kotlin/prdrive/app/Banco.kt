@@ -63,6 +63,22 @@ object Banco {
         return v to config
     }
 
+    /**
+     * Una base de KeePassXC de los vectores de `kdbx.py`: la de KDBX 4.1 entera,
+     * o la primera que no lo está.
+     */
+    fun base(entera: Boolean): ByteArray {
+        @Suppress("UNCHECKED_CAST")
+        val casos = (vectores["llavero"] as Map<String, Any?>)["kdbx"] as List<Map<String, Any?>>
+        val caso = if (entera) {
+            casos.first { it["entera"] == true && it["version"] == "4.1" }
+        } else {
+            casos.first { it["entera"] == false }
+        }
+        val hexa = caso["hex"].toString()
+        return ByteArray(hexa.length / 2) { hexa.substring(2 * it, 2 * it + 2).toInt(16).toByte() }
+    }
+
     /** Una pareja cuyo remoto es una carpeta de [remoto]. */
     fun pareja(nombre: String, local: String = "sync-data/$nombre", vararg extra: kotlin.Pair<String, Any?>): Map<String, Any?> =
         mapOf("name" to nombre, "local" to local, "remote_path" to File(remoto, nombre).absolutePath) + extra

@@ -3,6 +3,7 @@ package prdrive.app
 import android.content.Context
 import android.net.Uri
 import java.io.IOException
+import prdrive.app.llavero.Disparos
 import prdrive.app.rclone.Adaptadores
 import prdrive.engine.Catalogo
 import prdrive.engine.Config
@@ -211,6 +212,10 @@ object Instalador {
      * Aquí el config va primero y el `combine` después: si el segundo falla,
      * queda un `.keychain` de más en el `combine`, que no hace nada.
      *
+     * Y la pasada del llavero que hubiera encolada se cancela ([Disparos]). Si
+     * ya había empezado a correr, al leer el config no encuentra el llavero y
+     * acaba sin hacer nada.
+     *
      * @return El config sin llavero.
      * @throws ConfigError si el teléfono no lleva el llavero.
      */
@@ -224,6 +229,7 @@ object Instalador {
         v.escribirConfig(raw, headerOf(texto))
         v.actualizarCombine(config)
         Prdrive.recargarRclone(contexto)
+        Disparos.cancelar(contexto)
         return config
     }
 }
