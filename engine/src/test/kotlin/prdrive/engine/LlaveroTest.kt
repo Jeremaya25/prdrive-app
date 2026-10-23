@@ -7,6 +7,7 @@ import java.util.concurrent.TimeUnit
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 
 /**
@@ -268,6 +269,76 @@ class LlaveroTest {
             val listado = listadoDeCaso(caso["listado_hex"])
             assertEquals(caso["pendiente"], Llavero.pendiente(donde, listado), "$nombre: pendiente")
             assertEquals(Vectores.cadenas(caso, "sin_listar"), Llavero.sinListar(donde, listado), "$nombre: sin listar")
+        }
+    }
+
+    // --- los frenos de rclone y el alta desde el remoto ----------------------
+
+    private val frenos = Vectores.objeto(v, "frenos")
+
+    @Test
+    fun `los frenos del llavero se leen del log como en prdrive`() {
+        assertEquals(largo(frenos["freno_sin_copias"]), Llavero.FRENO_SIN_COPIAS)
+        val pareja = parseConfig(Vectores.objeto(frenos, "config")).parejaLlavero
+            ?: error("el config de los vectores lleva llavero")
+
+        val logs = Vectores.objetos(frenos, "logs")
+        assertTrue(logs.size > 20)
+        for (caso in logs) {
+            val esperado = (caso["solo_copias"] as? List<*>)?.map { it.toString() }
+            assertEquals(esperado, Llavero.soloCopiasBorradas(Vectores.texto(caso, "log"), pareja), "«${caso["caso"]}»")
+        }
+
+        val vacios = Vectores.objetos(frenos, "remoto_vacio")
+        assertTrue(vacios.any { it["vacio"] == true } && vacios.any { it["vacio"] == false })
+        for (caso in vacios) {
+            assertEquals(caso["vacio"], Llavero.remotoVacio(Vectores.texto(caso, "log")), "«${caso["caso"]}»")
+        }
+
+        val simulados = Vectores.objetos(frenos, "borrarian")
+        assertTrue(simulados.size > 10)
+        for (caso in simulados) {
+            assertEquals(Vectores.cadenas(caso, "borrarian"), Pasada.borrarian(Vectores.texto(caso, "log")), "«${caso["caso"]}»")
+        }
+    }
+
+    @Test
+    fun `al llavero se le explica el freno sin decirle que lo fuerce`() {
+        val e = Vectores.objeto(frenos, "explicaciones")
+        assertEquals(Vectores.texto(e, "llavero"), Pasada.EXPLICACION_LLAVERO)
+        assertEquals(Vectores.texto(e, "llavero_cambiados"), Pasada.EXPLICACION_LLAVERO_CAMBIADOS)
+        // Las de los frenos son las de prdrive, y por ese orden.
+        assertEquals(Vectores.cadenas(e, "entradas"), Pasada.EXPLICACIONES)
+        assertEquals(3, Pasada.EXPLICACIONES.size)
+        for (caso in Vectores.objetos(e, "explicacion_llavero") + Vectores.objetos(e, "otras")) {
+            assertEquals(
+                Vectores.texto(caso, "dice"),
+                Pasada.explicacionLlavero(Vectores.texto(caso, "explicacion")),
+                "«${caso["explicacion"]}»",
+            )
+        }
+        // Ninguna manda a forzar la pasada.
+        assertTrue(Pasada.EXPLICACIONES.all { Pasada.COMO_FORZAR in it })
+        assertTrue(Pasada.EXPLICACIONES.none { Pasada.COMO_FORZAR in Pasada.explicacionLlavero(it) })
+    }
+
+    @Test
+    fun `traer el llavero del remoto lleva su tabla tal cual`() {
+        val casos = Vectores.objetos(frenos, "alta")
+        assertTrue(casos.any { it.containsKey("error") } && casos.any { it.containsKey("tabla") })
+        for (caso in casos) {
+            @Suppress("UNCHECKED_CAST")
+            val remota = caso["remota"] as Map<String, Any?>?
+            val nombre = "«${caso["caso"]}»"
+            if (caso.containsKey("error")) {
+                val error = assertFailsWith<ConfigError>(nombre) { Llavero.decidirAlta(remota) }
+                assertEquals(Vectores.texto(caso, "error"), error.message, nombre)
+            } else {
+                val alta = Llavero.decidirAlta(remota)
+                assertEquals(caso["tabla"], alta, nombre)
+                // Es una copia: lo que se le haga no toca la del catálogo.
+                assertTrue(alta !== remota, nombre)
+            }
         }
     }
 }

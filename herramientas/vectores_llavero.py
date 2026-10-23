@@ -588,12 +588,222 @@ def vectores_listado(llavero, model, bisync, config) -> dict:
     }
 
 
+# --- los frenos de rclone y el alta desde el remoto ------------------------------
+
+CONFIG_FRENOS = {
+    "defaults": {"device_remote": "disp", "remote": "nas"},
+    "keychain": {"base": "personal.kdbx"},
+    "pair": [{"name": "notas", "local": "sync-data/notas", "remote_path": "/copia/notas"}],
+}
+"""El config de los frenos: el llavero con `personal.kdbx`, como en los docstrings de prdrive."""
+
+MARCA = "2026/10/16 08:52:39 INFO  : "
+"""Lo que rclone pone delante de una línea `INFO` de bisync."""
+
+
+def _borrado(lado: str, nombre: str, marca: str = MARCA) -> str:
+    """Una línea de bisync que dice que algo ya no está en ese lado.
+
+    Es el formato «- %-18s%-43s - %s» de `indent()` (`cmd/bisync/log.go`), que es el
+    que `llavero._BORRADO` lee.
+    """
+    return f"{marca}- {lado:<18}{'File was deleted':<43} - {nombre}"
+
+
+def _simulado(nombre: str, que: str = "delete", marca: str = "2026/10/15 09:44:30 NOTICE: ") -> str:
+    """Una línea de rclone de una simulación (`--dry-run`) que habría borrado `nombre`."""
+    return f"{marca}{nombre}: Skipped {que} as --dry-run is set (size 7)"
+
+
+def _log(*lineas: str, fin: str = "\n") -> str:
+    return fin.join(lineas) + fin
+
+
+def vectores_frenos_log(llavero, pareja) -> list[dict]:
+    """Logs de bisync y lo que `solo_copias_borradas()` lee de cada uno."""
+    ruido = "2026/10/16 08:52:39 INFO  : Bisync successful"
+    abortar = "2026/10/16 08:52:39 ERROR : Bisync aborted. Must run --resync to recover."
+    registros = [
+        ("el de _BORRADO, una copia de conflicto",
+         _log("2026/10/16 08:52:39 INFO  : - Path1             File was deleted"
+              "                            - Personal.conflicto-dispositivo1.kdbx")),
+        ("una copia de conflicto del dispositivo",
+         _log(ruido, _borrado("Path1", "personal.conflicto-dispositivo1.kdbx"), abortar)),
+        ("una copia de conflicto del remoto",
+         _log(_borrado("Path2", "personal.conflicto-remoto2.kdbx"))),
+        ("copias en los dos lados",
+         _log(_borrado("Path1", "personal.conflicto-dispositivo1.kdbx"),
+              _borrado("Path2", "personal.conflicto-remoto1.kdbx"),
+              _borrado("Path2", "personal.conflicto-remoto3.kdbx"))),
+        ("la copia con el sufijo de fábrica de rclone",
+         _log(_borrado("Path1", "personal.conflict1.kdbx"))),
+        ("la copia de otra base",
+         _log(_borrado("Path1", "otra.conflicto-remoto1.kdbx"))),
+        ("una copia con otra extensión",
+         _log(_borrado("Path1", "personal.conflicto-remoto1.txt"))),
+        ("una copia con la extensión en mayúsculas",
+         _log(_borrado("Path1", "personal.conflicto-remoto1.KDBX"))),
+        ("una base borrada",
+         _log(_borrado("Path1", "personal.kdbx"))),
+        ("una base y una copia borradas",
+         _log(_borrado("Path1", "personal.conflicto-remoto1.kdbx"),
+              _borrado("Path1", "personal.kdbx"))),
+        ("LEEME.txt borrado",
+         _log(_borrado("Path2", "LEEME.txt"))),
+        ("una copia y LEEME.txt borrados",
+         _log(_borrado("Path2", "personal.conflicto-remoto1.kdbx"),
+              _borrado("Path2", "LEEME.txt"))),
+        ("un nombre entre comillas",
+         _log(_borrado("Path1", '"personal.conflicto-remoto1.kdbx"'))),
+        ("un nombre con algo no imprimible, entre comillas",
+         _log(_borrado("Path1", '"personal.conflicto-remoto1\\x0b.kdbx"'))),
+        ("una ruta con /",
+         _log(_borrado("Path1", "sub/personal.conflicto-remoto1.kdbx"))),
+        ("un nombre que acaba en espacios",
+         _log(_borrado("Path1", "personal.conflicto-remoto1.kdbx  "))),
+        ("un nombre con letras de fuera de ASCII",
+         _log(_borrado("Path1", "contraseñas.conflicto-remoto1.kdbx"))),
+        ("sin borrados", _log(ruido, "2026/10/16 08:52:39 INFO  : Synching Path1 with Path2")),
+        ("un log vacío", ""),
+        ("una línea de otra cosa que se parece",
+         _log("2026/10/16 08:52:39 INFO  : - Path1             File is newer"
+              "                              - personal.conflicto-remoto1.kdbx")),
+        ("un lado que no existe",
+         _log(_borrado("Path3", "personal.conflicto-remoto1.kdbx"))),
+        ("con el fin de línea de Windows",
+         _log(_borrado("Path1", "personal.conflicto-remoto1.kdbx"), ruido, fin="\r\n")),
+        ("con un salto de línea raro tras el nombre",
+         "2026/10/16 08:52:39 INFO  : - Path1             File was deleted"
+         "                            - personal.conflicto-remoto1.kdbx\x0bsiguiente\n"),
+        ("sin la marca de la hora, solo los dos puntos",
+         _log(_borrado("Path1", "personal.conflicto-remoto1.kdbx", marca=": "))),
+        ("dos veces la frase en la misma línea",
+         _log("INFO  : ruta: - Path1  File was deleted  - x: - Path2   File was deleted    "
+              "- personal.conflicto-remoto1.kdbx")),
+    ]
+    return [{"caso": caso, "log": log, "solo_copias": llavero.solo_copias_borradas(log, pareja)}
+            for caso, log in registros]
+
+
+def vectores_remoto_vacio(llavero) -> list[dict]:
+    registros = [
+        ("el de prdrive",
+         "2026/10/16 08:52:39 ERROR : Empty current Path2 listing. Cannot sync to an "
+         "empty directory: C:\\x\\y.path2.lst\n"),
+        ("en medio de otras líneas",
+         "INFO  : Synching\nERROR : Empty current Path2 listing. Cannot sync\nERROR : Bisync failed\n"),
+        ("el del lado del dispositivo",
+         "2026/10/16 08:52:39 ERROR : Empty current Path1 listing. Cannot sync to an "
+         "empty directory: C:\\x\\y.path1.lst\n"),
+        ("en minúsculas", "error : empty current path2 listing\n"),
+        ("solo parte de la frase", "Empty current Path2\n"),
+        ("sin nada", ""),
+        ("otro fallo", "ERROR : Bisync aborted. Must run --resync to recover.\n"),
+    ]
+    return [{"caso": caso, "log": log, "vacio": llavero.remoto_vacio(log)}
+            for caso, log in registros]
+
+
+def vectores_borrarian(frenos) -> list[dict]:
+    registros = [
+        ("una simulación de dos ficheros",
+         _log(_simulado("nota02.md"), _simulado("nota01.md"))),
+        ("con versiones, va al directorio de versiones",
+         _log(_simulado("nota01.md", "move into backup dir"))),
+        ("sin repetir y en orden",
+         _log(_simulado("b.md"), _simulado("a.md"), _simulado("b.md"),
+              _simulado("a.md", "move into backup dir"))),
+        ("lo que solo se sobrescribe no entra",
+         _log(_simulado("a.md", "move to a.md~20261015"), _simulado("b.md", "copy"),
+              _simulado("c.md"))),
+        ("un nombre entre comillas",
+         _log(_simulado('"a\\x0b.md"'))),
+        ("una ruta con /",
+         _log(_simulado("sub/dentro/a.md"), _simulado("sub/b.md"))),
+        ("un nombre con dos puntos",
+         _log(_simulado("hora 10:30: x.md"))),
+        ("un nombre con ñ y con letras fuera del plano básico",
+         _log(_simulado("ñandú.md"), _simulado("\U0001f600.md"), _simulado("\uff21.md"),
+              _simulado("z.md"))),
+        ("mayúsculas y minúsculas", _log(_simulado("b.md"), _simulado("B.md"), _simulado("a.md"))),
+        ("con el fin de línea de Windows",
+         _log(_simulado("a.md"), _simulado("b.md"), fin="\r\n")),
+        ("sin la marca de la hora", "NOTICE: a.md: Skipped delete as --dry-run is set\n"),
+        ("otro nivel de log, que no entra",
+         "2026/10/15 09:44:30 INFO  : a.md: Skipped delete as --dry-run is set (size 7)\n"),
+        ("una simulación sin borrados",
+         _log("2026/10/15 09:44:30 NOTICE: Skipped copy as --dry-run is set")),
+        ("un log vacío", ""),
+    ]
+    return [{"caso": caso, "log": log, "borrarian": frenos.borrarian(log)}
+            for caso, log in registros]
+
+
+def vectores_explicaciones(frenos) -> dict:
+    """Las tres explicaciones de un freno y lo que se le dice al llavero en su lugar."""
+    entradas = [explicacion for _, explicacion in frenos.ENTRADAS]
+    return {
+        "llavero": frenos.EXPLICACION_LLAVERO,
+        "llavero_cambiados": frenos.EXPLICACION_LLAVERO_CAMBIADOS,
+        "entradas": entradas,
+        "explicacion_llavero": [
+            {"explicacion": e, "dice": frenos.explicacion_llavero(e)} for e in entradas],
+        # Lo que no es ninguna de las tres cae en la general.
+        "otras": [{"explicacion": e, "dice": frenos.explicacion_llavero(e)}
+                  for e in ("Otra cosa.", "", frenos.EXPLICACION_LLAVERO,
+                            frenos.EXPLICACION_LLAVERO_CAMBIADOS)],
+    }
+
+
+def vectores_alta(llavero, cifrada) -> list[dict]:
+    """`decidir_alta()` con `origen = None`: traer el llavero del remoto."""
+    tablas = [
+        ("sin remoto", None),
+        ("una tabla con fichero llave",
+         {"base": "personal.kdbx", "fichero_llave": True, "nombre_llave": "clave.keyx"}),
+        ("una tabla sin llave", {"base": "personal.kdbx", "fichero_llave": False}),
+        ("una tabla con llave interna",
+         {"base": "personal.kdbx", "fichero_llave": True, "llave_interna": True}),
+        ("una tabla con llave interna apagada",
+         {"base": "personal.kdbx", "fichero_llave": False, "llave_interna": False}),
+        ("una tabla vacía", {}),
+        ("una tabla con claves de más", {"base": "x.kdbx", "otra": [1, 2, {"a": "b"}]}),
+    ]
+    casos = []
+    for caso, remota in tablas:
+        try:
+            alta = llavero.decidir_alta(Path("/no/se/mira"), remota, None,
+                                        cifrado=cifrada.Cifrado(True, "VERACRYPT"))
+        except ValueError as e:
+            casos.append({"caso": caso, "remota": remota, "error": str(e)})
+        else:
+            assert (alta.destino, alta.copia, alta.subir, alta.aviso_formato) == \
+                (None, False, False, ""), alta
+            casos.append({"caso": caso, "remota": remota, "tabla": alta.tabla})
+    return casos
+
+
+def vectores_frenos(llavero, model, frenos, cifrada) -> dict:
+    config = model.parse_config(CONFIG_FRENOS)
+    return {
+        "config": CONFIG_FRENOS,
+        "freno_sin_copias": llavero.FRENO_SIN_COPIAS,
+        "logs": vectores_frenos_log(llavero, config.pareja_llavero),
+        "remoto_vacio": vectores_remoto_vacio(llavero),
+        "borrarian": vectores_borrarian(frenos),
+        "explicaciones": vectores_explicaciones(frenos),
+        "alta": vectores_alta(llavero, cifrada),
+    }
+
+
 def vectores(kdbx, llavero, model, bisync) -> dict:
     """La sección `llavero` del JSON."""
+    from common import cifrada, frenos   # noqa: PLC0415 — prdrive ya está en el path
     config = model.parse_config(CONFIG_LLAVERO)
     return {
         "kdbx": vectores_kdbx(kdbx),
         "kdbx_sin_fichero": vectores_comprobar(kdbx),
         "leeme": vectores_leeme(kdbx, llavero, model, config),
         "listado": vectores_listado(llavero, model, bisync, config),
+        "frenos": vectores_frenos(llavero, model, frenos, cifrada),
     }

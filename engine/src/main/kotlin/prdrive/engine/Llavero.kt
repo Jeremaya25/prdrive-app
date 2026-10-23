@@ -35,13 +35,17 @@ import kotlin.math.abs
  *   acabando. [preparar] junta las dos cosas y es lo que llama la pasada.
  * - Qué hay sin subir ([pendiente], [sinListar]), contra el listado `path1` de
  *   la última pasada buena ([listadoLocal]).
+ * - Lo que lee de un log de rclone ([remotoVacio], [soloCopiasBorradas]) y cómo
+ *   entra el llavero del remoto ([decidirAlta], solo la rama «traer el del
+ *   remoto»).
  *
  * Lo que de `llavero.py` NO entra, y por qué: todo lo que es del equipo de
  * escritorio y no del teléfono. El vigilante y su registro, los procesos de
  * KeePassXC y su `Vigilancia` (la app no lanza KeePassXC ni vigila una carpeta:
  * quien dice cuándo toca una pasada es el planificador de la app), los
  * lanzadores `Llavero.bat` y `llavero.sh`, «Combinar», «Expulsar», la copia del
- * fichero llave y `decidir_alta` (con el cifrado del dispositivo). Y tampoco
+ * fichero llave y, de `decidir_alta`, la rama de una base propia y el chequeo del
+ * cifrado (Android cuenta como cifrado). Y tampoco
  * `huella()`, que existe solo para el vigilante.
  *
  * Lo que se afirma del formato del listado está contrastado con rclone v1.75.1
@@ -444,5 +448,88 @@ object Llavero {
     fun sinListar(carpeta: File, listado: File): List<String> {
         val visto = listadoLocal(listado) ?: return emptyList()
         return bases(carpeta).map { rutaRelativa(carpeta, it) }.filter { it !in visto }
+    }
+
+    // -----------------------------------------------------------------------
+    // Los frenos de rclone y el alta desde el remoto (llavero.py)
+    // -----------------------------------------------------------------------
+
+    /**
+     * Lo que dice bisync cuando el remoto (Path2) no trae nada que sincronizar
+     * (`llavero._REMOTO_VACIO`).
+     *
+     * Es `checkListing()` (`cmd/bisync/listing.go`) sobre el listado de ahora,
+     * desde `findDeltas()`: «Empty current Path2 listing. Cannot sync to an empty
+     * directory: <listado>», código 7. Con `--resilient` el error es «retryable
+     * without --resync», no aparta los listados a `.lst-err`, y cada pasada
+     * siguiente falla igual.
+     */
+    private const val REMOTO_VACIO = "Empty current Path2 listing"
+
+    /**
+     * Si la pasada se ha parado porque la carpeta del llavero en el remoto está
+     * vacía o no está (`llavero.remoto_vacio()`). Pasa si alguien la borra a mano
+     * en el remoto: con baseline la pasada es normal, nadie vuelve a crear
+     * `keychain/` y rclone no sincroniza contra un lado vacío. Solo el remoto: el
+     * lado del dispositivo no se queda vacío nunca, porque [preparar] pone
+     * `LEEME.txt` antes de cada pasada.
+     */
+    fun remotoVacio(log: String): Boolean = REMOTO_VACIO in log
+
+    /** El `--max-delete` (un %) de la pasada que se repite cuando lo borrado son solo copias. */
+    const val FRENO_SIN_COPIAS = 100L
+
+    /**
+     * Una línea de bisync que dice que algo del listado anterior ya no está en
+     * ese lado (`llavero._BORRADO`).
+     *
+     * Es `b.indent(msg, file, "File was deleted")` de `findDeltas()`
+     * (`cmd/bisync/deltas.go`) con el formato «- %-18s%-43s - %s» de `indent()`
+     * (`cmd/bisync/log.go`); el nombre va entre comillas si tiene algo no
+     * imprimible (`escapePath()`). Las líneas ya vienen de [splitlinesPy], así
+     * que no llevan saltos y el `(.*)$` de Python es aquí `[^\n]*`.
+     */
+    private val BORRADO = Regex(": - (Path[12]) +File was deleted +- ([^\\n]*)")
+
+    /**
+     * Lo que bisync ve borrado, si son solo copias de conflicto de una base
+     * (`llavero.solo_copias_borradas()`).
+     *
+     * Es para el freno de borrados (`--max-delete`, un % del listado anterior
+     * que vale para los dos lados): el llavero tiene tres o cuatro ficheros, así
+     * que quitar una copia de conflicto ya pasa del 25 % y la pasada aborta con
+     * «too many deletes» una y otra vez. Esas copias se pueden borrar, porque el
+     * backup-dir guarda la de cada lado. Una base o `LEEME.txt` no: si están
+     * entre lo borrado, el freno sigue mandando.
+     *
+     * @return los nombres, si todo lo borrado es copia de conflicto de una base,
+     *   o `null` si no hay nada borrado o algo no lo es.
+     */
+    fun soloCopiasBorradas(log: String, pareja: Pareja): List<String>? {
+        val nombres = splitlinesPy(log).mapNotNull { BORRADO.find(it)?.groupValues?.get(2) }
+        if (nombres.isEmpty()) return null
+        val esq = Conflictos.esquema(pareja)
+        for (nombre in nombres) {
+            val leido = if (nombre.startsWith('"') || '/' in nombre) null else Conflictos.leerNombre(nombre, esq)
+            if (leido == null || !leido.original.endsWith(".kdbx")) return null
+        }
+        return nombres
+    }
+
+    /**
+     * El `[keychain]` con el que entra el llavero cuando se trae el del remoto
+     * (`llavero.decidir_alta()` con `origen = None`): una copia de la tabla del
+     * catálogo, y la base es la suya. Sin ella, no hay nada que traer.
+     *
+     * No comprueba el cifrado, que en prdrive hace falta si el llavero va sin
+     * contraseña (`llave_interna`): Android cuenta como cifrado.
+     *
+     * @throws ConfigError si el remoto no tiene llavero.
+     */
+    fun decidirAlta(remota: Map<String, Any?>?): Map<String, Any?> {
+        if (remota == null) {
+            throw ConfigError("El remoto no tiene llavero que traer: activa el llavero con una base.")
+        }
+        return LinkedHashMap(remota)
     }
 }

@@ -119,6 +119,61 @@ object Pasada {
     /** El log es el de un `sync` que paró en su `--max-delete`. */
     fun esEspejo(texto: String): Boolean = ESPEJO in texto
 
+    /**
+     * Lo que rclone apunta de cada fichero que una simulación (`--dry-run`) habría
+     * borrado (`frenos._SIMULADO`). Con `versions = true` (`--backup-dir1/2`) lo
+     * que se borra va al directorio de versiones y rclone lo apunta como
+     * `Skipped move into backup dir` en vez de `Skipped delete`
+     * (`DeleteFileWithBackupDir()`); lo que solo se sobrescribe es otra cosa
+     * (`Skipped move to <nombre>~<marca>` y `Skipped copy`) y no entra. El `.` de
+     * Python solo deja fuera el `\n`, y el de Java también el `\r`: se escribe la clase.
+     */
+    private val SIMULADO =
+        Regex("NOTICE: ([^\\n]*?): Skipped (?:delete|move into backup dir) as --dry-run is set")
+
+    /**
+     * Los ficheros que una simulación habría borrado (`frenos.borrarian()`), sin
+     * repetir y en orden alfabético: rclone los apunta en el orden en que sus
+     * hilos llegan a ellos, que cambia de una vez a otra. El orden es el de
+     * Python ([ORDEN_PY]), por puntos de código.
+     */
+    fun borrarian(log: String): List<String> =
+        SIMULADO.findAll(log).map { it.groupValues[1] }.toSet().sortedWith(ORDEN_PY)
+
+    /**
+     * Lo que se dice en la consola cuando es el llavero el que ha topado con un
+     * freno de borrados (`frenos.EXPLICACION_LLAVERO`). Las de [EXPLICACIONES]
+     * dicen cómo forzar la pasada, y al llavero no se le fuerza desde fuera.
+     */
+    const val EXPLICACION_LLAVERO =
+        "El freno de borrados del llavero no se salta: sus bases son tus contraseñas. Comprueba " +
+            "que no falte ninguna en un lado y, si hay copias de conflicto, usa «Combinar» al abrir " +
+            "el llavero."
+
+    /** Qué pasa y qué hacer cuando al llavero lo para «han cambiado todos» (`frenos.SALIDA_LLAVERO_CAMBIADOS`). */
+    private const val SALIDA_LLAVERO_CAMBIADOS =
+        "prdrive repite solo la pasada una vez con --force cuando es esto lo único que la para y " +
+            "forzarla no borraría nada (lo que pisa cada lado queda en .prversions/); si la ves aquí, " +
+            "no ha podido hacerlo o no ha bastado. Lo que guardes en el llavero no sube mientras tanto. " +
+            "Desde aquí no se fuerza: `python sync.py keychain --resync` rehace la referencia y se " +
+            "queda con la base más nueva, y la otra queda en .prversions/."
+
+    /** Lo que se dice cuando es el llavero el que ha topado con «han cambiado todos». */
+    const val EXPLICACION_LLAVERO_CAMBIADOS =
+        "Han cambiado todos los ficheros de un lado del llavero (suele ser la hora de un dispositivo " +
+            "nuevo o de otra versión) y bisync se ha parado. $SALIDA_LLAVERO_CAMBIADOS"
+
+    /**
+     * Lo que se le dice del llavero en lugar de [explicacion], la de un freno
+     * (`frenos.explicacion_llavero()`). Cada freno tiene la suya; el de borrados
+     * es la general.
+     */
+    fun explicacionLlavero(explicacion: String): String =
+        if (explicacion == EXPLICACION_CAMBIADOS) EXPLICACION_LLAVERO_CAMBIADOS else EXPLICACION_LLAVERO
+
+    /** Las explicaciones de los frenos (`frenos.EXPLICACIONES`): las que dicen cómo forzar. */
+    val EXPLICACIONES: List<String> = listOf(EXPLICACION_BORRADOS, EXPLICACION_CAMBIADOS, EXPLICACION_ESPEJO)
+
     /** Una aguja del log y su explicación. */
     class Error(val aguja: String?, val explicacion: String, private val casa: (String) -> Boolean) {
         fun casaCon(texto: String): Boolean = casa(texto)

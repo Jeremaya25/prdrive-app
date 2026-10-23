@@ -23482,6 +23482,442 @@
           ]
         }
       ]
+    },
+    "frenos": {
+      "config": {
+        "defaults": {
+          "device_remote": "disp",
+          "remote": "nas"
+        },
+        "keychain": {
+          "base": "personal.kdbx"
+        },
+        "pair": [
+          {
+            "name": "notas",
+            "local": "sync-data/notas",
+            "remote_path": "/copia/notas"
+          }
+        ]
+      },
+      "freno_sin_copias": 100,
+      "logs": [
+        {
+          "caso": "el de _BORRADO, una copia de conflicto",
+          "log": "2026/10/16 08:52:39 INFO  : - Path1             File was deleted                            - Personal.conflicto-dispositivo1.kdbx\n",
+          "solo_copias": [
+            "Personal.conflicto-dispositivo1.kdbx"
+          ]
+        },
+        {
+          "caso": "una copia de conflicto del dispositivo",
+          "log": "2026/10/16 08:52:39 INFO  : Bisync successful\n2026/10/16 08:52:39 INFO  : - Path1             File was deleted                            - personal.conflicto-dispositivo1.kdbx\n2026/10/16 08:52:39 ERROR : Bisync aborted. Must run --resync to recover.\n",
+          "solo_copias": [
+            "personal.conflicto-dispositivo1.kdbx"
+          ]
+        },
+        {
+          "caso": "una copia de conflicto del remoto",
+          "log": "2026/10/16 08:52:39 INFO  : - Path2             File was deleted                            - personal.conflicto-remoto2.kdbx\n",
+          "solo_copias": [
+            "personal.conflicto-remoto2.kdbx"
+          ]
+        },
+        {
+          "caso": "copias en los dos lados",
+          "log": "2026/10/16 08:52:39 INFO  : - Path1             File was deleted                            - personal.conflicto-dispositivo1.kdbx\n2026/10/16 08:52:39 INFO  : - Path2             File was deleted                            - personal.conflicto-remoto1.kdbx\n2026/10/16 08:52:39 INFO  : - Path2             File was deleted                            - personal.conflicto-remoto3.kdbx\n",
+          "solo_copias": [
+            "personal.conflicto-dispositivo1.kdbx",
+            "personal.conflicto-remoto1.kdbx",
+            "personal.conflicto-remoto3.kdbx"
+          ]
+        },
+        {
+          "caso": "la copia con el sufijo de fábrica de rclone",
+          "log": "2026/10/16 08:52:39 INFO  : - Path1             File was deleted                            - personal.conflict1.kdbx\n",
+          "solo_copias": [
+            "personal.conflict1.kdbx"
+          ]
+        },
+        {
+          "caso": "la copia de otra base",
+          "log": "2026/10/16 08:52:39 INFO  : - Path1             File was deleted                            - otra.conflicto-remoto1.kdbx\n",
+          "solo_copias": [
+            "otra.conflicto-remoto1.kdbx"
+          ]
+        },
+        {
+          "caso": "una copia con otra extensión",
+          "log": "2026/10/16 08:52:39 INFO  : - Path1             File was deleted                            - personal.conflicto-remoto1.txt\n",
+          "solo_copias": null
+        },
+        {
+          "caso": "una copia con la extensión en mayúsculas",
+          "log": "2026/10/16 08:52:39 INFO  : - Path1             File was deleted                            - personal.conflicto-remoto1.KDBX\n",
+          "solo_copias": null
+        },
+        {
+          "caso": "una base borrada",
+          "log": "2026/10/16 08:52:39 INFO  : - Path1             File was deleted                            - personal.kdbx\n",
+          "solo_copias": null
+        },
+        {
+          "caso": "una base y una copia borradas",
+          "log": "2026/10/16 08:52:39 INFO  : - Path1             File was deleted                            - personal.conflicto-remoto1.kdbx\n2026/10/16 08:52:39 INFO  : - Path1             File was deleted                            - personal.kdbx\n",
+          "solo_copias": null
+        },
+        {
+          "caso": "LEEME.txt borrado",
+          "log": "2026/10/16 08:52:39 INFO  : - Path2             File was deleted                            - LEEME.txt\n",
+          "solo_copias": null
+        },
+        {
+          "caso": "una copia y LEEME.txt borrados",
+          "log": "2026/10/16 08:52:39 INFO  : - Path2             File was deleted                            - personal.conflicto-remoto1.kdbx\n2026/10/16 08:52:39 INFO  : - Path2             File was deleted                            - LEEME.txt\n",
+          "solo_copias": null
+        },
+        {
+          "caso": "un nombre entre comillas",
+          "log": "2026/10/16 08:52:39 INFO  : - Path1             File was deleted                            - \"personal.conflicto-remoto1.kdbx\"\n",
+          "solo_copias": null
+        },
+        {
+          "caso": "un nombre con algo no imprimible, entre comillas",
+          "log": "2026/10/16 08:52:39 INFO  : - Path1             File was deleted                            - \"personal.conflicto-remoto1\\x0b.kdbx\"\n",
+          "solo_copias": null
+        },
+        {
+          "caso": "una ruta con /",
+          "log": "2026/10/16 08:52:39 INFO  : - Path1             File was deleted                            - sub/personal.conflicto-remoto1.kdbx\n",
+          "solo_copias": null
+        },
+        {
+          "caso": "un nombre que acaba en espacios",
+          "log": "2026/10/16 08:52:39 INFO  : - Path1             File was deleted                            - personal.conflicto-remoto1.kdbx  \n",
+          "solo_copias": null
+        },
+        {
+          "caso": "un nombre con letras de fuera de ASCII",
+          "log": "2026/10/16 08:52:39 INFO  : - Path1             File was deleted                            - contraseñas.conflicto-remoto1.kdbx\n",
+          "solo_copias": [
+            "contraseñas.conflicto-remoto1.kdbx"
+          ]
+        },
+        {
+          "caso": "sin borrados",
+          "log": "2026/10/16 08:52:39 INFO  : Bisync successful\n2026/10/16 08:52:39 INFO  : Synching Path1 with Path2\n",
+          "solo_copias": null
+        },
+        {
+          "caso": "un log vacío",
+          "log": "",
+          "solo_copias": null
+        },
+        {
+          "caso": "una línea de otra cosa que se parece",
+          "log": "2026/10/16 08:52:39 INFO  : - Path1             File is newer                              - personal.conflicto-remoto1.kdbx\n",
+          "solo_copias": null
+        },
+        {
+          "caso": "un lado que no existe",
+          "log": "2026/10/16 08:52:39 INFO  : - Path3             File was deleted                            - personal.conflicto-remoto1.kdbx\n",
+          "solo_copias": null
+        },
+        {
+          "caso": "con el fin de línea de Windows",
+          "log": "2026/10/16 08:52:39 INFO  : - Path1             File was deleted                            - personal.conflicto-remoto1.kdbx\r\n2026/10/16 08:52:39 INFO  : Bisync successful\r\n",
+          "solo_copias": [
+            "personal.conflicto-remoto1.kdbx"
+          ]
+        },
+        {
+          "caso": "con un salto de línea raro tras el nombre",
+          "log": "2026/10/16 08:52:39 INFO  : - Path1             File was deleted                            - personal.conflicto-remoto1.kdbx\u000bsiguiente\n",
+          "solo_copias": [
+            "personal.conflicto-remoto1.kdbx"
+          ]
+        },
+        {
+          "caso": "sin la marca de la hora, solo los dos puntos",
+          "log": ": - Path1             File was deleted                            - personal.conflicto-remoto1.kdbx\n",
+          "solo_copias": [
+            "personal.conflicto-remoto1.kdbx"
+          ]
+        },
+        {
+          "caso": "dos veces la frase en la misma línea",
+          "log": "INFO  : ruta: - Path1  File was deleted  - x: - Path2   File was deleted    - personal.conflicto-remoto1.kdbx\n",
+          "solo_copias": [
+            "x: - Path2   File was deleted    - personal.conflicto-remoto1.kdbx"
+          ]
+        }
+      ],
+      "remoto_vacio": [
+        {
+          "caso": "el de prdrive",
+          "log": "2026/10/16 08:52:39 ERROR : Empty current Path2 listing. Cannot sync to an empty directory: C:\\x\\y.path2.lst\n",
+          "vacio": true
+        },
+        {
+          "caso": "en medio de otras líneas",
+          "log": "INFO  : Synching\nERROR : Empty current Path2 listing. Cannot sync\nERROR : Bisync failed\n",
+          "vacio": true
+        },
+        {
+          "caso": "el del lado del dispositivo",
+          "log": "2026/10/16 08:52:39 ERROR : Empty current Path1 listing. Cannot sync to an empty directory: C:\\x\\y.path1.lst\n",
+          "vacio": false
+        },
+        {
+          "caso": "en minúsculas",
+          "log": "error : empty current path2 listing\n",
+          "vacio": false
+        },
+        {
+          "caso": "solo parte de la frase",
+          "log": "Empty current Path2\n",
+          "vacio": false
+        },
+        {
+          "caso": "sin nada",
+          "log": "",
+          "vacio": false
+        },
+        {
+          "caso": "otro fallo",
+          "log": "ERROR : Bisync aborted. Must run --resync to recover.\n",
+          "vacio": false
+        }
+      ],
+      "borrarian": [
+        {
+          "caso": "una simulación de dos ficheros",
+          "log": "2026/10/15 09:44:30 NOTICE: nota02.md: Skipped delete as --dry-run is set (size 7)\n2026/10/15 09:44:30 NOTICE: nota01.md: Skipped delete as --dry-run is set (size 7)\n",
+          "borrarian": [
+            "nota01.md",
+            "nota02.md"
+          ]
+        },
+        {
+          "caso": "con versiones, va al directorio de versiones",
+          "log": "2026/10/15 09:44:30 NOTICE: nota01.md: Skipped move into backup dir as --dry-run is set (size 7)\n",
+          "borrarian": [
+            "nota01.md"
+          ]
+        },
+        {
+          "caso": "sin repetir y en orden",
+          "log": "2026/10/15 09:44:30 NOTICE: b.md: Skipped delete as --dry-run is set (size 7)\n2026/10/15 09:44:30 NOTICE: a.md: Skipped delete as --dry-run is set (size 7)\n2026/10/15 09:44:30 NOTICE: b.md: Skipped delete as --dry-run is set (size 7)\n2026/10/15 09:44:30 NOTICE: a.md: Skipped move into backup dir as --dry-run is set (size 7)\n",
+          "borrarian": [
+            "a.md",
+            "b.md"
+          ]
+        },
+        {
+          "caso": "lo que solo se sobrescribe no entra",
+          "log": "2026/10/15 09:44:30 NOTICE: a.md: Skipped move to a.md~20261015 as --dry-run is set (size 7)\n2026/10/15 09:44:30 NOTICE: b.md: Skipped copy as --dry-run is set (size 7)\n2026/10/15 09:44:30 NOTICE: c.md: Skipped delete as --dry-run is set (size 7)\n",
+          "borrarian": [
+            "c.md"
+          ]
+        },
+        {
+          "caso": "un nombre entre comillas",
+          "log": "2026/10/15 09:44:30 NOTICE: \"a\\x0b.md\": Skipped delete as --dry-run is set (size 7)\n",
+          "borrarian": [
+            "\"a\\x0b.md\""
+          ]
+        },
+        {
+          "caso": "una ruta con /",
+          "log": "2026/10/15 09:44:30 NOTICE: sub/dentro/a.md: Skipped delete as --dry-run is set (size 7)\n2026/10/15 09:44:30 NOTICE: sub/b.md: Skipped delete as --dry-run is set (size 7)\n",
+          "borrarian": [
+            "sub/b.md",
+            "sub/dentro/a.md"
+          ]
+        },
+        {
+          "caso": "un nombre con dos puntos",
+          "log": "2026/10/15 09:44:30 NOTICE: hora 10:30: x.md: Skipped delete as --dry-run is set (size 7)\n",
+          "borrarian": [
+            "hora 10:30: x.md"
+          ]
+        },
+        {
+          "caso": "un nombre con ñ y con letras fuera del plano básico",
+          "log": "2026/10/15 09:44:30 NOTICE: ñandú.md: Skipped delete as --dry-run is set (size 7)\n2026/10/15 09:44:30 NOTICE: 😀.md: Skipped delete as --dry-run is set (size 7)\n2026/10/15 09:44:30 NOTICE: Ａ.md: Skipped delete as --dry-run is set (size 7)\n2026/10/15 09:44:30 NOTICE: z.md: Skipped delete as --dry-run is set (size 7)\n",
+          "borrarian": [
+            "z.md",
+            "ñandú.md",
+            "Ａ.md",
+            "😀.md"
+          ]
+        },
+        {
+          "caso": "mayúsculas y minúsculas",
+          "log": "2026/10/15 09:44:30 NOTICE: b.md: Skipped delete as --dry-run is set (size 7)\n2026/10/15 09:44:30 NOTICE: B.md: Skipped delete as --dry-run is set (size 7)\n2026/10/15 09:44:30 NOTICE: a.md: Skipped delete as --dry-run is set (size 7)\n",
+          "borrarian": [
+            "B.md",
+            "a.md",
+            "b.md"
+          ]
+        },
+        {
+          "caso": "con el fin de línea de Windows",
+          "log": "2026/10/15 09:44:30 NOTICE: a.md: Skipped delete as --dry-run is set (size 7)\r\n2026/10/15 09:44:30 NOTICE: b.md: Skipped delete as --dry-run is set (size 7)\r\n",
+          "borrarian": [
+            "a.md",
+            "b.md"
+          ]
+        },
+        {
+          "caso": "sin la marca de la hora",
+          "log": "NOTICE: a.md: Skipped delete as --dry-run is set\n",
+          "borrarian": [
+            "a.md"
+          ]
+        },
+        {
+          "caso": "otro nivel de log, que no entra",
+          "log": "2026/10/15 09:44:30 INFO  : a.md: Skipped delete as --dry-run is set (size 7)\n",
+          "borrarian": []
+        },
+        {
+          "caso": "una simulación sin borrados",
+          "log": "2026/10/15 09:44:30 NOTICE: Skipped copy as --dry-run is set\n",
+          "borrarian": []
+        },
+        {
+          "caso": "un log vacío",
+          "log": "",
+          "borrarian": []
+        }
+      ],
+      "explicaciones": {
+        "llavero": "El freno de borrados del llavero no se salta: sus bases son tus contraseñas. Comprueba que no falte ninguna en un lado y, si hay copias de conflicto, usa «Combinar» al abrir el llavero.",
+        "llavero_cambiados": "Han cambiado todos los ficheros de un lado del llavero (suele ser la hora de un dispositivo nuevo o de otra versión) y bisync se ha parado. prdrive repite solo la pasada una vez con --force cuando es esto lo único que la para y forzarla no borraría nada (lo que pisa cada lado queda en .prversions/); si la ves aquí, no ha podido hacerlo o no ha bastado. Lo que guardes en el llavero no sube mientras tanto. Desde aquí no se fuerza: `python sync.py keychain --resync` rehace la referencia y se queda con la base más nueva, y la otra queda en .prversions/.",
+        "entradas": [
+          "Se han borrado más ficheros de un lado de los que permite el freno de bisync, que es un porcentaje del listado anterior: no se ha propagado nada. Comprueba que la ruta local NO esté vacía ni desmontada; si es lo que querías, fuerza UNA pasada desde «Reparación» o con `python sync.py <pareja> --force`.",
+          "Han cambiado todos los ficheros de un lado desde la última pasada (pasa con un cambio de hora o al tocar toda la carpeta) y bisync se ha parado para no copiarlo todo de nuevo. Si es lo esperado, fuerza UNA pasada desde «Reparación» o con `python sync.py <pareja> --force`.",
+          "Un espejo solo puede borrar hasta el tope de su freno (--max-delete, una cuenta de ficheros) y ha llegado a él: rclone ha parado el resto. Lo ya borrado no vuelve. Comprueba que la ruta de origen NO esté vacía ni desmontada; si es lo que querías, fuerza UNA pasada desde «Reparación» o con `python sync.py <pareja> --force`."
+        ],
+        "explicacion_llavero": [
+          {
+            "explicacion": "Se han borrado más ficheros de un lado de los que permite el freno de bisync, que es un porcentaje del listado anterior: no se ha propagado nada. Comprueba que la ruta local NO esté vacía ni desmontada; si es lo que querías, fuerza UNA pasada desde «Reparación» o con `python sync.py <pareja> --force`.",
+            "dice": "El freno de borrados del llavero no se salta: sus bases son tus contraseñas. Comprueba que no falte ninguna en un lado y, si hay copias de conflicto, usa «Combinar» al abrir el llavero."
+          },
+          {
+            "explicacion": "Han cambiado todos los ficheros de un lado desde la última pasada (pasa con un cambio de hora o al tocar toda la carpeta) y bisync se ha parado para no copiarlo todo de nuevo. Si es lo esperado, fuerza UNA pasada desde «Reparación» o con `python sync.py <pareja> --force`.",
+            "dice": "Han cambiado todos los ficheros de un lado del llavero (suele ser la hora de un dispositivo nuevo o de otra versión) y bisync se ha parado. prdrive repite solo la pasada una vez con --force cuando es esto lo único que la para y forzarla no borraría nada (lo que pisa cada lado queda en .prversions/); si la ves aquí, no ha podido hacerlo o no ha bastado. Lo que guardes en el llavero no sube mientras tanto. Desde aquí no se fuerza: `python sync.py keychain --resync` rehace la referencia y se queda con la base más nueva, y la otra queda en .prversions/."
+          },
+          {
+            "explicacion": "Un espejo solo puede borrar hasta el tope de su freno (--max-delete, una cuenta de ficheros) y ha llegado a él: rclone ha parado el resto. Lo ya borrado no vuelve. Comprueba que la ruta de origen NO esté vacía ni desmontada; si es lo que querías, fuerza UNA pasada desde «Reparación» o con `python sync.py <pareja> --force`.",
+            "dice": "El freno de borrados del llavero no se salta: sus bases son tus contraseñas. Comprueba que no falte ninguna en un lado y, si hay copias de conflicto, usa «Combinar» al abrir el llavero."
+          }
+        ],
+        "otras": [
+          {
+            "explicacion": "Otra cosa.",
+            "dice": "El freno de borrados del llavero no se salta: sus bases son tus contraseñas. Comprueba que no falte ninguna en un lado y, si hay copias de conflicto, usa «Combinar» al abrir el llavero."
+          },
+          {
+            "explicacion": "",
+            "dice": "El freno de borrados del llavero no se salta: sus bases son tus contraseñas. Comprueba que no falte ninguna en un lado y, si hay copias de conflicto, usa «Combinar» al abrir el llavero."
+          },
+          {
+            "explicacion": "El freno de borrados del llavero no se salta: sus bases son tus contraseñas. Comprueba que no falte ninguna en un lado y, si hay copias de conflicto, usa «Combinar» al abrir el llavero.",
+            "dice": "El freno de borrados del llavero no se salta: sus bases son tus contraseñas. Comprueba que no falte ninguna en un lado y, si hay copias de conflicto, usa «Combinar» al abrir el llavero."
+          },
+          {
+            "explicacion": "Han cambiado todos los ficheros de un lado del llavero (suele ser la hora de un dispositivo nuevo o de otra versión) y bisync se ha parado. prdrive repite solo la pasada una vez con --force cuando es esto lo único que la para y forzarla no borraría nada (lo que pisa cada lado queda en .prversions/); si la ves aquí, no ha podido hacerlo o no ha bastado. Lo que guardes en el llavero no sube mientras tanto. Desde aquí no se fuerza: `python sync.py keychain --resync` rehace la referencia y se queda con la base más nueva, y la otra queda en .prversions/.",
+            "dice": "El freno de borrados del llavero no se salta: sus bases son tus contraseñas. Comprueba que no falte ninguna en un lado y, si hay copias de conflicto, usa «Combinar» al abrir el llavero."
+          }
+        ]
+      },
+      "alta": [
+        {
+          "caso": "sin remoto",
+          "remota": null,
+          "error": "El remoto no tiene llavero que traer: activa el llavero con una base."
+        },
+        {
+          "caso": "una tabla con fichero llave",
+          "remota": {
+            "base": "personal.kdbx",
+            "fichero_llave": true,
+            "nombre_llave": "clave.keyx"
+          },
+          "tabla": {
+            "base": "personal.kdbx",
+            "fichero_llave": true,
+            "nombre_llave": "clave.keyx"
+          }
+        },
+        {
+          "caso": "una tabla sin llave",
+          "remota": {
+            "base": "personal.kdbx",
+            "fichero_llave": false
+          },
+          "tabla": {
+            "base": "personal.kdbx",
+            "fichero_llave": false
+          }
+        },
+        {
+          "caso": "una tabla con llave interna",
+          "remota": {
+            "base": "personal.kdbx",
+            "fichero_llave": true,
+            "llave_interna": true
+          },
+          "tabla": {
+            "base": "personal.kdbx",
+            "fichero_llave": true,
+            "llave_interna": true
+          }
+        },
+        {
+          "caso": "una tabla con llave interna apagada",
+          "remota": {
+            "base": "personal.kdbx",
+            "fichero_llave": false,
+            "llave_interna": false
+          },
+          "tabla": {
+            "base": "personal.kdbx",
+            "fichero_llave": false,
+            "llave_interna": false
+          }
+        },
+        {
+          "caso": "una tabla vacía",
+          "remota": {},
+          "tabla": {}
+        },
+        {
+          "caso": "una tabla con claves de más",
+          "remota": {
+            "base": "x.kdbx",
+            "otra": [
+              1,
+              2,
+              {
+                "a": "b"
+              }
+            ]
+          },
+          "tabla": {
+            "base": "x.kdbx",
+            "otra": [
+              1,
+              2,
+              {
+                "a": "b"
+              }
+            ]
+          }
+        }
+      ]
     }
   },
   "python": {
