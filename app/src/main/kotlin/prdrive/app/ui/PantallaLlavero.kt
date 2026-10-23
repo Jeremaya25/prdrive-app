@@ -2,6 +2,7 @@ package prdrive.app.ui
 
 import android.Manifest
 import android.content.ActivityNotFoundException
+import android.content.ClipData
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -109,6 +110,22 @@ internal object TextosLlavero {
      * un selector y sin permiso que dure.
      */
     const val TIPO_GENERICO = "application/octet-stream"
+
+    /**
+     * Cómo le llega a KeePassDX el fichero llave en un `ACTION_VIEW`: un
+     * `ClipData` con esta etiqueta y una sola URI (`MainCredentialActivity`,
+     * `getUriFromIntent`, y `UriUtil.getUri` de KeePassDX 4.5.6). Sin él, el
+     * campo «Archivo de clave» sale vacío la primera vez y solo lo rellena su
+     * historial, si ya se abrió esa base con esa llave.
+     */
+    const val ETIQUETA_LLAVE_KEEPASSDX = "keyFile"
+
+    /**
+     * Los paquetes de KeePassDX (sus sabores `libre` y `free`, en su
+     * `app/build.gradle.kts`), declarados en `<queries>` del manifiesto. La
+     * llave solo se le pasa a uno de ellos.
+     */
+    val PAQUETES_KEEPASSDX = setOf("com.kunzisoft.keepass.libre", "com.kunzisoft.keepass.free")
 
     /** El título del selector de la reserva. */
     const val ABRIR_CON = "Abrir el llavero con tu app de KeePass"
@@ -223,16 +240,22 @@ internal fun FilaDelLlavero(
 @Composable
 internal fun AbrirLaBase(m: Modelo) {
     val contexto = LocalContext.current
-    val uri = m.porAbrir ?: return
-    LaunchedEffect(uri) {
+    val apertura = m.porAbrir ?: return
+    LaunchedEffect(apertura) {
         m.abierta()
+        val keepass = intentDeAbrir(apertura.base, TextosLlavero.TIPO_KEEPASS, persistible = true)
+        val llave = apertura.llave
+        val paquete = llave?.let {
+            contexto.packageManager.resolveActivity(keepass, PackageManager.MATCH_DEFAULT_ONLY)
+                ?.activityInfo?.packageName
+        }
         try {
-            contexto.startActivity(intentDeAbrir(uri, TextosLlavero.TIPO_KEEPASS, persistible = true))
+            contexto.startActivity(conLaLlave(keepass, llave, paquete))
             return@LaunchedEffect
         } catch (_: ActivityNotFoundException) {
-            // Ninguna app de KeePass declara su tipo: la reserva.
+            // Ninguna app de KeePass declara su tipo: la reserva, sin la llave.
         }
-        val generico = intentDeAbrir(uri, TextosLlavero.TIPO_GENERICO, persistible = false)
+        val generico = intentDeAbrir(apertura.base, TextosLlavero.TIPO_GENERICO, persistible = false)
         if (contexto.packageManager.queryIntentActivities(generico, 0).isEmpty()) {
             m.avisar(TextosLlavero.SIN_APP)
             return@LaunchedEffect
@@ -266,6 +289,27 @@ internal fun intentDeAbrir(uri: Uri, tipo: String, persistible: Boolean): Intent
                 Intent.FLAG_ACTIVITY_NEW_TASK or
                 (if (persistible) Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION else 0),
         )
+
+/**
+ * [intent] con el fichero llave ([llave]) de un llavero sin contraseña, como lo
+ * lee KeePassDX ([TextosLlavero.ETIQUETA_LLAVE_KEEPASSDX]), si quien lo abriría
+ * ([paquete], lo que resuelve Android) es KeePassDX. Si no, [intent] tal cual.
+ *
+ * La llave y la base abren el llavero sin nada más, así que la llave no va en
+ * un `Intent` implícito: va dirigido a ese paquete (`setPackage`), y solo
+ * cuando Android lo abriría con él de todos modos (con un selector delante, o
+ * con otra app, se queda fuera y se elige a mano en la app de KeePass). Las
+ * marcas de [intent] valen también para la URI del `ClipData`, escritura
+ * incluida: [prdrive.app.documentos.VolumenProvider] no deja escribir la llave
+ * con el llavero activo, y al quitarlo se retira el permiso
+ * ([prdrive.app.Instalador.retirarPermisos]).
+ */
+internal fun conLaLlave(intent: Intent, llave: Uri?, paquete: String?): Intent {
+    if (llave == null || paquete !in TextosLlavero.PAQUETES_KEEPASSDX) return intent
+    return Intent(intent).setPackage(paquete).apply {
+        clipData = ClipData.newRawUri(TextosLlavero.ETIQUETA_LLAVE_KEEPASSDX, llave)
+    }
+}
 
 /** Cómo está el llavero: la línea de siempre y, si los hay, los motivos del ámbar. */
 @Composable
