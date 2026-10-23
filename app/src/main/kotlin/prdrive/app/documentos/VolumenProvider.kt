@@ -3,11 +3,14 @@ package prdrive.app.documentos
 import android.database.Cursor
 import android.database.MatrixCursor
 import android.os.CancellationSignal
+import android.os.Handler
+import android.os.HandlerThread
 import android.os.ParcelFileDescriptor
 import android.provider.DocumentsContract
 import android.provider.DocumentsContract.Document
 import android.provider.DocumentsContract.Root
 import android.provider.DocumentsProvider
+import android.util.Log
 import android.webkit.MimeTypeMap
 import java.io.File
 import java.io.FileNotFoundException
@@ -20,6 +23,7 @@ import java.nio.file.SimpleFileVisitor
 import java.nio.file.attribute.BasicFileAttributes
 import prdrive.app.Prdrive
 import prdrive.app.R
+import prdrive.app.llavero.Disparos
 import prdrive.engine.CARPETA_PROGRAMA
 
 /**
@@ -44,6 +48,14 @@ import prdrive.engine.CARPETA_PROGRAMA
  * Borrar una carpeta la recorre sin seguir enlaces (`Files.walkFileTree`), que
  * `File.deleteRecursively()` sí sigue: con un enlace a `.prdrive/` dentro, se
  * llevaría la clave.
+ *
+ * **El llavero** (`.keychain/`) lo abre una app de KeePass por aquí. Sus bases
+ * se guardan de forma atómica ([GuardadoAtomico]): el cliente escribe en un
+ * temporal de `.prdrive/tmp/`, que solo se pone encima de la base al cerrar y si
+ * llega entera. Guardar una base encola la subida, y leerla, la pasada de
+ * lectura ([Disparos]). La llave (`llave.keyx`) se ve, porque la app de KeePass
+ * la necesita para abrir la base, pero no se escribe, ni se borra ni se
+ * renombra.
  */
 class VolumenProvider : DocumentsProvider() {
 
@@ -64,7 +76,22 @@ class VolumenProvider : DocumentsProvider() {
     /** El volumen tal cual (`filesDir/volumen`): las rutas léxicas cuelgan de aquí. */
     private val raiz: File get() = Prdrive.volumen(context!!).raiz.absoluteFile
 
-    override fun onCreate(): Boolean = true
+    /** Donde se atiende el cierre de un guardado del llavero ([GuardadoAtomico]). */
+    private lateinit var guardados: Handler
+
+    /** Los temporales de los guardados del llavero: `.prdrive/tmp/`. */
+    private val temporales: File get() = File(Prdrive.volumen(context!!).programa, GuardadoAtomico.TEMPORALES)
+
+    override fun onCreate(): Boolean {
+        guardados = Handler(HandlerThread("guardado-atomico").apply { start() }.looper)
+        // Los de un proceso que murió con un guardado abierto.
+        try {
+            GuardadoAtomico.limpiar(temporales)
+        } catch (e: SecurityException) {
+            Log.w("VolumenProvider", "Limpiando $temporales", e)
+        }
+        return true
+    }
 
     override fun queryRoots(projection: Array<out String>?): Cursor {
         raiz.mkdirs()
@@ -141,6 +168,10 @@ class VolumenProvider : DocumentsProvider() {
         val esRaiz = id == ID_RAIZ
         var flags = if (f.isDirectory) Document.FLAG_DIR_SUPPORTS_CREATE else Document.FLAG_SUPPORTS_WRITE
         if (!esRaiz) flags = flags or Document.FLAG_SUPPORTS_DELETE or Document.FLAG_SUPPORTS_RENAME
+        // La llave del llavero, de solo lectura.
+        if (GuardadoAtomico.esLlave(tramos(id))) {
+            flags = flags and (Document.FLAG_SUPPORTS_WRITE or Document.FLAG_SUPPORTS_DELETE or Document.FLAG_SUPPORTS_RENAME).inv()
+        }
         cursor.newRow().apply {
             add(Document.COLUMN_DOCUMENT_ID, id)
             add(Document.COLUMN_DISPLAY_NAME, if (esRaiz) context!!.getString(R.string.app_name) else f.name)
@@ -181,10 +212,51 @@ class VolumenProvider : DocumentsProvider() {
     }
 
     override fun openDocument(documentId: String, mode: String, signal: CancellationSignal?): ParcelFileDescriptor {
+        val t = tramos(documentId)
         val f = fichero(documentId)
         if (f.isDirectory || !Files.exists(f.toPath())) throw FileNotFoundException("No se puede abrir: $documentId")
+        val escribe = 'w' in mode
+        if (escribe && GuardadoAtomico.esLlave(t)) throw FileNotFoundException("La llave del llavero no se escribe")
+        if (GuardadoAtomico.esBase(t)) {
+            if (escribe) return guardarBase(f, mode)
+            despues { Disparos.alLeer(context!!) }
+        }
         // Se abre lo comprobado: el destino ya resuelto, no la ruta del enlace.
         return ParcelFileDescriptor.open(f.canonicalFile, ParcelFileDescriptor.parseMode(mode))
+    }
+
+    /**
+     * El guardado de una base del llavero ([f], la entrada de `.keychain/`): un
+     * temporal que se pone encima al cerrar, si llega entero. Uno roto se apunta
+     * en `state/` para avisar, y uno bueno quita ese aviso y encola la subida.
+     */
+    private fun guardarBase(f: File, mode: String): ParcelFileDescriptor {
+        val c = context!!
+        val state = Prdrive.volumen(c).state
+        return try {
+            GuardadoAtomico.abrir(
+                base = f,
+                modo = mode,
+                temporales = temporales,
+                handler = guardados,
+                alPoner = {
+                    GuardadoAtomico.quitarCortado(state)
+                    Disparos.alGuardar(c)
+                },
+                alCortar = { motivo -> GuardadoAtomico.apuntarCortado(state, f.name, motivo) },
+            )
+        } catch (e: IOException) {
+            throw FileNotFoundException("No se puede guardar ${f.name}: ${e.message}")
+        }
+    }
+
+    /** Encolar una pasada no puede impedir abrir la base. */
+    private fun despues(que: () -> Unit) {
+        try {
+            que()
+        } catch (e: RuntimeException) {
+            Log.w("VolumenProvider", "Encolando la pasada del llavero", e)
+        }
     }
 
     private fun nombreValido(nombre: String) =
@@ -228,6 +300,7 @@ class VolumenProvider : DocumentsProvider() {
     override fun deleteDocument(documentId: String) {
         val t = tramos(documentId)
         if (t.isEmpty()) throw FileNotFoundException("La raíz no se borra")
+        if (GuardadoAtomico.esLlave(t)) throw FileNotFoundException("La llave del llavero no se borra")
         val f = fichero(documentId)
         try {
             borrarSinSeguirEnlaces(f.toPath())
@@ -259,6 +332,7 @@ class VolumenProvider : DocumentsProvider() {
     override fun renameDocument(documentId: String, displayName: String): String {
         val t = tramos(documentId)
         if (t.isEmpty()) throw FileNotFoundException("La raíz no se renombra")
+        if (GuardadoAtomico.esLlave(t)) throw FileNotFoundException("La llave del llavero no se renombra")
         if (!nombreValido(displayName)) throw FileNotFoundException("Nombre no válido: $displayName")
         val f = fichero(documentId)
         val nuevoId = idDe(t.dropLast(1) + displayName)
