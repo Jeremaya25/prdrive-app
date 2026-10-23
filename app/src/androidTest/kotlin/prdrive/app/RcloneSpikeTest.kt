@@ -6,6 +6,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import prdrive.app.rclone.Adaptadores
@@ -38,6 +39,9 @@ class RcloneSpikeTest {
          */
         const val RARO = "a　b\u000bc d"
     }
+
+    @get:Rule
+    val legible = Banco.Legible()
 
     private lateinit var v: Volumen
     private lateinit var config: Config

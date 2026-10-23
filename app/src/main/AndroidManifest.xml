@@ -28,10 +28,11 @@
     <application
         android:allowBackup="false"
         android:dataExtractionRules="@xml/extraccion_de_datos"
-        android:icon="@drawable/ic_prdrive"
+        android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher"
         android:supportsRtl="true"
-        android:theme="@android:style/Theme.Material.NoActionBar">
+        android:theme="@style/Tema">
         <!-- Que Play services baje el escáner de QR al instalar la app, y no la
              primera vez que se pulsa «Escanear». -->
         <meta-data

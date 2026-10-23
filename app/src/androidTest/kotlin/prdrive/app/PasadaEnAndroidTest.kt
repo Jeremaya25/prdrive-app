@@ -7,6 +7,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import prdrive.app.rclone.Adaptadores
@@ -25,6 +26,9 @@ import prdrive.engine.Resultados
  */
 @RunWith(AndroidJUnit4::class)
 class PasadaEnAndroidTest {
+
+    @get:Rule
+    val legible = Banco.Legible()
 
     /** Lo que dijo la pasada y su log, para que un fallo se explique solo. */
     private fun todo(r: Pasada.Resultado): String = r.lineas.joinToString("\n") + "\n" + (r.log?.readText() ?: "")
@@ -130,6 +134,50 @@ class PasadaEnAndroidTest {
         // Y la siguiente no se encuentra un lock de la cortada.
         val r = pasar(v, p, Pasada.Contexto(resyncAprobado = true, keepLogs = true))
         assertEquals(todo(r), 0, r.codigo)
+    }
+
+    /**
+     * Parada a medias, rclone puede contestar «Bisync successful» y dejar unos
+     * listados con copias que no ha hecho: `sync` se traga el
+     * `context.Canceled` de un `job/stop` si no había una transferencia en
+     * vuelo (fs/sync/sync.go, `processError`). La pasada siguiente vería
+     * «borrados» en el teléfono los ficheros que no llegaron, y los borraría del
+     * remoto.
+     */
+    @Test
+    fun una_pasada_normal_cancelada_no_deja_un_baseline_que_borre_en_el_remoto() {
+        val (v, config) = Banco.volumen(Banco.pareja("notas", "sync-data/notas", "flags" to mapOf("transfers" to 1, "checkers" to 1)))
+        val p = config.pairs.single()
+        File(Banco.remoto, "notas").mkdirs()
+        File(Banco.remoto, "notas/quieto.txt").writeText("quieto")
+        assertEquals(0, pasar(v, p, Pasada.Contexto(resyncAprobado = true)).codigo)
+        repeat(3000) { File(Banco.remoto, "notas/f$it.txt").writeText("fichero $it\n".repeat(50)) }
+        var lanzado: Throwable? = null
+        var codigo: Int? = null
+        // Se corta con las copias ya en marcha: es la fase en la que rclone dice
+        // que ha ido bien. Cortada al listar o comparar, aborta como debe.
+        val copiando = java.util.concurrent.CountDownLatch(1)
+        val hilo = Thread {
+            try {
+                codigo = Pasada.pasar(v, p, Adaptadores.pasada, Adaptadores.opciones, alProgreso = {
+                    if (((it["transfers"] as? Number)?.toLong() ?: 0L) > 0L) copiando.countDown()
+                }).codigo
+            } catch (e: Throwable) {
+                lanzado = e
+            }
+        }
+        hilo.start()
+        assertTrue("no ha empezado a copiar", copiando.await(60, java.util.concurrent.TimeUnit.SECONDS))
+        hilo.interrupt()
+        hilo.join(60_000)
+        assertNull("la pasada acabó antes de cortarla (código $codigo): hacen falta más ficheros", codigo)
+        assertTrue("lanzó $lanzado", lanzado is java.util.concurrent.CancellationException)
+
+        // La siguiente no se fía del baseline de la cortada: pide --resync, y en
+        // el remoto no se ha borrado nada.
+        val r = pasar(v, p, Pasada.Contexto(keepLogs = true))
+        assertEquals(todo(r), Pasada.SALTADA, r.codigo)
+        assertEquals(3001, File(Banco.remoto, "notas").list()!!.size)
     }
 
     @Test

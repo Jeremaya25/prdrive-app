@@ -44,7 +44,8 @@ import prdrive.engine.LLAVERO_LOCAL
  *         -Pandroid.testInstrumentationRunnerArguments.class=prdrive.app.PuntaAPuntaTest \
  *         -Pandroid.testInstrumentationRunnerArguments.carga_b64=<base64>
  *
- * Sin el argumento se salta: el resto de la batería no necesita red.
+ * Sin el argumento, app/build.gradle.kts la deja fuera (y si se pide por su
+ * nombre, se salta): el resto de la batería no necesita red.
  */
 @RunWith(AndroidJUnit4::class)
 @OptIn(ExperimentalTestApi::class)

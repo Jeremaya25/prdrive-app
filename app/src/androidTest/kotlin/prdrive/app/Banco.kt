@@ -2,6 +2,10 @@ package prdrive.app
 
 import androidx.test.platform.app.InstrumentationRegistry
 import java.io.File
+import org.junit.AssumptionViolatedException
+import org.junit.rules.TestRule
+import org.junit.runner.Description
+import org.junit.runners.model.Statement
 import prdrive.app.rclone.Adaptadores
 import prdrive.app.rclone.Rclone
 import prdrive.engine.Config
@@ -97,6 +101,36 @@ object Banco {
     /** Una pareja cuyo remoto es una carpeta de [remoto]. */
     fun pareja(nombre: String, local: String = "sync-data/$nombre", vararg extra: kotlin.Pair<String, Any?>): Map<String, Any?> =
         mapOf("name" to nombre, "local" to local, "remote_path" to File(remoto, nombre).absolutePath) + extra
+
+    /**
+     * Los fallos, sin los colores que bisync mete en su log ni otros caracteres
+     * de control: el informe es XML 1.0, que no los admite, y con uno dentro
+     * Gradle no dice qué test ha fallado, solo «Could not load test results».
+     * Los mensajes de estos tests llevan el log de la pasada, que es lo que
+     * explica el fallo.
+     */
+    class Legible : TestRule {
+        override fun apply(base: Statement, description: Description) = object : Statement() {
+            override fun evaluate() {
+                try {
+                    base.evaluate()
+                } catch (e: AssumptionViolatedException) {
+                    throw e
+                } catch (e: Throwable) {
+                    val texto = e.message ?: throw e
+                    if (!CONTROL.containsMatchIn(texto)) throw e
+                    val limpio = texto.replace(COLOR, "").replace(CONTROL, "?")
+                    val nuevo = if (e is AssertionError) AssertionError(limpio) else RuntimeException("${e.javaClass.name}: $limpio")
+                    throw nuevo.apply { stackTrace = e.stackTrace }
+                }
+            }
+        }
+
+        private companion object {
+            val COLOR = Regex("\\x{1b}\\[[0-9;]*[A-Za-z]")
+            val CONTROL = Regex("[\\x{0}-\\x{8}\\x{b}\\x{c}\\x{e}-\\x{1f}]")
+        }
+    }
 
     /** La llamada rc de una pasada de la pareja, montada por el motor como la monta la pasada. */
     fun llamada(v: Volumen, p: Pareja, resync: Boolean): Pasada.Llamada {

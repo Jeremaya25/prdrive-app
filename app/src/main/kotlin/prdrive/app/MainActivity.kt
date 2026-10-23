@@ -3,6 +3,7 @@ package prdrive.app
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import prdrive.app.llavero.Disparos
 import prdrive.app.ui.Modelo
@@ -16,17 +17,24 @@ class MainActivity : ComponentActivity() {
     /**
      * Al arrancar, si algo del llavero quedó sin subir (un guardado cuyo
      * trabajo se perdió), se encola su pasada ([Disparos.siPendiente]).
-     *
-     * El modelo se crea aquí y no dentro de `setContent`: creado en mitad de
-     * la primera composición, su estado nace dentro de la instantánea de esa
-     * composición, y lo que su primer trabajo escribe desde otro hilo antes
-     * de que esa instantánea se aplique se pierde (la principal se quedaba
-     * sin filas si leer `state/` iba más deprisa que el primer dibujo).
      */
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val m = modelo
-        setContent { PrdriveApp(m) }
+        // Los iconos de las barras del sistema, oscuros sobre el tema claro y
+        // claros sobre el oscuro: los elige según el modo del teléfono, como
+        // Tema.kt los colores. Desde Android 15 las pantallas ya se dibujan
+        // debajo de las barras (Scaffold deja el margen); con esto, también
+        // antes, y se ven igual en todas las versiones.
+        enableEdgeToEdge()
+        // El modelo se crea aquí y no dentro de `setContent`: sus estados
+        // (`mutableStateOf`) nacen en la instantánea de quien los crea, y la de
+        // la primera composición no se aplica hasta que esta acaba. Al
+        // aplicarse, el valor con el que nacieron pisa lo que otro hilo haya
+        // escrito entretanto, sin error: en frío, con la composición lenta, las
+        // filas que lee el `init` llegaban antes y la principal salía sin
+        // parejas (`PrincipalTest`).
+        val modelo = modelo
+        setContent { PrdriveApp(modelo) }
         Disparos.siPendiente(this)
     }
 

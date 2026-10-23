@@ -46,6 +46,13 @@ android {
         versionCode = codigoDeVersion
         versionName = versionDeLaApp
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        // PuntaAPuntaTest necesita un servidor y la carga de su QR
+        // (herramientas/punta_a_punta.py). Sin ella se deja fuera: el motor de
+        // tests de AGP cuenta un test saltado con `assumeTrue` como fallido, y
+        // la batería no saldría nunca en verde.
+        if (!providers.gradleProperty("android.testInstrumentationRunnerArguments.carga_b64").isPresent) {
+            testInstrumentationRunnerArguments["notClass"] = "prdrive.app.PuntaAPuntaTest"
+        }
     }
 
     // La release sale sin firmar, siempre: la firma se pone después, con
@@ -89,11 +96,31 @@ kotlin {
 // El .aar no se versiona: sin él, la compilación fallaría con un «unresolved
 // reference» que no dice qué falta. Se comprueba antes de construir nada (y no
 // al configurar, que rompería también `:engine:test`).
+// La ruta se copia a una variable de la tarea: con la caché de configuración
+// (gradle.properties), una acción que mirara la del script no se podría guardar.
 val aarDeRclone = rootProject.file("rclone/build/rclone.aar")
 tasks.named("preBuild") {
+    val aar = aarDeRclone
     doFirst {
-        if (!aarDeRclone.isFile) {
-            throw GradleException("Falta $aarDeRclone: constrúyelo con rclone/construir.sh (ver AGENTS.md).")
+        if (!aar.isFile) {
+            throw GradleException("Falta $aar: constrúyelo con rclone/construir.sh (ver AGENTS.md).")
+        }
+    }
+}
+
+// A veces el emulador no encuentra la instrumentación recién instalada
+// (`INSTRUMENTATION_FAILED: Unable to find instrumentation info`), y AGP lo da
+// por bueno con 0 tests. Un verde sin tests no es un verde.
+tasks.matching { it.name.startsWith("connected") && it.name.endsWith("AndroidTest") }.configureEach {
+    val resultados = layout.buildDirectory.dir("outputs/androidTest-results/connected")
+    doLast {
+        val informes = resultados.get().asFile.walkTopDown().maxDepth(2)
+            .filter { it.isFile && it.name.startsWith("TEST-") && it.name.endsWith(".xml") }.toList()
+        if (informes.none { !Regex("""<testsuites tests="0"""").containsMatchIn(it.readText()) }) {
+            throw GradleException(
+                "No se ha ejecutado ningún test: si el filtro está bien, es el emulador, que no ha encontrado " +
+                    "la instrumentación recién instalada. Vuelve a lanzarlo.",
+            )
         }
     }
 }

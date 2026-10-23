@@ -69,8 +69,9 @@ app/          Android: solo dibuja y llama
 │                     comprueba y se lo da a PackageInstaller («La
 │                     autoactualización»)
 ├── ui/               Modelo (el ViewModel), Pantallas (Compose), PantallaLlavero
-│                     (la fila del llavero y su casilla) y Escaner (el de códigos
-│                     de Play services)
+│                     (la fila del llavero y su casilla), Tema (claro u oscuro,
+│                     como diga el teléfono) y Escaner (el de códigos de Play
+│                     services)
 ├── llavero/          el llavero en la app («El llavero»): LlaveroApp (la pasada
 │                     y su cerrojo), TrabajoLlavero y Disparos (WorkManager) y
 │                     Avisos (las notificaciones)
@@ -83,9 +84,10 @@ app/          Android: solo dibuja y llama
 └── androidTest/  el spike contra rclone de verdad, la pasada entera, el
                   proveedor, los vectores del motor otra vez en Android
                   (MotorEnAndroidTest), lo que el actualizador mira de un APK
-                  (ActualizadorTest), el llavero (el alta, el proveedor, los
-                  trabajos y la pantalla) y las pantallas de punta a punta
-                  contra un servidor SFTP (PuntaAPuntaTest)
+                  (ActualizadorTest), el modo oscuro (TemaTest), el llavero
+                  (el alta, el proveedor, los trabajos y la pantalla) y las
+                  pantallas de punta a punta contra un servidor SFTP
+                  (PuntaAPuntaTest)
 herramientas/
 ├── vectores.py        genera los valores esperados desde el prdrive de verdad
 ├── vectores_paso3.py  su parte de la pasada y el volumen
@@ -222,11 +224,32 @@ rclone/construir.sh        # el .aar (Go, gomobile y un NDK)
 
 `connectedDebugAndroidTest` instala y ejecuta en **todos** los dispositivos
 conectados, teléfonos incluidos. Con uno enchufado, se elige el emulador con
-`ANDROID_SERIAL=emulator-5554`.
+`ANDROID_SERIAL=emulator-5554`. La batería entera son unos 30 s con el APK ya
+compilado; mientras se trabaja en algo, una clase sola (unos 18 s, casi todo
+instalar):
 
-`PuntaAPuntaTest` se salta si no le llega la carga de un QR: necesita un
-servidor. `herramientas/punta_a_punta.py` lo monta (remoto, catálogo, claves y
-carga) con un `rclone` de la versión del `.aar`, y dice cómo lanzar la prueba:
+```bash
+./gradlew :app:connectedDebugAndroidTest \
+    -Pandroid.testInstrumentationRunnerArguments.class=prdrive.app.RcloneSpikeTest
+```
+
+Gradle guarda la configuración entre órdenes (`org.gradle.configuration-cache`
+en `gradle.properties`): lo que se escriba en un `build.gradle.kts` dentro de
+una acción de tarea (`doFirst`, `doLast`) no puede mirar variables del script,
+sino una copia local (como el `.aar` de `preBuild`).
+
+Si un test de una pasada falla, el informe está en
+`app/build/reports/androidTests/connected/debug/`. Los que llevan el log de
+bisync en el mensaje usan la regla `Banco.Legible`: el log trae colores, y un
+carácter de control deja el XML del informe ilegible («Could not load test
+results», sin decir qué test ha fallado). Y una pasada sin ningún test falla
+(`app/build.gradle.kts`): a veces el emulador no encuentra la instrumentación
+recién instalada, y AGP lo daba por bueno. Se vuelve a lanzar.
+
+`PuntaAPuntaTest` se deja fuera si no le llega la carga de un QR (el motor de
+tests de AGP cuenta un `assumeTrue` como fallo): necesita un servidor.
+`herramientas/punta_a_punta.py` lo monta (remoto, catálogo, claves y carga) con
+un `rclone` de la versión del `.aar`, y dice cómo lanzar la prueba:
 
 ```bash
 python herramientas/punta_a_punta.py ../prdrive /ruta/a/rclone /tmp/e2e
@@ -245,9 +268,22 @@ El módulo `app` solo existe si hay un SDK de Android (`ANDROID_HOME`,
 `ANDROID_SDK_ROOT` o `sdk.dir` en `local.properties`): el CI del motor no lo
 tiene, y `:engine:test` no lo necesita.
 
-Gradle 9.6 y Kotlin 2.4. `engine/` se construye con cualquier JDK 17 o
+Gradle 9.8 y Kotlin 2.4. `engine/` se construye con cualquier JDK 17 o
 posterior (el JBR 25 de Android Studio vale) y genera bytecode 17. Los avisos
 del compilador son errores (`allWarningsAsErrors`). No hay linter aparte.
+
+El wrapper fija la suma SHA-256 de la distribución (`distributionSha256Sum`):
+cambiar solo la URL de `gradle-wrapper.properties` deja a Gradle sin arrancar.
+Se sube con la tarea del wrapper y la suma que publica Gradle
+(`https://services.gradle.org/distributions/gradle-<versión>-bin.zip.sha256`),
+y se pasa otra vez ya con la versión nueva, que es la que regenera el jar y los
+scripts:
+
+```bash
+./gradlew :wrapper --gradle-version=<versión> --distribution-type=bin \
+    --gradle-distribution-sha256-sum=<la suma>
+./gradlew :wrapper
+```
 
 El generador de vectores sale igual en Windows que en Linux: le hace creer a
 prdrive que corre en un dispositivo POSIX con la raíz en `/volumen`.
@@ -509,6 +545,11 @@ proceso muere con un temporal abierto, ese guardado se pierde sin aviso.
   no qué función llama. En `androidTest` va con guiones bajos
   (`una_pasada_que_falla_guarda_el_log_y_lo_explica`): el `.dex` de minSdk 26 no
   admite espacios en los nombres de método.
+- **En las pantallas no se escribe ningún color**: todo sale de
+  `MaterialTheme.colorScheme`. Es lo que hace que el modo oscuro salga solo
+  (`ui/Tema.kt`, que sigue al del teléfono); un `Color(0xFF…)` se vería igual
+  en los dos modos. El único color escrito es el fondo de la ventana
+  (`res/values*/tema.xml`), y `TemaTest` comprueba que es el de Compose.
 
 ## Ojo con Android
 
@@ -565,6 +606,19 @@ proceso muere con un temporal abierto, ese guardado se pierde sin aviso.
   (`job/stop` y `job/status` hasta `finished`): si no, el lock de bisync se
   queda puesto y la captura del log se cruza con la de la pasada siguiente.
   Una pasada cancelada no se apunta, como un Ctrl+C en el escritorio.
+- **Y una bisync parada puede decir que ha ido bien sin haberlo hecho.** `sync`
+  se traga el `context.Canceled` de un `job/stop` si no hay una transferencia
+  en vuelo (`fs/sync/sync.go`, `processError`: su `inCtx` cuelga del contexto
+  cancelado, y lo toma por un corte suyo). bisync da por hechas las copias que
+  le quedaban, dice «Bisync successful» y escribe unos listados con ellas: la
+  pasada siguiente ve «borrados» en un lado los ficheros que no llegaron, y los
+  borra del otro (comprobado con 3000 ficheros: solo lo para el 25 % de
+  `max-delete`). Cortada al listar o a media copia, aborta como debe. Por eso,
+  si hubo que pararla y rclone no dice que falló, la app aparta los listados
+  como hace rclone con una pasada interrumpida (`.lst` → `.lst-err`,
+  `markFailed` en `cmd/bisync/lockfile.go`; `Adaptadores.apartarListados`), y
+  la siguiente pide `--resync`, que no borra nada. En el escritorio no pasa: un
+  Ctrl+C va por `atexit`, no por el contexto.
 - **`core/command` no sirve desde la biblioteca**, ni aunque lo veas en la
   documentación de rclone: `librclone.RPC()` rechaza los métodos que necesitan
   request/response, y su implementación lanza un proceso hijo. La ruta es
