@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- El tema de la ventana, en claro. El oscuro está en values-night/: Android
+     elige uno u otro según el modo oscuro del teléfono, como Tema.kt para las
+     pantallas. -->
+<resources>
+    <!-- El fondo de lightColorScheme(): es lo que se ve al abrir la app, antes
+         de que Compose dibuje, y así no cambia de color al arrancar. TemaTest
+         comprueba que sigue siendo el mismo. -->
+    <color name="fondo">#FEF7FF</color>
+
+    <style name="Tema" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/fondo</item>
+    </style>
+</resources>
