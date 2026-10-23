@@ -21,6 +21,7 @@ import java.nio.file.LinkOption
 import java.nio.file.Path
 import java.nio.file.SimpleFileVisitor
 import java.nio.file.attribute.BasicFileAttributes
+import prdrive.app.Actualizador
 import prdrive.app.Prdrive
 import prdrive.app.R
 import prdrive.app.llavero.Avisos
@@ -259,11 +260,20 @@ class VolumenProvider : DocumentsProvider() {
      * El guardado de una base del llavero ([f], la entrada de `.keychain/`): un
      * temporal que se pone encima al cerrar, si llega entero. Uno roto se apunta
      * en `state/` y se notifica ([Avisos.guardadoCortado]), y uno bueno quita
-     * ese aviso y encola la subida.
+     * ese aviso si era de esta base y encola la subida.
+     *
+     * Mientras el temporal está abierto cuenta como un trabajo de la
+     * autoactualización ([Actualizador.empezarTrabajo]): instalarse cierra el
+     * proceso, y con él el cierre que pone la base; la app de KeePass creería
+     * guardado lo que no ha llegado. Si ya se está instalando, se niega: la app
+     * de KeePass dice que no ha podido guardar, que es la verdad.
      */
     private fun guardarBase(f: File, mode: String): ParcelFileDescriptor {
         val c = context!!
         val state = Prdrive.volumen(c).state
+        if (!Actualizador.empezarTrabajo()) {
+            throw FileNotFoundException("No se puede guardar ${f.name}: se está instalando la versión nueva de prdrive")
+        }
         return try {
             GuardadoAtomico.abrir(
                 base = f,
@@ -271,14 +281,14 @@ class VolumenProvider : DocumentsProvider() {
                 temporales = temporales,
                 handler = guardados,
                 alPoner = {
-                    GuardadoAtomico.quitarCortado(state)
-                    Avisos.guardadoBueno(c)
+                    if (GuardadoAtomico.quitarCortado(state, f.name)) Avisos.guardadoBueno(c)
                     Disparos.alGuardar(c)
                 },
                 alCortar = { motivo ->
                     GuardadoAtomico.apuntarCortado(state, f.name, motivo)
                     Avisos.guardadoCortado(c, f.name)
                 },
+                alAcabar = { Actualizador.acabarTrabajo(c) },
             )
         } catch (e: IOException) {
             throw FileNotFoundException("No se puede guardar ${f.name}: ${e.message}")

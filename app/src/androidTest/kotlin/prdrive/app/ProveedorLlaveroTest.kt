@@ -406,6 +406,93 @@ class ProveedorLlaveroTest {
         assertArrayEquals(Banco.base(entera = true), base.readBytes())
     }
 
+    /**
+     * Abre [uri] para escribir con [modo] y comprueba que, con el descriptor
+     * abierto, la autoactualización tiene un trabajo más en marcha; [cerrar]
+     * lo cierra como lo cerraría el cliente, y al acabar el cierre vuelve a los
+     * de antes.
+     */
+    private fun conTrabajoMientrasEstaAbierto(uri: Uri, modo: String, cerrar: (ParcelFileDescriptor) -> Unit) {
+        val antes = Actualizador.trabajosEnMarcha()
+        val pfd = resolver.openFileDescriptor(uri, modo) ?: error("sin descriptor")
+        assertEquals("con \"$modo\" abierto", antes + 1, Actualizador.trabajosEnMarcha())
+        cerrar(pfd)
+        esperar("con \"$modo\", el trabajo del guardado sigue en marcha tras cerrar") {
+            Actualizador.trabajosEnMarcha() == antes
+        }
+        esperarAlCierre()
+    }
+
+    @Test
+    fun con_un_guardado_abierto_la_actualizacion_no_se_instala_y_se_suelta_al_cerrar() {
+        // Uno bueno.
+        conTrabajoMientrasEstaAbierto(uriBase, "wt") { pfd ->
+            FileOutputStream(pfd.fileDescriptor).write(Banco.otraBase())
+            pfd.close()
+        }
+        assertArrayEquals(Banco.otraBase(), base.readBytes())
+        // Uno sin escribir nada (igual que la base, y vacío).
+        conTrabajoMientrasEstaAbierto(uriBase, "rw") { it.close() }
+        conTrabajoMientrasEstaAbierto(uriBase, "w") { it.close() }
+        // Uno cortado.
+        conTrabajoMientrasEstaAbierto(uriBase, "wt") { pfd ->
+            FileOutputStream(pfd.fileDescriptor).write(Banco.base(entera = true).let { it.copyOf(it.size / 2) })
+            pfd.close()
+        }
+        esperar("no se ha avisado del guardado cortado") { aviso.exists() }
+        // Uno que se cierra con error.
+        conTrabajoMientrasEstaAbierto(uriBase, "wt") { it.closeWithError("se ha caído") }
+        // Uno cuyo descriptor se queda el cliente.
+        conTrabajoMientrasEstaAbierto(uriBase, "wt") { ParcelFileDescriptor.adoptFd(it.detachFd()).close() }
+        assertArrayEquals(Banco.otraBase(), base.readBytes())
+
+        // Uno que no llega a abrirse (no se puede crear `.prdrive/tmp/`): no deja el trabajo puesto.
+        val antes = Actualizador.trabajosEnMarcha()
+        temporales.deleteRecursively()
+        temporales.writeText("no es una carpeta")
+        try {
+            seNiega("abrir para escribir sin carpeta de temporales") { resolver.openFileDescriptor(uriBase, "wt")?.close() }
+        } finally {
+            temporales.delete()
+        }
+        assertEquals(antes, Actualizador.trabajosEnMarcha())
+    }
+
+    @Test
+    fun con_la_actualizacion_instalandose_no_se_abre_un_guardado() {
+        assertTrue("hay trabajos en marcha", Actualizador.reservar())
+        try {
+            seNiega("abrir para escribir mientras se instala la versión nueva") {
+                resolver.openFileDescriptor(uriBase, "wt")?.close()
+            }
+            // Leer, sí.
+            resolver.openFileDescriptor(uriBase, "r")!!.close()
+        } finally {
+            Actualizador.soltar()
+        }
+        assertTrue((temporales.list() ?: emptyArray()).isEmpty())
+        assertArrayEquals(Banco.base(entera = true), base.readBytes())
+    }
+
+    @Test
+    fun un_guardado_bueno_de_otra_base_no_quita_el_aviso_de_esta() {
+        // El de personal.kdbx, cortado.
+        escribir(uriBase, "wt", Banco.otraBase().let { it.copyOf(it.size / 2) })
+        esperar("no se ha avisado del guardado cortado") { aviso.exists() }
+
+        // Uno bueno de otra base del llavero (una copia de conflicto) no lo tapa.
+        val copia = File(llavero, "personal (conflicto).kdbx").apply { writeBytes(Banco.base(entera = true)) }
+        escribir(uri("$LLAVERO_LOCAL/${copia.name}"), "wt", Banco.otraBase())
+        assertArrayEquals(Banco.otraBase(), copia.readBytes())
+        esperar("no se ha encolado la subida") { encolados().isNotEmpty() }
+        assertTrue("un guardado de otra base ha quitado el aviso", aviso.exists())
+        assertEquals("personal.kdbx", Store.readJson(aviso)["fichero"])
+
+        // Uno bueno de la misma, sí.
+        escribir(uriBase, "wt", Banco.otraBase())
+        esperar("el aviso sigue tras un guardado bueno de su base") { !aviso.exists() }
+    }
+
     @Test
     fun un_enlace_a_la_llave_no_deja_escribirla() {
         val enlace = File(v.raiz, "sync-data/notas/llave.lnk")

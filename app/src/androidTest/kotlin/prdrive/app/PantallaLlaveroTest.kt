@@ -246,7 +246,7 @@ class PantallaLlaveroTest {
             GuardadoAtomico.apuntarCortado(v.state, "personal.kdbx", GuardadoAtomico.MOTIVO_SOLTADO)
             volver(escena)
             esperar("llavero-ambar", GuardadoAtomico.MOTIVO_SOLTADO)
-            GuardadoAtomico.quitarCortado(v.state)
+            GuardadoAtomico.quitarCortado(v.state, "personal.kdbx")
             volver(escena)
             compose.waitUntil(10_000) { compose.onAllNodes(hasTestTag("llavero-ambar")).fetchSemanticsNodes().isEmpty() }
 

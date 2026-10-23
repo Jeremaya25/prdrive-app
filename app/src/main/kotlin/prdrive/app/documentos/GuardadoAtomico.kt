@@ -117,6 +117,9 @@ internal object GuardadoAtomico {
      * @param alPoner lo que se hace tras poner una base nueva.
      * @param alCortar lo que se hace con un guardado que ha llegado roto, con
      *   lo que dice [Kdbx.comprobar].
+     * @param alAcabar lo último, y una sola vez por llamada, sea cual sea el
+     *   final: al acabar el cierre (bueno, sin escribir, cortado, con error o
+     *   soltado) o, si no se llega a dar el descriptor, antes de lanzar.
      */
     fun abrir(
         base: File,
@@ -125,23 +128,35 @@ internal object GuardadoAtomico {
         handler: Handler,
         alPoner: () -> Unit,
         alCortar: (String) -> Unit,
+        alAcabar: () -> Unit,
     ): ParcelFileDescriptor {
-        if (!temporales.isDirectory && !temporales.mkdirs()) throw IOException("No se ha podido crear $temporales")
-        // Único y sin `.kdbx` al final: nada lo toma por una base.
-        val tmp = File.createTempFile("guardado-", ".tmp", temporales)
+        var tmp: File? = null
+        var entregado = false
         try {
+            if (!temporales.isDirectory && !temporales.mkdirs()) throw IOException("No se ha podido crear $temporales")
+            // Único y sin `.kdbx` al final: nada lo toma por una base.
+            val t = File.createTempFile("guardado-", ".tmp", temporales).also { tmp = it }
             if (modo.startsWith("rw") || modo.contains('a')) {
                 // Con su hora: si no se escribe nada, no se pone ([alCerrar]).
                 Files.copy(
-                    base.toPath(), tmp.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES,
+                    base.toPath(), t.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES,
                 )
             }
-            return ParcelFileDescriptor.open(tmp, ParcelFileDescriptor.parseMode(modo), handler) { error ->
-                alCerrar(tmp, base, error, alPoner, alCortar)
+            val pfd = ParcelFileDescriptor.open(t, ParcelFileDescriptor.parseMode(modo), handler) { error ->
+                try {
+                    alCerrar(t, base, error, alPoner, alCortar)
+                } finally {
+                    avisar(alAcabar)
+                }
             }
-        } catch (e: IOException) {
-            tmp.delete()
-            throw e
+            entregado = true
+            return pfd
+        } finally {
+            // Sin descriptor no hay cierre que lo haga: aquí.
+            if (!entregado) {
+                tmp?.delete()
+                avisar(alAcabar)
+            }
         }
     }
 
@@ -242,9 +257,20 @@ internal object GuardadoAtomico {
         Store.writeJson(File(state, AVISO), mapOf("cuando" to Store.stamp(), "fichero" to fichero, "motivo" to motivo))
     }
 
-    /** Quita el aviso: un guardado bueno lo deja atrás. */
-    fun quitarCortado(state: File) {
-        File(state, AVISO).delete()
+    /**
+     * Quita el aviso si es de [fichero]: un guardado bueno de esa base lo deja
+     * atrás, y el de otra (una copia de conflicto) no dice nada de ella. Uno que
+     * no dice de qué base es (no se puede leer) también se quita: si no, no se
+     * iría nunca.
+     *
+     * @return si ya no queda aviso: entonces su notificación también sobra.
+     */
+    fun quitarCortado(state: File, fichero: String): Boolean {
+        val aviso = File(state, AVISO)
+        if (!aviso.exists()) return true
+        val de = Store.readJson(aviso)["fichero"]
+        if (de != null && de != fichero) return false
+        return aviso.delete() || !aviso.exists()
     }
 
     /**

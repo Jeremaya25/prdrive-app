@@ -391,7 +391,10 @@ lo instala Android.
   una compilación de depuración, que no la podría poner encima (otra firma): ahí
   hay un botón. Se instala **al salir de la app**, porque instalarse la cierra,
   y nunca con una pasada en marcha (`Modelo.trabajo` y
-  `Actualizador.empezarTrabajo`): cortarla deja el lock de bisync puesto. Solo
+  `Actualizador.empezarTrabajo`): cortarla deja el lock de bisync puesto. Ni con
+  un guardado del llavero abierto (el temporal de `GuardadoAtomico`, que cuenta
+  como trabajo hasta que acaba su cierre): instalarse cerraría el proceso y el
+  guardado se perdería sin aviso; mientras se instala, se niega. Solo
   con el volumen sembrado: a medio emparejar, cerrar la app perdería la carga del
   QR, que no se guarda.
 - **Sin preguntar** solo desde Android 12, y solo si la persona ha permitido una
@@ -478,7 +481,8 @@ decisiones que no se ven en el código:
   `Kdbx.comprobar()`: entera (o de un formato que no se conoce) se pone encima de
   la base de un solo golpe y se encola la subida; rota, o con un error, se tira y
   la base no se toca (si estaba rota, se apunta en `state/llavero-cortado.json`
-  para que la fila y una notificación lo digan). Las reglas finas:
+  para que la fila y una notificación lo digan; lo quita un guardado bueno de
+  esa misma base, no el de otra). Las reglas finas:
   - `"w"` y `"wt"` dan un temporal vacío, porque el `"w"` de Android no trunca y
     un guardado más corto dejaría basura detrás; `"rw"`, `"rwt"` y `"wa"` dan una
     copia de la base.

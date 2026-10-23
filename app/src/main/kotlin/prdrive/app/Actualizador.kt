@@ -532,13 +532,21 @@ object Actualizador {
 
     // --- la instalación ----------------------------------------------------------------
 
-    private fun reservar(): Boolean = synchronized(cerrojo) {
+    /**
+     * Antes de dárselo a `PackageInstaller`: `false` con algo en marcha. Desde
+     * aquí hasta [soltar], [empezarTrabajo] se niega. `internal` para que las
+     * pruebas pongan el actualizador «instalando» sin instalar nada.
+     */
+    internal fun reservar(): Boolean = synchronized(cerrojo) {
         if (trabajos > 0) return false
         instalando = true
         true
     }
 
-    private fun soltar() = synchronized(cerrojo) { instalando = false }
+    internal fun soltar() = synchronized(cerrojo) { instalando = false }
+
+    /** Cuántos [empezarTrabajo] siguen sin su [acabarTrabajo]. Solo lo miran las pruebas. */
+    internal fun trabajosEnMarcha(): Int = synchronized(cerrojo) { trabajos }
 
     /**
      * Le da el APK a `PackageInstaller`. Pide que no se pregunte
