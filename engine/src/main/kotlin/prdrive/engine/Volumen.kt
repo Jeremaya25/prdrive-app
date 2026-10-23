@@ -55,11 +55,22 @@ class Volumen(val raiz: File) {
     /** El `sync_config.toml` del volumen, resuelto. */
     fun leerConfig(): Config = parseConfig(loadRaw(config.readText(Charsets.UTF_8)))
 
-    /** El `rclone.conf` del volumen, o vacío si no hay. */
-    fun leerRcloneConf(): String = try {
+    /**
+     * El `rclone.conf` del volumen, o vacío si no hay. Para mirarlo (los tipos
+     * de los remotes); lo que lo reescribe usa [leerRcloneConfSiSePuede]: aquí
+     * no se distingue «vacío» de «no se ha podido leer».
+     */
+    fun leerRcloneConf(): String = leerRcloneConfSiSePuede() ?: ""
+
+    /**
+     * El `rclone.conf` del volumen tal cual, o `null` si no se ha podido leer
+     * (no está, o la lectura falla). Lo que no se ha leído no se vuelve a
+     * escribir: escribir un vacío en su lugar borraría el remoto y la clave.
+     */
+    fun leerRcloneConfSiSePuede(): String? = try {
         rcloneConf.readText(Charsets.UTF_8)
     } catch (_: IOException) {
-        ""
+        null
     }
 
     /**
@@ -126,9 +137,13 @@ class Volumen(val raiz: File) {
     /**
      * Reescribe la sección `[disp]` del `rclone.conf` cuando cambian las parejas
      * del config, dejando la del remoto como estaba.
+     *
+     * @throws IOException si no se puede leer (o no está) o escribir: uno que
+     *   no se ha leído se deja como está.
      */
     fun actualizarCombine(config: Config) {
-        val actual = leerRcloneConf()
+        // Uno que no se puede leer no se rehace solo con el `combine`: se iría el remoto.
+        val actual = leerRcloneConfSiSePuede() ?: throw IOException("No he podido leer $rcloneConf")
         val nombre = config.deviceRemote ?: return
         val sinCombine = quitarSeccion(actual, nombre).trimEnd('\n')
         val texto = (if (sinCombine.isEmpty()) "" else sinCombine + "\n\n") + config.seccionCombine(raiz.absolutePath)
@@ -172,6 +187,9 @@ class Volumen(val raiz: File) {
     }
 
     companion object {
+
+        /** Lo que dice `plan_desactivar()` si el dispositivo no lleva el llavero. */
+        const val SIN_LLAVERO = "Este dispositivo no lleva el llavero."
 
         /** El instalador no puede seguir: el mensaje es para la persona. */
         class InstallError(mensaje: String) : Exception(mensaje)
@@ -226,6 +244,97 @@ class Volumen(val raiz: File) {
                 "# Es el config de ESTE dispositivo: el catálogo global vive en\n" +
                 "# $donde.\n"
             return propia + if (cabeceraCatalogo.isNotEmpty()) "#\n$cabeceraCatalogo" else ""
+        }
+
+        /**
+         * El config con el llavero del remoto puesto (`ui/llavero_editor.py`,
+         * `plan_activar()` con `origen = None`: «Traer el del remoto»): una
+         * copia del config con `[keychain]` igual a la tabla del catálogo, que
+         * [Llavero.decidirAlta] decide. El teléfono nunca crea un llavero, solo
+         * entra en el que ya hay. Se comprueba con [parseConfig] (`model.parse_config()`
+         * antes de confirmar): un `[keychain]` que no vale se rechaza ahora, no
+         * al primer arranque.
+         *
+         * @throws ConfigError si el remoto no tiene llavero, o la tabla no vale.
+         */
+        fun conLlavero(rawActual: Map<String, Any?>, remota: Map<String, Any?>?): Map<String, Any?> {
+            val tabla = Llavero.decidirAlta(remota)
+            val nuevo = copiaProfunda(rawActual)
+            nuevo["keychain"] = tabla
+            parseConfig(nuevo)
+            return nuevo
+        }
+
+        /**
+         * El config sin `[keychain]` (`plan_desactivar()`): lo demás, igual. La
+         * carpeta del llavero y el remoto no se tocan.
+         */
+        fun sinLlavero(rawActual: Map<String, Any?>): Map<String, Any?> {
+            val nuevo = copiaProfunda(rawActual)
+            nuevo.remove("keychain")
+            return nuevo
+        }
+
+        /** `copy.deepcopy(dict(raw))`: los mapas y las listas se copian, lo demás es inmutable. */
+        private fun copiaProfunda(raw: Map<String, Any?>): LinkedHashMap<String, Any?> {
+            fun copia(valor: Any?): Any? = when (valor) {
+                is Map<*, *> -> LinkedHashMap<Any?, Any?>().also { m -> valor.forEach { (k, v) -> m[k] = copia(v) } }
+                is List<*> -> valor.map { copia(it) }
+                else -> valor
+            }
+            val salida = LinkedHashMap<String, Any?>()
+            raw.forEach { (k, v) -> salida[k] = copia(v) }
+            return salida
+        }
+
+        /** Los nombres de las parejas bisync de la raíz entera, ya entre comillas angulares. */
+        private fun raices(config: Config): String =
+            config.delUsuario.filter { it.esRaiz && it.isBisync }.joinToString(", ") { "«${it.name}»" }
+
+        /**
+         * Lo que avisa `plan_activar()` de prdrive y aplica en el teléfono: la
+         * pareja de la raíz entera, que desde ahora deja fuera `.keychain/` y
+         * por eso pedirá un `--resync`. (Los avisos de KeePassXC y del formato
+         * de la base son del escritorio.) Sirve el config de antes o de después
+         * de poner el llavero: solo mira las parejas del usuario.
+         */
+        fun avisosAlta(config: Config): List<String> {
+            val raices = raices(config)
+            if (raices.isEmpty()) return emptyList()
+            return listOf(
+                "$raices sincroniza la raíz entera: desde ahora deja fuera $LLAVERO_LOCAL/, " +
+                    "y por eso pedirá un --resync.",
+            )
+        }
+
+        /**
+         * Lo que avisa `plan_desactivar()` y aplica en el teléfono, en su orden:
+         * con `llave_interna`, que el fichero llave se queda; y la pareja de la
+         * raíz entera, que sin llavero llevará `.keychain/` y pedirá un
+         * `--resync` (y, con llave interna, subiría también la llave).
+         *
+         * @param config El del dispositivo, con su llavero.
+         * @throws ConfigError si el dispositivo no lleva el llavero.
+         */
+        fun avisosBaja(config: Config): List<String> {
+            if (config.llavero == null) throw ConfigError(SIN_LLAVERO)
+            val interna = config.parejaLlavero?.llaveInterna == true
+            val avisos = ArrayList<String>()
+            if (interna) {
+                avisos.add(
+                    "El fichero llave ($LLAVERO_LOCAL/$LLAVERO_LLAVE) se queda en el dispositivo: sin " +
+                        "él la base no se abre. Bórralo tú si ya no lo quieres aquí.",
+                )
+            }
+            val raices = raices(config)
+            if (raices.isNotEmpty()) {
+                avisos.add(
+                    "$raices sincroniza la raíz entera: sin llavero, $LLAVERO_LOCAL/ viajará con ella, " +
+                        "y pedirá un --resync." +
+                        if (interna) " Con ella subiría también el fichero llave: quítala de ahí antes." else "",
+                )
+            }
+            return avisos
         }
 
         /** Las carpetas que necesitan las parejas elegidas; la de la raíz no cuenta. */

@@ -72,7 +72,7 @@ import prdrive.engine.Pasada
 /**
  * Pantallas.kt — Las dos pantallas: el primer arranque y
  * la principal. Solo dibujan y llaman al [Modelo]; lo que deciden lo deciden el
- * motor y el instalador.
+ * motor y el instalador. Lo del llavero está en `PantallaLlavero.kt`.
  *
  * Los `testTag` son los asideros de la prueba de punta a punta
  * (`PuntaAPuntaTest`), que maneja estas mismas pantallas.
@@ -208,7 +208,7 @@ private fun AvisoRedLocal(pedir: () -> Unit) {
  * Hace cuánto, en español: la app no tiene otro idioma, y el
  * `DateUtils` de Android lo diría en el del teléfono, en mitad de una frase.
  */
-private fun haceCuanto(ms: Long, ahora: Long = System.currentTimeMillis()): String {
+internal fun haceCuanto(ms: Long, ahora: Long = System.currentTimeMillis()): String {
     val minutos = (ahora - ms) / 60_000
     return when {
         minutos < 1 -> "hace un momento"
@@ -339,11 +339,14 @@ private fun ColumnScope.PasoParejas(m: Modelo) {
             }
         }
     }
+    CasillaDelLlavero(m)
+    // Con el llavero, las notificaciones se piden antes: avisan de lo suyo.
+    val conPermiso = conAvisos()
     Button(
-        onClick = m::instalar,
+        onClick = { if (m.conLlavero) conPermiso(m::instalar) else m.instalar() },
         enabled = m.elegidas.isNotEmpty() && m.ocupado == null,
         modifier = Modifier.testTag("instalar"),
-    ) { Text("Instalar ${m.elegidas.size} pareja(s)") }
+    ) { Text("Instalar ${m.elegidas.size} pareja(s)" + if (m.conLlavero) " y el llavero" else "") }
     Ocupado(m.ocupado)
     Error(m.error)
 }
@@ -402,12 +405,15 @@ private fun Principal(m: Modelo) {
     val contexto = LocalContext.current
     var log by remember { mutableStateOf<Estado.Fila?>(null) }
     var faltaRed by remember { mutableStateOf(Prdrive.faltaRedLocal(contexto)) }
-    // Al volver de los ajustes de la app, el permiso puede haber cambiado.
+    // Al volver de los ajustes de la app, el permiso puede haber cambiado; y
+    // al volver de la app de KeePass, la fila del llavero.
     LifecycleResumeEffect(Unit) {
         faltaRed = Prdrive.faltaRedLocal(contexto)
+        m.alVolver()
         onPauseOrDispose {}
     }
     val conRed = conRedLocal { faltaRed = Prdrive.faltaRedLocal(contexto) }
+    val conPermiso = conAvisos()
     Marco("prdrive") {
         Button(
             onClick = { conRed(m::sincronizar) },
@@ -421,6 +427,7 @@ private fun Principal(m: Modelo) {
         LazyColumn(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             // Dentro de la lista, para que se pueda desplazar: en horizontal no cabe todo.
             item { VersionNueva(libre = m.ocupado == null) }
+            m.llavero?.let { f -> item { FilaDelLlavero(m, f, conRed, conPermiso) } }
             // Sin clave por nombre: dos parejas que se llamen igual no pueden
             // tumbar la pantalla (Compose no admite claves repetidas).
             items(m.filas) { f ->
@@ -433,6 +440,8 @@ private fun Principal(m: Modelo) {
         }
     }
     log?.let { f -> DialogoLog(f) { log = null } }
+    m.avisoLlavero?.let { AvisoAntesDeAbrir(it, m::cerrarAvisoLlavero) }
+    AbrirLaBase(m)
 }
 
 /** Abre una página en el navegador. */

@@ -1,7 +1,8 @@
 # prdrive para Android — lo que queda
 
 El paso 1 está hecho: el volumen, el emparejamiento por QR, elegir parejas del
-catálogo y un «Sincronizar» que cuenta qué pasa. Cómo está y por qué, en
+catálogo, un «Sincronizar» que cuenta qué pasa y el llavero (`[keychain]`). Cómo
+está y por qué, en
 [`AGENTS.md`](AGENTS.md). Aquí solo lo que falta, en el orden en que tiene
 sentido hacerlo.
 
@@ -22,6 +23,65 @@ Falta:
   pasada siguiente.
 - **El permiso de red local** en un Android 17 de verdad, contra un NAS en
   `192.168.…`, y en uno anterior, que no lo pide.
+- **El llavero con una app de KeePass de verdad.** Probado el 23/10/2026 en el
+  emulador API 37 con KeePassDX 4.5.6, contra el servidor de
+  `herramientas/punta_a_punta.py` y una base de verdad hecha con `keepassxc-cli`
+  2.7.12 (el «PC» se simuló con `keepassxc-cli add`/`merge` sobre el remoto).
+  Lo que salió:
+  - **Abrir y guardar: va.** «Abrir llavero» abre la base en KeePassDX, se
+    desbloquea y se lee por el proveedor (`"r"`); un guardado escribe con
+    **`"wt"`**, el guardado atómico lo pone, se encola el trabajo y la base está
+    en el remoto en ~35 s, con la anterior en `.prversions/`. Un cambio del PC
+    llega con «Sincronizar».
+  - **Un conflicto: se avisa bien.** Dos guardados cruzados dejan
+    `personal.conflicto-remoto1.kdbx` en los dos lados (la base viva es la del
+    móvil y la copia la del PC), la notificación y la fila que lo explica.
+  - **Combinar en el PC dejaba el llavero del teléfono atascado (arreglado).**
+    Tras combinar y apartar la copia en el remoto, la pasada del teléfono paraba
+    en el freno de borrados (1 de 3) y no se repetía sin él: la línea «File was
+    deleted» del log llevaba colores ANSI, y `soloCopiasBorradas` no la
+    reconocía. bisync los pone con `TerminalColorMode = AUTO` cuando el log no va
+    a un fichero (`cmd/bisync/operations.go`, `!log.Redirected()`), que en la
+    biblioteca es siempre. Ahora `Rclone.iniciar` pone `NEVER`, lo vigila
+    `PasadaEnAndroidTest.combinar_en_el_pc_quita_la_copia_de_conflicto_sin_que_el_freno_pare_el_llavero`
+    (falla sin el arreglo), y con KeePassDX la copia desaparece en la pasada
+    siguiente y la base queda como la combinada. Las demás agujas del llavero
+    (el remoto vacío, `Skipped delete` de la simulación) son de líneas sin
+    colores, pero ya no dependen de ello.
+  - **KeePassDX ve el cambio en disco, pero se puede pisar.** Con la base abierta
+    y una versión más nueva bajada por «Sincronizar», al volver avisa («modified
+    outside the app») y ofrece combinar, guardar encima o recargar. Si se cierra
+    el aviso con «OK» y se guarda, pisa el cambio del otro dispositivo: queda
+    solo en `.prversions/`, sin copia de conflicto ni aviso de prdrive. Decidir
+    si «Sincronizar» debe saltarse el llavero, o avisar, con la app de KeePass
+    abierta.
+  - **Abrir desde los recientes de KeePassDX fallaba (arreglado).** El permiso
+    de `ACTION_VIEW` no era persistible: KeePassDX lo intentaba tomar («No
+    persistable permission grants») y Android le negaba el proveedor. Con
+    `FLAG_GRANT_PERSISTABLE_URI_PERMISSION` se lo queda (`persisted=0x3`), y tras
+    cerrarlo del todo vuelve a abrir y leer la base desde sus recientes.
+  - **«Abrir llavero» metía KeePassDX en la tarea de prdrive (arreglado).** Con
+    `FLAG_ACTIVITY_NEW_TASK` va en la suya, y volver a prdrive enseña prdrive.
+  - **El tipo MIME (arreglado).** Con `application/octet-stream` salía el
+    selector «Abrir con» mezclando KeePassDX con Google Wallet y Google. Ahora
+    va primero `application/x-kdbx`, que declaran las apps de KeePass, y abre
+    KeePassDX sin selector; el genérico queda de reserva, por un selector y sin
+    permiso persistible (una revisión de seguridad: el persistible es de
+    escritura, dura y va en un `Intent` implícito, así que solo con el tipo de
+    KeePass, y se retira al quitar el llavero). Falta ver qué declara
+    Keepass2Android: si solo el genérico, se abre por el selector cada vez y no
+    puede volver desde sus recientes.
+  - **Las carpetas con punto.** En el selector de Archivos, `.keychain` no se ve
+    hasta activar «Show hidden files»; entonces se ve con `.prversions/`,
+    `LEEME.txt` y la base.
+  - **Falta todavía**, porque el emulador no lo da: `llave_interna` con la llave
+    copiada; Keepass2Android; el congelador de Android 14+ con una pasada que
+    sigue tras parar WorkManager su trabajo; y todo en un teléfono arm64.
+  - **Para repetirlo:** el servidor de `punta_a_punta.py` va ahora con
+    `--dir-cache-time 0s`, así que un cambio hecho en el disco del remoto por
+    detrás (el «PC», con `keepassxc-cli`) se ve en seguida; con los 5 min de
+    serie de `rclone serve`, no. La base de la prueba es sintética y no se
+    puede abrir: para KeePassDX hay que poner en `keychain/` una de verdad.
 
 ## 2. Hallazgos que se arreglan en prdrive
 
@@ -46,6 +106,17 @@ hacerlo.
   un `-1` en `extra_flags` es un `--resync` en cada pasada, saltándose
   `FLAGS_RESERVADOS`. El teléfono traduce cada letra a su flag largo y le pasa
   `problemaFlag`.
+- **`llavero.listado_local()` se cae con una hora imposible.** Una línea del
+  listado con el año 0000 o el mes 13 hace que `calendar.timegm` lance
+  `ValueError` (usa `datetime.date`), y la excepción no se recoge: se cae la
+  función entera, no solo esa línea. rclone no escribe eso nunca, así que es
+  latente. El teléfono no lee la línea (`Llavero.listadoLocal`) y los vectores no
+  llevan el caso, porque en Python lanza.
+- **`llavero.bases()` distingue mayúsculas solo en algunos sistemas.** `rglob`
+  de `*.kdbx` no las distingue en Windows y sí en POSIX, y el filtro de rclone
+  `+ *.kdbx` sí las distingue en todos: una `X.KDBX` es base en un PC con Windows
+  y no entra en la pareja. El teléfono sigue a rclone (las distingue), y los
+  vectores evitan el caso para no depender del sistema.
 - **`update.parse_version` lanza con un `²`**, aunque dice que nunca lanza:
   `str.isdigit()` lo da por cifra y `int()` no lo lee (`ValueError`). Y
   `update.check()` se cae con un `AttributeError` si GitHub contesta algo que no
@@ -87,11 +158,11 @@ hacerlo.
 - **Sincronizar sin abrir la app:** servicio en segundo plano y pasadas
   periódicas, y lo que diga el `[daemon]` del config (que el instalador ya
   escribe). Para empezar ya están la cancelación limpia de una pasada
-  (`job/stop` y esperar a que acabe) y el cerrojo que las pone en fila. Con él,
+  (`job/stop` y esperar a que acabe), el cerrojo que las pone en fila y
+  WorkManager, que el llavero ya usa para sus pasadas (AGENTS.md, «El llavero»);
+  falta lo mismo para las parejas. Con él,
   la autoactualización también puede mirar y bajar sin que se abra la app; hoy
   solo lo hace al abrirla, que es cuando la app sirve de algo.
-- **El llavero** (`[keychain]`): el motor construye su pareja, pero la pasada
-  la salta.
 - **Resolver conflictos:** hoy se detectan y se avisan (`Conflictos.kt`); falta
   la pantalla que elige una versión.
 - **Editar el catálogo:** hoy solo se lee. Escribirlo es la ceremonia de

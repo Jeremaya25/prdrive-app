@@ -43,14 +43,27 @@ object Banco {
      * un `rclone.conf` con `[nas]` de tipo local y la sección del `combine`, y
      * arranca rclone. Vacía la caché de remotos de rclone, que si no recordaría
      * durante cinco minutos los de la prueba anterior.
+     *
+     * Con [llavero] (el nombre de su base) el config lleva `[keychain]`, y su
+     * carpeta en el remoto es `catalogo/keychain` dentro de [remoto]. Con
+     * [catalogo], el config dice dónde está el catálogo (`catalogo/remote.toml`
+     * dentro de [remoto]) aunque no lleve el llavero.
      */
-    fun volumen(vararg parejas: Map<String, Any?>): kotlin.Pair<Volumen, Config> {
+    fun volumen(
+        vararg parejas: Map<String, Any?>,
+        llavero: String? = null,
+        catalogo: Boolean = llavero != null,
+    ): kotlin.Pair<Volumen, Config> {
         val v = Prdrive.volumen(contexto)
         v.raiz.deleteRecursively()
         remoto.deleteRecursively()
         remoto.mkdirs()
         v.escribirConfig(
-            mapOf("defaults" to mapOf("device_remote" to "disp", "remote" to "nas"), "pair" to parejas.toList()),
+            mapOf(
+                "defaults" to mapOf("device_remote" to "disp", "remote" to "nas") +
+                    if (catalogo) mapOf("catalog_path" to File(remoto, "catalogo/remote.toml").absolutePath) else emptyMap(),
+                "pair" to parejas.toList(),
+            ) + if (llavero != null) mapOf("keychain" to mapOf("base" to llavero)) else emptyMap(),
             "# Para los tests.\n",
         )
         val config = v.leerConfig()
@@ -58,6 +71,31 @@ object Banco {
         Prdrive.iniciarRclone(contexto)
         Rclone.rpc("fscache/clear")
         return v to config
+    }
+
+    /**
+     * Una base de KeePassXC de los vectores de `kdbx.py`: la de KDBX 4.1 entera,
+     * o la primera que no lo está.
+     */
+    fun base(entera: Boolean): ByteArray =
+        bytes(
+            if (entera) {
+                casosKdbx.first { it["entera"] == true && it["version"] == "4.1" }
+            } else {
+                casosKdbx.first { it["entera"] == false }
+            },
+        )
+
+    /** Otra base entera, distinta de la de [base]: la de KDBX 4.1 con otra semilla. */
+    fun otraBase(): ByteArray = bytes(casosKdbx.first { it["caso"] == "KDBX 4 con otra semilla" && it["entera"] == true })
+
+    @Suppress("UNCHECKED_CAST")
+    private val casosKdbx: List<Map<String, Any?>>
+        get() = (vectores["llavero"] as Map<String, Any?>)["kdbx"] as List<Map<String, Any?>>
+
+    private fun bytes(caso: Map<String, Any?>): ByteArray {
+        val hexa = caso["hex"].toString()
+        return ByteArray(hexa.length / 2) { hexa.substring(2 * it, 2 * it + 2).toInt(16).toByte() }
     }
 
     /** Una pareja cuyo remoto es una carpeta de [remoto]. */

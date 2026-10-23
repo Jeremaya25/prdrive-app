@@ -39,12 +39,21 @@ object Rclone {
      * `BASE_FLAGS`, y tiene que ser el global porque `fs.Infof` no mira el de la
      * llamada (fs/log.go, `LogLevelPrintf`). Sin él, una pasada buena no deja
      * nada en su log.
+     *
+     * Y sin colores (`TerminalColorMode = NEVER`): bisync los enciende cuando el
+     * modo es `AUTO` y el log no va a un fichero (`cmd/bisync/operations.go`,
+     * `!log.Redirected()`), que en la biblioteca es siempre, y no los vuelve a
+     * apagar (`bisync.Colors` es global). Con colores, las líneas que lee la
+     * pasada («File was deleted», en `Llavero.soloCopiasBorradas`) llevan
+     * códigos ANSI en medio y no casan: tras combinar en el PC, el llavero se
+     * quedaba parado en el freno de borrados. El escritorio no lo ve porque su
+     * log va a un fichero.
      */
     fun iniciar(conf: File, trabajo: File, temporal: File) {
         trabajo.mkdirs()
         val error = Biblioteca.iniciar(conf.absolutePath, trabajo.absolutePath, temporal.absolutePath)
         if (error.isNotEmpty()) throw RcloneError(0, error)
-        rpc("options/set", mapOf("main" to mapOf("LogLevel" to "INFO")))
+        rpc("options/set", mapOf("main" to mapOf("LogLevel" to "INFO", "TerminalColorMode" to "NEVER")))
     }
 
     /** La versión de rclone que va dentro. */

@@ -78,6 +78,12 @@ const val LLAVERO = "keychain"
 /** Carpeta del llavero en la raíz del volumen, oculta como `.prdrive/`. */
 const val LLAVERO_LOCAL = ".keychain"
 
+/**
+ * El fichero llave de un llavero sin contraseña (`llave_interna`), dentro de
+ * [LLAVERO_LOCAL]: nombre fijo (`model.LLAVERO_LLAVE`), y nunca sube al remoto.
+ */
+const val LLAVERO_LLAVE = "llave.keyx"
+
 /** Subcarpeta del llavero dentro de la carpeta del catálogo, en el remoto. */
 const val LLAVERO_REMOTO = "keychain"
 

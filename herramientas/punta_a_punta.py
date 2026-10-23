@@ -2,7 +2,8 @@
 punta_a_punta.py — El servidor de la prueba de punta a punta (`PuntaAPuntaTest`).
 
 Monta en una carpeta de trabajo un remoto de prueba —un catálogo con una pareja
-bisync `notas` y un espejo de bajada `fotos`, con ficheros ya dentro—, una clave
+bisync `notas`, un espejo de bajada `fotos` y el llavero (`[keychain]`), con
+ficheros ya dentro y una base de KeePassXC entera en `keychain/`—, una clave
 para el teléfono y otra para el servidor, y la carga del QR que las junta, hecha
 con el `pairing.dumps()` de prdrive (y comprobada con su `leer()`). Después
 arranca `rclone serve sftp` sobre el remoto, escuchando SOLO en 127.0.0.1: el
@@ -10,8 +11,9 @@ emulador ve el PC en 10.0.2.2.
 
     python herramientas/punta_a_punta.py ../prdrive <rclone> <carpeta de trabajo> [puerto]
 
-`<rclone>` es un rclone de la misma versión que el .aar (prdrive la fija en
-`common/pins.py`). Mientras corre, en otra consola, la orden que imprime lanza la
+`<rclone>` es un rclone de la versión del .aar o cercana (prdrive la fija en
+`common/pins.py`): aquí solo sirve SFTP, y bisync corre en el teléfono con el
+del .aar. Mientras corre, en otra consola, la orden que imprime lanza la
 prueba. Necesita `ssh-keygen` (OpenSSH).
 """
 
@@ -44,6 +46,9 @@ name = "fotos"
 local = "sync-data/fotos"
 remote_path = "/copia/fotos"
 mode = "down-mirror"
+
+[keychain]
+base = "personal.kdbx"
 """
 
 # Lo que `PuntaAPuntaTest` espera encontrar en el remoto.
@@ -54,6 +59,26 @@ FICHEROS = {
     "copia/notas/quieto.txt": "quieto\n",
     "copia/fotos/foto.txt": "una foto\n",
 }
+
+
+def base_entera(prdrive: Path) -> bytes:
+    """
+    Los bytes de una base de KeePassXC entera, fabricada como lo hace
+    `vectores_llavero.py` (la cabecera de KDBX 4 con su suma y su cadena de
+    bloques) y comprobada con el `kdbx.mirar()` de prdrive: son los mismos
+    bytes que `Banco.base(entera = true)` saca de los vectores, y con eso
+    `PuntaAPuntaTest` sabe qué tiene que encontrar en el teléfono. Sin una
+    base entera, la pasada del llavero la dejaría fuera.
+    """
+    sys.path.insert(0, str(prdrive))
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    from common import kdbx  # noqa: PLC0415
+    import vectores_llavero  # noqa: PLC0415
+
+    datos = vectores_llavero._kdbx4(kdbx, [b"x" * 20, b"y" * 8])
+    mirada = kdbx.mirar(datos)
+    assert mirada.entera, mirada.motivo
+    return datos
 
 
 def preparar(prdrive: Path, trabajo: Path, puerto: int) -> Path:
@@ -67,6 +92,9 @@ def preparar(prdrive: Path, trabajo: Path, puerto: int) -> Path:
     for ruta, texto in FICHEROS.items():
         (remoto / ruta).parent.mkdir(parents=True, exist_ok=True)
         (remoto / ruta).write_text(texto, encoding="utf-8", newline="\n")
+    # La carpeta del llavero cuelga de la del catálogo (`LLAVERO_REMOTO`).
+    (remoto / "prdrive-catalog" / "keychain").mkdir(parents=True, exist_ok=True)
+    (remoto / "prdrive-catalog" / "keychain" / "personal.kdbx").write_bytes(base_entera(prdrive))
     claves.mkdir(parents=True, exist_ok=True)
     for nombre, comentario in (("id_ed25519", "prdrive-app e2e"), ("host_ed25519", "servidor e2e")):
         if not (claves / nombre).exists():
@@ -111,6 +139,10 @@ def main() -> int:
         "--authorized-keys", str(claves / "authorized_keys"),
         "--key", str(claves / "host_ed25519"),
         "--config", str(trabajo / "sin-config.conf"),
+        # Sin caché de carpetas: para probar a mano, un cambio hecho en el disco
+        # del remoto por detrás (el «PC», con keepassxc-cli) se ve en seguida.
+        # Con los 5 min de serie, el teléfono no lo veía.
+        "--dir-cache-time", "0s",
         "-v",
     ])
 

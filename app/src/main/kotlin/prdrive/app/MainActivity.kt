@@ -5,6 +5,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import prdrive.app.llavero.Disparos
 import prdrive.app.ui.Modelo
 import prdrive.app.ui.PrdriveApp
 
@@ -13,6 +14,10 @@ class MainActivity : ComponentActivity() {
 
     private val modelo: Modelo by viewModels()
 
+    /**
+     * Al arrancar, si algo del llavero quedó sin subir (un guardado cuyo
+     * trabajo se perdió), se encola su pasada ([Disparos.siPendiente]).
+     */
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         // Los iconos de las barras del sistema, oscuros sobre el tema claro y
@@ -30,6 +35,7 @@ class MainActivity : ComponentActivity() {
         // parejas (`PrincipalTest`).
         val modelo = modelo
         setContent { PrdriveApp(modelo) }
+        Disparos.siPendiente(this)
     }
 
     /** Al abrirse, la app pregunta si hay versión nueva ([Actualizador]). */

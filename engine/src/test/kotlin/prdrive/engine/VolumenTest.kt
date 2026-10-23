@@ -7,6 +7,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -142,6 +143,34 @@ class VolumenTest {
     }
 
     @Test
+    fun `un rclone conf que no se puede leer no se reescribe con solo el combine`() {
+        val v = Volumen(File(temporal(), "volumen"))
+        v.programa.mkdirs()
+        val config = parseConfig(
+            mapOf(
+                "defaults" to mapOf("device_remote" to "disp", "remote" to "nas"),
+                "pair" to listOf(mapOf("name" to "notas", "local" to "notas", "remote_path" to "/n")),
+            ),
+        )
+        // Que no está: reescribirlo dejaría un conf sin el remoto.
+        assertFailsWith<java.io.IOException> { v.actualizarCombine(config) }
+        assertFalse(v.rcloneConf.exists())
+        assertNull(v.leerRcloneConfSiSePuede())
+        assertEquals("", v.leerRcloneConf())
+
+        // Que no se puede leer (aquí, porque es una carpeta): tampoco se toca.
+        assertTrue(v.rcloneConf.mkdirs())
+        assertFailsWith<java.io.IOException> { v.actualizarCombine(config) }
+        assertTrue(v.rcloneConf.isDirectory)
+        assertNull(v.leerRcloneConfSiSePuede())
+
+        // Vacío no es lo mismo que sin leer.
+        assertTrue(v.rcloneConf.delete())
+        v.rcloneConf.writeText("")
+        assertEquals("", v.leerRcloneConfSiSePuede())
+    }
+
+    @Test
     fun `una carpeta local que es un enlace a la del programa se detecta`() {
         val v = Volumen(File(temporal(), "volumen"))
         v.programa.mkdirs()
@@ -160,5 +189,86 @@ class VolumenTest {
             false // Windows sin permiso para enlaces: no hay nada que comprobar aquí
         }
         if (creado) assertTrue(v.problemaContencion(config.pairs[0]) != null)
+    }
+
+    // --- activar y quitar el llavero --------------------------------------------
+
+    private val activar get() = Vectores.objeto(Vectores.seccion("llavero"), "activar")
+
+    @Suppress("UNCHECKED_CAST")
+    private fun remotaDe(caso: Map<String, Any?>) = caso["remota"] as Map<String, Any?>
+
+    @Suppress("UNCHECKED_CAST")
+    private fun sinLlaveroDe(caso: Map<String, Any?>) = caso["sin_llavero"] as Map<String, Any?>
+
+    @Test
+    fun `activar el llavero añade la tabla del remoto y el config se sigue leyendo`() {
+        assertEquals(Vectores.texto(activar, "llave"), LLAVERO_LLAVE)
+        val casos = Vectores.objetos(activar, "casos")
+        assertTrue(casos.size >= 5)
+        for (caso in casos) {
+            val nombre = "«${caso["caso"]}»"
+            val sin = sinLlaveroDe(caso)
+            val remota = remotaDe(caso)
+            val con = Volumen.conLlavero(sin, remota)
+            assertEquals(remota, con["keychain"], nombre)
+            assertTrue(con["keychain"] !== remota, "$nombre: es una copia, no la tabla del catálogo")
+            val config = parseConfig(con)
+            val pareja = assertNotNull(config.parejaLlavero, nombre)
+            assertEquals(remota["llave_interna"] == true, pareja.llaveInterna, nombre)
+            assertEquals(remota, config.llavero, nombre)
+            // El resto del config no cambia, y el original tampoco.
+            assertEquals(normalizar(sin), normalizar(con - "keychain"), nombre)
+            assertFalse("keychain" in sin, nombre)
+            // Y lo que se escribe se relee igual.
+            assertEquals(normalizar(con), normalizar(loadRaw(dumpsChecked(con))), nombre)
+        }
+    }
+
+    @Test
+    @Suppress("UNCHECKED_CAST")
+    fun `sin llavero en el remoto no hay nada que traer`() {
+        val caso = Vectores.objetos(Vectores.objeto(Vectores.seccion("llavero"), "frenos"), "alta")
+            .first { it.containsKey("error") }
+        val sin = sinLlaveroDe(Vectores.objetos(activar, "casos").first())
+        val error = assertFailsWith<ConfigError> { Volumen.conLlavero(sin, caso["remota"] as Map<String, Any?>?) }
+        assertEquals(Vectores.texto(caso, "error"), error.message)
+    }
+
+    @Test
+    fun `quitar el llavero deja el resto del config igual`() {
+        for (caso in Vectores.objetos(activar, "casos")) {
+            val nombre = "«${caso["caso"]}»"
+            val sin = sinLlaveroDe(caso)
+            val con = Volumen.conLlavero(sin, remotaDe(caso))
+            val quitado = Volumen.sinLlavero(con)
+            assertEquals(normalizar(sin), normalizar(quitado), nombre)
+            assertTrue("keychain" in con, "$nombre: el config de partida no se toca")
+            val config = parseConfig(quitado)
+            assertNull(config.parejaLlavero, nombre)
+            assertNull(config.llavero, nombre)
+            assertEquals(parseConfig(sin).pairs, config.pairs, nombre)
+        }
+        // Sin llavero que quitar, queda igual.
+        val sin = sinLlaveroDe(Vectores.objetos(activar, "casos").first())
+        assertEquals(normalizar(sin), normalizar(Volumen.sinLlavero(sin)))
+    }
+
+    @Test
+    fun `los avisos de activar y quitar son los de prdrive`() {
+        val casos = Vectores.objetos(activar, "casos")
+        assertTrue(casos.any { Vectores.cadenas(it, "avisos_alta").isNotEmpty() })
+        assertTrue(casos.any { Vectores.cadenas(it, "avisos_baja").size == 2 })
+        for (caso in casos) {
+            val nombre = "«${caso["caso"]}»"
+            val sin = parseConfig(sinLlaveroDe(caso))
+            val con = parseConfig(Volumen.conLlavero(sinLlaveroDe(caso), remotaDe(caso)))
+            assertEquals(Vectores.cadenas(caso, "avisos_alta"), Volumen.avisosAlta(sin), "$nombre: activar")
+            // Con o sin el llavero ya puesto, la pareja de la raíz es la misma.
+            assertEquals(Vectores.cadenas(caso, "avisos_alta"), Volumen.avisosAlta(con), "$nombre: activar con él")
+            assertEquals(Vectores.cadenas(caso, "avisos_baja"), Volumen.avisosBaja(con), "$nombre: quitar")
+        }
+        val error = assertFailsWith<ConfigError> { Volumen.avisosBaja(parseConfig(sinLlaveroDe(casos.first()))) }
+        assertEquals(Vectores.texto(activar, "baja_sin_llavero"), error.message)
     }
 }

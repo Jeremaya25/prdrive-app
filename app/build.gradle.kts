@@ -140,14 +140,23 @@ dependencies {
     // El escáner de códigos de Play services: lee el QR sin que la app pida la
     // cámara.
     implementation("com.google.android.gms:play-services-code-scanner:16.1.0")
+    // Las pasadas del llavero en segundo plano (llavero/TrabajoLlavero.kt): al
+    // guardar la base, al leerla y si algo quedó sin subir, con red y
+    // reintentos, también con la app cerrada.
+    implementation("androidx.work:work-runtime-ktx:2.12.0")
 
     androidTestImplementation("androidx.test.ext:junit:1.3.0")
     androidTestImplementation("androidx.test:runner:1.7.0")
+    // Un WorkManager de prueba, que encola sin ejecutar (TrabajoLlaveroTest).
+    androidTestImplementation("androidx.work:work-testing:2.12.0")
     // La prueba de punta a punta maneja las pantallas de verdad.
     androidTestImplementation(platform("androidx.compose:compose-bom:2026.09.00"))
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
     // El Espresso que trae ui-test busca `InputManager.getInstance`, que ya no
     // existe en API 37; el 3.7 (el de androidx.test 1.7) no.
     androidTestImplementation("androidx.test.espresso:espresso-core:3.7.0")
+    // «Abrir llavero» lanza un ACTION_VIEW: PantallaLlaveroTest lo intercepta
+    // y lo comprueba sin necesitar una app de KeePass en el emulador.
+    androidTestImplementation("androidx.test.espresso:espresso-intents:3.7.0")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
 }
