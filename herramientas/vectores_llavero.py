@@ -16,6 +16,10 @@ carpeta temporal, con `model.DEVICE_ROOT` y `STATE_DIR` reenganchados a ella y
 `llavero.dormir` sin espera, y apuntan lo que contesta `common/llavero.py`. Las
 horas de los ficheros van en nanosegundos y siempre en múltiplos de 100: NTFS
 las guarda en tics de 100 ns, y así sale igual en cualquier sistema.
+
+La sección `repeticiones` ejecuta `sync.repetir_sin_freno()` sobre una pasada
+parada por cada freno, con rclone, el `mkdir` del remoto y el destino de los
+logs cambiados por grabadoras: qué órdenes manda, con qué pareja, y qué dice.
 """
 
 from __future__ import annotations
@@ -796,8 +800,194 @@ def vectores_frenos(llavero, model, frenos, cifrada) -> dict:
     }
 
 
+MARCA_LOG = "<log guardado>"
+"""Lo que devuelve la grabadora de `dispose_log()` cuando el log se guarda.
+
+Es lo que sale en las líneas donde prdrive nombra el log («(Log: …)»): el
+nombre de verdad lleva la hora, y el test lo cambia por esto antes de comparar.
+"""
+
+ABORTO_BORRADOS = (
+    "2026/10/05 17:38:16 ERROR : Safety abort: too many deletes (>25%, 2 of 4) on "
+    "Path1 \"disp{uR5dC}:.keychain/\". Run with --force if desired.\n"
+    "2026/10/05 17:38:16 NOTICE: Failed to bisync: too many deletes\n")
+"""El freno de borrados de bisync, como en `tests/test_llavero.py` de prdrive."""
+
+TODOS_CAMBIADOS = (
+    "2026/10/12 17:38:16 INFO  : - Path2             File changed: time (newer)          - LEEME.txt\n"
+    "2026/10/12 17:38:16 INFO  : - Path2             File changed: time (newer)          - personal.kdbx\n"
+    "2026/10/12 17:38:16 INFO  : Path2:    2 changes:    0 new,    2 modified,    0 deleted\n"
+    "2026/10/12 17:38:16 ERROR : Safety abort: all files were changed on Path2 "
+    "\"nas:prdrive-catalog/keychain/\". Run with --force if desired.\n"
+    "2026/10/12 17:38:16 NOTICE: Bisync aborted. Please try again.\n"
+    "2026/10/12 17:38:16 NOTICE: Failed to bisync: all files were changed\n")
+"""«Han cambiado todos los ficheros» (#115 de prdrive), con los dos ficheros del llavero."""
+
+REMOTO_VACIO = (
+    "2026/10/16 08:52:39 ERROR : Empty current Path2 listing. Cannot sync to an empty directory: "
+    "/volumen/.prdrive/state/keychain/disp_.keychain..nas_prdrive-catalog_keychain.path2.lst-new\n"
+    "2026/10/16 08:52:39 ERROR : Bisync critical error: empty current Path2 listing: "
+    "/volumen/.prdrive/state/keychain/disp_.keychain..nas_prdrive-catalog_keychain.path2.lst-new\n"
+    "2026/10/16 08:52:39 ERROR : Bisync aborted. Error is retryable without --resync due to "
+    "--resilient mode.\n"
+    "2026/10/16 08:52:39 NOTICE: Failed to bisync: bisync aborted\n")
+"""La carpeta del llavero borrada a mano en el remoto (rclone v1.75.2, `checkListing()`)."""
+
+SIMULADA = ("2026/10/15 10:00:00 NOTICE: personal.kdbx: Skipped copy as --dry-run is set (size 100)\n"
+            "2026/10/15 10:00:00 NOTICE: LEEME.txt: Skipped copy as --dry-run is set (size 200)\n")
+"""Una simulación con `--force` que no borraría nada: solo copia."""
+
+REPETIDA = "2026/10/16 08:52:40 INFO  : Bisync successful\n"
+"""El log de una repetición que va bien."""
+
+
+def _orden_de(cmd: list[str]) -> dict:
+    """Lo que importa de una orden de bisync: si simula, fuerza o rehace, y su freno."""
+    tope = None
+    for i, arg in enumerate(cmd):
+        if arg == "--max-delete" and i + 1 < len(cmd):
+            tope = int(cmd[i + 1])
+        elif arg.startswith("--max-delete="):
+            tope = int(arg.split("=", 1)[1])
+    return {"dry_run": "--dry-run" in cmd, "force": "--force" in cmd,
+            "resync": "--resync" in cmd, "max_delete": tope}
+
+
+def _caso_repeticion(sync, pair, nombre: str, log: str, simulacion: dict | None,
+                     dry_run: bool) -> dict:
+    """`sync.repetir_sin_freno()` sobre una pasada parada con ese log.
+
+    `execute`, `crear_carpeta_remota`, `lo_que_borraria_forzando` y `dispose_log`
+    se cambian por grabadoras, y `build_command` se envuelve para saber con qué
+    pareja y si con `--resync` se monta cada orden. La de `lo_que_borraria_forzando`
+    llama a la de verdad: lo que borraría lo dice prdrive (`frenos.borrarian()`),
+    con el log de `simulacion` como el de la simulación.
+
+    Args:
+        simulacion: `{"rc", "log"}` de la simulación con `--force`, si la hay.
+    """
+    import contextlib  # noqa: PLC0415
+    import io  # noqa: PLC0415
+    rc_parada = 7
+    ordenes: list[dict] = []
+    montadas: list[dict] = []
+    mkdir: list[dict] = []
+    guardados: list[dict] = []
+    simuladas: list = []
+    temporales: list[Path] = []
+    simulando = [False]
+    originales = (sync.execute, sync.crear_carpeta_remota, sync.lo_que_borraria_forzando,
+                  sync.dispose_log, sync.build_command)
+
+    def execute(ctx, cmd, logfile=None):
+        ordenes.append(_orden_de(cmd))
+        if simulando[0]:
+            rc, texto = simulacion["rc"], simulacion["log"]
+        else:
+            rc, texto = 0, REPETIDA
+        if logfile is not None:
+            logfile.write_text(texto, encoding="utf-8")
+        return rc
+
+    def crear_carpeta_remota(ctx, par):
+        mkdir.append({"destino": par.dest, "dry_run": ctx.dry_run})
+        return 0
+
+    def lo_que_borraria_forzando(ctx, par, ffile):
+        simulando[0] = True
+        try:
+            borraria = originales[2](ctx, par, ffile)
+        finally:
+            simulando[0] = False
+        simuladas.append(borraria)
+        return borraria
+
+    def dispose_log(name, tmp, rc, keep_always):
+        guardados.append({"rc": rc, "siempre": keep_always})
+        if rc == 0 and not keep_always:
+            return None
+        return Path(MARCA_LOG)
+
+    def build_command(ctx, par, ffile, need_resync):
+        cmd, logfile = originales[4](ctx, par, ffile, need_resync)
+        temporales.append(logfile)
+        cambio = {k: v for k, v in par.flags.items() if pair.flags.get(k) != v}
+        montadas.append({"cambio": cambio, "resync": bool(need_resync),
+                         "dry_run": ctx.dry_run, "simulacion": simulando[0]})
+        return cmd, logfile
+
+    (sync.execute, sync.crear_carpeta_remota, sync.lo_que_borraria_forzando,
+     sync.dispose_log, sync.build_command) = (execute, crear_carpeta_remota,
+                                             lo_que_borraria_forzando, dispose_log,
+                                             build_command)
+    try:
+        with tempfile.TemporaryDirectory() as tmp:
+            parada = Path(tmp) / "parada.log"
+            parada.write_text(log, encoding="utf-8")
+            ctx = sync.RunContext(binary="rclone", env={}, dry_run=dry_run, sello="~20261016-085239")
+            impreso = io.StringIO()
+            with contextlib.redirect_stdout(impreso):
+                rc, devuelto = sync.repetir_sin_freno(ctx, pair, Path("filtros.txt"), parada, rc_parada)
+            de_la_parada = devuelto == parada
+    finally:
+        (sync.execute, sync.crear_carpeta_remota, sync.lo_que_borraria_forzando,
+         sync.dispose_log, sync.build_command) = originales
+        for t in temporales:
+            t.unlink(missing_ok=True)
+    repeticiones = [m for m in montadas if not m["simulacion"]]
+    assert len(repeticiones) <= 1, (nombre, montadas)
+    return {
+        "caso": nombre, "dry_run": dry_run, "log": log, "rc_parada": rc_parada,
+        "simulacion": simulacion if simuladas else None,
+        "repetida": {"rc": 0, "log": REPETIDA} if repeticiones else None,
+        "repite": bool(repeticiones),
+        "cambio": repeticiones[0]["cambio"] if repeticiones else None,
+        "resync": repeticiones[0]["resync"] if repeticiones else False,
+        "mkdir": mkdir,
+        "simulada": bool(simuladas),
+        "borraria": simuladas[0] if simuladas else None,
+        "ordenes": ordenes,
+        "guardados": guardados,
+        "rc": rc,
+        "log_de_la_parada": de_la_parada,
+        "lineas": impreso.getvalue().splitlines(),
+    }
+
+
+def vectores_repeticiones(sync, model, pair) -> dict:
+    """Cada freno del llavero y si `repetir_sin_freno()` repite la pasada, en una de verdad y en un simulacro."""
+    copia1, copia2 = "personal.conflicto-dispositivo1.kdbx", "personal.conflicto-remoto2.kdbx"
+    borra = SIMULADA + "2026/10/15 10:00:00 NOTICE: X3.kdbx: Skipped move into backup dir as --dry-run is set\n"
+    casos = [
+        ("copias de conflicto borradas",
+         _log(_borrado("Path1", copia1), _borrado("Path2", copia2)) + ABORTO_BORRADOS, None),
+        ("una base borrada",
+         _log(_borrado("Path1", copia1), _borrado("Path1", "personal.kdbx")) + ABORTO_BORRADOS, None),
+        ("han cambiado todos, y forzar no borraría nada", TODOS_CAMBIADOS, {"rc": 0, "log": SIMULADA}),
+        ("han cambiado todos, y forzar borraría X3.kdbx", TODOS_CAMBIADOS, {"rc": 0, "log": borra}),
+        ("han cambiado todos, y la simulación falla", TODOS_CAMBIADOS,
+         {"rc": 7, "log": "2026/10/15 10:00:00 NOTICE: Failed to bisync: no sé\n"}),
+        ("el remoto vacío", REMOTO_VACIO, None),
+        ("el lado del dispositivo vacío", REMOTO_VACIO.replace("Path2", "Path1"), None),
+        ("un fallo de red",
+         "2026/10/16 08:52:39 ERROR : Failed to create file system for \"nas:/prdrive-catalog/keychain\": "
+         "couldn't connect SSH: dial tcp 127.0.0.1:2222: connect: connection refused\n"
+         "2026/10/16 08:52:39 NOTICE: Failed to bisync: bisync aborted\n", None),
+    ]
+    return {
+        "config": CONFIG_FRENOS,
+        "llavero_roto": sync.LLAVERO_ROTO,
+        "llavero_sin_cifrar": sync.LLAVERO_SIN_CIFRAR,
+        "versions_dir": model.VERSIONS_DIR,
+        "marca_log": MARCA_LOG,
+        "casos": [_caso_repeticion(sync, pair, nombre, log, simulacion, dry_run)
+                  for dry_run in (False, True) for nombre, log, simulacion in casos],
+    }
+
+
 def vectores(kdbx, llavero, model, bisync) -> dict:
     """La sección `llavero` del JSON."""
+    import sync   # noqa: PLC0415 — prdrive ya está en el path
     from common import cifrada, frenos   # noqa: PLC0415 — prdrive ya está en el path
     config = model.parse_config(CONFIG_LLAVERO)
     return {
@@ -806,4 +996,6 @@ def vectores(kdbx, llavero, model, bisync) -> dict:
         "leeme": vectores_leeme(kdbx, llavero, model, config),
         "listado": vectores_listado(llavero, model, bisync, config),
         "frenos": vectores_frenos(llavero, model, frenos, cifrada),
+        "repeticiones": vectores_repeticiones(
+            sync, model, model.parse_config(CONFIG_FRENOS).pareja_llavero),
     }

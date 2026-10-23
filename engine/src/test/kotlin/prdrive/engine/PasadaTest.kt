@@ -237,13 +237,25 @@ class PasadaTest {
 
     // --- la pasada -----------------------------------------------------------
 
-    /** Un rclone de mentira: apunta lo que le piden y contesta lo que se le diga. */
-    private class RcloneFalso(var final: Pasada.Final = Pasada.Final(true, "", "INFO : Bisync successful\n")) :
-        Pasada.Rclone {
+    /**
+     * Un rclone de mentira: apunta lo que le piden (también los `mkdir`) y
+     * contesta, por orden, lo que haya en [cola]; acabada la cola, [final].
+     */
+    private class RcloneFalso(
+        var final: Pasada.Final = Pasada.Final(true, "", "INFO : Bisync successful\n"),
+        vararg cola: Pasada.Final,
+    ) : Pasada.Rclone {
         val llamadas = ArrayList<Pasada.Llamada>()
+        val mkdirs = ArrayList<String>()
+        private val pendientes = ArrayDeque(cola.toList())
         override fun ejecutar(llamada: Pasada.Llamada, alProgreso: (Map<String, Any?>) -> Unit): Pasada.Final {
             llamadas.add(llamada)
-            return final
+            return pendientes.removeFirstOrNull() ?: final
+        }
+
+        override fun mkdir(destino: String): Pasada.Final {
+            mkdirs.add(destino)
+            return Pasada.Final(true, "", "")
         }
     }
 
@@ -351,5 +363,204 @@ class PasadaTest {
         Pasada.pasar(v, config.pairs[0], RcloneFalso(), opcionesDeLaPasada,
             Pasada.Contexto(simulacro = true, resyncAprobado = true))
         assertFalse(Resultados.rutaEstado(v.state).exists())
+    }
+
+    // --- la pasada del llavero -------------------------------------------------
+
+    private val repeticiones get() = Vectores.objeto(Vectores.seccion("llavero"), "repeticiones")
+
+    /** Una base de KeePassXC de los vectores de `kdbx.py`: entera o no. */
+    private fun baseDeLosVectores(entera: Boolean): ByteArray {
+        val caso = Vectores.objetos(Vectores.seccion("llavero"), "kdbx").first { it["entera"] == entera }
+        val hexa = Vectores.texto(caso, "hex")
+        return ByteArray(hexa.length / 2) { hexa.substring(2 * it, 2 * it + 2).toInt(16).toByte() }
+    }
+
+    /** No espera de verdad: el llavero mira otra vez una base rota a los dos segundos. */
+    private val sinEsperar: (Long) -> Unit = {}
+
+    /**
+     * Un volumen con el config de los vectores de las repeticiones (el llavero
+     * con `personal.kdbx`), con [cambiar] encima de su `[keychain]`, y una base
+     * en `.keychain/`.
+     */
+    private fun volumenLlavero(
+        entera: Boolean = true,
+        cambiar: Map<String, Any?> = emptyMap(),
+    ): kotlin.Pair<Volumen, Pareja> {
+        @Suppress("UNCHECKED_CAST")
+        val raw = LinkedHashMap(Vectores.objeto(repeticiones, "config"))
+        raw["keychain"] = LinkedHashMap(Vectores.objeto(raw, "keychain")) + cambiar
+        val v = Volumen(File(temporal(), "volumen"))
+        v.escribirConfig(raw, "")
+        val config = v.leerConfig()
+        v.rcloneConf.writeText("[nas]\ntype = sftp\n\n" + config.seccionCombine(v.raiz.absolutePath))
+        val pareja = config.parejaLlavero!!
+        val carpeta = pareja.carpetaEn(v.raiz).apply { mkdirs() }
+        File(carpeta, Vectores.texto(Vectores.objeto(raw, "keychain"), "base")).writeBytes(baseDeLosVectores(entera))
+        return v to pareja
+    }
+
+    /**
+     * Deja la pareja con baseline: los dos listados con [nombres] y el hash de
+     * sus filtros, para que la pasada sea normal y no un resync.
+     */
+    private fun conBaseline(v: Volumen, p: Pareja, nombres: List<String>) {
+        val prefijo = Bisync.expectedPrefix(p, Bisync.tiposDeRemote(v.leerRcloneConf()))
+        val workdir = v.workdir(p).apply { mkdirs() }
+        // El `lineFormat` de cmd/bisync/listing.go, que es lo que lee `listado_local()`.
+        val lineas = nombres.joinToString("") { "-        5 - - 2026-10-05T06:44:29.752645891+0000 \"$it\"\n" }
+        File(workdir, prefijo + Bisync.PATH1_SUFFIX).writeText("# bisync listing v1\n$lineas")
+        File(workdir, prefijo + Bisync.PATH2_SUFFIX).writeText("# bisync listing v1\n$lineas")
+        Bisync.filtersFileFor(p, v.filtros)!!.let { f ->
+            val md5 = java.security.MessageDigest.getInstance("MD5").digest(f.readBytes())
+                .joinToString("") { (it.toInt() and 0xff).toString(16).padStart(2, '0') }
+            File(f.path + ".md5").writeText(md5)
+        }
+    }
+
+    /** Lo que hay en `.keychain/`, con su LEEME: lo que el listado de la última pasada buena tiene que nombrar. */
+    private fun todoListado(v: Volumen, p: Pareja) {
+        Llavero.asegurarLeeme(p.carpetaEn(v.raiz))
+        conBaseline(v, p, p.carpetaEn(v.raiz).list()!!.sorted())
+    }
+
+    @Test
+    fun `los codigos del llavero son los de sync_py`() {
+        assertEquals(repeticiones["llavero_roto"], Pasada.LLAVERO_ROTO.toLong())
+        assertEquals(repeticiones["llavero_sin_cifrar"], Pasada.LLAVERO_SIN_CIFRAR.toLong())
+        assertEquals(repeticiones["versions_dir"], VERSIONS_DIR)
+    }
+
+    @Test
+    fun `el llavero sin baseline se resincroniza solo y antes crea su carpeta en el remoto`() {
+        val (v, p) = volumenLlavero()
+        val rclone = RcloneFalso()
+        // Sin aprobar ningún resync: el llavero no espera a nadie.
+        val r = Pasada.pasar(v, p, rclone, opcionesDeLaPasada, Pasada.Contexto(dormir = sinEsperar))
+        assertEquals(0, r.codigo)
+        assertEquals(listOf(p.dest), rclone.mkdirs)
+        assertTrue(p.dest.endsWith("/$LLAVERO_REMOTO"), p.dest)
+        val llamada = rclone.llamadas.first()
+        assertEquals(true, llamada.parametros["resync"])
+        assertEquals(LLAVERO_FLAGS["resync-mode"], llamada.parametros["resyncMode"])
+        assertTrue(File(p.carpetaEn(v.raiz), Llavero.LEEME).isFile)
+    }
+
+    @Test
+    fun `una base rota para la pasada sin llamar a rclone y se apunta`() {
+        val (v, p) = volumenLlavero(entera = false)
+        val rclone = RcloneFalso()
+        val r = Pasada.pasar(v, p, rclone, opcionesDeLaPasada, Pasada.Contexto(dormir = sinEsperar))
+        assertEquals(Pasada.LLAVERO_ROTO, r.codigo)
+        assertTrue(rclone.llamadas.isEmpty())
+        assertTrue(rclone.mkdirs.isEmpty())
+        assertEquals(Pasada.LLAVERO_ROTO, Resultados.fallosDe(v.state, v.logs, listOf(p.name)).single().codigo.toInt())
+    }
+
+    @Test
+    fun `sin contrasena y sin cifrar no se sincroniza`() {
+        val sinContrasena = mapOf("fichero_llave" to true, "llave_interna" to true)
+        val (v, p) = volumenLlavero(cambiar = sinContrasena)
+        assertTrue(p.llaveInterna)
+        val rclone = RcloneFalso()
+        val r = Pasada.pasar(v, p, rclone, opcionesDeLaPasada, Pasada.Contexto(dormir = sinEsperar))
+        assertEquals(Pasada.LLAVERO_SIN_CIFRAR, r.codigo)
+        assertTrue(rclone.llamadas.isEmpty())
+        assertEquals(Pasada.LLAVERO_SIN_CIFRAR, Resultados.fallosDe(v.state, v.logs, listOf(p.name)).single().codigo.toInt())
+
+        val cifrado = Pasada.pasar(v, p, rclone, opcionesDeLaPasada, Pasada.Contexto(cifrado = true, dormir = sinEsperar))
+        assertEquals(0, cifrado.codigo)
+        assertEquals(1, rclone.llamadas.size)
+    }
+
+    private fun finalDe(objeto: Any?): Pasada.Final {
+        @Suppress("UNCHECKED_CAST")
+        val o = objeto as Map<String, Any?>
+        return Pasada.Final(o["rc"] == 0L, "", Vectores.texto(o, "log"))
+    }
+
+    @Test
+    fun `cada freno del llavero se repite una vez como en prdrive`() {
+        val marca = Vectores.texto(repeticiones, "marca_log")
+        for (caso in Vectores.objetos(repeticiones, "casos")) {
+            val simulacro = caso["dry_run"] == true
+            val donde = "«${caso["caso"]}»${if (simulacro) " (simulacro)" else ""}"
+            val (v, p) = volumenLlavero()
+            todoListado(v, p)
+            // La pasada parada, la simulación con --force si la hay, y la repetición si la hay.
+            val cola = listOfNotNull(
+                Pasada.Final(false, "", Vectores.texto(caso, "log")),
+                caso["simulacion"]?.let(::finalDe),
+                caso["repetida"]?.let(::finalDe),
+            )
+            val rclone = RcloneFalso(Pasada.Final(false, "", "sobra una llamada\n"), *cola.toTypedArray())
+            val r = Pasada.pasar(v, p, rclone, opcionesDeLaPasada,
+                Pasada.Contexto(simulacro = simulacro, dormir = sinEsperar))
+
+            val ordenes = Vectores.objetos(caso, "ordenes")
+            assertEquals(1 + ordenes.size, rclone.llamadas.size, donde)
+            val primera = rclone.llamadas.first().parametros
+            assertNull(primera["force"], donde)
+            assertNull(primera["resync"], donde)
+            for ((orden, llamada) in ordenes.zip(rclone.llamadas.drop(1))) {
+                val q = llamada.parametros
+                assertEquals(orden["dry_run"] == true, q["dryRun"] == true, "$donde dryRun")
+                assertEquals(orden["force"] == true, q["force"] == true, "$donde force")
+                assertEquals(orden["resync"] == true, q["resync"] == true, "$donde resync")
+                assertEquals(Pasada.maxDeleteBisync(orden["max_delete"] as Long?), q["maxDelete"], "$donde maxDelete")
+            }
+            // `rclone mkdir --dry-run` no crea nada: en un simulacro no se le pide.
+            val mkdirs = Vectores.objetos(caso, "mkdir").filter { it["dry_run"] != true }.map { it["destino"] }
+            assertEquals(mkdirs, rclone.mkdirs, donde)
+            assertEquals(if (caso["rc"] == 0L) 0 else Pasada.FALLO, r.codigo, donde)
+
+            // Lo que dice, con el log que nombra cambiado por la marca de los vectores.
+            val guardados = v.logs.list().orEmpty().toList()
+            val lineas = r.lineas.map { l -> guardados.fold(l) { a, g -> a.replace(g, marca) } }
+            val esperadas = Vectores.cadenas(caso, "lineas")
+            assertTrue(java.util.Collections.indexOfSubList(lineas, esperadas) >= 0, "$donde: $lineas")
+            // El log de la pasada parada se guarda cuando prdrive lo guarda.
+            val parada = Vectores.objetos(caso, "guardados").count { it["rc"] != 0L || it["siempre"] == true }
+            val delFinal = if (r.codigo != 0) 1 else 0
+            assertEquals(parada + delFinal, guardados.size, "$donde: $guardados")
+        }
+    }
+
+    @Test
+    fun `una base que rclone deja sin listar se apunta con otra pasada`() {
+        val (v, p) = volumenLlavero()
+        // El listado de la última pasada buena solo tiene el LEEME: la base, no.
+        Llavero.asegurarLeeme(p.carpetaEn(v.raiz))
+        conBaseline(v, p, listOf(Llavero.LEEME))
+        val rclone = RcloneFalso()
+        val r = Pasada.pasar(v, p, rclone, opcionesDeLaPasada, Pasada.Contexto(dormir = sinEsperar))
+        assertEquals(0, r.codigo)
+        assertEquals(2, rclone.llamadas.size)
+        assertNull(rclone.llamadas[1].parametros["resync"])
+        assertEquals(rclone.llamadas[0], rclone.llamadas[1], "la misma pasada, otra vez")
+
+        // Con todo en el listado, una sola.
+        val (v2, p2) = volumenLlavero()
+        todoListado(v2, p2)
+        val otro = RcloneFalso()
+        Pasada.pasar(v2, p2, otro, opcionesDeLaPasada, Pasada.Contexto(dormir = sinEsperar))
+        assertEquals(1, otro.llamadas.size)
+    }
+
+    @Test
+    fun `al llavero se le explica el freno sin decirle que lo fuerce`() {
+        val caso = Vectores.objetos(repeticiones, "casos")
+            .first { it["dry_run"] != true && it["repite"] == true && it["simulada"] == true }
+        val (v, p) = volumenLlavero()
+        todoListado(v, p)
+        val parada = Pasada.Final(false, "", Vectores.texto(caso, "log"))
+        // La repetida vuelve a pararse igual: no hay otra, y se explica.
+        val rclone = RcloneFalso(parada, parada, finalDe(caso["simulacion"]), parada)
+        val r = Pasada.pasar(v, p, rclone, opcionesDeLaPasada, Pasada.Contexto(dormir = sinEsperar))
+        assertEquals(Pasada.FALLO, r.codigo)
+        assertEquals(3, rclone.llamadas.size)
+        assertEquals(Pasada.EXPLICACION_CAMBIADOS, Pasada.explicar(Vectores.texto(caso, "log")))
+        assertEquals(Pasada.EXPLICACION_LLAVERO_CAMBIADOS, r.explicacion)
     }
 }

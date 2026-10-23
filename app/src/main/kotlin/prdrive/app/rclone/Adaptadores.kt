@@ -42,6 +42,17 @@ object Adaptadores {
                 val log = if (bisync) final.salida["output"]?.toString() ?: "" else capturado
                 Pasada.Final(final.ok, final.error, log, final.salida)
             }
+
+        // El `rclone mkdir` de la carpeta del llavero antes de su --resync.
+        override fun mkdir(destino: String): Pasada.Final =
+            synchronized(unaPasada) {
+                try {
+                    Rclone.rpc("operations/mkdir", mapOf("fs" to destino, "remote" to ""))
+                    Pasada.Final(true, "", "")
+                } catch (e: Rclone.RcloneError) {
+                    Pasada.Final(false, e.message ?: "", "")
+                }
+            }
     }
 
     /**

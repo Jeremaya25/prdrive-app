@@ -23918,6 +23918,508 @@
           }
         }
       ]
+    },
+    "repeticiones": {
+      "config": {
+        "defaults": {
+          "device_remote": "disp",
+          "remote": "nas"
+        },
+        "keychain": {
+          "base": "personal.kdbx"
+        },
+        "pair": [
+          {
+            "name": "notas",
+            "local": "sync-data/notas",
+            "remote_path": "/copia/notas"
+          }
+        ]
+      },
+      "llavero_roto": 2,
+      "llavero_sin_cifrar": 3,
+      "versions_dir": ".prversions",
+      "marca_log": "<log guardado>",
+      "casos": [
+        {
+          "caso": "copias de conflicto borradas",
+          "dry_run": false,
+          "log": "2026/10/16 08:52:39 INFO  : - Path1             File was deleted                            - personal.conflicto-dispositivo1.kdbx\n2026/10/16 08:52:39 INFO  : - Path2             File was deleted                            - personal.conflicto-remoto2.kdbx\n2026/10/05 17:38:16 ERROR : Safety abort: too many deletes (>25%, 2 of 4) on Path1 \"disp{uR5dC}:.keychain/\". Run with --force if desired.\n2026/10/05 17:38:16 NOTICE: Failed to bisync: too many deletes\n",
+          "rc_parada": 7,
+          "simulacion": null,
+          "repetida": {
+            "rc": 0,
+            "log": "2026/10/16 08:52:40 INFO  : Bisync successful\n"
+          },
+          "repite": true,
+          "cambio": {
+            "max-delete": 100
+          },
+          "resync": false,
+          "mkdir": [],
+          "simulada": false,
+          "borraria": null,
+          "ordenes": [
+            {
+              "dry_run": false,
+              "force": false,
+              "resync": false,
+              "max_delete": 100
+            }
+          ],
+          "guardados": [
+            {
+              "rc": 0,
+              "siempre": false
+            }
+          ],
+          "rc": 0,
+          "log_de_la_parada": false,
+          "lineas": [
+            "[keychain] Lo borrado son copias de conflicto (personal.conflicto-dispositivo1.kdbx, personal.conflicto-remoto2.kdbx), y cada una queda en .prversions: se repite la pasada sin el freno de borrados."
+          ]
+        },
+        {
+          "caso": "una base borrada",
+          "dry_run": false,
+          "log": "2026/10/16 08:52:39 INFO  : - Path1             File was deleted                            - personal.conflicto-dispositivo1.kdbx\n2026/10/16 08:52:39 INFO  : - Path1             File was deleted                            - personal.kdbx\n2026/10/05 17:38:16 ERROR : Safety abort: too many deletes (>25%, 2 of 4) on Path1 \"disp{uR5dC}:.keychain/\". Run with --force if desired.\n2026/10/05 17:38:16 NOTICE: Failed to bisync: too many deletes\n",
+          "rc_parada": 7,
+          "simulacion": null,
+          "repetida": null,
+          "repite": false,
+          "cambio": null,
+          "resync": false,
+          "mkdir": [],
+          "simulada": false,
+          "borraria": null,
+          "ordenes": [],
+          "guardados": [],
+          "rc": 7,
+          "log_de_la_parada": true,
+          "lineas": []
+        },
+        {
+          "caso": "han cambiado todos, y forzar no borraría nada",
+          "dry_run": false,
+          "log": "2026/10/12 17:38:16 INFO  : - Path2             File changed: time (newer)          - LEEME.txt\n2026/10/12 17:38:16 INFO  : - Path2             File changed: time (newer)          - personal.kdbx\n2026/10/12 17:38:16 INFO  : Path2:    2 changes:    0 new,    2 modified,    0 deleted\n2026/10/12 17:38:16 ERROR : Safety abort: all files were changed on Path2 \"nas:prdrive-catalog/keychain/\". Run with --force if desired.\n2026/10/12 17:38:16 NOTICE: Bisync aborted. Please try again.\n2026/10/12 17:38:16 NOTICE: Failed to bisync: all files were changed\n",
+          "rc_parada": 7,
+          "simulacion": {
+            "rc": 0,
+            "log": "2026/10/15 10:00:00 NOTICE: personal.kdbx: Skipped copy as --dry-run is set (size 100)\n2026/10/15 10:00:00 NOTICE: LEEME.txt: Skipped copy as --dry-run is set (size 200)\n"
+          },
+          "repetida": {
+            "rc": 0,
+            "log": "2026/10/16 08:52:40 INFO  : Bisync successful\n"
+          },
+          "repite": true,
+          "cambio": {
+            "force": true
+          },
+          "resync": false,
+          "mkdir": [],
+          "simulada": true,
+          "borraria": [],
+          "ordenes": [
+            {
+              "dry_run": true,
+              "force": true,
+              "resync": false,
+              "max_delete": 25
+            },
+            {
+              "dry_run": false,
+              "force": true,
+              "resync": false,
+              "max_delete": 25
+            }
+          ],
+          "guardados": [
+            {
+              "rc": 7,
+              "siempre": true
+            }
+          ],
+          "rc": 0,
+          "log_de_la_parada": false,
+          "lineas": [
+            "[keychain] Han cambiado todos los ficheros de un lado y bisync se ha parado (Log: <log guardado>). El llavero deja lo que pisa cada lado en .prversions: se repite la pasada una vez con --force."
+          ]
+        },
+        {
+          "caso": "han cambiado todos, y forzar borraría X3.kdbx",
+          "dry_run": false,
+          "log": "2026/10/12 17:38:16 INFO  : - Path2             File changed: time (newer)          - LEEME.txt\n2026/10/12 17:38:16 INFO  : - Path2             File changed: time (newer)          - personal.kdbx\n2026/10/12 17:38:16 INFO  : Path2:    2 changes:    0 new,    2 modified,    0 deleted\n2026/10/12 17:38:16 ERROR : Safety abort: all files were changed on Path2 \"nas:prdrive-catalog/keychain/\". Run with --force if desired.\n2026/10/12 17:38:16 NOTICE: Bisync aborted. Please try again.\n2026/10/12 17:38:16 NOTICE: Failed to bisync: all files were changed\n",
+          "rc_parada": 7,
+          "simulacion": {
+            "rc": 0,
+            "log": "2026/10/15 10:00:00 NOTICE: personal.kdbx: Skipped copy as --dry-run is set (size 100)\n2026/10/15 10:00:00 NOTICE: LEEME.txt: Skipped copy as --dry-run is set (size 200)\n2026/10/15 10:00:00 NOTICE: X3.kdbx: Skipped move into backup dir as --dry-run is set\n"
+          },
+          "repetida": null,
+          "repite": false,
+          "cambio": null,
+          "resync": false,
+          "mkdir": [],
+          "simulada": true,
+          "borraria": [
+            "X3.kdbx"
+          ],
+          "ordenes": [
+            {
+              "dry_run": true,
+              "force": true,
+              "resync": false,
+              "max_delete": 25
+            }
+          ],
+          "guardados": [],
+          "rc": 7,
+          "log_de_la_parada": true,
+          "lineas": [
+            "[keychain] Han cambiado todos los ficheros de un lado y bisync se ha parado, pero forzar la pasada borraría X3.kdbx: no se fuerza, el freno manda."
+          ]
+        },
+        {
+          "caso": "han cambiado todos, y la simulación falla",
+          "dry_run": false,
+          "log": "2026/10/12 17:38:16 INFO  : - Path2             File changed: time (newer)          - LEEME.txt\n2026/10/12 17:38:16 INFO  : - Path2             File changed: time (newer)          - personal.kdbx\n2026/10/12 17:38:16 INFO  : Path2:    2 changes:    0 new,    2 modified,    0 deleted\n2026/10/12 17:38:16 ERROR : Safety abort: all files were changed on Path2 \"nas:prdrive-catalog/keychain/\". Run with --force if desired.\n2026/10/12 17:38:16 NOTICE: Bisync aborted. Please try again.\n2026/10/12 17:38:16 NOTICE: Failed to bisync: all files were changed\n",
+          "rc_parada": 7,
+          "simulacion": {
+            "rc": 7,
+            "log": "2026/10/15 10:00:00 NOTICE: Failed to bisync: no sé\n"
+          },
+          "repetida": null,
+          "repite": false,
+          "cambio": null,
+          "resync": false,
+          "mkdir": [],
+          "simulada": true,
+          "borraria": null,
+          "ordenes": [
+            {
+              "dry_run": true,
+              "force": true,
+              "resync": false,
+              "max_delete": 25
+            }
+          ],
+          "guardados": [],
+          "rc": 7,
+          "log_de_la_parada": true,
+          "lineas": [
+            "[keychain] Han cambiado todos los ficheros de un lado y bisync se ha parado, pero forzar la pasada no se ha podido simular: no se fuerza, el freno manda."
+          ]
+        },
+        {
+          "caso": "el remoto vacío",
+          "dry_run": false,
+          "log": "2026/10/16 08:52:39 ERROR : Empty current Path2 listing. Cannot sync to an empty directory: /volumen/.prdrive/state/keychain/disp_.keychain..nas_prdrive-catalog_keychain.path2.lst-new\n2026/10/16 08:52:39 ERROR : Bisync critical error: empty current Path2 listing: /volumen/.prdrive/state/keychain/disp_.keychain..nas_prdrive-catalog_keychain.path2.lst-new\n2026/10/16 08:52:39 ERROR : Bisync aborted. Error is retryable without --resync due to --resilient mode.\n2026/10/16 08:52:39 NOTICE: Failed to bisync: bisync aborted\n",
+          "rc_parada": 7,
+          "simulacion": null,
+          "repetida": {
+            "rc": 0,
+            "log": "2026/10/16 08:52:40 INFO  : Bisync successful\n"
+          },
+          "repite": true,
+          "cambio": {},
+          "resync": true,
+          "mkdir": [
+            {
+              "destino": "nas:/prdrive-catalog/keychain",
+              "dry_run": false
+            }
+          ],
+          "simulada": false,
+          "borraria": null,
+          "ordenes": [
+            {
+              "dry_run": false,
+              "force": false,
+              "resync": true,
+              "max_delete": 25
+            }
+          ],
+          "guardados": [
+            {
+              "rc": 7,
+              "siempre": true
+            }
+          ],
+          "rc": 0,
+          "log_de_la_parada": false,
+          "lineas": [
+            "[keychain] La carpeta del llavero en el remoto está vacía o ya no está, y bisync no sincroniza contra un lado vacío (Log: <log guardado>). Un --resync no borra nada y lo que pise queda en .prversions: se crea la carpeta y se repite la pasada una vez con --resync."
+          ]
+        },
+        {
+          "caso": "el lado del dispositivo vacío",
+          "dry_run": false,
+          "log": "2026/10/16 08:52:39 ERROR : Empty current Path1 listing. Cannot sync to an empty directory: /volumen/.prdrive/state/keychain/disp_.keychain..nas_prdrive-catalog_keychain.path2.lst-new\n2026/10/16 08:52:39 ERROR : Bisync critical error: empty current Path1 listing: /volumen/.prdrive/state/keychain/disp_.keychain..nas_prdrive-catalog_keychain.path2.lst-new\n2026/10/16 08:52:39 ERROR : Bisync aborted. Error is retryable without --resync due to --resilient mode.\n2026/10/16 08:52:39 NOTICE: Failed to bisync: bisync aborted\n",
+          "rc_parada": 7,
+          "simulacion": null,
+          "repetida": null,
+          "repite": false,
+          "cambio": null,
+          "resync": false,
+          "mkdir": [],
+          "simulada": false,
+          "borraria": null,
+          "ordenes": [],
+          "guardados": [],
+          "rc": 7,
+          "log_de_la_parada": true,
+          "lineas": []
+        },
+        {
+          "caso": "un fallo de red",
+          "dry_run": false,
+          "log": "2026/10/16 08:52:39 ERROR : Failed to create file system for \"nas:/prdrive-catalog/keychain\": couldn't connect SSH: dial tcp 127.0.0.1:2222: connect: connection refused\n2026/10/16 08:52:39 NOTICE: Failed to bisync: bisync aborted\n",
+          "rc_parada": 7,
+          "simulacion": null,
+          "repetida": null,
+          "repite": false,
+          "cambio": null,
+          "resync": false,
+          "mkdir": [],
+          "simulada": false,
+          "borraria": null,
+          "ordenes": [],
+          "guardados": [],
+          "rc": 7,
+          "log_de_la_parada": true,
+          "lineas": []
+        },
+        {
+          "caso": "copias de conflicto borradas",
+          "dry_run": true,
+          "log": "2026/10/16 08:52:39 INFO  : - Path1             File was deleted                            - personal.conflicto-dispositivo1.kdbx\n2026/10/16 08:52:39 INFO  : - Path2             File was deleted                            - personal.conflicto-remoto2.kdbx\n2026/10/05 17:38:16 ERROR : Safety abort: too many deletes (>25%, 2 of 4) on Path1 \"disp{uR5dC}:.keychain/\". Run with --force if desired.\n2026/10/05 17:38:16 NOTICE: Failed to bisync: too many deletes\n",
+          "rc_parada": 7,
+          "simulacion": null,
+          "repetida": {
+            "rc": 0,
+            "log": "2026/10/16 08:52:40 INFO  : Bisync successful\n"
+          },
+          "repite": true,
+          "cambio": {
+            "max-delete": 100
+          },
+          "resync": false,
+          "mkdir": [],
+          "simulada": false,
+          "borraria": null,
+          "ordenes": [
+            {
+              "dry_run": true,
+              "force": false,
+              "resync": false,
+              "max_delete": 100
+            }
+          ],
+          "guardados": [
+            {
+              "rc": 0,
+              "siempre": false
+            }
+          ],
+          "rc": 0,
+          "log_de_la_parada": false,
+          "lineas": [
+            "[keychain] Lo borrado son copias de conflicto (personal.conflicto-dispositivo1.kdbx, personal.conflicto-remoto2.kdbx), y cada una queda en .prversions: en una pasada de verdad se repetiría una vez sin el freno de borrados."
+          ]
+        },
+        {
+          "caso": "una base borrada",
+          "dry_run": true,
+          "log": "2026/10/16 08:52:39 INFO  : - Path1             File was deleted                            - personal.conflicto-dispositivo1.kdbx\n2026/10/16 08:52:39 INFO  : - Path1             File was deleted                            - personal.kdbx\n2026/10/05 17:38:16 ERROR : Safety abort: too many deletes (>25%, 2 of 4) on Path1 \"disp{uR5dC}:.keychain/\". Run with --force if desired.\n2026/10/05 17:38:16 NOTICE: Failed to bisync: too many deletes\n",
+          "rc_parada": 7,
+          "simulacion": null,
+          "repetida": null,
+          "repite": false,
+          "cambio": null,
+          "resync": false,
+          "mkdir": [],
+          "simulada": false,
+          "borraria": null,
+          "ordenes": [],
+          "guardados": [],
+          "rc": 7,
+          "log_de_la_parada": true,
+          "lineas": []
+        },
+        {
+          "caso": "han cambiado todos, y forzar no borraría nada",
+          "dry_run": true,
+          "log": "2026/10/12 17:38:16 INFO  : - Path2             File changed: time (newer)          - LEEME.txt\n2026/10/12 17:38:16 INFO  : - Path2             File changed: time (newer)          - personal.kdbx\n2026/10/12 17:38:16 INFO  : Path2:    2 changes:    0 new,    2 modified,    0 deleted\n2026/10/12 17:38:16 ERROR : Safety abort: all files were changed on Path2 \"nas:prdrive-catalog/keychain/\". Run with --force if desired.\n2026/10/12 17:38:16 NOTICE: Bisync aborted. Please try again.\n2026/10/12 17:38:16 NOTICE: Failed to bisync: all files were changed\n",
+          "rc_parada": 7,
+          "simulacion": {
+            "rc": 0,
+            "log": "2026/10/15 10:00:00 NOTICE: personal.kdbx: Skipped copy as --dry-run is set (size 100)\n2026/10/15 10:00:00 NOTICE: LEEME.txt: Skipped copy as --dry-run is set (size 200)\n"
+          },
+          "repetida": null,
+          "repite": false,
+          "cambio": null,
+          "resync": false,
+          "mkdir": [],
+          "simulada": true,
+          "borraria": [],
+          "ordenes": [
+            {
+              "dry_run": true,
+              "force": true,
+              "resync": false,
+              "max_delete": 25
+            }
+          ],
+          "guardados": [],
+          "rc": 0,
+          "log_de_la_parada": true,
+          "lineas": [
+            "[keychain] Han cambiado todos los ficheros de un lado y bisync se ha parado. El llavero deja lo que pisa cada lado en .prversions: en una pasada de verdad se repetiría una vez con --force (no borraría nada)."
+          ]
+        },
+        {
+          "caso": "han cambiado todos, y forzar borraría X3.kdbx",
+          "dry_run": true,
+          "log": "2026/10/12 17:38:16 INFO  : - Path2             File changed: time (newer)          - LEEME.txt\n2026/10/12 17:38:16 INFO  : - Path2             File changed: time (newer)          - personal.kdbx\n2026/10/12 17:38:16 INFO  : Path2:    2 changes:    0 new,    2 modified,    0 deleted\n2026/10/12 17:38:16 ERROR : Safety abort: all files were changed on Path2 \"nas:prdrive-catalog/keychain/\". Run with --force if desired.\n2026/10/12 17:38:16 NOTICE: Bisync aborted. Please try again.\n2026/10/12 17:38:16 NOTICE: Failed to bisync: all files were changed\n",
+          "rc_parada": 7,
+          "simulacion": {
+            "rc": 0,
+            "log": "2026/10/15 10:00:00 NOTICE: personal.kdbx: Skipped copy as --dry-run is set (size 100)\n2026/10/15 10:00:00 NOTICE: LEEME.txt: Skipped copy as --dry-run is set (size 200)\n2026/10/15 10:00:00 NOTICE: X3.kdbx: Skipped move into backup dir as --dry-run is set\n"
+          },
+          "repetida": null,
+          "repite": false,
+          "cambio": null,
+          "resync": false,
+          "mkdir": [],
+          "simulada": true,
+          "borraria": [
+            "X3.kdbx"
+          ],
+          "ordenes": [
+            {
+              "dry_run": true,
+              "force": true,
+              "resync": false,
+              "max_delete": 25
+            }
+          ],
+          "guardados": [],
+          "rc": 7,
+          "log_de_la_parada": true,
+          "lineas": [
+            "[keychain] Han cambiado todos los ficheros de un lado y bisync se ha parado, pero forzar la pasada borraría X3.kdbx: no se fuerza, el freno manda."
+          ]
+        },
+        {
+          "caso": "han cambiado todos, y la simulación falla",
+          "dry_run": true,
+          "log": "2026/10/12 17:38:16 INFO  : - Path2             File changed: time (newer)          - LEEME.txt\n2026/10/12 17:38:16 INFO  : - Path2             File changed: time (newer)          - personal.kdbx\n2026/10/12 17:38:16 INFO  : Path2:    2 changes:    0 new,    2 modified,    0 deleted\n2026/10/12 17:38:16 ERROR : Safety abort: all files were changed on Path2 \"nas:prdrive-catalog/keychain/\". Run with --force if desired.\n2026/10/12 17:38:16 NOTICE: Bisync aborted. Please try again.\n2026/10/12 17:38:16 NOTICE: Failed to bisync: all files were changed\n",
+          "rc_parada": 7,
+          "simulacion": {
+            "rc": 7,
+            "log": "2026/10/15 10:00:00 NOTICE: Failed to bisync: no sé\n"
+          },
+          "repetida": null,
+          "repite": false,
+          "cambio": null,
+          "resync": false,
+          "mkdir": [],
+          "simulada": true,
+          "borraria": null,
+          "ordenes": [
+            {
+              "dry_run": true,
+              "force": true,
+              "resync": false,
+              "max_delete": 25
+            }
+          ],
+          "guardados": [],
+          "rc": 7,
+          "log_de_la_parada": true,
+          "lineas": [
+            "[keychain] Han cambiado todos los ficheros de un lado y bisync se ha parado, pero forzar la pasada no se ha podido simular: no se fuerza, el freno manda."
+          ]
+        },
+        {
+          "caso": "el remoto vacío",
+          "dry_run": true,
+          "log": "2026/10/16 08:52:39 ERROR : Empty current Path2 listing. Cannot sync to an empty directory: /volumen/.prdrive/state/keychain/disp_.keychain..nas_prdrive-catalog_keychain.path2.lst-new\n2026/10/16 08:52:39 ERROR : Bisync critical error: empty current Path2 listing: /volumen/.prdrive/state/keychain/disp_.keychain..nas_prdrive-catalog_keychain.path2.lst-new\n2026/10/16 08:52:39 ERROR : Bisync aborted. Error is retryable without --resync due to --resilient mode.\n2026/10/16 08:52:39 NOTICE: Failed to bisync: bisync aborted\n",
+          "rc_parada": 7,
+          "simulacion": null,
+          "repetida": {
+            "rc": 0,
+            "log": "2026/10/16 08:52:40 INFO  : Bisync successful\n"
+          },
+          "repite": true,
+          "cambio": {},
+          "resync": true,
+          "mkdir": [
+            {
+              "destino": "nas:/prdrive-catalog/keychain",
+              "dry_run": true
+            }
+          ],
+          "simulada": false,
+          "borraria": null,
+          "ordenes": [
+            {
+              "dry_run": true,
+              "force": false,
+              "resync": true,
+              "max_delete": 25
+            }
+          ],
+          "guardados": [
+            {
+              "rc": 7,
+              "siempre": true
+            }
+          ],
+          "rc": 0,
+          "log_de_la_parada": false,
+          "lineas": [
+            "[keychain] La carpeta del llavero en el remoto está vacía o ya no está, y bisync no sincroniza contra un lado vacío (Log: <log guardado>). Un --resync no borra nada y lo que pise queda en .prversions: se crea la carpeta y se repite la pasada una vez con --resync."
+          ]
+        },
+        {
+          "caso": "el lado del dispositivo vacío",
+          "dry_run": true,
+          "log": "2026/10/16 08:52:39 ERROR : Empty current Path1 listing. Cannot sync to an empty directory: /volumen/.prdrive/state/keychain/disp_.keychain..nas_prdrive-catalog_keychain.path2.lst-new\n2026/10/16 08:52:39 ERROR : Bisync critical error: empty current Path1 listing: /volumen/.prdrive/state/keychain/disp_.keychain..nas_prdrive-catalog_keychain.path2.lst-new\n2026/10/16 08:52:39 ERROR : Bisync aborted. Error is retryable without --resync due to --resilient mode.\n2026/10/16 08:52:39 NOTICE: Failed to bisync: bisync aborted\n",
+          "rc_parada": 7,
+          "simulacion": null,
+          "repetida": null,
+          "repite": false,
+          "cambio": null,
+          "resync": false,
+          "mkdir": [],
+          "simulada": false,
+          "borraria": null,
+          "ordenes": [],
+          "guardados": [],
+          "rc": 7,
+          "log_de_la_parada": true,
+          "lineas": []
+        },
+        {
+          "caso": "un fallo de red",
+          "dry_run": true,
+          "log": "2026/10/16 08:52:39 ERROR : Failed to create file system for \"nas:/prdrive-catalog/keychain\": couldn't connect SSH: dial tcp 127.0.0.1:2222: connect: connection refused\n2026/10/16 08:52:39 NOTICE: Failed to bisync: bisync aborted\n",
+          "rc_parada": 7,
+          "simulacion": null,
+          "repetida": null,
+          "repite": false,
+          "cambio": null,
+          "resync": false,
+          "mkdir": [],
+          "simulada": false,
+          "borraria": null,
+          "ordenes": [],
+          "guardados": [],
+          "rc": 7,
+          "log_de_la_parada": true,
+          "lineas": []
+        }
+      ]
     }
   },
   "python": {

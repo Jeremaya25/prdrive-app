@@ -23,9 +23,12 @@ import java.time.format.DateTimeFormatter
  *   (`output` de `sync/bisync`, o lo que capture quien ejecuta).
  * - No hay `--config`: rclone ya está apuntado al `rclone.conf` del volumen.
  *
- * Lo que NO hay del escritorio: el llavero (la app no lo sincroniza todavía),
- * el parte de la flota, el diario de pasadas, la medida de si la pasada movió
- * algo y `--force`, que es de una persona desde «Reparación».
+ * Lo que el llavero hace distinto (resincronizarse solo, repetir sus frenos,
+ * volver a apuntar una base) está aparte, en [PasadaLlavero].
+ *
+ * Lo que NO hay del escritorio: el parte de la flota, el diario de pasadas, la
+ * medida de si la pasada movió algo y `--force`, que es de una persona desde
+ * «Reparación».
  */
 object Pasada {
 
@@ -37,6 +40,20 @@ object Pasada {
 
     /** Lo que vale una pasada que la propia pasada aborta antes de llamar a rclone. */
     const val ABORTO = 2
+
+    /**
+     * El llavero tiene una base que no está entera y la pasada no corre
+     * (`sync.LLAVERO_ROTO`). Es el «error sin clasificar» de rclone: cuenta como
+     * fallo, y la próxima pasada lo vuelve a intentar.
+     */
+    const val LLAVERO_ROTO = 2
+
+    /**
+     * El llavero va sin contraseña y el dispositivo no está cifrado: la pasada no
+     * corre (`sync.LLAVERO_SIN_CIFRAR`). Sin cifrar, la llave estaría junto a la
+     * base. Cuenta como fallo, y la próxima pasada lo vuelve a comprobar.
+     */
+    const val LLAVERO_SIN_CIFRAR = 3
 
     /** Líneas de log que se enseñan cuando algo falla. */
     const val LOG_TAIL_LINES = 15
@@ -644,12 +661,25 @@ object Pasada {
     interface Rclone {
         /** Ejecuta una llamada larga, contando el progreso, y devuelve cómo acabó. */
         fun ejecutar(llamada: Llamada, alProgreso: (Map<String, Any?>) -> Unit): Final
+
+        /**
+         * Crea la carpeta [destino] (un `operations/mkdir` con `fs = destino` y
+         * `remote = ""`; el `rclone mkdir` de `crear_carpeta_remota()`). Si ya
+         * está, no hace nada.
+         */
+        fun mkdir(destino: String): Final
     }
 
     /**
      * Lo que no cambia de una pareja a otra en una misma ejecución
      * (`RunContext`). [sello] es el sufijo de las versiones, uno por ejecución
      * para que lo apartado en ella comparta marca.
+     *
+     * @property cifrado Si el dispositivo está cifrado (`cifrada.estado()` en el
+     *   escritorio). Sin él, un llavero sin contraseña no se sincroniza
+     *   ([LLAVERO_SIN_CIFRAR]). Por defecto no, como prdrive: falla cerrado.
+     * @property dormir Cómo se espera antes de mirar otra vez una base que no
+     *   está entera ([Llavero.rotas]); se pasa para que los tests no esperen.
      */
     data class Contexto(
         val simulacro: Boolean = false,
@@ -657,6 +687,8 @@ object Pasada {
         val resyncAprobado: Boolean = false,
         val keepLogs: Boolean = false,
         val sello: String = selloVersiones(),
+        val cifrado: Boolean = false,
+        val dormir: (Long) -> Unit = { Thread.sleep(it) },
     )
 
     /** El sufijo de las versiones de una pasada: `~%Y%m%d-%H%M%S`. */
@@ -706,6 +738,16 @@ object Pasada {
                 "  la referencia está vacía: se rehace con --resync, sin pedirlo (no hay " +
                     "nada que proteger, y un --resync no borra nada).",
             )
+        } else if (needResync && pareja.llavero && razones.isNotEmpty()) {
+            // El llavero no espera a que nadie lo apruebe: con `resync-mode =
+            // newer` gana la versión más nueva y la otra queda en `.prversions/`
+            // (el backup-dir también vale en un --resync). Saltarlo lo dejaría
+            // sin sincronizar sin que nadie se enterase.
+            razones.forEach { decir("  requiere --resync -> $it") }
+            decir(
+                "[${pareja.name}] El llavero se resincroniza solo: gana lo más nuevo y lo " +
+                    "otro queda en $VERSIONS_DIR.",
+            )
         } else if (needResync && !ctx.resyncAprobado) {
             razones.forEach { decir("  requiere --resync -> $it") }
             decir("[${pareja.name}] Saltada: requiere --resync y no está aprobado.")
@@ -751,10 +793,6 @@ object Pasada {
             return Resultado(pareja.name, codigo, lineas, log, explicacion, conflictos, resync)
         }
 
-        if (pareja.llavero) {
-            cuenta("[${pareja.name}] El llavero no se sincroniza en el teléfono todavía.")
-            return Resultado(pareja.name, SALTADA, lineas)
-        }
         try {
             volumen.crearDistribucion()
         } catch (e: IOException) {
@@ -788,29 +826,40 @@ object Pasada {
             cuenta("[${pareja.name}] La ruta local '${pareja.local}' no existe. Creándola...")
             carpeta.mkdirs()
         }
+        if (pareja.llavero) {
+            PasadaLlavero.antes(pareja, carpeta, ctx, needResync, rclone, cuenta)?.let { return acabar(it) }
+        }
 
         val ffile = Bisync.filtersFileFor(pareja, volumen.filtros)
-        val tramos = Orden.tramos(
-            pareja, binario = "rclone", filtros = ffile?.absolutePath,
-            config = volumen.rcloneConf.absolutePath, logfile = "",
-            workdir = volumen.workdir(pareja).absolutePath,
-            simulacro = ctx.simulacro, resync = needResync, sello = ctx.sello,
-        )
         var explicacionDeLaOrden: String? = null
-        val final = try {
-            rclone.ejecutar(llamadaDe(tramos, opciones), alProgreso)
-        } catch (e: OrdenInvalida) {
-            explicacionDeLaOrden = e.explicacion
-            Final(false, e.message ?: "", "Error: ${e.message}")
+        // `build_command()` + `execute()`: la orden de esa pareja, traducida a
+        // una llamada rc. El llavero la repite con la pareja cambiada.
+        val llamar = PasadaLlavero.Llamar { p, resync, simulacro ->
+            val tramos = Orden.tramos(
+                p, binario = "rclone", filtros = ffile?.absolutePath,
+                config = volumen.rcloneConf.absolutePath, logfile = "",
+                workdir = volumen.workdir(p).absolutePath,
+                simulacro = simulacro, resync = resync, sello = ctx.sello,
+            )
+            try {
+                rclone.ejecutar(llamadaDe(tramos, opciones), alProgreso)
+            } catch (e: OrdenInvalida) {
+                explicacionDeLaOrden = e.explicacion
+                Final(false, e.message ?: "", "Error: ${e.message}")
+            }
+        }
+        // `dispose_log()`: se tira si fue bien (salvo que se guarden todos).
+        val disponer = PasadaLlavero.Disponer { texto, codigo, siempre ->
+            if (codigo == 0 && !siempre) null else guardarLog(volumen.logs, pareja.name, texto)
+        }
+        var final = llamar.llamar(pareja, needResync, ctx.simulacro)
+        if (!final.ok && pareja.llavero && !needResync) {
+            final = PasadaLlavero.repetirSinFreno(pareja, ctx, final, rclone, llamar, disponer, cuenta)
         }
         val codigo = if (final.ok) 0 else FALLO
-        val texto = if (final.ok || final.error.isEmpty() || final.error in final.log) {
-            final.log
-        } else {
-            final.log + (if (final.log.isEmpty() || final.log.endsWith("\n")) "" else "\n") + final.error + "\n"
-        }
+        val texto = textoDe(final)
 
-        val log = if (codigo != 0 || ctx.keepLogs) guardarLog(volumen.logs, pareja.name, texto) else null
+        val log = disponer.disponer(texto, codigo, ctx.keepLogs)
         var explicacion: String? = null
         if (codigo == 0) {
             cuenta("[${pareja.name}] OK." + (log?.let { " Log: ${it.name}" } ?: ""))
@@ -824,7 +873,11 @@ object Pasada {
                 ultimas.forEach { cuenta("  $it") }
                 cuenta("---")
             }
-            explicacion = explicacionDeLaOrden ?: explicar(texto)
+            // Las de un freno dicen cómo forzar la pasada, y al llavero no se le
+            // fuerza: para él se dice lo suyo.
+            explicacion = explicacionDeLaOrden ?: explicar(texto)?.let {
+                if (pareja.llavero && it in EXPLICACIONES) explicacionLlavero(it) else it
+            }
             explicacion?.let { cuenta("  >> $it") }
         }
         val resultado = acabar(codigo, log, explicacion, needResync)
@@ -844,8 +897,25 @@ object Pasada {
             conflictos.take(CONFLICTS_SHOWN).forEach { cuenta("  conflicto: ${it.relativa}") }
             if (conflictos.size > CONFLICTS_SHOWN) cuenta("  … y ${conflictos.size - CONFLICTS_SHOWN} más")
         }
+        if (codigo == 0 && pareja.llavero) {
+            PasadaLlavero.reapuntar(
+                pareja, carpeta, Llavero.listadoDe(volumen, pareja, tipos), ctx, llamar, disponer, cuenta,
+            )
+        }
         return resultado.copy(lineas = lineas, conflictos = conflictos)
     }
+
+    /**
+     * El log de una llamada: lo que rclone ha escrito y, si falló, su error
+     * detrás, salvo que ya esté (es lo que en el escritorio sale por consola y
+     * `append_output()` añade al log).
+     */
+    internal fun textoDe(final: Final): String =
+        if (final.ok || final.error.isEmpty() || final.error in final.log) {
+            final.log
+        } else {
+            final.log + (if (final.log.isEmpty() || final.log.endsWith("\n")) "" else "\n") + final.error + "\n"
+        }
 
     /**
      * [pasar] como la llama `run_all()`: un error de E/S a mitad de una pareja
