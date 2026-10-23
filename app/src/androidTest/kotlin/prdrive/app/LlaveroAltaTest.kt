@@ -203,4 +203,30 @@ class LlaveroAltaTest {
             assertEquals(Volumen.SIN_LLAVERO, e.message)
         }
     }
+
+    @Test
+    fun quitar_el_llavero_retira_a_otras_apps_el_permiso_sobre_la_base() {
+        val (v, _) = Banco.volumen(Banco.pareja("notas"))
+        Instalador.activarLlavero(contexto, remota(interna = false), null)
+        File(File(v.raiz, LLAVERO_LOCAL), "personal.kdbx").writeBytes(Banco.base(entera = true))
+        val uri = android.provider.DocumentsContract.buildDocumentUri(
+            prdrive.app.documentos.VolumenProvider.AUTORIDAD,
+            "${prdrive.app.documentos.VolumenProvider.ID_RAIZ}/$LLAVERO_LOCAL/personal.kdbx",
+        )
+        // Otra app hace de la de KeePass: la de los tests, que es otro paquete
+        // con su uid y siempre está. El permiso es el de «Abrir llavero».
+        val otra = androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().context.packageName
+        val uid = contexto.packageManager.getPackageUid(otra, 0)
+        val modo = android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION or
+            android.content.Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+        contexto.grantUriPermission(otra, uri, modo)
+        val concedido = android.content.pm.PackageManager.PERMISSION_GRANTED
+        assertEquals(concedido, contexto.checkUriPermission(uri, -1, uid, modo))
+
+        Instalador.quitarLlavero(contexto)
+        assertEquals(
+            android.content.pm.PackageManager.PERMISSION_DENIED,
+            contexto.checkUriPermission(uri, -1, uid, modo),
+        )
+    }
 }

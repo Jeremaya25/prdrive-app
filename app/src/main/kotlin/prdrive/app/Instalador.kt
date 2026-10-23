@@ -272,6 +272,11 @@ object Instalador {
      * ya había empezado a correr, al leer el config no encuentra el llavero y
      * acaba sin hacer nada.
      *
+     * Los permisos que se dieron sobre lo de `.keychain/` (el persistible de
+     * «Abrir llavero» a la app de KeePass, o el que dio el selector de Archivos)
+     * se retiran ([retirarPermisos]): sin llavero, ninguna app tiene por qué
+     * seguir pudiendo escribir la base.
+     *
      * @return El config sin llavero.
      * @throws ConfigError si el teléfono no lleva el llavero.
      */
@@ -283,9 +288,35 @@ object Instalador {
         val raw = Volumen.sinLlavero(actual)
         val config = parseConfig(raw)
         v.escribirConfig(raw, headerOf(texto))
+        retirarPermisos(contexto, File(v.raiz, LLAVERO_LOCAL))
         v.actualizarCombine(config)
         Prdrive.recargarRclone(contexto)
         Disparos.cancelar(contexto)
         return config
+    }
+
+    /**
+     * Retira los permisos de otras apps sobre cada fichero de [carpeta] (la del
+     * llavero): `revokeUriPermission` quita, a todas, los que dio el proveedor
+     * de esta app, persistidos incluidos. Va por fichero porque el id de un
+     * documento va codificado en la URI, y no hay «subruta» que los abarque.
+     * Un fallo solo se apunta: no impide quitar el llavero.
+     */
+    internal fun retirarPermisos(contexto: Context, carpeta: File) {
+        for (f in carpeta.listFiles().orEmpty()) {
+            if (!f.isFile) continue
+            val uri = android.provider.DocumentsContract.buildDocumentUri(
+                prdrive.app.documentos.VolumenProvider.AUTORIDAD,
+                "${prdrive.app.documentos.VolumenProvider.ID_RAIZ}/$LLAVERO_LOCAL/${f.name}",
+            )
+            try {
+                contexto.revokeUriPermission(
+                    uri, android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION or
+                        android.content.Intent.FLAG_GRANT_WRITE_URI_PERMISSION,
+                )
+            } catch (e: RuntimeException) {
+                Log.w("Instalador", "Retirando los permisos de ${f.name}", e)
+            }
+        }
     }
 }

@@ -65,8 +65,12 @@ Falta:
   - **El tipo MIME (arreglado).** Con `application/octet-stream` salía el
     selector «Abrir con» mezclando KeePassDX con Google Wallet y Google. Ahora
     va primero `application/x-kdbx`, que declaran las apps de KeePass, y abre
-    KeePassDX sin selector; el genérico queda de reserva. Falta ver qué declara
-    Keepass2Android.
+    KeePassDX sin selector; el genérico queda de reserva, por un selector y sin
+    permiso persistible (una revisión de seguridad: el persistible es de
+    escritura, dura y va en un `Intent` implícito, así que solo con el tipo de
+    KeePass, y se retira al quitar el llavero). Falta ver qué declara
+    Keepass2Android: si solo el genérico, se abre por el selector cada vez y no
+    puede volver desde sus recientes.
   - **Las carpetas con punto.** En el selector de Archivos, `.keychain` no se ve
     hasta activar «Show hidden files»; entonces se ve con `.prversions/`,
     `LEEME.txt` y la base.

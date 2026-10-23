@@ -540,12 +540,19 @@ decisiones que no se ven en el código:
   app de KeePass lo pide y lo recuerda.
 
 - **«Abrir llavero»** lanza un `ACTION_VIEW` del `content://` de la base con
-  tipo `application/x-kdbx` (lo declaran las apps de KeePass, así que el
-  selector sale solo con ellas; si ninguna lo acepta, se repite con
-  `application/octet-stream`), en su propia tarea (`FLAG_ACTIVITY_NEW_TASK`: si
-  no, la app de KeePass se apila encima de prdrive) y con permiso persistible
+  tipo `application/x-kdbx`, que declaran las apps de KeePass, en su propia
+  tarea (`FLAG_ACTIVITY_NEW_TASK`: si no, la app de KeePass se apila encima de
+  prdrive) y con permiso de lectura y escritura **persistible**
   (`FLAG_GRANT_PERSISTABLE_URI_PERMISSION`: KeePassDX se lo queda y vuelve a
   abrir la base desde sus recientes; sin él, Android le niega el proveedor).
+  Un permiso de escritura que dura, con un `Intent` implícito, es un riesgo: lo
+  recibe la app que declare el tipo. Por eso tiene tres límites: solo va con el
+  tipo de KeePass; si ninguna app lo declara, la reserva
+  (`application/octet-stream`, que abre casi cualquier app) va por un selector
+  que elige la persona y **sin** permiso persistible (se mira antes con
+  `queryIntentActivities`, declarado en `<queries>`, para decir «no hay app»);
+  y al quitar el llavero se retiran los permisos de todas las apps sobre lo de
+  `.keychain/` (`Instalador.retirarPermisos`, con `revokeUriPermission`).
 
 Probado en un emulador: el motor contra sus vectores y en el dispositivo, la
 pasada contra un rclone de verdad, el proveedor, los trabajos, la pantalla y el

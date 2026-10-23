@@ -97,13 +97,21 @@ internal object TextosLlavero {
             "abre con «Abrir llavero», en tu app de KeePass."
 
     /**
-     * Los tipos con que se pide abrir la base, en orden. No hay uno oficial para
-     * `.kdbx`: `application/x-kdbx` lo declaran las apps de KeePass (KeePassDX
-     * 4.5.6, visto en el emulador), así que el selector sale solo con ellas; el
-     * genérico queda de reserva para una que solo declare ese, y con él Android
-     * mezcla en el selector cualquier app que abra ficheros (Google, Wallet…).
+     * El tipo con que se pide abrir la base. No hay uno oficial para `.kdbx`:
+     * `application/x-kdbx` lo declaran las apps de KeePass (KeePassDX 4.5.6,
+     * visto en el emulador), así que abre una de ellas sin más.
      */
-    val TIPOS = listOf("application/x-kdbx", "application/octet-stream")
+    const val TIPO_KEEPASS = "application/x-kdbx"
+
+    /**
+     * La reserva, para una app de KeePass que solo declare el genérico. Con él,
+     * Android mezcla cualquier app que abra ficheros (Google, Wallet…): va por
+     * un selector y sin permiso que dure.
+     */
+    const val TIPO_GENERICO = "application/octet-stream"
+
+    /** El título del selector de la reserva. */
+    const val ABRIR_CON = "Abrir el llavero con tu app de KeePass"
 }
 
 /** El ámbar de la fila: el mismo en claro y en oscuro, con su texto. */
@@ -218,34 +226,45 @@ internal fun AbrirLaBase(m: Modelo) {
     val uri = m.porAbrir ?: return
     LaunchedEffect(uri) {
         m.abierta()
-        for (tipo in TextosLlavero.TIPOS) {
-            try {
-                contexto.startActivity(intentDeAbrir(uri, tipo))
-                return@LaunchedEffect
-            } catch (_: ActivityNotFoundException) {
-                // Ninguna app para este tipo: el siguiente.
-            }
+        try {
+            contexto.startActivity(intentDeAbrir(uri, TextosLlavero.TIPO_KEEPASS, persistible = true))
+            return@LaunchedEffect
+        } catch (_: ActivityNotFoundException) {
+            // Ninguna app de KeePass declara su tipo: la reserva.
         }
-        m.avisar(TextosLlavero.SIN_APP)
+        val generico = intentDeAbrir(uri, TextosLlavero.TIPO_GENERICO, persistible = false)
+        if (contexto.packageManager.queryIntentActivities(generico, 0).isEmpty()) {
+            m.avisar(TextosLlavero.SIN_APP)
+            return@LaunchedEffect
+        }
+        // Con el genérico lo abre casi cualquier app: que la elija la persona,
+        // siempre, y que el permiso dure esa vez.
+        contexto.startActivity(
+            Intent.createChooser(generico, TextosLlavero.ABRIR_CON).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+        )
     }
 }
 
 /**
- * El `ACTION_VIEW` de la base, con permiso de leerla y escribirla.
+ * El `ACTION_VIEW` de la base, con permiso de leerla y escribirla, y en su
+ * propia tarea (`FLAG_ACTIVITY_NEW_TASK`: si no, la app de KeePass se apila
+ * encima de prdrive, y volver a prdrive la enseña a ella).
  *
- * - **Persistible** (`FLAG_GRANT_PERSISTABLE_URI_PERMISSION`): la app de KeePass
- *   se queda el permiso y puede volver a abrir la base desde su lista de
- *   recientes. Sin él, KeePassDX lo intenta («No persistable permission grants»)
- *   y Android le niega el proveedor la vez siguiente.
- * - **En su propia tarea** (`FLAG_ACTIVITY_NEW_TASK`): si no, la app de KeePass
- *   se apila encima de prdrive, y volver a prdrive la enseña a ella.
+ * [persistible] (`FLAG_GRANT_PERSISTABLE_URI_PERMISSION`) deja a la app quedarse
+ * el permiso y volver a abrir la base desde sus recientes; sin él, KeePassDX lo
+ * intenta («No persistable permission grants») y Android le niega el proveedor
+ * la vez siguiente. Es un permiso de escritura que dura, dado con un `Intent`
+ * implícito, así que va solo con el tipo de KeePass, que declaran las apps de
+ * KeePass; con el genérico, no, y por un selector. Al quitar el llavero se
+ * retira ([prdrive.app.Instalador.quitarLlavero]).
  */
-internal fun intentDeAbrir(uri: Uri, tipo: String): Intent =
+internal fun intentDeAbrir(uri: Uri, tipo: String, persistible: Boolean): Intent =
     Intent(Intent.ACTION_VIEW)
         .setDataAndType(uri, tipo)
         .addFlags(
             Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION or
-                Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK,
+                Intent.FLAG_ACTIVITY_NEW_TASK or
+                (if (persistible) Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION else 0),
         )
 
 /** Cómo está el llavero: la línea de siempre y, si los hay, los motivos del ámbar. */
