@@ -28,12 +28,17 @@
     <!-- «Abrir llavero» (ui/PantallaLlavero.kt): si ninguna app de KeePass
          declara application/x-kdbx, la reserva es el genérico, por un selector.
          Para saber antes si hay alguna que lo abra (y si no, decirlo), Android
-         11+ pide declarar la consulta. -->
+         11+ pide declarar la consulta. Y los paquetes de KeePassDX
+         (TextosLlavero.PAQUETES_KEEPASSDX): la llave de un llavero sin
+         contraseña solo se le pasa si es KeePassDX quien abriría la base, y
+         sin declararlo Android no deja verlo. -->
     <queries>
         <intent>
             <action android:name="android.intent.action.VIEW" />
             <data android:mimeType="application/octet-stream" />
         </intent>
+        <package android:name="com.kunzisoft.keepass.libre" />
+        <package android:name="com.kunzisoft.keepass.free" />
     </queries>
 
     <application

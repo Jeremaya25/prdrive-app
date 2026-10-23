@@ -74,6 +74,13 @@ Falta:
   - **Las carpetas con punto.** En el selector de Archivos, `.keychain` no se ve
     hasta activar «Show hidden files»; entonces se ve con `.prversions/`,
     `LEEME.txt` y la base.
+  - **Con `llave_interna`, KeePassDX no recibía la llave (arreglado en 0.3.1).**
+    Visto al usarlo: «Abrir llavero» le daba solo la base, el «Archivo de
+    clave» salía vacío y la llave estaba en `.keychain/`, oculta en el selector.
+    Ahora va en el `Intent` como la lee KeePassDX, y solo a él (AGENTS.md, «El
+    llavero»). Falta verlo en un teléfono. Y KeePassDX solo guarda el permiso de
+    la base (`FileDatabaseInfo`), no el de una llave que le llega así: abrir
+    desde sus recientes, más tarde, puede volver a pedirla.
   - **Falta todavía**, porque el emulador no lo da: `llave_interna` con la llave
     copiada; Keepass2Android; el congelador de Android 14+ con una pasada que
     sigue tras parar WorkManager su trabajo; y todo en un teléfono arm64.

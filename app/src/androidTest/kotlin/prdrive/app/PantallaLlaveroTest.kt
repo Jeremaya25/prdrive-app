@@ -52,6 +52,9 @@ import prdrive.app.documentos.VolumenProvider
 import prdrive.app.llavero.Avisos
 import prdrive.app.llavero.LlaveroApp
 import prdrive.app.rclone.Adaptadores
+import prdrive.app.ui.TextosLlavero
+import prdrive.app.ui.conLaLlave
+import prdrive.app.ui.intentDeAbrir
 import prdrive.engine.Catalogo
 import prdrive.engine.Conflictos
 import prdrive.engine.LLAVERO
@@ -419,6 +422,86 @@ class PantallaLlaveroTest {
                 )
                 compose.onNodeWithTag("aviso-llavero").assertDoesNotExist()
                 compose.onNodeWithTag("error").assertDoesNotExist()
+            }
+        } finally {
+            Intents.release()
+        }
+    }
+
+    private fun documento(nombre: String) = DocumentsContract.buildDocumentUri(
+        VolumenProvider.AUTORIDAD, "${VolumenProvider.ID_RAIZ}/$LLAVERO_LOCAL/$nombre",
+    )
+
+    /**
+     * La llave de un llavero sin contraseña va como la lee KeePassDX (un
+     * `ClipData` «keyFile» con su URI) y dirigida a su paquete; a cualquier
+     * otra app, o con un selector delante (`android`), no va.
+     */
+    @Test
+    fun la_llave_solo_va_a_keepassdx_y_dirigida_a_su_paquete() {
+        val base = documento("personal.kdbx")
+        val llave = documento(LLAVERO_LLAVE)
+        val keepass = intentDeAbrir(base, TextosLlavero.TIPO_KEEPASS, persistible = true)
+        for (paquete in TextosLlavero.PAQUETES_KEEPASSDX) {
+            val con = conLaLlave(keepass, llave, paquete)
+            assertEquals(paquete, con.`package`)
+            assertEquals(Intent.ACTION_VIEW, con.action)
+            assertEquals(base, con.data)
+            assertEquals(TextosLlavero.TIPO_KEEPASS, con.type)
+            assertEquals(keepass.flags, con.flags)
+            val clip = con.clipData
+            assertNotNull("sin la llave", clip)
+            assertEquals("keyFile", clip!!.description.label.toString())
+            assertEquals(1, clip.itemCount)
+            assertEquals(llave, clip.getItemAt(0).uri)
+        }
+        for (paquete in listOf(null, "android", "keepass2android.keepass2android")) {
+            val sin = conLaLlave(keepass, llave, paquete)
+            assertNull("la llave ha ido a $paquete", sin.clipData)
+            assertNull(sin.`package`)
+        }
+        assertNull(conLaLlave(keepass, null, TextosLlavero.PAQUETES_KEEPASSDX.first()).clipData)
+        assertNull("ha cambiado el de entrada", keepass.clipData)
+    }
+
+    /**
+     * «Abrir llavero» con un llavero sin contraseña y su llave: la llave va
+     * con la base si Android la abriría con KeePassDX, y si no, no sale.
+     */
+    @Test
+    fun abrir_un_llavero_sin_contrasena_da_la_llave_solo_a_keepassdx() {
+        val (v, _) = Banco.volumen(Banco.pareja("notas"), llavero = "personal.kdbx")
+        val raw = loadRaw(v.config.readText()).toMutableMap()
+        raw["keychain"] = mapOf("base" to "personal.kdbx", "fichero_llave" to true, "llave_interna" to true)
+        v.escribirConfig(raw, "# Para los tests.\n")
+        File(File(v.raiz, LLAVERO_LOCAL).apply { mkdirs() }, LLAVERO_LLAVE).writeText("la llave\n")
+        baseEnElRemoto()
+        val r = LlaveroApp.pasar(contexto)
+        assertEquals(r?.lineas?.joinToString("\n"), 0, r?.codigo)
+        // Lo que resolvería Android en este dispositivo: con KeePassDX instalado
+        // y por defecto, él; si no, nadie, otra app o el selector.
+        val resuelve = contexto.packageManager.resolveActivity(
+            intentDeAbrir(documento("personal.kdbx"), TextosLlavero.TIPO_KEEPASS, persistible = true),
+            android.content.pm.PackageManager.MATCH_DEFAULT_ONLY,
+        )?.activityInfo?.packageName
+        val conKeePassDx = resuelve in TextosLlavero.PAQUETES_KEEPASSDX
+        Intents.init()
+        try {
+            intending(hasAction(Intent.ACTION_VIEW)).respondWith(ActivityResult(Activity.RESULT_OK, null))
+            ActivityScenario.launch(MainActivity::class.java).use {
+                esperar("abrir-llavero")
+                compose.onNodeWithTag("abrir-llavero").performClick()
+                compose.waitUntil(60_000) { vistas().isNotEmpty() }
+                compose.onNodeWithTag("aviso-llavero").assertDoesNotExist()
+                val vista = vistas().single()
+                assertEquals(documento("personal.kdbx"), vista.data)
+                if (conKeePassDx) {
+                    assertEquals(resuelve, vista.`package`)
+                    assertEquals(documento(LLAVERO_LLAVE), vista.clipData?.getItemAt(0)?.uri)
+                } else {
+                    assertNull("la llave ha salido hacia $resuelve", vista.clipData)
+                    assertNull(vista.`package`)
+                }
             }
         } finally {
             Intents.release()

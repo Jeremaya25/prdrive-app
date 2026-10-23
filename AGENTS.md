@@ -553,6 +553,16 @@ decisiones que no se ven en el código:
   `queryIntentActivities`, declarado en `<queries>`, para decir «no hay app»);
   y al quitar el llavero se retiran los permisos de todas las apps sobre lo de
   `.keychain/` (`Instalador.retirarPermisos`, con `revokeUriPermission`).
+- **La llave de un llavero sin contraseña va con la base, solo a KeePassDX.**
+  Sin ella, KeePassDX abre la base con «Archivo de clave» vacío, y la llave
+  está en una carpeta oculta. KeePassDX la lee de un `ClipData` con la
+  etiqueta `keyFile` (`MainCredentialActivity.getUriFromIntent` en 4.5.6), así
+  que `conLaLlave` la añade. Pero la base y la llave abren el llavero sin nada
+  más: la llave solo va si Android abriría la base con KeePassDX
+  (`resolveActivity`; sus paquetes, en `<queries>`), y entonces el `Intent` va
+  dirigido a él (`setPackage`). Con un selector delante, u otra app, no va, y se
+  elige a mano. Las marcas del `Intent` valen también para la llave, escritura
+  incluida: el proveedor no la deja escribir con el llavero activo.
 
 Probado en un emulador: el motor contra sus vectores y en el dispositivo, la
 pasada contra un rclone de verdad, el proveedor, los trabajos, la pantalla y el

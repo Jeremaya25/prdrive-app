@@ -25,6 +25,7 @@ import prdrive.engine.Config
 import prdrive.engine.ConfigError
 import prdrive.engine.Conflictos
 import prdrive.engine.LLAVERO
+import prdrive.engine.LLAVERO_LLAVE
 import prdrive.engine.LLAVERO_LOCAL
 import prdrive.engine.Pairing
 import prdrive.engine.Pasada
@@ -149,11 +150,18 @@ class Modelo(app: Application) : AndroidViewModel(app) {
      * lambda de la pantalla: girar el teléfono durante la pasada o el aviso
      * cambia la actividad, y la de antes ya no puede abrir nada.
      */
-    var porAbrir by mutableStateOf<Uri?>(null)
+    var porAbrir by mutableStateOf<Apertura?>(null)
         private set
 
     /** La base que se abrirá al cerrar [avisoLlavero]. */
-    private var trasElAviso: Uri? = null
+    private var trasElAviso: Apertura? = null
+
+    /**
+     * Lo que «Abrir llavero» le da a la app de KeePass: el `content://` de la
+     * base y, si el llavero va sin contraseña y está, el de su fichero llave
+     * ([llave]), que KeePassDX no sabe encontrar solo.
+     */
+    data class Apertura(val base: Uri, val llave: Uri?)
 
     init {
         if (sembrado) trabajo("Preparando…") { refrescar() }
@@ -394,8 +402,8 @@ class Modelo(app: Application) : AndroidViewModel(app) {
      * 2. Sin base tras la pasada, se dice por qué y no se abre.
      * 3. Con copias de conflicto de la base, o sin el fichero llave de un
      *    llavero sin contraseña, un aviso ([avisoLlavero]) que al cerrarse abre.
-     * 4. [porAbrir] con el `content://` de la base en [VolumenProvider], que
-     *    la pantalla abre.
+     * 4. [porAbrir] con el `content://` de la base en [VolumenProvider] (y
+     *    el de su fichero llave, si va sin contraseña), que la pantalla abre.
      */
     fun abrirLlavero() {
         trabajo("Abriendo el llavero…") {
@@ -436,13 +444,21 @@ class Modelo(app: Application) : AndroidViewModel(app) {
                     null
                 },
             )
-            val uri = DocumentsContract.buildDocumentUri(
-                VolumenProvider.AUTORIDAD, "${VolumenProvider.ID_RAIZ}/$LLAVERO_LOCAL/$base",
+            fun documento(nombre: String) = DocumentsContract.buildDocumentUri(
+                VolumenProvider.AUTORIDAD, "${VolumenProvider.ID_RAIZ}/$LLAVERO_LOCAL/$nombre",
             )
-            if (avisos.isEmpty()) {
-                porAbrir = uri
+            // La llave, solo la de un llavero sin contraseña: con contraseña y
+            // fichero llave, el teléfono no guarda ninguna (la pide la app de KeePass).
+            val llave = if (pareja.llaveInterna && java.io.File(pareja.carpetaEn(v.raiz), LLAVERO_LLAVE).isFile) {
+                documento(LLAVERO_LLAVE)
             } else {
-                trasElAviso = uri
+                null
+            }
+            val apertura = Apertura(documento(base), llave)
+            if (avisos.isEmpty()) {
+                porAbrir = apertura
+            } else {
+                trasElAviso = apertura
                 avisoLlavero = avisos.joinToString("\n\n")
             }
         }
