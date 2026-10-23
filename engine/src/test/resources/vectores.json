@@ -18696,6 +18696,2892 @@
       ]
     }
   },
+  "llavero": {
+    "kdbx": [
+      {
+        "caso": "KDBX 4 entera",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d80010101010101010101010101010101010101010101010101010101010101010102020202020202020202020202020202020202020202020202020202020202021400000078787878787878787878787878787878787878780202020202020202020202020202020202020202020202020202020202020202080000007979797979797979020202020202020202020202020202020202020202020202020202020202020200000000",
+        "entera": true,
+        "version": "4.1",
+        "motivo": ""
+      },
+      {
+        "caso": "KDBX 4 cortada en 0",
+        "hex": "",
+        "entera": false,
+        "version": "",
+        "motivo": "es demasiado corta para ser una base"
+      },
+      {
+        "caso": "KDBX 4 cortada en 1",
+        "hex": "03",
+        "entera": false,
+        "version": "",
+        "motivo": "es demasiado corta para ser una base"
+      },
+      {
+        "caso": "KDBX 4 cortada en 2",
+        "hex": "03d9",
+        "entera": false,
+        "version": "",
+        "motivo": "es demasiado corta para ser una base"
+      },
+      {
+        "caso": "KDBX 4 cortada en 3",
+        "hex": "03d9a2",
+        "entera": false,
+        "version": "",
+        "motivo": "es demasiado corta para ser una base"
+      },
+      {
+        "caso": "KDBX 4 cortada en 4",
+        "hex": "03d9a29a",
+        "entera": false,
+        "version": "",
+        "motivo": "es demasiado corta para ser una base"
+      },
+      {
+        "caso": "KDBX 4 cortada en 5",
+        "hex": "03d9a29a67",
+        "entera": false,
+        "version": "",
+        "motivo": "es demasiado corta para ser una base"
+      },
+      {
+        "caso": "KDBX 4 cortada en 6",
+        "hex": "03d9a29a67fb",
+        "entera": false,
+        "version": "",
+        "motivo": "es demasiado corta para ser una base"
+      },
+      {
+        "caso": "KDBX 4 cortada en 7",
+        "hex": "03d9a29a67fb4b",
+        "entera": false,
+        "version": "",
+        "motivo": "es demasiado corta para ser una base"
+      },
+      {
+        "caso": "KDBX 4 cortada en 8",
+        "hex": "03d9a29a67fb4bb5",
+        "entera": false,
+        "version": "",
+        "motivo": "es demasiado corta para ser una base"
+      },
+      {
+        "caso": "KDBX 4 cortada en 9",
+        "hex": "03d9a29a67fb4bb501",
+        "entera": false,
+        "version": "",
+        "motivo": "es demasiado corta para ser una base"
+      },
+      {
+        "caso": "KDBX 4 cortada en 10",
+        "hex": "03d9a29a67fb4bb50100",
+        "entera": false,
+        "version": "",
+        "motivo": "es demasiado corta para ser una base"
+      },
+      {
+        "caso": "KDBX 4 cortada en 11",
+        "hex": "03d9a29a67fb4bb5010004",
+        "entera": false,
+        "version": "",
+        "motivo": "es demasiado corta para ser una base"
+      },
+      {
+        "caso": "KDBX 4 cortada en 12",
+        "hex": "03d9a29a67fb4bb501000400",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 13",
+        "hex": "03d9a29a67fb4bb50100040002",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 14",
+        "hex": "03d9a29a67fb4bb5010004000210",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 15",
+        "hex": "03d9a29a67fb4bb501000400021000",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 16",
+        "hex": "03d9a29a67fb4bb50100040002100000",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 17",
+        "hex": "03d9a29a67fb4bb5010004000210000000",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 18",
+        "hex": "03d9a29a67fb4bb501000400021000000031",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 19",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 20",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 21",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 22",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 23",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf71",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 24",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf7143",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 25",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 26",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 27",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be58",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 28",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 29",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be580521",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 30",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216a",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 31",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 32",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5a",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 33",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 34",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff04",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 35",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 36",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff042000",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 37",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff04200000",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 38",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 39",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff042000000000",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 40",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff04200000000001",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 41",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 42",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff042000000000010203",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 43",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff04200000000001020304",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 44",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 45",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff042000000000010203040506",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 46",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff04200000000001020304050607",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 47",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 48",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff042000000000010203040506070809",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 49",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 50",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 51",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 52",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 53",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 54",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 55",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f10",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 56",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f1011",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 57",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 58",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f10111213",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 59",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f1011121314",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 60",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 61",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f10111213141516",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 62",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f1011121314151617",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 63",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 64",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f10111213141516171819",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 65",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 66",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 67",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 68",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 69",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 70",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 71",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 72",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f0710",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 73",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f071000",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 74",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 75",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f0710000000",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 76",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f071000000005",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 77",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 78",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f0710000000050505",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 79",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f071000000005050505",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 80",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 81",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f0710000000050505050505",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 82",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f071000000005050505050505",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 83",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 84",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f0710000000050505050505050505",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 85",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f071000000005050505050505050505",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 86",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 87",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f0710000000050505050505050505050505",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 88",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f071000000005050505050505050505050505",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 89",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 90",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f0710000000050505050505050505050505050505",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 91",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f071000000005050505050505050505050505050505",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 92",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 93",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f0710000000050505050505050505050505050505050004",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 94",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f071000000005050505050505050505050505050505000400",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 95",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 96",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f0710000000050505050505050505050505050505050004000000",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 97",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 98",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 99",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 100",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "falta la suma de la cabecera"
+      },
+      {
+        "caso": "KDBX 4 cortada en 101",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a52",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "falta la suma de la cabecera"
+      },
+      {
+        "caso": "KDBX 4 cortada en 102",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527f",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "falta la suma de la cabecera"
+      },
+      {
+        "caso": "KDBX 4 cortada en 103",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "falta la suma de la cabecera"
+      },
+      {
+        "caso": "KDBX 4 cortada en 104",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc04",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "falta la suma de la cabecera"
+      },
+      {
+        "caso": "KDBX 4 cortada en 105",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "falta la suma de la cabecera"
+      },
+      {
+        "caso": "KDBX 4 cortada en 106",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "falta la suma de la cabecera"
+      },
+      {
+        "caso": "KDBX 4 cortada en 107",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "falta la suma de la cabecera"
+      },
+      {
+        "caso": "KDBX 4 cortada en 108",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a09",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "falta la suma de la cabecera"
+      },
+      {
+        "caso": "KDBX 4 cortada en 109",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "falta la suma de la cabecera"
+      },
+      {
+        "caso": "KDBX 4 cortada en 110",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "falta la suma de la cabecera"
+      },
+      {
+        "caso": "KDBX 4 cortada en 111",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "falta la suma de la cabecera"
+      },
+      {
+        "caso": "KDBX 4 cortada en 112",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0b",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "falta la suma de la cabecera"
+      },
+      {
+        "caso": "KDBX 4 cortada en 113",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcb",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "falta la suma de la cabecera"
+      },
+      {
+        "caso": "KDBX 4 cortada en 114",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe9",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "falta la suma de la cabecera"
+      },
+      {
+        "caso": "KDBX 4 cortada en 115",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "falta la suma de la cabecera"
+      },
+      {
+        "caso": "KDBX 4 cortada en 116",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe98473",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "falta la suma de la cabecera"
+      },
+      {
+        "caso": "KDBX 4 cortada en 117",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe9847322",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "falta la suma de la cabecera"
+      },
+      {
+        "caso": "KDBX 4 cortada en 118",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "falta la suma de la cabecera"
+      },
+      {
+        "caso": "KDBX 4 cortada en 119",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d9",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "falta la suma de la cabecera"
+      },
+      {
+        "caso": "KDBX 4 cortada en 120",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90d",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "falta la suma de la cabecera"
+      },
+      {
+        "caso": "KDBX 4 cortada en 121",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da6",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "falta la suma de la cabecera"
+      },
+      {
+        "caso": "KDBX 4 cortada en 122",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "falta la suma de la cabecera"
+      },
+      {
+        "caso": "KDBX 4 cortada en 123",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "falta la suma de la cabecera"
+      },
+      {
+        "caso": "KDBX 4 cortada en 124",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "falta la suma de la cabecera"
+      },
+      {
+        "caso": "KDBX 4 cortada en 125",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd67",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "falta la suma de la cabecera"
+      },
+      {
+        "caso": "KDBX 4 cortada en 126",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "falta la suma de la cabecera"
+      },
+      {
+        "caso": "KDBX 4 cortada en 127",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "falta la suma de la cabecera"
+      },
+      {
+        "caso": "KDBX 4 cortada en 128",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "falta la suma de la cabecera"
+      },
+      {
+        "caso": "KDBX 4 cortada en 129",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2ab",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "falta la suma de la cabecera"
+      },
+      {
+        "caso": "KDBX 4 cortada en 130",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe1",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "falta la suma de la cabecera"
+      },
+      {
+        "caso": "KDBX 4 cortada en 131",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "falta la suma de la cabecera"
+      },
+      {
+        "caso": "KDBX 4 cortada en 132",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d80",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "falta la suma de la cabecera"
+      },
+      {
+        "caso": "KDBX 4 cortada en 133",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d8001",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "falta la suma de la cabecera"
+      },
+      {
+        "caso": "KDBX 4 cortada en 134",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d800101",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "falta la suma de la cabecera"
+      },
+      {
+        "caso": "KDBX 4 cortada en 135",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d80010101",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "falta la suma de la cabecera"
+      },
+      {
+        "caso": "KDBX 4 cortada en 136",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d8001010101",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "falta la suma de la cabecera"
+      },
+      {
+        "caso": "KDBX 4 cortada en 137",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d800101010101",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "falta la suma de la cabecera"
+      },
+      {
+        "caso": "KDBX 4 cortada en 138",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d80010101010101",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "falta la suma de la cabecera"
+      },
+      {
+        "caso": "KDBX 4 cortada en 139",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d8001010101010101",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "falta la suma de la cabecera"
+      },
+      {
+        "caso": "KDBX 4 cortada en 140",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d800101010101010101",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "falta la suma de la cabecera"
+      },
+      {
+        "caso": "KDBX 4 cortada en 141",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d80010101010101010101",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "falta la suma de la cabecera"
+      },
+      {
+        "caso": "KDBX 4 cortada en 142",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d8001010101010101010101",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "falta la suma de la cabecera"
+      },
+      {
+        "caso": "KDBX 4 cortada en 143",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d800101010101010101010101",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "falta la suma de la cabecera"
+      },
+      {
+        "caso": "KDBX 4 cortada en 144",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d80010101010101010101010101",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "falta la suma de la cabecera"
+      },
+      {
+        "caso": "KDBX 4 cortada en 145",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d8001010101010101010101010101",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "falta la suma de la cabecera"
+      },
+      {
+        "caso": "KDBX 4 cortada en 146",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d800101010101010101010101010101",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "falta la suma de la cabecera"
+      },
+      {
+        "caso": "KDBX 4 cortada en 147",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d80010101010101010101010101010101",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "falta la suma de la cabecera"
+      },
+      {
+        "caso": "KDBX 4 cortada en 148",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d8001010101010101010101010101010101",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "falta la suma de la cabecera"
+      },
+      {
+        "caso": "KDBX 4 cortada en 149",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d800101010101010101010101010101010101",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "falta la suma de la cabecera"
+      },
+      {
+        "caso": "KDBX 4 cortada en 150",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d80010101010101010101010101010101010101",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "falta la suma de la cabecera"
+      },
+      {
+        "caso": "KDBX 4 cortada en 151",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d8001010101010101010101010101010101010101",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "falta la suma de la cabecera"
+      },
+      {
+        "caso": "KDBX 4 cortada en 152",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d800101010101010101010101010101010101010101",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "falta la suma de la cabecera"
+      },
+      {
+        "caso": "KDBX 4 cortada en 153",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d80010101010101010101010101010101010101010101",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "falta la suma de la cabecera"
+      },
+      {
+        "caso": "KDBX 4 cortada en 154",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d8001010101010101010101010101010101010101010101",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "falta la suma de la cabecera"
+      },
+      {
+        "caso": "KDBX 4 cortada en 155",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d800101010101010101010101010101010101010101010101",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "falta la suma de la cabecera"
+      },
+      {
+        "caso": "KDBX 4 cortada en 156",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d80010101010101010101010101010101010101010101010101",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "falta la suma de la cabecera"
+      },
+      {
+        "caso": "KDBX 4 cortada en 157",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d8001010101010101010101010101010101010101010101010101",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "falta la suma de la cabecera"
+      },
+      {
+        "caso": "KDBX 4 cortada en 158",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d800101010101010101010101010101010101010101010101010101",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "falta la suma de la cabecera"
+      },
+      {
+        "caso": "KDBX 4 cortada en 159",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d80010101010101010101010101010101010101010101010101010101",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "falta la suma de la cabecera"
+      },
+      {
+        "caso": "KDBX 4 cortada en 160",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d8001010101010101010101010101010101010101010101010101010101",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "falta la suma de la cabecera"
+      },
+      {
+        "caso": "KDBX 4 cortada en 161",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d800101010101010101010101010101010101010101010101010101010101",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "falta la suma de la cabecera"
+      },
+      {
+        "caso": "KDBX 4 cortada en 162",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d80010101010101010101010101010101010101010101010101010101010101",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "falta la suma de la cabecera"
+      },
+      {
+        "caso": "KDBX 4 cortada en 163",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d8001010101010101010101010101010101010101010101010101010101010101",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "falta la suma de la cabecera"
+      },
+      {
+        "caso": "KDBX 4 cortada en 164",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d800101010101010101010101010101010101010101010101010101010101010101",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 165",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d80010101010101010101010101010101010101010101010101010101010101010102",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 166",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d8001010101010101010101010101010101010101010101010101010101010101010202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 167",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d800101010101010101010101010101010101010101010101010101010101010101020202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 168",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d80010101010101010101010101010101010101010101010101010101010101010102020202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 169",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d8001010101010101010101010101010101010101010101010101010101010101010202020202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 170",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d800101010101010101010101010101010101010101010101010101010101010101020202020202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 171",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d80010101010101010101010101010101010101010101010101010101010101010102020202020202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 172",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d8001010101010101010101010101010101010101010101010101010101010101010202020202020202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 173",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d800101010101010101010101010101010101010101010101010101010101010101020202020202020202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 174",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d80010101010101010101010101010101010101010101010101010101010101010102020202020202020202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 175",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d8001010101010101010101010101010101010101010101010101010101010101010202020202020202020202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 176",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d800101010101010101010101010101010101010101010101010101010101010101020202020202020202020202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 177",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d80010101010101010101010101010101010101010101010101010101010101010102020202020202020202020202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 178",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d8001010101010101010101010101010101010101010101010101010101010101010202020202020202020202020202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 179",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d800101010101010101010101010101010101010101010101010101010101010101020202020202020202020202020202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 180",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d80010101010101010101010101010101010101010101010101010101010101010102020202020202020202020202020202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 181",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d8001010101010101010101010101010101010101010101010101010101010101010202020202020202020202020202020202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 182",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d800101010101010101010101010101010101010101010101010101010101010101020202020202020202020202020202020202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 183",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d80010101010101010101010101010101010101010101010101010101010101010102020202020202020202020202020202020202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 184",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d8001010101010101010101010101010101010101010101010101010101010101010202020202020202020202020202020202020202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 185",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d800101010101010101010101010101010101010101010101010101010101010101020202020202020202020202020202020202020202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 186",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d80010101010101010101010101010101010101010101010101010101010101010102020202020202020202020202020202020202020202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 187",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d8001010101010101010101010101010101010101010101010101010101010101010202020202020202020202020202020202020202020202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 188",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d800101010101010101010101010101010101010101010101010101010101010101020202020202020202020202020202020202020202020202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 189",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d80010101010101010101010101010101010101010101010101010101010101010102020202020202020202020202020202020202020202020202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 190",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d8001010101010101010101010101010101010101010101010101010101010101010202020202020202020202020202020202020202020202020202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 191",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d800101010101010101010101010101010101010101010101010101010101010101020202020202020202020202020202020202020202020202020202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 192",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d80010101010101010101010101010101010101010101010101010101010101010102020202020202020202020202020202020202020202020202020202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 193",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d8001010101010101010101010101010101010101010101010101010101010101010202020202020202020202020202020202020202020202020202020202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 194",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d800101010101010101010101010101010101010101010101010101010101010101020202020202020202020202020202020202020202020202020202020202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 195",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d80010101010101010101010101010101010101010101010101010101010101010102020202020202020202020202020202020202020202020202020202020202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 196",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d8001010101010101010101010101010101010101010101010101010101010101010202020202020202020202020202020202020202020202020202020202020202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 197",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d800101010101010101010101010101010101010101010101010101010101010101020202020202020202020202020202020202020202020202020202020202020214",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 198",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d80010101010101010101010101010101010101010101010101010101010101010102020202020202020202020202020202020202020202020202020202020202021400",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 199",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d8001010101010101010101010101010101010101010101010101010101010101010202020202020202020202020202020202020202020202020202020202020202140000",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 200",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d800101010101010101010101010101010101010101010101010101010101010101020202020202020202020202020202020202020202020202020202020202020214000000",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 201",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d80010101010101010101010101010101010101010101010101010101010101010102020202020202020202020202020202020202020202020202020202020202021400000078",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 202",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d8001010101010101010101010101010101010101010101010101010101010101010202020202020202020202020202020202020202020202020202020202020202140000007878",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 203",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d800101010101010101010101010101010101010101010101010101010101010101020202020202020202020202020202020202020202020202020202020202020214000000787878",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 204",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d80010101010101010101010101010101010101010101010101010101010101010102020202020202020202020202020202020202020202020202020202020202021400000078787878",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 205",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d8001010101010101010101010101010101010101010101010101010101010101010202020202020202020202020202020202020202020202020202020202020202140000007878787878",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 206",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d800101010101010101010101010101010101010101010101010101010101010101020202020202020202020202020202020202020202020202020202020202020214000000787878787878",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 207",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d80010101010101010101010101010101010101010101010101010101010101010102020202020202020202020202020202020202020202020202020202020202021400000078787878787878",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 208",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d8001010101010101010101010101010101010101010101010101010101010101010202020202020202020202020202020202020202020202020202020202020202140000007878787878787878",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 209",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d800101010101010101010101010101010101010101010101010101010101010101020202020202020202020202020202020202020202020202020202020202020214000000787878787878787878",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 210",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d80010101010101010101010101010101010101010101010101010101010101010102020202020202020202020202020202020202020202020202020202020202021400000078787878787878787878",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 211",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d8001010101010101010101010101010101010101010101010101010101010101010202020202020202020202020202020202020202020202020202020202020202140000007878787878787878787878",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 212",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d800101010101010101010101010101010101010101010101010101010101010101020202020202020202020202020202020202020202020202020202020202020214000000787878787878787878787878",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 213",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d80010101010101010101010101010101010101010101010101010101010101010102020202020202020202020202020202020202020202020202020202020202021400000078787878787878787878787878",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 214",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d8001010101010101010101010101010101010101010101010101010101010101010202020202020202020202020202020202020202020202020202020202020202140000007878787878787878787878787878",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 215",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d800101010101010101010101010101010101010101010101010101010101010101020202020202020202020202020202020202020202020202020202020202020214000000787878787878787878787878787878",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 216",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d80010101010101010101010101010101010101010101010101010101010101010102020202020202020202020202020202020202020202020202020202020202021400000078787878787878787878787878787878",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 217",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d8001010101010101010101010101010101010101010101010101010101010101010202020202020202020202020202020202020202020202020202020202020202140000007878787878787878787878787878787878",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 218",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d800101010101010101010101010101010101010101010101010101010101010101020202020202020202020202020202020202020202020202020202020202020214000000787878787878787878787878787878787878",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 219",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d80010101010101010101010101010101010101010101010101010101010101010102020202020202020202020202020202020202020202020202020202020202021400000078787878787878787878787878787878787878",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 220",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d8001010101010101010101010101010101010101010101010101010101010101010202020202020202020202020202020202020202020202020202020202020202140000007878787878787878787878787878787878787878",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 221",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d800101010101010101010101010101010101010101010101010101010101010101020202020202020202020202020202020202020202020202020202020202020214000000787878787878787878787878787878787878787802",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 222",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d80010101010101010101010101010101010101010101010101010101010101010102020202020202020202020202020202020202020202020202020202020202021400000078787878787878787878787878787878787878780202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 223",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d8001010101010101010101010101010101010101010101010101010101010101010202020202020202020202020202020202020202020202020202020202020202140000007878787878787878787878787878787878787878020202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 224",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d800101010101010101010101010101010101010101010101010101010101010101020202020202020202020202020202020202020202020202020202020202020214000000787878787878787878787878787878787878787802020202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 225",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d80010101010101010101010101010101010101010101010101010101010101010102020202020202020202020202020202020202020202020202020202020202021400000078787878787878787878787878787878787878780202020202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 226",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d8001010101010101010101010101010101010101010101010101010101010101010202020202020202020202020202020202020202020202020202020202020202140000007878787878787878787878787878787878787878020202020202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 227",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d800101010101010101010101010101010101010101010101010101010101010101020202020202020202020202020202020202020202020202020202020202020214000000787878787878787878787878787878787878787802020202020202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 228",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d80010101010101010101010101010101010101010101010101010101010101010102020202020202020202020202020202020202020202020202020202020202021400000078787878787878787878787878787878787878780202020202020202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 229",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d8001010101010101010101010101010101010101010101010101010101010101010202020202020202020202020202020202020202020202020202020202020202140000007878787878787878787878787878787878787878020202020202020202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 230",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d800101010101010101010101010101010101010101010101010101010101010101020202020202020202020202020202020202020202020202020202020202020214000000787878787878787878787878787878787878787802020202020202020202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 231",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d80010101010101010101010101010101010101010101010101010101010101010102020202020202020202020202020202020202020202020202020202020202021400000078787878787878787878787878787878787878780202020202020202020202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 232",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d8001010101010101010101010101010101010101010101010101010101010101010202020202020202020202020202020202020202020202020202020202020202140000007878787878787878787878787878787878787878020202020202020202020202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 233",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d800101010101010101010101010101010101010101010101010101010101010101020202020202020202020202020202020202020202020202020202020202020214000000787878787878787878787878787878787878787802020202020202020202020202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 234",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d80010101010101010101010101010101010101010101010101010101010101010102020202020202020202020202020202020202020202020202020202020202021400000078787878787878787878787878787878787878780202020202020202020202020202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 235",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d8001010101010101010101010101010101010101010101010101010101010101010202020202020202020202020202020202020202020202020202020202020202140000007878787878787878787878787878787878787878020202020202020202020202020202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 236",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d800101010101010101010101010101010101010101010101010101010101010101020202020202020202020202020202020202020202020202020202020202020214000000787878787878787878787878787878787878787802020202020202020202020202020202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 237",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d80010101010101010101010101010101010101010101010101010101010101010102020202020202020202020202020202020202020202020202020202020202021400000078787878787878787878787878787878787878780202020202020202020202020202020202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 238",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d8001010101010101010101010101010101010101010101010101010101010101010202020202020202020202020202020202020202020202020202020202020202140000007878787878787878787878787878787878787878020202020202020202020202020202020202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 239",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d800101010101010101010101010101010101010101010101010101010101010101020202020202020202020202020202020202020202020202020202020202020214000000787878787878787878787878787878787878787802020202020202020202020202020202020202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 240",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d80010101010101010101010101010101010101010101010101010101010101010102020202020202020202020202020202020202020202020202020202020202021400000078787878787878787878787878787878787878780202020202020202020202020202020202020202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 241",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d8001010101010101010101010101010101010101010101010101010101010101010202020202020202020202020202020202020202020202020202020202020202140000007878787878787878787878787878787878787878020202020202020202020202020202020202020202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 242",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d800101010101010101010101010101010101010101010101010101010101010101020202020202020202020202020202020202020202020202020202020202020214000000787878787878787878787878787878787878787802020202020202020202020202020202020202020202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 243",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d80010101010101010101010101010101010101010101010101010101010101010102020202020202020202020202020202020202020202020202020202020202021400000078787878787878787878787878787878787878780202020202020202020202020202020202020202020202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 244",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d8001010101010101010101010101010101010101010101010101010101010101010202020202020202020202020202020202020202020202020202020202020202140000007878787878787878787878787878787878787878020202020202020202020202020202020202020202020202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 245",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d800101010101010101010101010101010101010101010101010101010101010101020202020202020202020202020202020202020202020202020202020202020214000000787878787878787878787878787878787878787802020202020202020202020202020202020202020202020202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 246",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d80010101010101010101010101010101010101010101010101010101010101010102020202020202020202020202020202020202020202020202020202020202021400000078787878787878787878787878787878787878780202020202020202020202020202020202020202020202020202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 247",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d8001010101010101010101010101010101010101010101010101010101010101010202020202020202020202020202020202020202020202020202020202020202140000007878787878787878787878787878787878787878020202020202020202020202020202020202020202020202020202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 248",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d800101010101010101010101010101010101010101010101010101010101010101020202020202020202020202020202020202020202020202020202020202020214000000787878787878787878787878787878787878787802020202020202020202020202020202020202020202020202020202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 249",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d80010101010101010101010101010101010101010101010101010101010101010102020202020202020202020202020202020202020202020202020202020202021400000078787878787878787878787878787878787878780202020202020202020202020202020202020202020202020202020202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 250",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d8001010101010101010101010101010101010101010101010101010101010101010202020202020202020202020202020202020202020202020202020202020202140000007878787878787878787878787878787878787878020202020202020202020202020202020202020202020202020202020202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 251",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d800101010101010101010101010101010101010101010101010101010101010101020202020202020202020202020202020202020202020202020202020202020214000000787878787878787878787878787878787878787802020202020202020202020202020202020202020202020202020202020202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 252",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d80010101010101010101010101010101010101010101010101010101010101010102020202020202020202020202020202020202020202020202020202020202021400000078787878787878787878787878787878787878780202020202020202020202020202020202020202020202020202020202020202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 253",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d8001010101010101010101010101010101010101010101010101010101010101010202020202020202020202020202020202020202020202020202020202020202140000007878787878787878787878787878787878787878020202020202020202020202020202020202020202020202020202020202020208",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 254",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d800101010101010101010101010101010101010101010101010101010101010101020202020202020202020202020202020202020202020202020202020202020214000000787878787878787878787878787878787878787802020202020202020202020202020202020202020202020202020202020202020800",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 255",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d80010101010101010101010101010101010101010101010101010101010101010102020202020202020202020202020202020202020202020202020202020202021400000078787878787878787878787878787878787878780202020202020202020202020202020202020202020202020202020202020202080000",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 256",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d8001010101010101010101010101010101010101010101010101010101010101010202020202020202020202020202020202020202020202020202020202020202140000007878787878787878787878787878787878787878020202020202020202020202020202020202020202020202020202020202020208000000",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 257",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d800101010101010101010101010101010101010101010101010101010101010101020202020202020202020202020202020202020202020202020202020202020214000000787878787878787878787878787878787878787802020202020202020202020202020202020202020202020202020202020202020800000079",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 258",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d80010101010101010101010101010101010101010101010101010101010101010102020202020202020202020202020202020202020202020202020202020202021400000078787878787878787878787878787878787878780202020202020202020202020202020202020202020202020202020202020202080000007979",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 259",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d8001010101010101010101010101010101010101010101010101010101010101010202020202020202020202020202020202020202020202020202020202020202140000007878787878787878787878787878787878787878020202020202020202020202020202020202020202020202020202020202020208000000797979",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 260",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d800101010101010101010101010101010101010101010101010101010101010101020202020202020202020202020202020202020202020202020202020202020214000000787878787878787878787878787878787878787802020202020202020202020202020202020202020202020202020202020202020800000079797979",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 261",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d80010101010101010101010101010101010101010101010101010101010101010102020202020202020202020202020202020202020202020202020202020202021400000078787878787878787878787878787878787878780202020202020202020202020202020202020202020202020202020202020202080000007979797979",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 262",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d8001010101010101010101010101010101010101010101010101010101010101010202020202020202020202020202020202020202020202020202020202020202140000007878787878787878787878787878787878787878020202020202020202020202020202020202020202020202020202020202020208000000797979797979",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 263",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d800101010101010101010101010101010101010101010101010101010101010101020202020202020202020202020202020202020202020202020202020202020214000000787878787878787878787878787878787878787802020202020202020202020202020202020202020202020202020202020202020800000079797979797979",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 264",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d80010101010101010101010101010101010101010101010101010101010101010102020202020202020202020202020202020202020202020202020202020202021400000078787878787878787878787878787878787878780202020202020202020202020202020202020202020202020202020202020202080000007979797979797979",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 265",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d8001010101010101010101010101010101010101010101010101010101010101010202020202020202020202020202020202020202020202020202020202020202140000007878787878787878787878787878787878787878020202020202020202020202020202020202020202020202020202020202020208000000797979797979797902",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 266",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d800101010101010101010101010101010101010101010101010101010101010101020202020202020202020202020202020202020202020202020202020202020214000000787878787878787878787878787878787878787802020202020202020202020202020202020202020202020202020202020202020800000079797979797979790202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 267",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d80010101010101010101010101010101010101010101010101010101010101010102020202020202020202020202020202020202020202020202020202020202021400000078787878787878787878787878787878787878780202020202020202020202020202020202020202020202020202020202020202080000007979797979797979020202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 268",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d8001010101010101010101010101010101010101010101010101010101010101010202020202020202020202020202020202020202020202020202020202020202140000007878787878787878787878787878787878787878020202020202020202020202020202020202020202020202020202020202020208000000797979797979797902020202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 269",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d800101010101010101010101010101010101010101010101010101010101010101020202020202020202020202020202020202020202020202020202020202020214000000787878787878787878787878787878787878787802020202020202020202020202020202020202020202020202020202020202020800000079797979797979790202020202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 270",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d80010101010101010101010101010101010101010101010101010101010101010102020202020202020202020202020202020202020202020202020202020202021400000078787878787878787878787878787878787878780202020202020202020202020202020202020202020202020202020202020202080000007979797979797979020202020202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 271",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d8001010101010101010101010101010101010101010101010101010101010101010202020202020202020202020202020202020202020202020202020202020202140000007878787878787878787878787878787878787878020202020202020202020202020202020202020202020202020202020202020208000000797979797979797902020202020202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 272",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d800101010101010101010101010101010101010101010101010101010101010101020202020202020202020202020202020202020202020202020202020202020214000000787878787878787878787878787878787878787802020202020202020202020202020202020202020202020202020202020202020800000079797979797979790202020202020202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 273",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d80010101010101010101010101010101010101010101010101010101010101010102020202020202020202020202020202020202020202020202020202020202021400000078787878787878787878787878787878787878780202020202020202020202020202020202020202020202020202020202020202080000007979797979797979020202020202020202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 274",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d8001010101010101010101010101010101010101010101010101010101010101010202020202020202020202020202020202020202020202020202020202020202140000007878787878787878787878787878787878787878020202020202020202020202020202020202020202020202020202020202020208000000797979797979797902020202020202020202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 275",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d800101010101010101010101010101010101010101010101010101010101010101020202020202020202020202020202020202020202020202020202020202020214000000787878787878787878787878787878787878787802020202020202020202020202020202020202020202020202020202020202020800000079797979797979790202020202020202020202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 276",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d80010101010101010101010101010101010101010101010101010101010101010102020202020202020202020202020202020202020202020202020202020202021400000078787878787878787878787878787878787878780202020202020202020202020202020202020202020202020202020202020202080000007979797979797979020202020202020202020202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 277",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d8001010101010101010101010101010101010101010101010101010101010101010202020202020202020202020202020202020202020202020202020202020202140000007878787878787878787878787878787878787878020202020202020202020202020202020202020202020202020202020202020208000000797979797979797902020202020202020202020202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 278",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d800101010101010101010101010101010101010101010101010101010101010101020202020202020202020202020202020202020202020202020202020202020214000000787878787878787878787878787878787878787802020202020202020202020202020202020202020202020202020202020202020800000079797979797979790202020202020202020202020202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 279",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d80010101010101010101010101010101010101010101010101010101010101010102020202020202020202020202020202020202020202020202020202020202021400000078787878787878787878787878787878787878780202020202020202020202020202020202020202020202020202020202020202080000007979797979797979020202020202020202020202020202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 280",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d8001010101010101010101010101010101010101010101010101010101010101010202020202020202020202020202020202020202020202020202020202020202140000007878787878787878787878787878787878787878020202020202020202020202020202020202020202020202020202020202020208000000797979797979797902020202020202020202020202020202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 281",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d800101010101010101010101010101010101010101010101010101010101010101020202020202020202020202020202020202020202020202020202020202020214000000787878787878787878787878787878787878787802020202020202020202020202020202020202020202020202020202020202020800000079797979797979790202020202020202020202020202020202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 282",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d80010101010101010101010101010101010101010101010101010101010101010102020202020202020202020202020202020202020202020202020202020202021400000078787878787878787878787878787878787878780202020202020202020202020202020202020202020202020202020202020202080000007979797979797979020202020202020202020202020202020202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 283",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d8001010101010101010101010101010101010101010101010101010101010101010202020202020202020202020202020202020202020202020202020202020202140000007878787878787878787878787878787878787878020202020202020202020202020202020202020202020202020202020202020208000000797979797979797902020202020202020202020202020202020202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 284",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d800101010101010101010101010101010101010101010101010101010101010101020202020202020202020202020202020202020202020202020202020202020214000000787878787878787878787878787878787878787802020202020202020202020202020202020202020202020202020202020202020800000079797979797979790202020202020202020202020202020202020202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 285",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d80010101010101010101010101010101010101010101010101010101010101010102020202020202020202020202020202020202020202020202020202020202021400000078787878787878787878787878787878787878780202020202020202020202020202020202020202020202020202020202020202080000007979797979797979020202020202020202020202020202020202020202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 286",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d8001010101010101010101010101010101010101010101010101010101010101010202020202020202020202020202020202020202020202020202020202020202140000007878787878787878787878787878787878787878020202020202020202020202020202020202020202020202020202020202020208000000797979797979797902020202020202020202020202020202020202020202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 287",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d800101010101010101010101010101010101010101010101010101010101010101020202020202020202020202020202020202020202020202020202020202020214000000787878787878787878787878787878787878787802020202020202020202020202020202020202020202020202020202020202020800000079797979797979790202020202020202020202020202020202020202020202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 288",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d80010101010101010101010101010101010101010101010101010101010101010102020202020202020202020202020202020202020202020202020202020202021400000078787878787878787878787878787878787878780202020202020202020202020202020202020202020202020202020202020202080000007979797979797979020202020202020202020202020202020202020202020202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 289",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d8001010101010101010101010101010101010101010101010101010101010101010202020202020202020202020202020202020202020202020202020202020202140000007878787878787878787878787878787878787878020202020202020202020202020202020202020202020202020202020202020208000000797979797979797902020202020202020202020202020202020202020202020202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 290",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d800101010101010101010101010101010101010101010101010101010101010101020202020202020202020202020202020202020202020202020202020202020214000000787878787878787878787878787878787878787802020202020202020202020202020202020202020202020202020202020202020800000079797979797979790202020202020202020202020202020202020202020202020202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 291",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d80010101010101010101010101010101010101010101010101010101010101010102020202020202020202020202020202020202020202020202020202020202021400000078787878787878787878787878787878787878780202020202020202020202020202020202020202020202020202020202020202080000007979797979797979020202020202020202020202020202020202020202020202020202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 292",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d8001010101010101010101010101010101010101010101010101010101010101010202020202020202020202020202020202020202020202020202020202020202140000007878787878787878787878787878787878787878020202020202020202020202020202020202020202020202020202020202020208000000797979797979797902020202020202020202020202020202020202020202020202020202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 293",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d800101010101010101010101010101010101010101010101010101010101010101020202020202020202020202020202020202020202020202020202020202020214000000787878787878787878787878787878787878787802020202020202020202020202020202020202020202020202020202020202020800000079797979797979790202020202020202020202020202020202020202020202020202020202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 294",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d80010101010101010101010101010101010101010101010101010101010101010102020202020202020202020202020202020202020202020202020202020202021400000078787878787878787878787878787878787878780202020202020202020202020202020202020202020202020202020202020202080000007979797979797979020202020202020202020202020202020202020202020202020202020202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 295",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d8001010101010101010101010101010101010101010101010101010101010101010202020202020202020202020202020202020202020202020202020202020202140000007878787878787878787878787878787878787878020202020202020202020202020202020202020202020202020202020202020208000000797979797979797902020202020202020202020202020202020202020202020202020202020202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 296",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d800101010101010101010101010101010101010101010101010101010101010101020202020202020202020202020202020202020202020202020202020202020214000000787878787878787878787878787878787878787802020202020202020202020202020202020202020202020202020202020202020800000079797979797979790202020202020202020202020202020202020202020202020202020202020202",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 297",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d80010101010101010101010101010101010101010101010101010101010101010102020202020202020202020202020202020202020202020202020202020202021400000078787878787878787878787878787878787878780202020202020202020202020202020202020202020202020202020202020202080000007979797979797979020202020202020202020202020202020202020202020202020202020202020200",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 298",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d8001010101010101010101010101010101010101010101010101010101010101010202020202020202020202020202020202020202020202020202020202020202140000007878787878787878787878787878787878787878020202020202020202020202020202020202020202020202020202020202020208000000797979797979797902020202020202020202020202020202020202020202020202020202020202020000",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 cortada en 299",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d800101010101010101010101010101010101010101010101010101010101010101020202020202020202020202020202020202020202020202020202020202020214000000787878787878787878787878787878787878787802020202020202020202020202020202020202020202020202020202020202020800000079797979797979790202020202020202020202020202020202020202020202020202020202020202000000",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 con un byte de más",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d8001010101010101010101010101010101010101010101010101010101010101010202020202020202020202020202020202020202020202020202020202020202140000007878787878787878787878787878787878787878020202020202020202020202020202020202020202020202020202020202020208000000797979797979797902020202020202020202020202020202020202020202020202020202020202020000000078",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "lleva datos después del final"
+      },
+      {
+        "caso": "KDBX 4 con la cabecera tocada en 12",
+        "hex": "03d9a29a67fb4bb501000400031000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d80010101010101010101010101010101010101010101010101010101010101010102020202020202020202020202020202020202020202020202020202020202021400000078787878787878787878787878787878787878780202020202020202020202020202020202020202020202020202020202020202080000007979797979797979020202020202020202020202020202020202020202020202020202020202020200000000",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la suma de la cabecera no cuadra"
+      },
+      {
+        "caso": "KDBX 4 con la cabecera tocada en 20",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e7bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d80010101010101010101010101010101010101010101010101010101010101010102020202020202020202020202020202020202020202020202020202020202021400000078787878787878787878787878787878787878780202020202020202020202020202020202020202020202020202020202020202080000007979797979797979020202020202020202020202020202020202020202020202020202020202020200000000",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la suma de la cabecera no cuadra"
+      },
+      {
+        "caso": "KDBX 4 con la cabecera tocada en 40",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000103030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d80010101010101010101010101010101010101010101010101010101010101010102020202020202020202020202020202020202020202020202020202020202021400000078787878787878787878787878787878787878780202020202020202020202020202020202020202020202020202020202020202080000007979797979797979020202020202020202020202020202020202020202020202020202020202020200000000",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la suma de la cabecera no cuadra"
+      },
+      {
+        "caso": "KDBX 4 sin bloques de datos",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f07100000000505050505050505050505050505050500040000000d0a0d0a527fbc0462bb9a095e37dc0bcbe984732287d90da699f6cd676f51e2abe10d800101010101010101010101010101010101010101010101010101010101010101020202020202020202020202020202020202020202020202020202020202020200000000",
+        "entera": true,
+        "version": "4.1",
+        "motivo": ""
+      },
+      {
+        "caso": "KDBX 4 con otra semilla",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000090909090909090909090909090909090909090909090909090909090909090907100000000505050505050505050505050505050500040000000d0a0d0a519a167d7f2d9727a4300357cad85d0fbabd8a857e63cd9c52b02e9bbc22c720010101010101010101010101010101010101010101010101010101010101010102020202020202020202020202020202020202020202020202020202020202021400000078787878787878787878787878787878787878780202020202020202020202020202020202020202020202020202020202020202080000007979797979797979020202020202020202020202020202020202020202020202020202020202020200000000",
+        "entera": true,
+        "version": "4.1",
+        "motivo": ""
+      },
+      {
+        "caso": "KDBX 4 con un bloque de tamaño negativo",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f00040000000d0a0d0a9a33b5c294ccba5cf1b6359ea48a3098b72e031251a2b427646dad96bf5187d701010101010101010101010101010101010101010101010101010101010101010202020202020202020202020202020202020202020202020202020202020202ffffffff7a7a",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 con un bloque que se pasa del fichero",
+        "hex": "03d9a29a67fb4bb501000400021000000031c1f2e6bf714350be5805216afc5aff0420000000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f00040000000d0a0d0a9a33b5c294ccba5cf1b6359ea48a3098b72e031251a2b427646dad96bf5187d701010101010101010101010101010101010101010101010101010101010101010202020202020202020202020202020202020202020202020202020202020202e80300007a7a",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 4 con un campo de la cabecera de 4 GiB",
+        "hex": "03d9a29a67fb4bb50100040002ffffffff31c1f2e6bf714350be5805216afc5aff",
+        "entera": false,
+        "version": "4.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 3 con AES y el cuerpo de 0",
+        "hex": "03d9a29a67fb4bb50100030002100031c1f2e6bf714350be5805216afc5aff042000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f0004000d0a0d0a",
+        "entera": false,
+        "version": "3.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 3 con AES y el cuerpo de 1",
+        "hex": "03d9a29a67fb4bb50100030002100031c1f2e6bf714350be5805216afc5aff042000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f0004000d0a0d0aaa",
+        "entera": false,
+        "version": "3.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 3 con AES y el cuerpo de 15",
+        "hex": "03d9a29a67fb4bb50100030002100031c1f2e6bf714350be5805216afc5aff042000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f0004000d0a0d0aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "entera": false,
+        "version": "3.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 3 con AES y el cuerpo de 16",
+        "hex": "03d9a29a67fb4bb50100030002100031c1f2e6bf714350be5805216afc5aff042000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f0004000d0a0d0aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "entera": true,
+        "version": "3.1",
+        "motivo": ""
+      },
+      {
+        "caso": "KDBX 3 con AES y el cuerpo de 17",
+        "hex": "03d9a29a67fb4bb50100030002100031c1f2e6bf714350be5805216afc5aff042000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f0004000d0a0d0aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "entera": false,
+        "version": "3.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 3 con AES y el cuerpo de 1183",
+        "hex": "03d9a29a67fb4bb50100030002100031c1f2e6bf714350be5805216afc5aff042000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f0004000d0a0d0aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "entera": false,
+        "version": "3.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 3 con AES y el cuerpo de 1184",
+        "hex": "03d9a29a67fb4bb50100030002100031c1f2e6bf714350be5805216afc5aff042000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f0004000d0a0d0aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "entera": true,
+        "version": "3.1",
+        "motivo": ""
+      },
+      {
+        "caso": "KDBX 3 con Twofish y el cuerpo de 0",
+        "hex": "03d9a29a67fb4bb501000300021000ad68f29f576f4bb9a36ad47af965346c042000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f0004000d0a0d0a",
+        "entera": false,
+        "version": "3.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 3 con Twofish y el cuerpo de 1",
+        "hex": "03d9a29a67fb4bb501000300021000ad68f29f576f4bb9a36ad47af965346c042000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f0004000d0a0d0aaa",
+        "entera": false,
+        "version": "3.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 3 con Twofish y el cuerpo de 15",
+        "hex": "03d9a29a67fb4bb501000300021000ad68f29f576f4bb9a36ad47af965346c042000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f0004000d0a0d0aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "entera": false,
+        "version": "3.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 3 con Twofish y el cuerpo de 16",
+        "hex": "03d9a29a67fb4bb501000300021000ad68f29f576f4bb9a36ad47af965346c042000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f0004000d0a0d0aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "entera": true,
+        "version": "3.1",
+        "motivo": ""
+      },
+      {
+        "caso": "KDBX 3 con Twofish y el cuerpo de 17",
+        "hex": "03d9a29a67fb4bb501000300021000ad68f29f576f4bb9a36ad47af965346c042000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f0004000d0a0d0aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "entera": false,
+        "version": "3.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 3 con Twofish y el cuerpo de 1183",
+        "hex": "03d9a29a67fb4bb501000300021000ad68f29f576f4bb9a36ad47af965346c042000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f0004000d0a0d0aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "entera": false,
+        "version": "3.1",
+        "motivo": "está cortada"
+      },
+      {
+        "caso": "KDBX 3 con Twofish y el cuerpo de 1184",
+        "hex": "03d9a29a67fb4bb501000300021000ad68f29f576f4bb9a36ad47af965346c042000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f0004000d0a0d0aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "entera": true,
+        "version": "3.1",
+        "motivo": ""
+      },
+      {
+        "caso": "KDBX 3 con otro cifrado y el cuerpo de 0",
+        "hex": "03d9a29a67fb4bb501000300021000d6038a2b8b6f4cb5a524339a31dbb59a042000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f0004000d0a0d0a",
+        "entera": true,
+        "version": "3.1",
+        "motivo": ""
+      },
+      {
+        "caso": "KDBX 3 con otro cifrado y el cuerpo de 1",
+        "hex": "03d9a29a67fb4bb501000300021000d6038a2b8b6f4cb5a524339a31dbb59a042000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f0004000d0a0d0aaa",
+        "entera": true,
+        "version": "3.1",
+        "motivo": ""
+      },
+      {
+        "caso": "KDBX 3 con otro cifrado y el cuerpo de 15",
+        "hex": "03d9a29a67fb4bb501000300021000d6038a2b8b6f4cb5a524339a31dbb59a042000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f0004000d0a0d0aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "entera": true,
+        "version": "3.1",
+        "motivo": ""
+      },
+      {
+        "caso": "KDBX 3 con otro cifrado y el cuerpo de 16",
+        "hex": "03d9a29a67fb4bb501000300021000d6038a2b8b6f4cb5a524339a31dbb59a042000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f0004000d0a0d0aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "entera": true,
+        "version": "3.1",
+        "motivo": ""
+      },
+      {
+        "caso": "KDBX 3 con otro cifrado y el cuerpo de 17",
+        "hex": "03d9a29a67fb4bb501000300021000d6038a2b8b6f4cb5a524339a31dbb59a042000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f0004000d0a0d0aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "entera": true,
+        "version": "3.1",
+        "motivo": ""
+      },
+      {
+        "caso": "KDBX 3 con otro cifrado y el cuerpo de 1183",
+        "hex": "03d9a29a67fb4bb501000300021000d6038a2b8b6f4cb5a524339a31dbb59a042000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f0004000d0a0d0aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "entera": true,
+        "version": "3.1",
+        "motivo": ""
+      },
+      {
+        "caso": "KDBX 3 con otro cifrado y el cuerpo de 1184",
+        "hex": "03d9a29a67fb4bb501000300021000d6038a2b8b6f4cb5a524339a31dbb59a042000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f0004000d0a0d0aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "entera": true,
+        "version": "3.1",
+        "motivo": ""
+      },
+      {
+        "caso": "KDBX 3 cortada en 0",
+        "hex": "",
+        "entera": false,
+        "version": "",
+        "motivo": "es demasiado corta para ser una base"
+      },
+      {
+        "caso": "KDBX 3 cortada en 1",
+        "hex": "03",
+        "entera": false,
+        "version": "",
+        "motivo": "es demasiado corta para ser una base"
+      },
+      {
+        "caso": "KDBX 3 cortada en 2",
+        "hex": "03d9",
+        "entera": false,
+        "version": "",
+        "motivo": "es demasiado corta para ser una base"
+      },
+      {
+        "caso": "KDBX 3 cortada en 3",
+        "hex": "03d9a2",
+        "entera": false,
+        "version": "",
+        "motivo": "es demasiado corta para ser una base"
+      },
+      {
+        "caso": "KDBX 3 cortada en 4",
+        "hex": "03d9a29a",
+        "entera": false,
+        "version": "",
+        "motivo": "es demasiado corta para ser una base"
+      },
+      {
+        "caso": "KDBX 3 cortada en 5",
+        "hex": "03d9a29a67",
+        "entera": false,
+        "version": "",
+        "motivo": "es demasiado corta para ser una base"
+      },
+      {
+        "caso": "KDBX 3 cortada en 6",
+        "hex": "03d9a29a67fb",
+        "entera": false,
+        "version": "",
+        "motivo": "es demasiado corta para ser una base"
+      },
+      {
+        "caso": "KDBX 3 cortada en 7",
+        "hex": "03d9a29a67fb4b",
+        "entera": false,
+        "version": "",
+        "motivo": "es demasiado corta para ser una base"
+      },
+      {
+        "caso": "KDBX 3 cortada en 8",
+        "hex": "03d9a29a67fb4bb5",
+        "entera": false,
+        "version": "",
+        "motivo": "es demasiado corta para ser una base"
+      },
+      {
+        "caso": "KDBX 3 cortada en 9",
+        "hex": "03d9a29a67fb4bb501",
+        "entera": false,
+        "version": "",
+        "motivo": "es demasiado corta para ser una base"
+      },
+      {
+        "caso": "KDBX 3 cortada en 10",
+        "hex": "03d9a29a67fb4bb50100",
+        "entera": false,
+        "version": "",
+        "motivo": "es demasiado corta para ser una base"
+      },
+      {
+        "caso": "KDBX 3 cortada en 11",
+        "hex": "03d9a29a67fb4bb5010003",
+        "entera": false,
+        "version": "",
+        "motivo": "es demasiado corta para ser una base"
+      },
+      {
+        "caso": "KDBX 3 cortada en 12",
+        "hex": "03d9a29a67fb4bb501000300",
+        "entera": false,
+        "version": "3.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 3 cortada en 13",
+        "hex": "03d9a29a67fb4bb50100030002",
+        "entera": false,
+        "version": "3.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 3 cortada en 14",
+        "hex": "03d9a29a67fb4bb5010003000210",
+        "entera": false,
+        "version": "3.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 3 cortada en 15",
+        "hex": "03d9a29a67fb4bb501000300021000",
+        "entera": false,
+        "version": "3.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 3 cortada en 16",
+        "hex": "03d9a29a67fb4bb50100030002100031",
+        "entera": false,
+        "version": "3.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 3 cortada en 17",
+        "hex": "03d9a29a67fb4bb50100030002100031c1",
+        "entera": false,
+        "version": "3.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 3 cortada en 18",
+        "hex": "03d9a29a67fb4bb50100030002100031c1f2",
+        "entera": false,
+        "version": "3.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 3 cortada en 19",
+        "hex": "03d9a29a67fb4bb50100030002100031c1f2e6",
+        "entera": false,
+        "version": "3.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 3 cortada en 20",
+        "hex": "03d9a29a67fb4bb50100030002100031c1f2e6bf",
+        "entera": false,
+        "version": "3.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 3 cortada en 21",
+        "hex": "03d9a29a67fb4bb50100030002100031c1f2e6bf71",
+        "entera": false,
+        "version": "3.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 3 cortada en 22",
+        "hex": "03d9a29a67fb4bb50100030002100031c1f2e6bf7143",
+        "entera": false,
+        "version": "3.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 3 cortada en 23",
+        "hex": "03d9a29a67fb4bb50100030002100031c1f2e6bf714350",
+        "entera": false,
+        "version": "3.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 3 cortada en 24",
+        "hex": "03d9a29a67fb4bb50100030002100031c1f2e6bf714350be",
+        "entera": false,
+        "version": "3.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 3 cortada en 25",
+        "hex": "03d9a29a67fb4bb50100030002100031c1f2e6bf714350be58",
+        "entera": false,
+        "version": "3.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 3 cortada en 26",
+        "hex": "03d9a29a67fb4bb50100030002100031c1f2e6bf714350be5805",
+        "entera": false,
+        "version": "3.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 3 cortada en 27",
+        "hex": "03d9a29a67fb4bb50100030002100031c1f2e6bf714350be580521",
+        "entera": false,
+        "version": "3.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 3 cortada en 28",
+        "hex": "03d9a29a67fb4bb50100030002100031c1f2e6bf714350be5805216a",
+        "entera": false,
+        "version": "3.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 3 cortada en 29",
+        "hex": "03d9a29a67fb4bb50100030002100031c1f2e6bf714350be5805216afc",
+        "entera": false,
+        "version": "3.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 3 cortada en 30",
+        "hex": "03d9a29a67fb4bb50100030002100031c1f2e6bf714350be5805216afc5a",
+        "entera": false,
+        "version": "3.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 3 cortada en 31",
+        "hex": "03d9a29a67fb4bb50100030002100031c1f2e6bf714350be5805216afc5aff",
+        "entera": false,
+        "version": "3.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 3 cortada en 32",
+        "hex": "03d9a29a67fb4bb50100030002100031c1f2e6bf714350be5805216afc5aff04",
+        "entera": false,
+        "version": "3.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 3 cortada en 33",
+        "hex": "03d9a29a67fb4bb50100030002100031c1f2e6bf714350be5805216afc5aff0420",
+        "entera": false,
+        "version": "3.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 3 cortada en 34",
+        "hex": "03d9a29a67fb4bb50100030002100031c1f2e6bf714350be5805216afc5aff042000",
+        "entera": false,
+        "version": "3.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 3 cortada en 35",
+        "hex": "03d9a29a67fb4bb50100030002100031c1f2e6bf714350be5805216afc5aff04200000",
+        "entera": false,
+        "version": "3.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 3 cortada en 36",
+        "hex": "03d9a29a67fb4bb50100030002100031c1f2e6bf714350be5805216afc5aff0420000001",
+        "entera": false,
+        "version": "3.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 3 cortada en 37",
+        "hex": "03d9a29a67fb4bb50100030002100031c1f2e6bf714350be5805216afc5aff042000000102",
+        "entera": false,
+        "version": "3.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 3 cortada en 38",
+        "hex": "03d9a29a67fb4bb50100030002100031c1f2e6bf714350be5805216afc5aff04200000010203",
+        "entera": false,
+        "version": "3.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 3 cortada en 39",
+        "hex": "03d9a29a67fb4bb50100030002100031c1f2e6bf714350be5805216afc5aff0420000001020304",
+        "entera": false,
+        "version": "3.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 3 cortada en 40",
+        "hex": "03d9a29a67fb4bb50100030002100031c1f2e6bf714350be5805216afc5aff042000000102030405",
+        "entera": false,
+        "version": "3.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 3 cortada en 41",
+        "hex": "03d9a29a67fb4bb50100030002100031c1f2e6bf714350be5805216afc5aff04200000010203040506",
+        "entera": false,
+        "version": "3.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 3 cortada en 42",
+        "hex": "03d9a29a67fb4bb50100030002100031c1f2e6bf714350be5805216afc5aff0420000001020304050607",
+        "entera": false,
+        "version": "3.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 3 cortada en 43",
+        "hex": "03d9a29a67fb4bb50100030002100031c1f2e6bf714350be5805216afc5aff042000000102030405060708",
+        "entera": false,
+        "version": "3.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 3 cortada en 44",
+        "hex": "03d9a29a67fb4bb50100030002100031c1f2e6bf714350be5805216afc5aff04200000010203040506070809",
+        "entera": false,
+        "version": "3.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 3 cortada en 45",
+        "hex": "03d9a29a67fb4bb50100030002100031c1f2e6bf714350be5805216afc5aff042000000102030405060708090a",
+        "entera": false,
+        "version": "3.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 3 cortada en 46",
+        "hex": "03d9a29a67fb4bb50100030002100031c1f2e6bf714350be5805216afc5aff042000000102030405060708090a0b",
+        "entera": false,
+        "version": "3.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 3 cortada en 47",
+        "hex": "03d9a29a67fb4bb50100030002100031c1f2e6bf714350be5805216afc5aff042000000102030405060708090a0b0c",
+        "entera": false,
+        "version": "3.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 3 cortada en 48",
+        "hex": "03d9a29a67fb4bb50100030002100031c1f2e6bf714350be5805216afc5aff042000000102030405060708090a0b0c0d",
+        "entera": false,
+        "version": "3.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 3 cortada en 49",
+        "hex": "03d9a29a67fb4bb50100030002100031c1f2e6bf714350be5805216afc5aff042000000102030405060708090a0b0c0d0e",
+        "entera": false,
+        "version": "3.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 3 cortada en 50",
+        "hex": "03d9a29a67fb4bb50100030002100031c1f2e6bf714350be5805216afc5aff042000000102030405060708090a0b0c0d0e0f",
+        "entera": false,
+        "version": "3.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 3 cortada en 51",
+        "hex": "03d9a29a67fb4bb50100030002100031c1f2e6bf714350be5805216afc5aff042000000102030405060708090a0b0c0d0e0f10",
+        "entera": false,
+        "version": "3.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 3 cortada en 52",
+        "hex": "03d9a29a67fb4bb50100030002100031c1f2e6bf714350be5805216afc5aff042000000102030405060708090a0b0c0d0e0f1011",
+        "entera": false,
+        "version": "3.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 3 cortada en 53",
+        "hex": "03d9a29a67fb4bb50100030002100031c1f2e6bf714350be5805216afc5aff042000000102030405060708090a0b0c0d0e0f101112",
+        "entera": false,
+        "version": "3.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 3 cortada en 54",
+        "hex": "03d9a29a67fb4bb50100030002100031c1f2e6bf714350be5805216afc5aff042000000102030405060708090a0b0c0d0e0f10111213",
+        "entera": false,
+        "version": "3.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 3 cortada en 55",
+        "hex": "03d9a29a67fb4bb50100030002100031c1f2e6bf714350be5805216afc5aff042000000102030405060708090a0b0c0d0e0f1011121314",
+        "entera": false,
+        "version": "3.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 3 cortada en 56",
+        "hex": "03d9a29a67fb4bb50100030002100031c1f2e6bf714350be5805216afc5aff042000000102030405060708090a0b0c0d0e0f101112131415",
+        "entera": false,
+        "version": "3.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 3 cortada en 57",
+        "hex": "03d9a29a67fb4bb50100030002100031c1f2e6bf714350be5805216afc5aff042000000102030405060708090a0b0c0d0e0f10111213141516",
+        "entera": false,
+        "version": "3.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 3 cortada en 58",
+        "hex": "03d9a29a67fb4bb50100030002100031c1f2e6bf714350be5805216afc5aff042000000102030405060708090a0b0c0d0e0f1011121314151617",
+        "entera": false,
+        "version": "3.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 3 cortada en 59",
+        "hex": "03d9a29a67fb4bb50100030002100031c1f2e6bf714350be5805216afc5aff042000000102030405060708090a0b0c0d0e0f101112131415161718",
+        "entera": false,
+        "version": "3.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 3 cortada en 60",
+        "hex": "03d9a29a67fb4bb50100030002100031c1f2e6bf714350be5805216afc5aff042000000102030405060708090a0b0c0d0e0f10111213141516171819",
+        "entera": false,
+        "version": "3.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 3 cortada en 61",
+        "hex": "03d9a29a67fb4bb50100030002100031c1f2e6bf714350be5805216afc5aff042000000102030405060708090a0b0c0d0e0f101112131415161718191a",
+        "entera": false,
+        "version": "3.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 3 cortada en 62",
+        "hex": "03d9a29a67fb4bb50100030002100031c1f2e6bf714350be5805216afc5aff042000000102030405060708090a0b0c0d0e0f101112131415161718191a1b",
+        "entera": false,
+        "version": "3.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 3 cortada en 63",
+        "hex": "03d9a29a67fb4bb50100030002100031c1f2e6bf714350be5805216afc5aff042000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c",
+        "entera": false,
+        "version": "3.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 3 cortada en 64",
+        "hex": "03d9a29a67fb4bb50100030002100031c1f2e6bf714350be5805216afc5aff042000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d",
+        "entera": false,
+        "version": "3.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 3 cortada en 65",
+        "hex": "03d9a29a67fb4bb50100030002100031c1f2e6bf714350be5805216afc5aff042000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e",
+        "entera": false,
+        "version": "3.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 3 cortada en 66",
+        "hex": "03d9a29a67fb4bb50100030002100031c1f2e6bf714350be5805216afc5aff042000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+        "entera": false,
+        "version": "3.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 3 cortada en 67",
+        "hex": "03d9a29a67fb4bb50100030002100031c1f2e6bf714350be5805216afc5aff042000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f00",
+        "entera": false,
+        "version": "3.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 3 cortada en 68",
+        "hex": "03d9a29a67fb4bb50100030002100031c1f2e6bf714350be5805216afc5aff042000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f0004",
+        "entera": false,
+        "version": "3.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 3 cortada en 69",
+        "hex": "03d9a29a67fb4bb50100030002100031c1f2e6bf714350be5805216afc5aff042000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f000400",
+        "entera": false,
+        "version": "3.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 3 cortada en 70",
+        "hex": "03d9a29a67fb4bb50100030002100031c1f2e6bf714350be5805216afc5aff042000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f0004000d",
+        "entera": false,
+        "version": "3.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 3 cortada en 71",
+        "hex": "03d9a29a67fb4bb50100030002100031c1f2e6bf714350be5805216afc5aff042000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f0004000d0a",
+        "entera": false,
+        "version": "3.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 3 cortada en 72",
+        "hex": "03d9a29a67fb4bb50100030002100031c1f2e6bf714350be5805216afc5aff042000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f0004000d0a0d",
+        "entera": false,
+        "version": "3.1",
+        "motivo": "la cabecera está cortada"
+      },
+      {
+        "caso": "KDBX 3 sin campo de cifrado",
+        "hex": "03d9a29a67fb4bb501000300042000000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f0004000d0a0d0aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "entera": true,
+        "version": "3.1",
+        "motivo": ""
+      },
+      {
+        "caso": "KDBX 3 con dos campos de cifrado",
+        "hex": "03d9a29a67fb4bb50100030002100031c1f2e6bf714350be5805216afc5aff021000d6038a2b8b6f4cb5a524339a31dbb59a0004000d0a0d0aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "entera": true,
+        "version": "3.1",
+        "motivo": ""
+      },
+      {
+        "caso": "una versión que no se conoce (5.0)",
+        "hex": "03d9a29a67fb4bb5000005000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+        "entera": null,
+        "version": "5.0",
+        "motivo": "es una versión de KDBX que no se conoce (5.0)"
+      },
+      {
+        "caso": "una versión que no se conoce (2.0)",
+        "hex": "03d9a29a67fb4bb5000002000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+        "entera": null,
+        "version": "2.0",
+        "motivo": "es una versión de KDBX que no se conoce (2.0)"
+      },
+      {
+        "caso": "KeePass 1.x (otra segunda firma)",
+        "hex": "03d9a29a65fb4bb5010003000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+        "entera": false,
+        "version": "",
+        "motivo": "no empieza como una base de KeePassXC"
+      },
+      {
+        "caso": "un zip",
+        "hex": "504b030400000000000000000000000000000000000000000000000000000000000000000000000000000000",
+        "entera": false,
+        "version": "",
+        "motivo": "no empieza como una base de KeePassXC"
+      },
+      {
+        "caso": "vacío",
+        "hex": "",
+        "entera": false,
+        "version": "",
+        "motivo": "es demasiado corta para ser una base"
+      }
+    ],
+    "kdbx_sin_fichero": {
+      "entera": false,
+      "version": "",
+      "motivo_empieza": "no se puede leer ("
+    }
+  },
   "python": {
     "toml_leer": [
       {
