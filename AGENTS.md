@@ -462,9 +462,13 @@ decisiones que no se ven en el código:
   canal interrumpido fallaría. El trabajo corre la pasada sin interrupción;
   `REPLACE` sustituye al trabajo que espera, y el nuevo aguarda al cerrojo
   (`LlaveroApp.enExclusiva`) y sube lo que se guardó mientras tanto. El precio:
-  un llavero quitado, o sin red, tarda en enterarse lo que dure la pasada. Va
-  además en fila con las demás (`unaPasada`), y con una en marcha la
-  autoactualización no se instala (`Actualizador.empezarTrabajo()`).
+  un llavero quitado, o sin red, tarda en enterarse lo que dure la pasada. La
+  fila con las demás (`unaPasada`) es por llamada a rclone, no por pasada: la
+  del trabajo de fondo son varias llamadas, y se intercalan una a una con las
+  pasadas de otras parejas que lance la pantalla. No se pisan: cada llamada
+  lleva su captura del log, y lo que se apunta en `state/` va con cerrojo
+  (`Resultados.apuntar`, `Conflictos.guardar`). Con una pasada del llavero en
+  marcha la autoactualización no se instala (`Actualizador.empezarTrabajo()`).
 - **Los reintentos.** Una pasada que falla se repite con espera exponencial
   desde 2 min. El escritorio la topa en 30 min (`llavero.TOPE_REINTENTO`);
   WorkManager no deja poner tope y el suyo es de 5 h. Diferencia aceptada: un
