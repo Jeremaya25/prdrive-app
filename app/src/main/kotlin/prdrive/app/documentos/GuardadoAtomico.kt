@@ -53,9 +53,9 @@ import prdrive.engine.loadRaw
  *   byte a byte que la base, se tira sin tocarla. Si no, un `"rw"` de solo
  *   mirar le cambiaría la hora y encolaría una subida que, cruzada con un
  *   cambio en otro dispositivo, fabricaría un conflicto.
- * - Si el primer guardado de una base nueva no llega, se quita también el
- *   marcador vacío que deja `createDocument`: `Llavero.rotas` lo contaría como
- *   base rota y pararía el llavero entero.
+ * - Si el primer guardado de una base nueva no llega, o se abre y se cierra sin
+ *   escribir, se quita también el marcador vacío que deja `createDocument`:
+ *   `Llavero.rotas` lo contaría como base rota y pararía el llavero entero.
  *
  * Dos escritores a la vez llevan cada uno su temporal: gana el último que
  * cierra, como con dos KeePassXC.
@@ -167,8 +167,10 @@ internal object GuardadoAtomico {
             // luz justo después del cambio de nombre, que no quede una base vacía.
             FileChannel.open(tmp.toPath(), StandardOpenOption.WRITE).use { it.force(true) }
             if (tmp.length() == 0L || iguales(tmp, base)) {
-                // No se ha escrito nada: ni se pone ni se avisa.
+                // No se ha escrito nada: ni se pone ni se avisa. Un marcador
+                // vacío no se deja: es una base rota.
                 tmp.delete()
+                quitarMarcador(base)
                 return
             }
             Kdbx.comprobar(tmp)

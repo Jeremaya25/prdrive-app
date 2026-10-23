@@ -370,4 +370,55 @@ class ProveedorLlaveroTest {
         DocumentsContract.deleteDocument(resolver, uri(LLAVERO_LOCAL))
         assertFalse(llavero.exists())
     }
+
+    @Test
+    fun con_el_llavero_activo_no_se_hace_otra_carpeta_del_llavero() {
+        // Sin `.keychain` (antes de la primera pasada, o borrada a mano): nada
+        // puede ocupar su sitio con una llave falsa dentro.
+        llavero.deleteRecursively()
+        val raizUri = DocumentsContract.buildDocumentUri(VolumenProvider.AUTORIDAD, VolumenProvider.ID_RAIZ)
+        seNiega("crear .keychain") {
+            DocumentsContract.createDocument(resolver, raizUri, Document.MIME_TYPE_DIR, LLAVERO_LOCAL)
+        }
+        val otra = File(v.raiz, "otra").apply { mkdirs() }
+        File(otra, LLAVERO_LLAVE).writeBytes(byteArrayOf(6, 6, 6))
+        seNiega("renombrar otra carpeta a .keychain") {
+            DocumentsContract.renameDocument(resolver, uri("otra"), LLAVERO_LOCAL)
+        }
+        assertFalse("ha aparecido otra .keychain", llavero.exists())
+        assertTrue(otra.isDirectory)
+    }
+
+    @Test
+    fun una_base_nueva_abierta_y_cerrada_sin_escribir_no_se_queda_vacia() {
+        val creada = DocumentsContract.createDocument(
+            resolver, uri(LLAVERO_LOCAL), "application/octet-stream", "nueva.kdbx",
+        ) ?: error("no se ha creado")
+        val nueva = File(llavero, "nueva.kdbx")
+        assertTrue(nueva.isFile)
+        // Una app de KeePass que crea el fichero y se cierra sin guardar: el
+        // marcador vacío pararía el llavero entero (`Llavero.rotas`).
+        resolver.openFileDescriptor(creada, "w")!!.close()
+        esperar("ha quedado nueva.kdbx vacía") { !nueva.exists() }
+        esperarAlCierre()
+        assertFalse("se ha avisado de un guardado cortado", aviso.exists())
+        assertTrue(encolados().isEmpty())
+        assertArrayEquals(Banco.base(entera = true), base.readBytes())
+    }
+
+    @Test
+    fun un_enlace_a_la_llave_no_deja_escribirla() {
+        val enlace = File(v.raiz, "sync-data/notas/llave.lnk")
+        enlace.parentFile!!.mkdirs()
+        // Como el que traería rclone de un `.rclonelink` en una pareja con `links`.
+        java.nio.file.Files.createSymbolicLink(enlace.toPath(), File(llavero, LLAVERO_LLAVE).toPath())
+        val id = uri("sync-data/notas/llave.lnk")
+        resolver.openFileDescriptor(id, "r")!!.use { pfd ->
+            assertArrayEquals(byteArrayOf(1, 2, 3, 4), FileInputStream(pfd.fileDescriptor).readBytes())
+        }
+        for (modo in listOf("w", "wt", "rw", "wa")) {
+            seNiega("escribir la llave por un enlace con \"$modo\"") { resolver.openFileDescriptor(id, modo)?.close() }
+        }
+        assertArrayEquals(byteArrayOf(1, 2, 3, 4), File(llavero, LLAVERO_LLAVE).readBytes())
+    }
 }
