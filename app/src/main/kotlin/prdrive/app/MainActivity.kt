@@ -21,6 +21,14 @@ class MainActivity : ComponentActivity() {
         // debajo de las barras (Scaffold deja el margen); con esto, también
         // antes, y se ven igual en todas las versiones.
         enableEdgeToEdge()
+        // El modelo se crea aquí y no dentro de `setContent`: sus estados
+        // (`mutableStateOf`) nacen en la instantánea de quien los crea, y la de
+        // la primera composición no se aplica hasta que esta acaba. Al
+        // aplicarse, el valor con el que nacieron pisa lo que otro hilo haya
+        // escrito entretanto, sin error: en frío, con la composición lenta, las
+        // filas que lee el `init` llegaban antes y la principal salía sin
+        // parejas (`PrincipalTest`).
+        val modelo = modelo
         setContent { PrdriveApp(modelo) }
     }
 
