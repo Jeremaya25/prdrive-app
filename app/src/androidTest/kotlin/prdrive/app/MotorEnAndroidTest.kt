@@ -6,6 +6,9 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import java.io.File
+import java.nio.file.Files
+import java.nio.file.attribute.FileTime
+import java.util.concurrent.TimeUnit
 import java.time.LocalDateTime
 import java.util.Locale
 import org.junit.After
@@ -18,6 +21,10 @@ import prdrive.engine.Store
 import prdrive.engine.Bisync
 import prdrive.engine.ConfigError
 import prdrive.engine.Conflictos
+import prdrive.engine.Kdbx
+import prdrive.engine.LLAVERO_LOCAL
+import prdrive.engine.Llavero
+import prdrive.engine.Pasada
 import prdrive.engine.Pairing
 import prdrive.engine.comoJson
 import prdrive.engine.dumps
@@ -355,6 +362,198 @@ class MotorEnAndroidTest {
         for (c in objetos(v, "is_newer")) {
             val es = prdrive.engine.Actualizacion.isNewer(c["nueva"].toString(), c["actual"].toString())
             if (c["rompe"] == null) assertEquals("is_newer «${c["nueva"]}» «${c["actual"]}»", c["es"], es)
+        }
+    }
+
+    // --- el llavero ------------------------------------------------------------
+
+    private fun largo(valor: Any?): Long = (valor as Number).toLong()
+
+    /** Los milisegundos de unas esperas dichas en segundos, como las cuenta el motor. */
+    private fun enMs(segundos: Any?): Long = ((segundos as Number).toDouble() * 1000).toLong()
+
+    private fun hex(texto: String): ByteArray =
+        ByteArray(texto.length / 2) { texto.substring(2 * it, 2 * it + 2).toInt(16).toByte() }
+
+    private fun hexDe(datos: ByteArray): String {
+        val cifras = "0123456789abcdef"
+        val s = StringBuilder()
+        for (b in datos) s.append(cifras[(b.toInt() shr 4) and 15]).append(cifras[b.toInt() and 15])
+        return s.toString()
+    }
+
+    private fun horaDe(f: File): Long = Files.getLastModifiedTime(f.toPath()).to(TimeUnit.NANOSECONDS)
+
+    /** Escribe los ficheros de un caso (`ruta`, `hex` o `tamano`, y `mtime_ns`). */
+    private fun poner(donde: File, ficheros: List<Map<String, Any?>>) {
+        for (f in ficheros) {
+            val ruta = File(donde, f["ruta"].toString())
+            ruta.parentFile!!.mkdirs()
+            ruta.writeBytes(
+                if (f["hex"] != null) hex(f["hex"].toString()) else ByteArray(largo(f["tamano"]).toInt()) { 'x'.code.toByte() },
+            )
+        }
+        for (f in ficheros) {
+            val ns = f["mtime_ns"] ?: continue
+            Files.setLastModifiedTime(File(donde, f["ruta"].toString()).toPath(), FileTime.from(largo(ns), TimeUnit.NANOSECONDS))
+        }
+    }
+
+    private fun rutasDe(donde: File): List<String> =
+        donde.walkTopDown().filter { it.isFile }.map { it.relativeTo(donde).invariantSeparatorsPath }.toList().sorted()
+
+    /** Lo que hay de `LEEME.txt` en una carpeta, comparado con lo que dice prdrive. */
+    private fun assertLeeme(esperado: Map<String, Any?>, donde: File, que: String) {
+        val f = File(donde, Llavero.LEEME)
+        assertEquals("$que: ¿hay LEEME?", esperado["existe"], f.isFile)
+        assertEquals("$que: el contenido del LEEME", esperado["hex"], if (f.isFile) hexDe(f.readBytes()) else null)
+        assertEquals("$que: la hora del LEEME", esperado["mtime_ns"]?.let(::largo), if (f.isFile) horaDe(f) else null)
+    }
+
+    /**
+     * Los vectores del llavero (`kdbx.py`, `llavero.py`, `frenos.py`) otra vez en
+     * el dispositivo: la lectura de una KDBX, el LEEME con su hora, el listado de
+     * bisync y los logs de los frenos pasan por las regex de ICU y el sistema de
+     * ficheros de Android, no por los de la JVM del escritorio.
+     */
+    @Test
+    fun los_vectores_del_llavero_valen_tambien_en_android() {
+        val v = objeto(vectores, "llavero")
+        val raiz = File(Banco.contexto.cacheDir, "motor-llavero").apply { deleteRecursively(); mkdirs() }
+        try {
+            var n = 0
+            fun temporal(): File = File(raiz, "${n++}").apply { mkdirs() }
+
+            // Kdbx
+            val casos = objetos(v, "kdbx")
+            assertTrue(casos.isNotEmpty())
+            for (caso in casos) {
+                val e = Kdbx.mirar(hex(caso["hex"].toString()))
+                assertEquals("«${caso["caso"]}»", caso["entera"], e.entera)
+                assertEquals("«${caso["caso"]}»", caso["version"], e.version)
+                assertEquals("«${caso["caso"]}»", caso["motivo"], e.motivo)
+            }
+            val entera = casos.first { it["entera"] == true && it["version"] == "4.1" }
+            val d = temporal()
+            File(d, "buena.kdbx").writeBytes(hex(entera["hex"].toString()))
+            assertEquals(true, Kdbx.comprobar(File(d, "buena.kdbx")).entera)
+            val sin = objeto(v, "kdbx_sin_fichero")
+            val ausente = Kdbx.comprobar(File(d, "no-existe.kdbx"))
+            assertEquals(sin["entera"], ausente.entera)
+            assertTrue(ausente.motivo, ausente.motivo.startsWith(sin["motivo_empieza"].toString()))
+
+            // El LEEME
+            val leeme = objeto(v, "leeme")
+            assertEquals(leeme["nombre"], Llavero.LEEME)
+            assertEquals(leeme["texto"], Llavero.LEEME_TEXTO)
+            assertEquals(leeme["texto_hex"], hexDe(Llavero.LEEME_TEXTO.toByteArray(Charsets.UTF_8)))
+            assertEquals(largo(leeme["hora"]), Llavero.LEEME_HORA)
+            assertEquals(enMs(leeme["espera_entera"]), Llavero.ESPERA_ENTERA_MS)
+            assertEquals(largo(leeme["tolerancia_hora"]), Llavero.TOLERANCIA_HORA)
+            for (caso in objetos(leeme, "asegurar")) {
+                val nombre = "«${caso["caso"]}» (corregir_hora=${caso["corregir_hora"]})"
+                val donde = File(temporal(), LLAVERO_LOCAL)
+                if (caso["carpeta_existe"] == true) donde.mkdirs()
+                poner(donde, objetos(caso, "ficheros"))
+                assertEquals("$nombre: lo que devuelve", caso["devuelve"], Llavero.asegurarLeeme(donde, corregirHora = caso["corregir_hora"] == true))
+                assertLeeme(objeto(caso, "despues"), donde, nombre)
+            }
+            for (caso in objetos(leeme, "bases")) {
+                val donde = File(temporal(), LLAVERO_LOCAL)
+                if (caso["carpeta_existe"] == true) donde.mkdirs()
+                poner(donde, cadenas(caso, "ficheros").map { mapOf("ruta" to it, "tamano" to 3L) })
+                assertEquals(
+                    "«${caso["caso"]}»",
+                    cadenas(caso, "bases"),
+                    Llavero.bases(donde).map { it.relativeTo(donde).invariantSeparatorsPath },
+                )
+            }
+            for (caso in objetos(leeme, "preparar")) {
+                val nombre = "«${caso["caso"]}»"
+                val donde = File(temporal(), LLAVERO_LOCAL)
+                if (caso["carpeta_existe"] == true) {
+                    donde.mkdirs()
+                    poner(donde, objetos(caso, "ficheros"))
+                }
+                val esperas = ArrayList<Long>()
+                val durante = objeto(caso, "durante_la_espera")
+                val motivo = Llavero.preparar(donde, simulacro = caso["simulacro"] == true) { ms ->
+                    esperas.add(ms)
+                    for ((ruta, datos) in durante) File(donde, ruta).writeBytes(hex(datos.toString()))
+                }
+                assertEquals("$nombre: el motivo", caso["motivo"], motivo)
+                assertEquals("$nombre: las esperas", (caso["esperas"] as List<*>).map(::enMs), esperas)
+                val despues = objeto(caso, "despues")
+                assertEquals("$nombre: la carpeta", despues["carpeta_existe"], donde.isDirectory)
+                if (despues["carpeta_existe"] == true) {
+                    assertLeeme(objeto(despues, "leeme"), donde, nombre)
+                    assertEquals("$nombre: los ficheros", cadenas(despues, "ficheros"), rutasDe(donde))
+                }
+            }
+
+            // El listado de bisync y lo pendiente
+            val listado = objeto(v, "listado")
+            fun listadoDeCaso(hexa: Any?): File {
+                val f = File(temporal(), "listado.path1.lst")
+                if (hexa != null) f.writeBytes(hex(hexa.toString()))
+                return f
+            }
+            for (caso in objetos(listado, "lineas")) {
+                val esperado = (caso["esperado"] as? Map<*, *>)?.entries?.associate { (ruta, par) ->
+                    val l = par as List<*>
+                    ruta.toString() to kotlin.Pair(largo(l[0]), largo(l[1]))
+                }
+                assertEquals("«${caso["caso"]}»", esperado, Llavero.listadoLocal(listadoDeCaso(caso["hex"])))
+            }
+            val pareja = parseConfig(objeto(listado, "config")).parejaLlavero ?: error("el config de los vectores lleva llavero")
+            assertEquals(listado["prefijo"], Bisync.expectedPrefix(pareja, emptyMap()))
+            assertEquals(listado["sufijo"], Bisync.PATH1_SUFFIX)
+            for (caso in objetos(listado, "pendiente")) {
+                val nombre = "«${caso["caso"]}»"
+                val donde = File(temporal(), LLAVERO_LOCAL).apply { mkdirs() }
+                poner(donde, objetos(caso, "ficheros"))
+                val lst = listadoDeCaso(caso["listado_hex"])
+                assertEquals("$nombre: pendiente", caso["pendiente"], Llavero.pendiente(donde, lst))
+                assertEquals("$nombre: sin listar", cadenas(caso, "sin_listar"), Llavero.sinListar(donde, lst))
+            }
+
+            // Los frenos: las regex que leen el log de rclone
+            val frenos = objeto(v, "frenos")
+            assertEquals(largo(frenos["freno_sin_copias"]), Llavero.FRENO_SIN_COPIAS)
+            val parejaFrenos = parseConfig(objeto(frenos, "config")).parejaLlavero ?: error("el config de los vectores lleva llavero")
+            for (caso in objetos(frenos, "logs")) {
+                val esperado = (caso["solo_copias"] as? List<*>)?.map { it.toString() }
+                assertEquals("«${caso["caso"]}»", esperado, Llavero.soloCopiasBorradas(caso["log"].toString(), parejaFrenos))
+            }
+            for (caso in objetos(frenos, "remoto_vacio")) {
+                assertEquals("«${caso["caso"]}»", caso["vacio"], Llavero.remotoVacio(caso["log"].toString()))
+            }
+            for (caso in objetos(frenos, "borrarian")) {
+                assertEquals("«${caso["caso"]}»", cadenas(caso, "borrarian"), Pasada.borrarian(caso["log"].toString()))
+            }
+            val e = objeto(frenos, "explicaciones")
+            assertEquals(e["llavero"], Pasada.EXPLICACION_LLAVERO)
+            assertEquals(e["llavero_cambiados"], Pasada.EXPLICACION_LLAVERO_CAMBIADOS)
+            assertEquals(cadenas(e, "entradas"), Pasada.EXPLICACIONES)
+            for (caso in objetos(e, "explicacion_llavero") + objetos(e, "otras")) {
+                assertEquals("«${caso["explicacion"]}»", caso["dice"], Pasada.explicacionLlavero(caso["explicacion"].toString()))
+            }
+
+            // El alta desde el remoto
+            for (caso in objetos(frenos, "alta")) {
+                @Suppress("UNCHECKED_CAST")
+                val remota = caso["remota"] as Map<String, Any?>?
+                val nombre = "«${caso["caso"]}»"
+                if (caso.containsKey("error")) {
+                    val error = runCatching { Llavero.decidirAlta(remota) }.exceptionOrNull()
+                    assertTrue("$nombre tenía que rechazarse", error is ConfigError)
+                    assertEquals(nombre, caso["error"], error!!.message)
+                } else {
+                    assertEquals(nombre, caso["tabla"], Llavero.decidirAlta(remota))
+                }
+            }
+        } finally {
+            raiz.deleteRecursively()
         }
     }
 }

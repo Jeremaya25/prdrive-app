@@ -3,6 +3,7 @@ package prdrive.app
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import java.io.File
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -142,6 +143,68 @@ class PasadaEnAndroidTest {
         assertEquals("a", File(v.raiz, "sync-data/bajada/a.txt").readText())
         // `sync/sync` no devuelve su log: lo captura el adaptador.
         assertTrue("el log no cuenta la copia: ${r.log?.readText()}", r.log!!.readText().contains("a.txt"))
+    }
+
+    // --- el llavero ------------------------------------------------------------
+
+    /** Una base de KeePassXC entera, de los vectores de `kdbx.py` (la de KDBX 4.1). */
+    private fun baseEntera(): ByteArray {
+        @Suppress("UNCHECKED_CAST")
+        val casos = (Banco.vectores["llavero"] as Map<String, Any?>)["kdbx"] as List<Map<String, Any?>>
+        val hexa = casos.first { it["entera"] == true && it["version"] == "4.1" }["hex"].toString()
+        return ByteArray(hexa.length / 2) { hexa.substring(2 * it, 2 * it + 2).toInt(16).toByte() }
+    }
+
+    /** La pasada del llavero, como la lanza la app: Android cuenta como cifrado. */
+    private fun pasarLlavero(v: prdrive.engine.Volumen, p: prdrive.engine.Pareja) =
+        pasar(v, p, Pasada.Contexto(cifrado = true, keepLogs = true))
+
+    @Test
+    fun la_primera_pasada_del_llavero_trae_la_base_y_deja_el_leeme_con_su_hora() {
+        val (v, config) = Banco.volumen(Banco.pareja("notas"), llavero = "personal.kdbx")
+        val p = config.parejaLlavero!!
+        val base = baseEntera()
+        // La carpeta del llavero en el remoto (`<catálogo>/keychain`) ya la pone
+        // el escritorio, con la base, y en el teléfono no hay nada ni baseline.
+        val remoto = File(Banco.remoto, "catalogo/keychain").apply { mkdirs() }
+        File(remoto, "personal.kdbx").writeBytes(base)
+
+        val r = pasarLlavero(v, p)
+        assertEquals(todo(r), 0, r.codigo)
+        // Sin baseline el llavero se resincroniza solo, sin que nadie lo apruebe.
+        assertTrue(todo(r), r.resync)
+        val local = p.carpetaEn(v.raiz)
+        assertEquals(File(v.raiz, ".keychain"), local)
+        assertTrue("la base no ha bajado: ${local.list()?.toList()}", File(local, "personal.kdbx").isFile)
+        assertTrue(base.contentEquals(File(local, "personal.kdbx").readBytes()))
+        // El LEEME, con la hora fija de todos los dispositivos, aquí y en el remoto.
+        val hora = prdrive.engine.Llavero.LEEME_HORA * 1000
+        assertEquals(hora, File(local, prdrive.engine.Llavero.LEEME).lastModified())
+        assertEquals(hora, File(remoto, prdrive.engine.Llavero.LEEME).lastModified())
+        assertNotNull(Resultados.ultimasBuenas(v.state, listOf("keychain"))["keychain"])
+    }
+
+    @Test
+    fun un_remoto_del_llavero_vaciado_a_mano_se_vuelve_a_subir() {
+        val (v, config) = Banco.volumen(Banco.pareja("notas"), llavero = "personal.kdbx")
+        val p = config.parejaLlavero!!
+        val remoto = File(Banco.remoto, "catalogo/keychain").apply { mkdirs() }
+        File(remoto, "personal.kdbx").writeBytes(baseEntera())
+        val primera = pasarLlavero(v, p)
+        assertEquals(todo(primera), 0, primera.codigo)
+
+        // Alguien borra la carpeta del llavero en el remoto: con baseline la
+        // pasada es normal, y bisync no sincroniza contra un lado vacío
+        // (`checkListing`, cmd/bisync/listing.go). La pasada crea la carpeta y
+        // repite con --resync.
+        assertTrue(remoto.deleteRecursively())
+        assertFalse(remoto.exists())
+        val r = pasarLlavero(v, p)
+        assertEquals(todo(r), 0, r.codigo)
+        assertTrue("la base no ha vuelto al remoto: ${remoto.list()?.toList()}", File(remoto, "personal.kdbx").isFile)
+        assertTrue(baseEntera().contentEquals(File(remoto, "personal.kdbx").readBytes()))
+        // Y el teléfono no ha perdido la suya.
+        assertTrue(File(p.carpetaEn(v.raiz), "personal.kdbx").isFile)
     }
 
     @Test
