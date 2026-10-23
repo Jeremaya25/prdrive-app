@@ -102,6 +102,46 @@ class LlaveroAltaTest {
         assertEquals(antes, v.config.readText())
         assertEquals(confAntes, v.rcloneConf.readText())
         assertFalse(File(File(v.raiz, LLAVERO_LOCAL), LLAVERO_LLAVE).exists())
+        // Ni la carpeta, que no estaba.
+        assertFalse(File(v.raiz, LLAVERO_LOCAL).exists())
+    }
+
+    /**
+     * Un fallo de activar después de copiar la llave (aquí, el `rclone.conf`
+     * que no se puede escribir) no deja ni la llave ni la carpeta `.keychain/`
+     * que no estaba, ni el `rclone.conf` cambiado: sin el config con el
+     * llavero, nada las dejaría fuera de una pareja de la raíz entera. Una
+     * carpeta que ya estaba, con su base, se queda.
+     */
+    @Test
+    fun un_fallo_al_activar_no_deja_ni_la_llave_ni_la_carpeta_nueva() {
+        for (yaEstaba in listOf(false, true)) {
+            val (v, _) = Banco.volumen(Banco.pareja("notas"))
+            val carpeta = File(v.raiz, LLAVERO_LOCAL)
+            val base = File(carpeta, "personal.kdbx")
+            if (yaEstaba) {
+                carpeta.mkdirs()
+                base.writeText("la base")
+            }
+            val antes = v.config.readText()
+            val confAntes = v.rcloneConf.readText()
+            // El temporal del rclone.conf ocupado por una carpeta con algo: no se puede escribir.
+            val estorbo = File(v.rcloneConf.parentFile, "rclone.tmp").apply { mkdirs() }
+            File(estorbo, "algo").writeText("x")
+            try {
+                Instalador.activarLlavero(contexto, remota(interna = true), llave(ByteArray(32) { it.toByte() }))
+                fail("con el rclone.conf sin escribir, activar tenía que fallar")
+            } catch (_: java.io.IOException) {
+            } finally {
+                estorbo.deleteRecursively()
+            }
+            assertFalse("($yaEstaba) la llave se ha quedado", File(carpeta, LLAVERO_LLAVE).exists())
+            assertEquals("($yaEstaba)", yaEstaba, carpeta.exists())
+            if (yaEstaba) assertEquals("la base", base.readText())
+            assertEquals(antes, v.config.readText())
+            assertEquals(confAntes, v.rcloneConf.readText())
+            assertNull(v.leerConfig().llavero)
+        }
     }
 
     /** Lo que rclone ve en la raíz del `combine`: una carpeta por upstream. */

@@ -28,6 +28,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -154,16 +155,6 @@ internal fun FilaDelLlavero(
     var traer by remember { mutableStateOf(false) }
     var quitar by remember { mutableStateOf(false) }
     var menu by remember { mutableStateOf(false) }
-    val abrirBase: (Uri) -> Unit = { uri ->
-        val intent = Intent(Intent.ACTION_VIEW)
-            .setDataAndType(uri, TextosLlavero.TIPO)
-            .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
-        try {
-            contexto.startActivity(intent)
-        } catch (_: ActivityNotFoundException) {
-            m.avisar(TextosLlavero.SIN_APP)
-        }
-    }
     val colores = if (f.ambar) {
         CardDefaults.cardColors(containerColor = AMBAR, contentColor = SOBRE_AMBAR)
     } else {
@@ -202,7 +193,7 @@ internal fun FilaDelLlavero(
             } else {
                 EstadoDelLlavero(f)
                 Button(
-                    onClick = { conRed { m.abrirLlavero(abrirBase) } },
+                    onClick = { conRed(m::abrirLlavero) },
                     enabled = libre,
                     modifier = Modifier.testTag("abrir-llavero"),
                 ) { Text("Abrir llavero") }
@@ -211,6 +202,28 @@ internal fun FilaDelLlavero(
     }
     if (traer) ConfirmarTraer(m, f, conRed, conPermiso) { traer = false }
     if (quitar) ConfirmarQuitar(m, f) { quitar = false }
+}
+
+/**
+ * Abre la base que pide el modelo ([Modelo.porAbrir]) con la app de KeePass,
+ * con el contexto de ahora, y se lo dice: es de una sola vez. Va en la
+ * pantalla y no en la fila, que puede no estar compuesta (fuera de la vista).
+ */
+@Composable
+internal fun AbrirLaBase(m: Modelo) {
+    val contexto = LocalContext.current
+    val uri = m.porAbrir ?: return
+    LaunchedEffect(uri) {
+        m.abierta()
+        val intent = Intent(Intent.ACTION_VIEW)
+            .setDataAndType(uri, TextosLlavero.TIPO)
+            .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
+        try {
+            contexto.startActivity(intent)
+        } catch (_: ActivityNotFoundException) {
+            m.avisar(TextosLlavero.SIN_APP)
+        }
+    }
 }
 
 /** Cómo está el llavero: la línea de siempre y, si los hay, los motivos del ámbar. */

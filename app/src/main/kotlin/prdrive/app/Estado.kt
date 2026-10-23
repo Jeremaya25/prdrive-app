@@ -110,14 +110,20 @@ object Estado {
         val ambar: Boolean get() = fallo != null || cortado != null || conflictos.isNotEmpty() || faltaLlave
     }
 
+    /** Donde [Pasada.EXPLICACION_LLAVERO] empieza a mandar a «Combinar». */
+    const val MANDA_A_COMBINAR = "usa «Combinar»"
+
     /**
      * Lo que se dice en lugar de [Pasada.EXPLICACION_LLAVERO], que manda a
      * «Combinar» al abrir: eso es del escritorio, y el teléfono no lo tiene.
+     * Es la de prdrive hasta [MANDA_A_COMBINAR] y, en lugar de lo demás, la
+     * frase del teléfono ([Avisos.COMBINAR_FUERA][prdrive.app.llavero.Avisos.COMBINAR_FUERA]):
+     * si prdrive cambia su texto, cambia con él (y `PantallaLlaveroTest`
+     * comprueba que el corte sigue ahí).
      */
-    const val EXPLICACION_LLAVERO_TELEFONO =
-        "El freno de borrados del llavero no se salta: sus bases son tus contraseñas. Comprueba " +
-            "que no falte ninguna en un lado y, si hay copias de conflicto, combínalas en el " +
-            "ordenador con «Abrir llavero», o en tu app de KeePass."
+    val EXPLICACION_LLAVERO_TELEFONO: String =
+        Pasada.EXPLICACION_LLAVERO.substringBefore(MANDA_A_COMBINAR) +
+            prdrive.app.llavero.Avisos.COMBINAR_FUERA.replaceFirstChar { it.lowercaseChar() }
 
     /** Lo que se dice de una base rota ([Pasada.LLAVERO_ROTO]), que no tiene log. */
     const val EXPLICACION_ROTA =

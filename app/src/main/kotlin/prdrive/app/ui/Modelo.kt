@@ -142,8 +142,17 @@ class Modelo(app: Application) : AndroidViewModel(app) {
     var avisoLlavero by mutableStateOf<String?>(null)
         private set
 
-    /** Lo que se hace al cerrar [avisoLlavero]: abrir la base. */
-    private var alCerrarAviso: (() -> Unit)? = null
+    /**
+     * La base que hay que abrir ya, de una sola vez: la pantalla la abre con
+     * su contexto de ese momento y la quita ([abierta]). Un estado y no una
+     * lambda de la pantalla: girar el teléfono durante la pasada o el aviso
+     * cambia la actividad, y la de antes ya no puede abrir nada.
+     */
+    var porAbrir by mutableStateOf<Uri?>(null)
+        private set
+
+    /** La base que se abrirá al cerrar [avisoLlavero]. */
+    private var trasElAviso: Uri? = null
 
     init {
         if (sembrado) trabajo("Preparando…") { refrescar() }
@@ -242,11 +251,14 @@ class Modelo(app: Application) : AndroidViewModel(app) {
      * Siembra el volumen con las elegidas y hace el `--resync` inicial de las
      * bisync.
      *
-     * Con «El llavero», lo activa antes de las pasadas (así una pareja de la
-     * raíz entera ya empieza sin `.keychain/`, y no pide otro `--resync`) y lo
-     * pasa el último, como `sync.py`. Si activarlo falla, las parejas siguen, y
-     * el error se dice al final: el llavero se puede traer después desde la
-     * principal.
+     * Con «El llavero», lo activa después de esos `--resync` y lo pasa el
+     * último, como `sync.py`. Después y no antes: el `--resync` va con el
+     * config de [Instalador.instalar], de antes del llavero, y una pareja de la
+     * raíz entera aún no lleva la regla que deja fuera `.keychain/`
+     * (`REGLA_SIN_LLAVERO` se le pone al leer el config); con la carpeta ya
+     * creada, subiría la llave. Así pedirá un `--resync` más, que es lo que
+     * avisa prdrive (`Volumen.avisosAlta`). Si activarlo falla, el error se
+     * dice al final: el llavero se puede traer después desde la principal.
      */
     fun instalar() {
         val c = carga ?: return
@@ -260,22 +272,24 @@ class Modelo(app: Application) : AndroidViewModel(app) {
             paso = Paso.INICIANDO
             lineas = emptyList()
             var falloLlavero: Exception? = null
-            val activado = remota != null && try {
-                LlaveroApp.enExclusiva { Instalador.activarLlavero(contexto, remota, llave) }
-                true
-            } catch (e: ConfigError) {
-                falloLlavero = e
-                false
-            } catch (e: java.io.IOException) {
-                falloLlavero = e
-                false
-            }
             try {
                 for (nombre in Instalador.aInicializar(hecho.config, cat)) {
                     val r = Instalador.inicializar(contexto, hecho.config, nombre, { progreso = Progreso.de(nombre, it) }, ::decir)
                     resultados = resultados + (nombre to r)
                 }
-                if (activado) pasarLlavero()
+                if (remota != null) {
+                    val activado = try {
+                        LlaveroApp.enExclusiva { Instalador.activarLlavero(contexto, remota, llave) }
+                        true
+                    } catch (e: InterruptedException) {
+                        // La app se cierra: no es un fallo del llavero.
+                        throw e
+                    } catch (e: Exception) {
+                        falloLlavero = e
+                        false
+                    }
+                    if (activado) pasarLlavero()
+                }
             } finally {
                 // Bien o mal, el volumen ya está sembrado: se puede ir a la principal.
                 inicioTerminado = true
@@ -379,10 +393,10 @@ class Modelo(app: Application) : AndroidViewModel(app) {
      * 2. Sin base tras la pasada, se dice por qué y no se abre.
      * 3. Con copias de conflicto de la base, o sin el fichero llave de un
      *    llavero sin contraseña, un aviso ([avisoLlavero]) que al cerrarse abre.
-     * 4. [abrir] con el `content://` de la base en [VolumenProvider], en el
-     *    hilo de la pantalla.
+     * 4. [porAbrir] con el `content://` de la base en [VolumenProvider], que
+     *    la pantalla abre.
      */
-    fun abrirLlavero(abrir: (Uri) -> Unit) {
+    fun abrirLlavero() {
         trabajo("Abriendo el llavero…") {
             val v = Prdrive.volumen(contexto)
             val config = config()
@@ -425,20 +439,24 @@ class Modelo(app: Application) : AndroidViewModel(app) {
                 VolumenProvider.AUTORIDAD, "${VolumenProvider.ID_RAIZ}/$LLAVERO_LOCAL/$base",
             )
             if (avisos.isEmpty()) {
-                viewModelScope.launch(Dispatchers.Main) { abrir(uri) }
+                porAbrir = uri
             } else {
-                alCerrarAviso = { abrir(uri) }
+                trasElAviso = uri
                 avisoLlavero = avisos.joinToString("\n\n")
             }
         }
     }
 
-    /** Se ha leído [avisoLlavero]: se abre la base. Desde el hilo de la pantalla. */
+    /** Se ha leído [avisoLlavero]: se abre la base. */
     fun cerrarAvisoLlavero() {
-        val accion = alCerrarAviso
-        alCerrarAviso = null
+        porAbrir = trasElAviso
+        trasElAviso = null
         avisoLlavero = null
-        accion?.invoke()
+    }
+
+    /** La pantalla ya ha pedido abrir [porAbrir]. */
+    fun abierta() {
+        porAbrir = null
     }
 
     /**

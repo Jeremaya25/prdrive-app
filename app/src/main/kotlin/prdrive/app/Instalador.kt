@@ -2,17 +2,24 @@ package prdrive.app
 
 import android.content.Context
 import android.net.Uri
+import android.util.Log
+import java.io.File
 import java.io.IOException
+import java.nio.file.Files
+import java.nio.file.LinkOption
 import prdrive.app.llavero.Disparos
 import prdrive.app.rclone.Adaptadores
 import prdrive.engine.Catalogo
 import prdrive.engine.Config
 import prdrive.engine.ConfigError
 import prdrive.engine.DEFAULT_MODE
+import prdrive.engine.LLAVERO_LLAVE
+import prdrive.engine.LLAVERO_LOCAL
 import prdrive.engine.Llavero
 import prdrive.engine.MODES
 import prdrive.engine.Pairing
 import prdrive.engine.Pasada
+import prdrive.engine.Store
 import prdrive.engine.Volumen
 import prdrive.engine.dumpsChecked
 import prdrive.engine.headerOf
@@ -155,7 +162,11 @@ object Instalador {
      * `combine` va antes que el config porque un `.keychain` de más en él no
      * hace nada, y un config con `[keychain]` sin él haría fallar cada pasada;
      * y el config va el último, como en [instalar], porque es el que marca lo
-     * hecho. Si algo falla antes de él, activar se puede repetir.
+     * hecho. Si algo falla antes de él, activar se puede repetir, y lo que se
+     * ha creado se deshace ([deshacerAlta]): la llave, si no estaba, la carpeta
+     * `.keychain/`, si no estaba, y el `rclone.conf` de antes. Sin el config,
+     * nada deja fuera esa carpeta de una pareja de la raíz entera, que subiría
+     * la llave.
      *
      * La llave se copia con el content resolver (`content://`, `file://`) a
      * `.keychain/llave.keyx`, de una vez. Su contenido no pasa por ningún
@@ -185,21 +196,58 @@ object Instalador {
         // Lo que puede fallar al generarlo, antes de tocar el disco.
         config.seccionCombine(v.raiz.absolutePath)
 
-        Llavero.prepararCarpeta(v.raiz)
-        if (interna) {
-            val entrada = try {
-                contexto.contentResolver.openInputStream(llave!!)
-            } catch (e: SecurityException) {
-                throw IOException("No tengo permiso para leer el fichero llave.", e)
-            } catch (e: java.io.FileNotFoundException) {
-                throw IOException("No he podido abrir el fichero llave.", e)
-            } ?: throw IOException("No he podido abrir el fichero llave.")
-            entrada.use { Llavero.ponerLlave(it, v.raiz) }
+        val carpeta = File(v.raiz, LLAVERO_LOCAL)
+        val antes = Antes(
+            carpeta = Files.exists(carpeta.toPath(), LinkOption.NOFOLLOW_LINKS),
+            llave = Files.exists(File(carpeta, LLAVERO_LLAVE).toPath(), LinkOption.NOFOLLOW_LINKS),
+            rcloneConf = v.leerRcloneConf(),
+        )
+        try {
+            Llavero.prepararCarpeta(v.raiz)
+            if (interna) {
+                val entrada = try {
+                    contexto.contentResolver.openInputStream(llave!!)
+                } catch (e: SecurityException) {
+                    throw IOException("No tengo permiso para leer el fichero llave.", e)
+                } catch (e: java.io.FileNotFoundException) {
+                    throw IOException("No he podido abrir el fichero llave.", e)
+                } ?: throw IOException("No he podido abrir el fichero llave.")
+                entrada.use { Llavero.ponerLlave(it, v.raiz) }
+            }
+            v.actualizarCombine(config)
+            v.escribirConfig(raw, cabecera)
+        } catch (e: Throwable) {
+            deshacerAlta(v, antes)
+            throw e
         }
-        v.actualizarCombine(config)
-        v.escribirConfig(raw, cabecera)
         Prdrive.recargarRclone(contexto)
         return config
+    }
+
+    /** Lo que había antes de activar el llavero, para deshacerlo si no se acaba. */
+    private class Antes(val carpeta: Boolean, val llave: Boolean, val rcloneConf: String)
+
+    /**
+     * Deshace un [activarLlavero] que no ha llegado a escribir el config: la
+     * llave y la carpeta `.keychain/` que no estaban (una que ya estaba, con
+     * sus bases, se queda), y el `rclone.conf` como estaba. Lo que no se puede
+     * deshacer no tapa el fallo que lo ha traído aquí.
+     */
+    private fun deshacerAlta(v: Volumen, antes: Antes) {
+        val carpeta = File(v.raiz, LLAVERO_LOCAL)
+        try {
+            if (!antes.llave) Files.deleteIfExists(File(carpeta, LLAVERO_LLAVE).toPath())
+            // Solo lo que ha creado activar: el LEEME y la llave. No se siguen enlaces.
+            if (!antes.carpeta && Files.isDirectory(carpeta.toPath(), LinkOption.NOFOLLOW_LINKS)) {
+                carpeta.listFiles()?.forEach { Files.deleteIfExists(it.toPath()) }
+                Files.deleteIfExists(carpeta.toPath())
+            }
+        } catch (e: IOException) {
+            Log.w("Instalador", "Deshaciendo la carpeta del llavero", e)
+        }
+        if (v.leerRcloneConf() != antes.rcloneConf && !Store.writeText(v.rcloneConf, antes.rcloneConf)) {
+            Log.w("Instalador", "No se ha podido devolver el rclone.conf de antes")
+        }
     }
 
     /**

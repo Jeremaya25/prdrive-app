@@ -11,6 +11,7 @@ import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertIsOff
+import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
@@ -108,15 +109,40 @@ class PantallaLlaveroTest {
 
     // --- ayudas -------------------------------------------------------------------
 
-    /** El catálogo del remoto, con una pareja `notas` y (si [llavero]) el `[keychain]`. */
-    private fun catalogo(llavero: Map<String, Any?>?) {
+    /** El catálogo del remoto, con esas [parejas] (una `notas`) y (si [llavero]) el `[keychain]`. */
+    private fun catalogo(llavero: Map<String, Any?>?, parejas: List<Map<String, Any?>> = listOf(Banco.pareja("notas"))) {
         val raw = mapOf(
             "defaults" to mapOf("remote" to "nas"),
-            "pair" to listOf(Banco.pareja("notas")),
+            "pair" to parejas,
         ) + if (llavero != null) mapOf("keychain" to llavero) else emptyMap()
         File(Banco.remoto, "catalogo").mkdirs()
         File(Banco.remoto, "catalogo/remote.toml").writeText(dumps(raw, "# El catálogo de la prueba.\n"))
-        File(Banco.remoto, "notas").mkdirs()
+        parejas.forEach { File(it["remote_path"].toString()).mkdirs() }
+    }
+
+    /**
+     * La carga de un QR cuyo remote es una carpeta del teléfono, con el
+     * catálogo de [catalogo] (`dumps` es el del config, y no escribe las
+     * claves de una carga).
+     */
+    private fun cargaDelQr(): String =
+        "catalog_path = \"${File(Banco.remoto, "catalogo/remote.toml").absolutePath}\"\n" +
+            "${Pairing.MARCA} = ${Pairing.FORMATO}\nremote_name = \"nas\"\n[options]\ntype = \"local\"\n"
+
+    /** Del código a «Ir a la pantalla principal», con «El llavero» marcado. */
+    private fun emparejarConLlavero() {
+        compose.onNodeWithTag("carga").performTextInput(cargaDelQr())
+        compose.onNodeWithTag("usarTexto").performScrollTo().performClick()
+        esperar("conectar")
+        compose.onNodeWithTag("conectar").performScrollTo().performClick()
+        esperar("elegir-llavero")
+        compose.onNodeWithTag("elegir-llavero").assertIsOff()
+        compose.onNodeWithTag("elegir-llavero").performClick()
+        compose.onNodeWithTag("elegir-llavero").assertIsOn()
+        compose.onNodeWithTag("instalar").performClick()
+        esperar("empezar", 180)
+        compose.onNodeWithTag("error").assertDoesNotExist()
+        esperar("resultado-$LLAVERO", "$LLAVERO: OK")
     }
 
     /** La base en el remoto, para que una pasada la traiga. */
@@ -278,22 +304,8 @@ class PantallaLlaveroTest {
         Banco.remoto.deleteRecursively()
         catalogo(mapOf("base" to "personal.kdbx"))
         val bytes = baseEnElRemoto()
-        // La carga de un QR cuyo remote es una carpeta del teléfono (`dumps`
-        // es el del config, y no escribe las claves de una carga).
-        val carga = "catalog_path = \"${File(Banco.remoto, "catalogo/remote.toml").absolutePath}\"\n" +
-            "${Pairing.MARCA} = ${Pairing.FORMATO}\nremote_name = \"nas\"\n[options]\ntype = \"local\"\n"
         ActivityScenario.launch(MainActivity::class.java).use {
-            compose.onNodeWithTag("carga").performTextInput(carga)
-            compose.onNodeWithTag("usarTexto").performScrollTo().performClick()
-            esperar("conectar")
-            compose.onNodeWithTag("conectar").performScrollTo().performClick()
-            esperar("elegir-llavero")
-            compose.onNodeWithTag("elegir-llavero").assertIsOff()
-            compose.onNodeWithTag("elegir-llavero").performClick()
-            compose.onNodeWithTag("instalar").performClick()
-            esperar("empezar", 180)
-            compose.onNodeWithTag("error").assertDoesNotExist()
-            esperar("resultado-$LLAVERO", "$LLAVERO: OK")
+            emparejarConLlavero()
             assertArrayEquals(bytes, baseLocal(v).readBytes())
             assertNotNull(v.leerConfig().parejaLlavero)
             compose.onNodeWithTag("empezar").performClick()
@@ -330,6 +342,47 @@ class PantallaLlaveroTest {
         }
     }
 
+    /**
+     * Una pareja bisync de la raíz entera no se lleva `.keychain/` al
+     * emparejar con «El llavero», ni la llave de uno sin contraseña: el
+     * llavero se activa después de su `--resync` inicial, y desde entonces la
+     * pareja lleva su regla (`REGLA_SIN_LLAVERO`).
+     */
+    @Test
+    fun emparejar_con_el_llavero_no_sube_la_llave_por_una_pareja_de_la_raiz() {
+        val v = Prdrive.volumen(contexto)
+        v.raiz.deleteRecursively()
+        Banco.remoto.deleteRecursively()
+        val todo = Banco.pareja("todo", ".")
+        catalogo(mapOf("base" to "personal.kdbx", "fichero_llave" to true, "llave_interna" to true), listOf(todo))
+        File(Banco.remoto, "todo/del-pc.txt").writeText("del PC\n")
+        val bytes = baseEnElRemoto()
+        // El fichero llave lo da el selector de documentos (aquí, uno de la caché).
+        val llave = File(contexto.cacheDir, "llave-de-prueba.keyx").apply { writeBytes(ByteArray(64) { it.toByte() }) }
+        Intents.init()
+        try {
+            intending(hasAction(Intent.ACTION_OPEN_DOCUMENT))
+                .respondWith(ActivityResult(Activity.RESULT_OK, Intent().setData(android.net.Uri.fromFile(llave))))
+            ActivityScenario.launch(MainActivity::class.java).use {
+                emparejarConLlavero()
+                esperar("resultado-todo", "todo: OK")
+            }
+        } finally {
+            Intents.release()
+        }
+        val local = File(v.raiz, LLAVERO_LOCAL)
+        assertArrayEquals(llave.readBytes(), File(local, LLAVERO_LLAVE).readBytes())
+        assertArrayEquals(bytes, File(local, "personal.kdbx").readBytes())
+        assertEquals("del PC\n", File(v.raiz, "del-pc.txt").readText())
+        val subido = File(Banco.remoto, "todo/$LLAVERO_LOCAL")
+        assertFalse(
+            "la pareja de la raíz ha subido el llavero: ${subido.walkTopDown().map { it.name }.toList()}",
+            subido.exists(),
+        )
+        // En el remoto del llavero, la base y su LEEME; la llave, nunca.
+        assertFalse(File(remotoLlavero, LLAVERO_LLAVE).exists())
+    }
+
     // --- abrirlo ------------------------------------------------------------------
 
     @Test
@@ -364,6 +417,25 @@ class PantallaLlaveroTest {
         } finally {
             Intents.release()
         }
+    }
+
+    // --- lo que dice la fila de un freno ------------------------------------------
+
+    /**
+     * Lo que la fila dice del freno de borrados del llavero es lo de prdrive
+     * (`frenos.EXPLICACION_LLAVERO`, del vector) hasta donde manda a
+     * «Combinar», que el teléfono no tiene, y la frase del teléfono detrás.
+     */
+    @Suppress("UNCHECKED_CAST")
+    @Test
+    fun la_explicacion_del_freno_del_llavero_es_la_de_prdrive_sin_combinar() {
+        val frenos = (Banco.vectores["llavero"] as Map<String, Any?>)["frenos"] as Map<String, Any?>
+        val dePrdrive = (frenos["explicaciones"] as Map<String, Any?>)["llavero"].toString()
+        assertTrue("prdrive ya no manda a «Combinar» así: $dePrdrive", dePrdrive.contains(Estado.MANDA_A_COMBINAR))
+        val telefono = Estado.EXPLICACION_LLAVERO_TELEFONO
+        assertTrue(telefono, telefono.startsWith(dePrdrive.substringBefore(Estado.MANDA_A_COMBINAR)))
+        assertFalse(telefono, telefono.contains("«Combinar»"))
+        assertTrue(telefono, telefono.endsWith(Avisos.COMBINAR_FUERA.substring(1)))
     }
 
     // --- las notificaciones -------------------------------------------------------

@@ -428,6 +428,7 @@ private fun Principal(m: Modelo) {
     }
     log?.let { f -> DialogoLog(f) { log = null } }
     m.avisoLlavero?.let { AvisoAntesDeAbrir(it, m::cerrarAvisoLlavero) }
+    AbrirLaBase(m)
 }
 
 /** Abre una página en el navegador. */
