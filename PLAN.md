@@ -1,7 +1,8 @@
 # prdrive para Android — lo que queda
 
 El paso 1 está hecho: el volumen, el emparejamiento por QR, elegir parejas del
-catálogo y un «Sincronizar» que cuenta qué pasa. Cómo está y por qué, en
+catálogo, un «Sincronizar» que cuenta qué pasa y el llavero (`[keychain]`). Cómo
+está y por qué, en
 [`AGENTS.md`](AGENTS.md). Aquí solo lo que falta, en el orden en que tiene
 sentido hacerlo.
 
@@ -28,6 +29,30 @@ Falta:
 - **arm64**, que es lo que llevan los teléfonos. En un Galaxy A35 (Android 16)
   se instala y abre el emparejamiento sin fallos; falta una pasada, que es
   cuando se carga el rclone de arm64.
+- **El llavero con una app de KeePass de verdad** (KeePassDX, Keepass2Android).
+  En el emulador se ha probado con el proveedor, los trabajos, la pantalla y el
+  alta por el QR contra un servidor SFTP, pero no con una de esas apps al otro
+  lado. Falta:
+  - **Abrir con el botón y guardar.** «Abrir llavero» en KeePassDX, cambiar una
+    entrada, guardar, y verlo en el KeePassXC del PC tras su siguiente pasada; y
+    al revés, un cambio del PC que llega con «Abrir llavero».
+  - **El modo real de escritura de KeePassDX.** El guardado atómico supone que
+    escribe por el `ParcelFileDescriptor` del proveedor con `"w"`/`"wt"` o
+    `"rw"`/`"rwt"`/`"wa"`; qué pide de verdad, y si cierra el descriptor al
+    acabar, solo se sabe mirándolo. Y con el proceso de prdrive muerto mientras
+    hay un temporal abierto, ese guardado se pierde sin aviso.
+  - **Un conflicto avisado y combinado en el PC.** Dos guardados cruzados dejan
+    una copia de conflicto, la notificación y la fila en ámbar; en el PC,
+    «Abrir llavero» → «Combinar» la junta y la fila se apaga.
+  - **`llave_interna` con la llave copiada.** Activar con la llave elegida en
+    Archivos y abrir la base en la app de KeePass sin contraseña: la app no puede
+    comprobarlo antes, así que si la llave no vale solo lo dice la app de KeePass.
+  - **Las carpetas con punto en la app de Archivos.** «Abrir llavero» no depende
+    de ello, pero elegir a mano la base o la llave sí: hay que ver si `.keychain/`
+    se enseña.
+  - **El tipo MIME de `ACTION_VIEW`.** Qué tipo aceptan KeePassDX y
+    Keepass2Android para abrir la base desde el `content://` del proveedor; si no
+    abre ninguna, la app lo dice y nombra cuáles valen.
 - **La autoactualización con la clave de verdad.** En el emulador se ha probado
   con APK de depuración (bajar de GitHub, la suma, la firma que no cuadra,
   instalar preguntando y sin preguntar, y Play Protect parando el primer intento
@@ -57,6 +82,17 @@ hacerlo.
   un `-1` en `extra_flags` es un `--resync` en cada pasada, saltándose
   `FLAGS_RESERVADOS`. El teléfono traduce cada letra a su flag largo y le pasa
   `problemaFlag`.
+- **`llavero.listado_local()` se cae con una hora imposible.** Una línea del
+  listado con el año 0000 o el mes 13 hace que `calendar.timegm` lance
+  `ValueError` (usa `datetime.date`), y la excepción no se recoge: se cae la
+  función entera, no solo esa línea. rclone no escribe eso nunca, así que es
+  latente. El teléfono no lee la línea (`Llavero.listadoLocal`) y los vectores no
+  llevan el caso, porque en Python lanza.
+- **`llavero.bases()` distingue mayúsculas solo en algunos sistemas.** `rglob`
+  de `*.kdbx` no las distingue en Windows y sí en POSIX, y el filtro de rclone
+  `+ *.kdbx` sí las distingue en todos: una `X.KDBX` es base en un PC con Windows
+  y no entra en la pareja. El teléfono sigue a rclone (las distingue), y los
+  vectores evitan el caso para no depender del sistema.
 - **`update.parse_version` lanza con un `²`**, aunque dice que nunca lanza:
   `str.isdigit()` lo da por cifra y `int()` no lo lee (`ValueError`). Y
   `update.check()` se cae con un `AttributeError` si GitHub contesta algo que no
@@ -98,11 +134,11 @@ hacerlo.
 - **Sincronizar sin abrir la app:** servicio en segundo plano y pasadas
   periódicas, y lo que diga el `[daemon]` del config (que el instalador ya
   escribe). Para empezar ya están la cancelación limpia de una pasada
-  (`job/stop` y esperar a que acabe) y el cerrojo que las pone en fila. Con él,
+  (`job/stop` y esperar a que acabe), el cerrojo que las pone en fila y
+  WorkManager, que el llavero ya usa para sus pasadas (AGENTS.md, «El llavero»);
+  falta lo mismo para las parejas. Con él,
   la autoactualización también puede mirar y bajar sin que se abra la app; hoy
   solo lo hace al abrirla, que es cuando la app sirve de algo.
-- **El llavero** (`[keychain]`): el motor construye su pareja, pero la pasada
-  la salta.
 - **Resolver conflictos:** hoy se detectan y se avisan (`Conflictos.kt`); falta
   la pantalla que elige una versión.
 - **Editar el catálogo:** hoy solo se lee. Escribirlo es la ceremonia de

@@ -2,6 +2,9 @@ package prdrive.app
 
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assertIsOff
+import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
@@ -15,6 +18,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import java.io.File
 import java.util.Base64
+import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
@@ -23,6 +27,8 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import prdrive.app.rclone.Rclone
+import prdrive.engine.LLAVERO
+import prdrive.engine.LLAVERO_LOCAL
 
 /**
  * PuntaAPuntaTest.kt — Las pantallas de verdad contra un
@@ -30,7 +36,8 @@ import prdrive.app.rclone.Rclone
  *
  * Necesita un servidor SFTP que el emulador vea en `10.0.2.2` con un catálogo
  * (el de la prueba tiene una pareja bisync `notas` y un espejo de bajada
- * `fotos`, con ficheros ya en el remoto), y la carga de su QR en base64 como
+ * `fotos`, con ficheros ya en el remoto, y el llavero con su base entera en
+ * `keychain/`), y la carga de su QR en base64 como
  * argumento de la instrumentación:
  *
  *     ./gradlew :app:connectedDebugAndroidTest \
@@ -141,6 +148,67 @@ class PuntaAPuntaTest {
             compose.onAllNodes(hasTestTag("resync-notas")).fetchSemanticsNodes().let {
                 assertTrue("sigue pidiendo resync", it.isEmpty())
             }
+        }
+    }
+
+    /** Un nodo con [tag], o dentro de uno con él, que dice [texto]. */
+    private fun dice(tag: String, texto: String): SemanticsMatcher =
+        (hasTestTag(tag) or hasAnyAncestor(hasTestTag(tag))) and hasText(texto, substring = true)
+
+    /**
+     * Emparejar con «El llavero» marcado trae la base: la pasada del llavero
+     * corre tras el `--resync` de las parejas (el catálogo del servidor lleva
+     * `[keychain]`, y su base está entera en `keychain/`), y la principal la
+     * enseña al día. Es el llavero entero, de la casilla al servidor, con el
+     * rclone del `.aar` hablando SFTP de verdad.
+     */
+    @Test
+    fun el_llavero_se_trae_al_emparejar_y_la_base_llega() {
+        val b64 = InstrumentationRegistry.getArguments().getString("carga_b64")
+        assumeTrue("sin carga_b64: no hay servidor de prueba", !b64.isNullOrBlank())
+        val carga = String(Base64.getDecoder().decode(b64), Charsets.UTF_8)
+
+        val v = Prdrive.volumen(contexto)
+        v.raiz.deleteRecursively()
+        if (android.os.Build.VERSION.SDK_INT >= 37) {
+            InstrumentationRegistry.getInstrumentation().uiAutomation
+                .grantRuntimePermission(contexto.packageName, Prdrive.PERMISO_RED_LOCAL)
+        }
+        // Las notificaciones del llavero se piden al instalar: el diálogo de
+        // Android no es de la app.
+        if (android.os.Build.VERSION.SDK_INT >= 33) {
+            InstrumentationRegistry.getInstrumentation().uiAutomation
+                .grantRuntimePermission(contexto.packageName, android.Manifest.permission.POST_NOTIFICATIONS)
+        }
+        ActivityScenario.launch(MainActivity::class.java).use {
+            compose.onNodeWithTag("carga").performTextInput(carga)
+            compose.onNodeWithTag("usarTexto").performScrollTo().performClick()
+            compose.onNodeWithTag("conectar").performScrollTo().performClick()
+
+            // La casilla sale porque el catálogo lleva `[keychain]`, y sale
+            // desmarcada: el llavero se pide, no se impone.
+            esperar("instalar")
+            compose.onNodeWithTag("elegir-llavero").assertIsOff()
+            compose.onNodeWithTag("elegir-llavero").performClick()
+            compose.onNodeWithTag("elegir-llavero").assertIsOn()
+            compose.onNodeWithTag("instalar").performClick()
+
+            esperar("empezar", 180)
+            errorEnPantalla()?.let { fail("la pantalla dice: $it") }
+            compose.waitUntilAtLeastOneExists(dice("resultado-$LLAVERO", "$LLAVERO: OK"), 30_000)
+            captura("5-llavero-al-emparejar")
+
+            // Los bytes del servidor, tal cual, en `.keychain/`.
+            val base = File(File(v.raiz, LLAVERO_LOCAL), "personal.kdbx")
+            assertTrue("la base no ha bajado", base.isFile)
+            assertArrayEquals(Banco.base(entera = true), base.readBytes())
+            assertTrue("el config no lleva [keychain]", v.leerConfig().parejaLlavero != null)
+
+            // Y la principal la enseña al día.
+            compose.onNodeWithTag("empezar").performClick()
+            compose.waitUntilAtLeastOneExists(dice("fila-llavero", "al día"), 60_000)
+            compose.onNodeWithTag("error").assertDoesNotExist()
+            compose.onNodeWithTag("llavero-ambar").assertDoesNotExist()
         }
     }
 }

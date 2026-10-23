@@ -35,6 +35,10 @@ engine/       Kotlin puro (JVM), SIN una línea de Android
 │               la copia sin red y la carpeta que no es un fichero
 ├── Resultados.kt  espejo de common/results.py: state/last_run.json
 ├── Conflictos.kt  espejo de common/conflicts.py: los perdedores de bisync
+├── Kdbx.kt     espejo de common/kdbx.py: si una base del llavero está entera,
+│               sin clave (firmas, cabecera y bloques)
+├── Llavero.kt  la parte pura de common/llavero.py: el LEEME, las bases rotas,
+│               lo pendiente de subir y los frenos del remoto vacío
 ├── Store.kt    lo que hace falta de common/store.py: fechas y escritura atómica
 ├── Json.kt     json.dumps/loads de Python, byte a byte (state/ lo lee el PC)
 ├── Python.kt   repr(), str(), bool(), int(), strip(), splitlines(), sorted() y
@@ -43,6 +47,8 @@ engine/       Kotlin puro (JVM), SIN una línea de Android
 ├── Pasada.kt   espejo de sync.py: una pasada entera (preflight, la llamada,
 │               el log, los resultados y los conflictos) contra un `Rclone` que
 │               se pasa, y la traducción de la orden a parámetros del RPC
+├── PasadaLlavero.kt  lo que sync.py hace distinto con el llavero: repetir un
+│               freno, crear la carpeta remota y reapuntar la base
 ├── Volumen.kt  espejo de install/: la carpeta del volumen, su .prdrive/ y lo
 │               que se escribe al emparejar
 └── Actualizacion.kt  espejo de common/update.py: la última release, la caché
@@ -57,28 +63,39 @@ app/          Android: solo dibuja y llama
 │                     de red local
 ├── Instalador.kt     el primer arranque sin pantallas (espejo del orden de
 │                     install/): conectar, leer el catálogo, sembrar, --resync
-├── Estado.kt         lo que la principal enseña de cada pareja, leído de state/
+├── Estado.kt         lo que la principal enseña de cada pareja y del llavero,
+│                     leído de state/
 ├── Actualizador.kt   la app se pone al día sola: baja el APK de la release, lo
 │                     comprueba y se lo da a PackageInstaller («La
 │                     autoactualización»)
-├── ui/               Modelo (el ViewModel), Pantallas (Compose) y Escaner (el
-│                     de códigos de Play services)
+├── ui/               Modelo (el ViewModel), Pantallas (Compose), PantallaLlavero
+│                     (la fila del llavero y su casilla) y Escaner (el de códigos
+│                     de Play services)
+├── llavero/          el llavero en la app («El llavero»): LlaveroApp (la pasada
+│                     y su cerrojo), TrabajoLlavero y Disparos (WorkManager) y
+│                     Avisos (las notificaciones)
 ├── rclone/Rclone.kt  el envoltorio del RPC (rpc, trabajo con _async)
 ├── rclone/Adaptadores.kt  el `Rclone` de la pasada y el `cat` del catálogo,
 │                     sobre el RPC
 ├── documentos/VolumenProvider.kt  el volumen en la app de Archivos, sin .prdrive/
+├── documentos/GuardadoAtomico.kt  los guardados de las bases del llavero, enteros
+│                     o ninguno
 └── androidTest/  el spike contra rclone de verdad, la pasada entera, el
                   proveedor, los vectores del motor otra vez en Android
                   (MotorEnAndroidTest), lo que el actualizador mira de un APK
-                  (ActualizadorTest) y las pantallas de punta a punta
+                  (ActualizadorTest), el llavero (el alta, el proveedor, los
+                  trabajos y la pantalla) y las pantallas de punta a punta
                   contra un servidor SFTP (PuntaAPuntaTest)
 herramientas/
 ├── vectores.py        genera los valores esperados desde el prdrive de verdad
 ├── vectores_paso3.py  su parte de la pasada y el volumen
 ├── vectores_python.py lo que el motor imita del propio Python (y de tomllib)
+├── vectores_llavero.py su parte de kdbx.py y llavero.py: las bases, el LEEME, los
+│                      frenos y el alta
 ├── vectores_actualizacion.py  su parte de common/update.py, con el
 │                      repositorio de la app y la respuesta de GitHub guardada
-└── punta_a_punta.py   el servidor y la carga del QR de PuntaAPuntaTest
+└── punta_a_punta.py   el servidor (con el llavero y su base) y la carga del QR
+                       de PuntaAPuntaTest
 .github/
 ├── workflows/engine.yml   el motor, en cada push
 ├── workflows/apk.yml      el APK de release sin firmar, en los PR que lo tocan
@@ -160,7 +177,9 @@ contra su documentación, y se cita el sitio.
   contra lo que se contrasta, no contra lo que parezca razonable.
 - **`engine/` no tiene ni una dependencia**, como prdrive, y eso incluye las de
   test (solo `kotlin-test`): el JSON y el TOML están escritos a mano por esa
-  razón. `app/` usa lo justo de AndroidX y Compose, y el `.aar` de rclone.
+  razón. `app/` usa lo justo de AndroidX y Compose, WorkManager
+  (`androidx.work`, para las pasadas del llavero en segundo plano) y el `.aar`
+  de rclone.
 - **`device_remote` es obligatorio** (diferencia deliberada con prdrive, donde es
   un valor por defecto): la ruta absoluta del volumen es `filesDir`, que cambia
   al reinstalar la app, así que un config sin él rompería los baselines de
@@ -212,6 +231,15 @@ carga) con un `rclone` de la versión del `.aar`, y dice cómo lanzar la prueba:
 ```bash
 python herramientas/punta_a_punta.py ../prdrive /ruta/a/rclone /tmp/e2e
 ```
+
+Ese `rclone` solo sirve SFTP en el PC: bisync corre en el teléfono, con el del
+`.aar`. Por eso no hace falta que sea exactamente la versión fijada (la prueba
+se ha pasado con un v1.75.0 contra un `.aar` v1.75.2). El servidor lleva además
+el llavero: `[keychain]` en el catálogo y una base entera en `keychain/`, hecha
+con los constructores de `vectores_llavero.py` y comprobada con `kdbx.mirar()`.
+`PuntaAPuntaTest` tiene dos pruebas: la de siempre (sin marcar «El llavero») y
+la que lo marca al emparejar y comprueba que `.keychain/` tiene los bytes del
+servidor y la fila dice «al día».
 
 El módulo `app` solo existe si hay un SDK de Android (`ANDROID_HOME`,
 `ANDROID_SDK_ROOT` o `sdk.dir` en `local.properties`): el CI del motor no lo
@@ -363,6 +391,111 @@ describa en `no_backup/actualizacion/` (con `adb shell run-as prdrive.app`), y s
 abre y se sale de la app. Para que se instale sola, el volumen tiene que estar
 sembrado (`sync_config.toml` y `rclone.conf` en `.prdrive/`) y el permiso dado
 (`adb shell appops set prdrive.app REQUEST_INSTALL_PACKAGES allow`).
+
+## El llavero
+
+El `[keychain]` de prdrive es una base KeePass (`.kdbx`) que viaja en
+`.keychain/` y se sincroniza contra `keychain/`, junto al catálogo, en el
+remoto. En el teléfono es **la misma pareja bisync** que en el escritorio (los
+mismos filtros, flags y baselines; va la última y no sale entre las parejas del
+usuario, `Config.delUsuario`), así que el PC ve al teléfono como un dispositivo
+más. La pasada es la de `sync.run_pair()` con el llavero traducido
+(`PasadaLlavero.kt`); la app solo decide cuándo se lanza (`app/llavero/`). Las
+decisiones que no se ven en el código:
+
+- **Android cuenta como cifrado.** prdrive se niega a llevar el llavero «sin
+  contraseña» (`llave_interna`) en un disco que no está cifrado
+  (`LLAVERO_SIN_CIFRAR`), y para saberlo pregunta a VeraCrypt y BitLocker. Aquí
+  el volumen es el almacenamiento privado de la app, que Android cifra con el
+  bloqueo de pantalla: `LlaveroApp` pasa siempre `cifrado = true`. El motor, en
+  cambio, no sabe de Android y por defecto dice `Contexto.cifrado = false`: falla
+  cerrado, como prdrive, y quien lo llame sin decir nada no se salta el freno.
+- **Cuándo corre** (`Disparos.kt`, `TrabajoLlavero.kt`): un solo trabajo de
+  WorkManager con nombre fijo y con red (`CONNECTED`; en el escritorio una red de
+  pago tampoco retiene al llavero). *Al guardar*, `REPLACE` con 20 s de calma,
+  así que cada guardado aplaza la subida, como la vigilancia del escritorio. *Al
+  leer la base* por el proveedor, `KEEP` y sin espera (y nada si la última pasada
+  buena tiene menos de 2 min, para que «Abrir llavero» no lance otra): vale para
+  la próxima vez. *Al arrancar la app y al acabar una pasada*, si `pendiente()`
+  dice que hay algo sin subir. No hay pasadas periódicas: la bajada es al abrir.
+- **Una pasada del llavero en marcha no se corta nunca**, como en el escritorio.
+  Cortarla dejaría el lock de bisync puesto, y una escritura del motor sobre un
+  canal interrumpido fallaría. El trabajo corre la pasada sin interrupción;
+  `REPLACE` sustituye al trabajo que espera, y el nuevo aguarda al cerrojo
+  (`LlaveroApp.enExclusiva`) y sube lo que se guardó mientras tanto. El precio:
+  un llavero quitado, o sin red, tarda en enterarse lo que dure la pasada. Va
+  además en fila con las demás (`unaPasada`), y con una en marcha la
+  autoactualización no se instala (`Actualizador.empezarTrabajo()`).
+- **Los reintentos.** Una pasada que falla se repite con espera exponencial
+  desde 2 min. El escritorio la topa en 30 min (`llavero.TOPE_REINTENTO`);
+  WorkManager no deja poner tope y el suyo es de 5 h. Diferencia aceptada: un
+  llavero sin red espera más entre intentos, y cada guardado o lectura lo vuelve
+  a lanzar. No se reintenta lo que repetir no arregla (una base rota y un freno
+  que no se pudo repetir): esperan al siguiente guardado o a «Abrir llavero».
+- **El guardado atómico es solo de `.keychain/`.** En el escritorio prdrive obliga
+  a KeePassXC a guardar de forma atómica; aquí la app de KeePass escribe por
+  `VolumenProvider`, y un guardado cortado (la app muere, se acaba la batería)
+  dejaría una base rota que la pasada siguiente subiría. Así que, para los
+  `.kdbx` que cuelgan directamente de `.keychain/` (la base y las copias de
+  conflicto) y para nada más del volumen (`GuardadoAtomico.kt`), el cliente
+  escribe en un temporal de `.prdrive/tmp/` y al cerrar se mira con
+  `Kdbx.comprobar()`: entera (o de un formato que no se conoce) se pone encima de
+  la base de un solo golpe y se encola la subida; rota, o con un error, se tira y
+  la base no se toca (si estaba rota, se apunta en `state/llavero-cortado.json`
+  para que la fila y una notificación lo digan). Las reglas finas:
+  - `"w"` y `"wt"` dan un temporal vacío, porque el `"w"` de Android no trunca y
+    un guardado más corto dejaría basura detrás; `"rw"`, `"rwt"` y `"wa"` dan una
+    copia de la base.
+  - **Abrir y cerrar sin escribir no es un guardado**: un temporal idéntico byte
+    a byte a la base no la mueve ni encola nada (moverlo cambiaría su hora y
+    fabricaría conflictos), y uno de 0 bytes de `"w"` es «no se escribió nada» y
+    se borra sin avisar.
+  - Si la base es un marcador de 0 bytes (de `createDocument`) y su primer
+    guardado se corta, se borra: una base vacía está rota y pararía todo el
+    llavero. Un cliente que separa el descriptor (`FileDescriptorDetachedException`)
+    cuenta como guardado cortado, con su motivo: no se pierde en silencio.
+- **La llave se ve, y se protege solo mientras el llavero está activo.**
+  `llave.keyx` tiene que verse (la app de KeePass la necesita para abrir la
+  base), pero es de solo lectura. Y con `[keychain]` en el `sync_config.toml`
+  no se borra ni se renombra ni ella ni `.keychain/`, no se abre para escribir
+  (tampoco por un enlace que rclone sincronizara hasta ella), y no se crea ni se
+  renombra nada con ese nombre en esa carpeta ni con el de `.keychain` en la
+  raíz: sería suplantarla. Sin `[keychain]` son ficheros normales, porque el
+  consejo al quitar el llavero es «bórrala tú» y tiene que poder seguirse.
+- **Al emparejar**, la casilla «El llavero» (desmarcada: se pide, no se impone)
+  se activa **después** del `--resync` de las parejas. Antes, una pareja de la
+  raíz del volumen subiría `.keychain/` (y la llave) con el config viejo, porque
+  la regla que la excluye aún no estaría escrita. Va dentro del mismo
+  `try/finally` que cierra el emparejamiento y un fallo no lo deja colgado;
+  `Instalador.activarLlavero` deshace lo que creó (la llave y la carpeta, si no
+  existía) si falla antes de escribir el config. Activar y quitar reescriben
+  `rclone.conf`, y por eso van con el cerrojo del llavero: nunca con una pasada en
+  marcha.
+- **El teléfono se une a un llavero, no lo crea, y no combina.** El catálogo solo
+  se lee aquí, y combinar copias de conflicto pide leer y escribir KDBX con su
+  cifrado. Las copias se avisan (la fila y una notificación) y se combinan en el
+  PC («Abrir llavero» → «Combinar») o a mano en la app de KeePass.
+- **Los textos de la fila son del teléfono.** `Pasada.EXPLICACION_LLAVERO` se
+  queda literal de prdrive, y manda a «Combinar» al abrir, que no existe aquí:
+  la fila, cuando la explicación es esa, enseña
+  `Estado.EXPLICACION_LLAVERO_TELEFONO`. El motor es espejo; la pantalla es del
+  teléfono.
+- **`llave_interna = true` no se comprueba.** La llave se copia a
+  `.keychain/llave.keyx` al activar, pero no hay un `keepassxc-cli ls` en Android
+  para ver que abre la base: si no vale, lo dice la app de KeePass al abrirla. Con
+  `fichero_llave = true` (contraseña y fichero) el teléfono no apunta nada: la
+  app de KeePass lo pide y lo recuerda.
+
+Probado en un emulador: el motor contra sus vectores y en el dispositivo, la
+pasada contra un rclone de verdad, el proveedor, los trabajos, la pantalla y el
+alta por el QR contra un servidor SFTP. **Por comprobar en un teléfono de
+verdad**, y apuntado en `PLAN.md` §1: KeePassDX abriendo con el botón y
+guardando (y verlo en el PC), un conflicto avisado y combinado en el PC,
+`llave_interna` con la llave copiada, **qué modo de escritura usa de verdad
+KeePassDX** al guardar (de eso depende el guardado atómico), si la app de
+Archivos enseña las carpetas con punto, y qué tipo MIME aceptan KeePassDX y
+Keepass2Android en `ACTION_VIEW`. Y una cosa que la app no puede arreglar: si el
+proceso muere con un temporal abierto, ese guardado se pierde sin aviso.
 
 ## Convenios
 
