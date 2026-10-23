@@ -19,7 +19,9 @@ import prdrive.engine.Pasada
  * falla, sí (sin red, un remoto que no contesta), con la espera de [Disparos].
  * Una base rota ([Pasada.LLAVERO_ROTO]) y un freno que no se ha podido repetir,
  * no: reintentar no los arregla, y esperan al siguiente guardado o a «Abrir
- * llavero».
+ * llavero». Una base rota vale lo mismo que una pasada abortada
+ * ([Pasada.ABORTO], 2 las dos, como en prdrive), así que con un 2 se mira si
+ * de verdad hay una base rota ([LlaveroApp.baseRota]); si no, se reintenta.
  *
  * La red local (API 37): el trabajo no puede pedir el permiso. Sin él, la
  * pasada falla con la explicación de siempre y se reintenta; la fila lo enseña.
@@ -58,7 +60,8 @@ class TrabajoLlavero(contexto: Context, params: WorkerParameters) : CoroutineWor
                 // config que no se lee) tampoco es para siempre.
                 return Result.retry()
             }
-            return if (resultado == null || !reintentar(resultado)) Result.success() else Result.retry()
+            val rota = { LlaveroApp.baseRota(applicationContext) }
+            return if (resultado == null || !reintentar(resultado, rota)) Result.success() else Result.retry()
         } finally {
             Actualizador.acabarTrabajo(applicationContext)
         }
@@ -66,9 +69,13 @@ class TrabajoLlavero(contexto: Context, params: WorkerParameters) : CoroutineWor
 
     private companion object {
 
-        /** Si una pasada que ha acabado así se vuelve a intentar sola. */
-        fun reintentar(r: Pasada.Resultado): Boolean {
-            if (r.ok || r.codigo == Pasada.LLAVERO_ROTO) return false
+        /**
+         * Si una pasada que ha acabado así se vuelve a intentar sola. [rota]
+         * dice si hay una base rota: solo se pregunta con un 2.
+         */
+        fun reintentar(r: Pasada.Resultado, rota: () -> Boolean): Boolean {
+            if (r.ok) return false
+            if (r.codigo == Pasada.LLAVERO_ROTO && rota()) return false
             // El freno que la pasada no ha podido quitar: su log es el que la paró.
             val log = try {
                 r.log?.readText(Charsets.UTF_8) ?: ""

@@ -3,6 +3,7 @@ package prdrive.app
 import java.io.File
 import java.io.IOException
 import prdrive.app.documentos.GuardadoAtomico
+import prdrive.app.llavero.LlaveroApp
 import prdrive.engine.Bisync
 import prdrive.engine.Catalogo
 import prdrive.engine.Config
@@ -159,7 +160,7 @@ object Estado {
             traer = false,
             ultimaBuena = Resultados.ultimasBuenas(v.state, listOf(LLAVERO))[LLAVERO],
             fallo = fallo,
-            explicacion = fallo?.let { explicacionLlavero(it, faltaRedLocal) },
+            explicacion = fallo?.let { explicacionLlavero(it, carpeta, faltaRedLocal) },
             pendiente = try {
                 Llavero.pendiente(carpeta, Llavero.listadoDe(v, pareja, Bisync.tiposDeRemote(v.leerRcloneConf())))
             } catch (_: IOException) {
@@ -183,9 +184,17 @@ object Estado {
      * Lo que se dice del fallo del llavero: la de su log (con la del llavero
      * en lugar de la de un freno, como la pasada, y la del teléfono en lugar de
      * la que manda a «Combinar»), o la de una base rota, que no tiene log.
+     *
+     * Una base rota vale lo mismo que una pasada abortada ([Pasada.ABORTO], 2
+     * las dos, como en prdrive): la de la base rota solo se dice si una base de
+     * [carpeta] lo está ([LlaveroApp.baseRota]).
      */
-    private fun explicacionLlavero(fallo: Resultados.Fallo, faltaRedLocal: Boolean): String? {
-        if (fallo.codigo == java.math.BigInteger.valueOf(Pasada.LLAVERO_ROTO.toLong())) return EXPLICACION_ROTA
+    private fun explicacionLlavero(fallo: Resultados.Fallo, carpeta: File, faltaRedLocal: Boolean): String? {
+        if (fallo.codigo == java.math.BigInteger.valueOf(Pasada.LLAVERO_ROTO.toLong()) &&
+            LlaveroApp.baseRota(carpeta)
+        ) {
+            return EXPLICACION_ROTA
+        }
         val texto = fallo.log?.let(::leer) ?: return null
         val explicacion = Pasada.explicar(texto)
             ?.let { if (it in Pasada.EXPLICACIONES) Pasada.explicacionLlavero(it) else it }

@@ -471,6 +471,10 @@ decisiones que no se ven en el código:
   llavero sin red espera más entre intentos, y cada guardado o lectura lo vuelve
   a lanzar. No se reintenta lo que repetir no arregla (una base rota y un freno
   que no se pudo repetir): esperan al siguiente guardado o a «Abrir llavero».
+  Una base rota vale 2, lo mismo que una pasada que aborta antes de llamar a
+  rclone (`Pasada.ABORTO`, como en prdrive): con un 2 se mira si hay de verdad
+  una base rota (`LlaveroApp.baseRota`), y solo entonces ni se reintenta ni la
+  fila dice «Una base del llavero no está entera».
 - **El guardado atómico es solo de `.keychain/`.** En el escritorio prdrive obliga
   a KeePassXC a guardar de forma atómica; aquí la app de KeePass escribe por
   `VolumenProvider`, y un guardado cortado (la app muere, se acaba la batería)

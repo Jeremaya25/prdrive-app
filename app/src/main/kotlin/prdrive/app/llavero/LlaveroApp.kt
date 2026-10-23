@@ -114,6 +114,24 @@ object LlaveroApp {
         return Llavero.pendiente(pareja.carpetaEn(v.raiz), Llavero.listadoDe(v, pareja, tipos))
     }
 
+    /**
+     * Si una base del llavero está rota ahora mismo ([Llavero.rotas], sin la
+     * espera de la pasada, que ya la ha hecho). Es lo único que separa una base
+     * rota ([Pasada.LLAVERO_ROTO]) de una pasada abortada antes de llamar a
+     * rclone ([Pasada.ABORTO]: la carpeta resuelve a `.prdrive/`, un baseline
+     * sin su carpeta, no se puede crear `.prdrive/`): las dos valen 2, como en
+     * prdrive, y no se cambian. `false` sin volumen, sin llavero o con un config
+     * que no se lee.
+     */
+    fun baseRota(contexto: Context): Boolean {
+        val v = Prdrive.volumen(contexto)
+        val pareja = parejaDe(v) ?: return false
+        return baseRota(pareja.carpetaEn(v.raiz))
+    }
+
+    /** [baseRota] en la carpeta del llavero [carpeta]. */
+    fun baseRota(carpeta: java.io.File): Boolean = Llavero.rotas(carpeta, dormir = {}).isNotEmpty()
+
     /** Si la última pasada buena del llavero es de hace menos de [DESDE_LA_ULTIMA]. */
     fun reciente(contexto: Context): Boolean {
         val ultima = Resultados.ultimasBuenas(Prdrive.volumen(contexto).state, listOf(LLAVERO))[LLAVERO]

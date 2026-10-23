@@ -110,6 +110,8 @@ class TrabajoLlaveroTest {
         File(carpeta, "personal.kdbx").writeBytes(Banco.base(entera = false))
         assertEquals(Result.success(), trabajar())
         assertEquals(Pasada.LLAVERO_ROTO, fallo(v))
+        // Y la fila dice que está rota.
+        assertEquals(Estado.EXPLICACION_ROTA, Estado.llavero(v, v.leerConfig())!!.explicacion)
 
         // Sin red: un sftp en un puerto de esta máquina donde no escucha nadie.
         val puerto = ServerSocket(0).use { it.localPort }
@@ -142,6 +144,24 @@ class TrabajoLlaveroTest {
         assertEquals(Pasada.FALLO, fallo(red))
         val log = logDelFallo(red)
         assertTrue("no es un fallo de red: $log", Pasada.esDeRed(log))
+    }
+
+    @Test
+    fun un_aborto_que_no_es_una_base_rota_se_reintenta_y_la_fila_no_dice_que_lo_este() {
+        // `.keychain` es un enlace a `.prdrive/`: la pasada aborta antes de
+        // llamar a rclone (`problemaContencion`) con el mismo código que una
+        // base rota, y ninguna lo está.
+        val (v, config) = Banco.volumen(Banco.pareja("notas"), llavero = "personal.kdbx")
+        val carpeta = config.parejaLlavero!!.carpetaEn(v.raiz)
+        carpeta.deleteRecursively()
+        java.nio.file.Files.createSymbolicLink(carpeta.toPath(), v.programa.toPath())
+        assertEquals(Pasada.LLAVERO_ROTO, Pasada.ABORTO)
+
+        assertEquals(Result.retry(), trabajar())
+        assertEquals(Pasada.ABORTO, fallo(v))
+        val fila = Estado.llavero(v, v.leerConfig())!!
+        assertNotNull(fila.fallo)
+        assertNotEquals(Estado.EXPLICACION_ROTA, fila.explicacion)
     }
 
     @Test
