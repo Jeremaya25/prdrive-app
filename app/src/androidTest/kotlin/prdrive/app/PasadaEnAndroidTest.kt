@@ -6,6 +6,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import prdrive.app.rclone.Adaptadores
@@ -24,6 +25,9 @@ import prdrive.engine.Resultados
  */
 @RunWith(AndroidJUnit4::class)
 class PasadaEnAndroidTest {
+
+    @get:Rule
+    val legible = Banco.Legible()
 
     /** Lo que dijo la pasada y su log, para que un fallo se explique solo. */
     private fun todo(r: Pasada.Resultado): String = r.lineas.joinToString("\n") + "\n" + (r.log?.readText() ?: "")

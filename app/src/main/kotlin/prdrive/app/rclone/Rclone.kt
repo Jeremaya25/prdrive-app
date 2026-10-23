@@ -19,6 +19,9 @@ import prdrive.lib.rclone.Rclone as Biblioteca
  */
 object Rclone {
 
+    /** La primera espera de [trabajo]; después se dobla hasta su `cadaMs`. */
+    private const val PRIMERA_ESPERA_MS = 10L
+
     /** rclone ha contestado con un error: [estado] es el código HTTP del servidor rc. */
     class RcloneError(
         val estado: Long,
@@ -90,6 +93,10 @@ object Rclone {
      * `JobExpireDuration`): si para entonces nadie lo ha mirado, eso es lo que
      * se dice.
      *
+     * Se mira enseguida y cada vez más espaciado, hasta [cadaMs]: una pasada
+     * sin cambios acaba en unos milisegundos, y esperar medio segundo antes de
+     * la primera mirada era lo que más tardaba (en la app y en los tests).
+     *
      * Bloquea: nunca desde el hilo principal.
      */
     fun trabajo(
@@ -102,6 +109,7 @@ object Rclone {
         val id = (inicio["jobid"] as? Number)?.toLong()
             ?: throw RcloneError(0, "rclone no ha devuelto el número del trabajo: $inicio")
         var acabado = false
+        var esperaMs = minOf(PRIMERA_ESPERA_MS, cadaMs)
         try {
             while (true) {
                 val estado = try {
@@ -123,7 +131,8 @@ object Rclone {
                     return Final(estado["success"] == true, estado["error"]?.toString() ?: "", salida)
                 }
                 try {
-                    Thread.sleep(cadaMs)
+                    Thread.sleep(esperaMs)
+                    esperaMs = minOf(esperaMs * 2, cadaMs)
                 } catch (_: InterruptedException) {
                     pararYEsperar(id)
                     acabado = true

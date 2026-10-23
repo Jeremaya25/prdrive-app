@@ -203,11 +203,32 @@ rclone/construir.sh        # el .aar (Go, gomobile y un NDK)
 
 `connectedDebugAndroidTest` instala y ejecuta en **todos** los dispositivos
 conectados, teléfonos incluidos. Con uno enchufado, se elige el emulador con
-`ANDROID_SERIAL=emulator-5554`.
+`ANDROID_SERIAL=emulator-5554`. La batería entera son unos 30 s con el APK ya
+compilado; mientras se trabaja en algo, una clase sola (unos 18 s, casi todo
+instalar):
 
-`PuntaAPuntaTest` se salta si no le llega la carga de un QR: necesita un
-servidor. `herramientas/punta_a_punta.py` lo monta (remoto, catálogo, claves y
-carga) con un `rclone` de la versión del `.aar`, y dice cómo lanzar la prueba:
+```bash
+./gradlew :app:connectedDebugAndroidTest \
+    -Pandroid.testInstrumentationRunnerArguments.class=prdrive.app.RcloneSpikeTest
+```
+
+Gradle guarda la configuración entre órdenes (`org.gradle.configuration-cache`
+en `gradle.properties`): lo que se escriba en un `build.gradle.kts` dentro de
+una acción de tarea (`doFirst`, `doLast`) no puede mirar variables del script,
+sino una copia local (como el `.aar` de `preBuild`).
+
+Si un test de una pasada falla, el informe está en
+`app/build/reports/androidTests/connected/debug/`. Los que llevan el log de
+bisync en el mensaje usan la regla `Banco.Legible`: el log trae colores, y un
+carácter de control deja el XML del informe ilegible («Could not load test
+results», sin decir qué test ha fallado). Y una pasada sin ningún test falla
+(`app/build.gradle.kts`): a veces el emulador no encuentra la instrumentación
+recién instalada, y AGP lo daba por bueno. Se vuelve a lanzar.
+
+`PuntaAPuntaTest` se deja fuera si no le llega la carga de un QR (el motor de
+tests de AGP cuenta un `assumeTrue` como fallo): necesita un servidor.
+`herramientas/punta_a_punta.py` lo monta (remoto, catálogo, claves y carga) con
+un `rclone` de la versión del `.aar`, y dice cómo lanzar la prueba:
 
 ```bash
 python herramientas/punta_a_punta.py ../prdrive /ruta/a/rclone /tmp/e2e
