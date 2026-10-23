@@ -61,8 +61,9 @@ app/          Android: solo dibuja y llama
 ├── Actualizador.kt   la app se pone al día sola: baja el APK de la release, lo
 │                     comprueba y se lo da a PackageInstaller («La
 │                     autoactualización»)
-├── ui/               Modelo (el ViewModel), Pantallas (Compose) y Escaner (el
-│                     de códigos de Play services)
+├── ui/               Modelo (el ViewModel), Pantallas (Compose), Tema (claro u
+│                     oscuro, como diga el teléfono) y Escaner (el de códigos
+│                     de Play services)
 ├── rclone/Rclone.kt  el envoltorio del RPC (rpc, trabajo con _async)
 ├── rclone/Adaptadores.kt  el `Rclone` de la pasada y el `cat` del catálogo,
 │                     sobre el RPC
@@ -70,8 +71,9 @@ app/          Android: solo dibuja y llama
 └── androidTest/  el spike contra rclone de verdad, la pasada entera, el
                   proveedor, los vectores del motor otra vez en Android
                   (MotorEnAndroidTest), lo que el actualizador mira de un APK
-                  (ActualizadorTest) y las pantallas de punta a punta
-                  contra un servidor SFTP (PuntaAPuntaTest)
+                  (ActualizadorTest), el modo oscuro (TemaTest) y las
+                  pantallas de punta a punta contra un servidor SFTP
+                  (PuntaAPuntaTest)
 herramientas/
 ├── vectores.py        genera los valores esperados desde el prdrive de verdad
 ├── vectores_paso3.py  su parte de la pasada y el volumen
@@ -376,6 +378,11 @@ sembrado (`sync_config.toml` y `rclone.conf` en `.prdrive/`) y el permiso dado
   no qué función llama. En `androidTest` va con guiones bajos
   (`una_pasada_que_falla_guarda_el_log_y_lo_explica`): el `.dex` de minSdk 26 no
   admite espacios en los nombres de método.
+- **En las pantallas no se escribe ningún color**: todo sale de
+  `MaterialTheme.colorScheme`. Es lo que hace que el modo oscuro salga solo
+  (`ui/Tema.kt`, que sigue al del teléfono); un `Color(0xFF…)` se vería igual
+  en los dos modos. El único color escrito es el fondo de la ventana
+  (`res/values*/tema.xml`), y `TemaTest` comprueba que es el de Compose.
 
 ## Ojo con Android
 

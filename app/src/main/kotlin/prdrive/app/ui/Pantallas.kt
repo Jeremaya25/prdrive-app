@@ -9,10 +9,12 @@ import java.time.format.DateTimeFormatter
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import android.text.format.Formatter
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -77,7 +79,7 @@ import prdrive.engine.Pasada
  */
 @Composable
 fun PrdriveApp(modelo: Modelo) {
-    MaterialTheme {
+    Tema {
         if (modelo.sembrado) Principal(modelo) else PrimerArranque(modelo)
     }
 }
@@ -141,6 +143,17 @@ private fun Lineas(lineas: List<String>, modifier: Modifier = Modifier) {
 }
 
 /**
+ * Un botón con contorno para dentro de una tarjeta de color
+ * (`secondaryContainer`, `tertiaryContainer`). El contorno de serie es
+ * `outlineVariant`, que en el modo oscuro es casi el color de esas tarjetas, y
+ * el botón se quedaba en un texto suelto: con `outline` se ve en los dos modos.
+ */
+@Composable
+private fun BotonEnTarjeta(onClick: () -> Unit, contenido: @Composable RowScope.() -> Unit) {
+    OutlinedButton(onClick = onClick, border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline), content = contenido)
+}
+
+/**
  * Una acción que puede necesitar la red local: antes de hacerla se pide el
  * permiso, si falta ([Prdrive.faltaRedLocal]). Se haga con permiso o sin él:
  * un remoto en internet no lo necesita, y si era uno de casa, el error que
@@ -179,7 +192,7 @@ private fun AvisoRedLocal(pedir: () -> Unit) {
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(Prdrive.SIN_RED_LOCAL, style = MaterialTheme.typography.bodySmall)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedButton(onClick = pedir) { Text("Dar permiso") }
+                BotonEnTarjeta(onClick = pedir) { Text("Dar permiso") }
                 TextButton(onClick = {
                     // Si ya se negó dos veces, Android no vuelve a preguntar: queda los ajustes.
                     contexto.startActivity(
@@ -485,7 +498,7 @@ private fun VersionNueva(libre: Boolean) {
                             "Para que se instale sola, sin preguntar, permite que prdrive instale apps.",
                             style = MaterialTheme.typography.bodySmall,
                         )
-                        OutlinedButton(onClick = {
+                        BotonEnTarjeta(onClick = {
                             contexto.startActivity(
                                 Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:${contexto.packageName}")),
                             )
@@ -504,7 +517,7 @@ private fun VersionNueva(libre: Boolean) {
                 Actualizador.Fase.QUIETA, Actualizador.Fase.BUSCANDO -> {
                     Actualizador.espera?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
                     rel.apk?.let { apk ->
-                        OutlinedButton(onClick = { Actualizador.descargarAhora(contexto) }) {
+                        BotonEnTarjeta(onClick = { Actualizador.descargarAhora(contexto) }) {
                             Text("Descargar (${tamano(apk.tamano)})")
                         }
                     }

@@ -3,6 +3,7 @@ package prdrive.app
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import prdrive.app.ui.Modelo
 import prdrive.app.ui.PrdriveApp
@@ -14,6 +15,12 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Los iconos de las barras del sistema, oscuros sobre el tema claro y
+        // claros sobre el oscuro: los elige según el modo del teléfono, como
+        // Tema.kt los colores. Desde Android 15 las pantallas ya se dibujan
+        // debajo de las barras (Scaffold deja el margen); con esto, también
+        // antes, y se ven igual en todas las versiones.
+        enableEdgeToEdge()
         setContent { PrdriveApp(modelo) }
     }
 
