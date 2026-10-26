@@ -1,7 +1,12 @@
 # Una pareja en una carpeta compartida
 
-Fecha: 2026-10-26. Estado: diseño aprobado, sin implementar. Issue
+Fecha: 2026-10-26. Estado: diseño aprobado, sin implementar (plan
+`2026-10-26-carpeta-compartida.md`). Issue
 [#10](https://github.com/Jeremaya25/prdrive-app/issues/10).
+Revisado el 2026-10-26, al planificar: la secuencia del movimiento pasa al
+motor (`Mudanza.kt`), su `--resync` lleva `resync-mode = path2`, la pasada se
+para si el `rclone.conf` no lleva la carpeta de la pareja, y la entrada y el
+`[disp]` se escriben en el orden que deja cada corte en una parada.
 
 ## Qué y para qué
 
@@ -127,7 +132,9 @@ no refleja ningún fichero de prdrive: es una diferencia del teléfono, como el
   puede leer es un error que se dice, no un «no hay ninguna»: sin las
   entradas, las parejas apuntarían a sus carpetas privadas.
 - `problema(config, pareja, ruta, raiz, otras)`: por qué una pareja no puede
-  vivir en una carpeta compartida, o `null`.
+  vivir en una carpeta compartida, o `null`. Es la suma de
+  `problemaPareja(config, pareja)` (lo de la pareja, que decide si la fila
+  ofrece moverla) y `problemaRuta(ruta, raiz, otras)`.
   - Existe y es bisync: es lo que se edita en los dos lados.
   - No es la del llavero.
   - Su `local` es un solo tramo (`vault`, no `notas/vault` ni `.`): el upstream
@@ -181,6 +188,10 @@ Así que, en `Pasada`:
   con `carpetaExterna` aborta con lo que diga, **y sin la función aborta
   también**: falla cerrado, como `Contexto.cifrado = false`, y quien lance
   pasadas sin saber de esto no se salta el freno.
+- Una pareja con `carpetaExterna` cuyo upstream en el `[disp]` del
+  `rclone.conf` no es esa carpeta aborta también. Es un movimiento cortado
+  entre la entrada y el `rclone.conf`, y rclone sincronizaría otra carpeta que
+  la que mira el motor.
 - Lo demás de `preflight()` no cambia.
 
 La app pasa la función en los cuatro sitios que crean un `Contexto`: dos en
@@ -189,10 +200,18 @@ sea compartido).
 
 ## 3. Mover a una carpeta compartida, y volver
 
-Lo hace la app (`app/compartidas/Compartir.kt`), con la pareja libre y como un
-trabajo (`Actualizador.empezarTrabajo()`): no se instala una versión a medio
-mover. Las pasadas que lleva son las de siempre (`Pasada.pasarOFallar`), así
-que se apuntan y se ven en la fila.
+La secuencia es del motor (`Mudanza.kt`): es donde un error costaría caro, y
+ahí se prueba en segundos y sin emulador. La app pone el permiso, la carpeta y
+la prueba de fechas (`app/compartidas/Compartir.kt`), y la lanza con la pareja
+libre y como un trabajo (`Actualizador.empezarTrabajo()`): no se instala una
+versión a medio mover. Las pasadas que lleva son las de siempre
+(`Pasada.pasarOFallar`), así que se apuntan y se ven en la fila.
+
+Los dos `--resync` del movimiento llevan `resync-mode = path2`: en caso de
+duda, gana lo del remoto. La carpeta de destino empieza vacía, así que lo único
+que puede haber en ella es lo de un `--resync` anterior que se cortó (lo mismo
+que en el remoto) o lo que creó Obsidian al abrirla antes de tiempo (su
+`.obsidian/` de fábrica, que no debe pisar la del remoto).
 
 **Mover** («Mover a una carpeta compartida…»):
 
@@ -200,8 +219,10 @@ que se apuntan y se ven en la fila.
    `Compartidas.problema()` sin motivo, y una carpeta elegida que cae bajo
    `/storage/emulated/<n>/` y está **vacía o sin crear**. Decidido: nada que
    fusionar, nada que perder.
-2. Las fechas: rclone copia un fichero de prueba a la carpeta, lo mira y lo
-   borra. Si no conserva la fecha, no se sigue, y se dice por qué.
+2. Las fechas: se crea la carpeta si no existe, y rclone copia un fichero de
+   prueba a ella, lo mira y lo borra. Si no conserva la fecha, no se sigue y se
+   dice por qué. Si el movimiento se para antes del paso 5, la carpeta que se
+   creó para esto se quita (está vacía).
 3. Una pasada normal de la pareja, que tiene que acabar bien: así el remoto
    tiene todo lo de la copia privada. Si no, se para con lo que haya dicho la
    pasada.
@@ -210,15 +231,17 @@ que se apuntan y se ven en la fila.
    redirigir nada. Si el proceso muere a partir de aquí, la pasada siguiente
    pide `--resync`, que no borra nada. Sin esto, una pasada normal contra una
    carpeta a medio llenar vería borrados y los llevaría al remoto.
-5. La carpeta, si no existe; la entrada, con `estado = entrando`;
-   `actualizarCombine()`, y `Prdrive.recargarRclone()`, que vacía la `fscache`
-   de rclone.
-6. El `--resync`, aprobado: lo ha pedido la persona. La carpeta está vacía, así
-   que solo baja lo del remoto.
+5. La entrada, con `estado = entrando`, y después `actualizarCombine()` y
+   `Prdrive.recargarRclone()`, que vacía la `fscache` de rclone. En este orden:
+   un corte entre las dos deja una entrada que el `rclone.conf` no lleva, y la
+   pasada lo para (sección 2).
+6. El `--resync`, aprobado (lo ha pedido la persona) y con
+   `resync-mode = path2`. La carpeta estaba vacía: baja lo del remoto.
 7. Si acaba bien, se borra la copia privada `volumen/vault/` (sin seguir
    enlaces, como borra el proveedor) y la entrada pasa a `lista`: lo que tenía
    está en el remoto (3) y en la carpeta (6). Si falla, todo se queda como
-   está, la fila dice «Falta terminar de mover» y su botón repite 6 y 7.
+   está, la fila dice «Falta terminar de mover» y su botón repite el
+   `rclone.conf` del paso 5, el 6 y el 7.
 
 **Volver al volumen**:
 
@@ -227,10 +250,14 @@ que se apuntan y se ven en la fila.
    puede volver igual, y se dice antes: lo que no se subió se queda en la
    carpeta compartida, que no se toca.
 2. La carpeta privada tiene que estar vacía o sin crear: una con algo no se
-   pisa.
-3. Se apartan los listados, se quita la entrada, `actualizarCombine()` y se
-   recarga rclone.
-4. El `--resync`, que baja lo del remoto a la carpeta privada.
+   pisa. Salvo a medio mover (`entrando`): entonces es la copia de antes, y ya
+   está en el remoto.
+3. Se apartan los listados; se reescribe `[disp]` sin la redirección y se
+   recarga rclone, y después se quita la entrada. En este orden: un corte entre
+   las dos deja una entrada que el `rclone.conf` no lleva, y la pasada lo para
+   hasta que se vuelva a pedir.
+4. El `--resync`, con `resync-mode = path2`, que baja lo del remoto a la
+   carpeta privada.
 5. **La carpeta compartida se queda como está**: es de la persona y de
    Obsidian. Se dice «bórrala tú cuando ya no la quieras», como con la llave
    del llavero.
@@ -301,6 +328,10 @@ y después sería una carpeta fantasma que no se sincroniza. Leer, sí.
   función no se llama.
 - `Volumen.actualizarCombine()`, con un config que no trae las compartidas
   puestas, conserva la redirección.
+- `Mudanza`: el orden (la pasada antes; los listados antes que la entrada; la
+  entrada antes que el `rclone.conf` al mover, y al revés al volver; la copia
+  privada solo tras el `--resync`), cada parada, y un corte en cada punto.
+- `preflight()`: aborta con un `rclone.conf` que no lleva la carpeta.
 
 Nada de esto refleja a prdrive, así que no hay vectores que generar: el
 formato de `upstream()` y el nombre de sesión ya los cubren los que hay.
