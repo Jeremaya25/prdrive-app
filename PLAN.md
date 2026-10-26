@@ -48,13 +48,17 @@ Falta:
     siguiente y la base queda como la combinada. Las demás agujas del llavero
     (el remoto vacío, `Skipped delete` de la simulación) son de líneas sin
     colores, pero ya no dependen de ello.
-  - **KeePassDX ve el cambio en disco, pero se puede pisar.** Con la base abierta
-    y una versión más nueva bajada por «Sincronizar», al volver avisa («modified
-    outside the app») y ofrece combinar, guardar encima o recargar. Si se cierra
-    el aviso con «OK» y se guarda, pisa el cambio del otro dispositivo: queda
-    solo en `.prversions/`, sin copia de conflicto ni aviso de prdrive. Decidir
-    si «Sincronizar» debe saltarse el llavero, o avisar, con la app de KeePass
-    abierta.
+  - **KeePassDX ve el cambio en disco, pero se podía pisar (arreglado).** Con
+    la base abierta y una versión más nueva bajada por «Sincronizar», al volver
+    avisa («modified outside the app») y ofrece combinar, guardar encima o
+    recargar. Si se cerraba el aviso con «OK» y se guardaba, pisaba el cambio
+    del otro dispositivo: quedaba solo en `.prversions/`, sin copia de conflicto
+    ni aviso. Visto en su código (4.5.6), detecta el cambio sin leer la base y
+    guardar no la lee. Ahora el proveedor sabe qué versión tiene cada app, y un
+    guardado sobre una vieja va a una copia de conflicto avisada (AGENTS.md, «El
+    llavero»). Falta verlo con KeePassDX en un teléfono: que `callingPackage` es
+    el de KeePassDX al leer y al guardar, y que tras «OK» y guardar sale la copia
+    y la notificación.
   - **Abrir desde los recientes de KeePassDX fallaba (arreglado).** El permiso
     de `ACTION_VIEW` no era persistible: KeePassDX lo intentaba tomar («No
     persistable permission grants») y Android le negaba el proveedor. Con

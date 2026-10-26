@@ -24,9 +24,12 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import prdrive.app.documentos.GuardadoAtomico
+import prdrive.app.documentos.Lecturas
 import prdrive.app.documentos.VolumenProvider
 import prdrive.app.llavero.Disparos
+import prdrive.engine.Conflictos
 import prdrive.engine.Kdbx
+import prdrive.engine.LLAVERO
 import prdrive.engine.LLAVERO_LLAVE
 import prdrive.engine.LLAVERO_LOCAL
 import prdrive.engine.Store
@@ -220,6 +223,102 @@ class ProveedorLlaveroTest {
         assertArrayEquals(antes, base.readBytes())
         assertEquals(GuardadoAtomico.MOTIVO_SOLTADO, Store.readJson(aviso)["motivo"])
         assertTrue(encolados().isEmpty())
+    }
+
+    /** Lee [uri] entera por el proveedor, como una app de KeePass que abre la base. */
+    private fun leer(uri: Uri): ByteArray =
+        resolver.openFileDescriptor(uri, "r")!!.use { FileInputStream(it.fileDescriptor).readBytes() }
+
+    /** Las copias de conflicto de la base, como las ve la fila del llavero (`state/conflicts.json`). */
+    private fun copias(): List<File> =
+        Conflictos.cargar(v.leerConfig(), v.raiz, v.state)[LLAVERO].orEmpty()
+            .filter { it.original.name == base.name }.flatMap { it.copias }
+
+    @Test
+    fun un_guardado_sobre_una_version_que_ya_no_es_la_del_disco_va_a_una_copia() {
+        // La app de KeePass abre la base; una pasada trae la de otro
+        // dispositivo (la pone en el disco sin pasar por el proveedor); la app
+        // guarda lo suyo sin volver a leer, como KeePassDX tras cerrar su aviso.
+        assertArrayEquals(Banco.base(entera = true), leer(uriBase))
+        val delOtro = Banco.otraBase()
+        base.writeBytes(delOtro)
+        val mio = Banco.terceraBase()
+        escribir(uriBase, "wt", mio)
+
+        assertArrayEquals("se ha pisado la versión del otro dispositivo", delOtro, base.readBytes())
+        // La fila se apunta tras poner la copia, en el hilo del proveedor.
+        esperar("no hay una copia en la fila: ${llavero.list()?.toList()}") { copias().size == 1 }
+        val copia = copias().single()
+        assertArrayEquals("la copia no es lo guardado", mio, copia.readBytes())
+        // La reconoce como copia de la base el espejo de `conflicts.leer_nombre`
+        // de prdrive: la fila del teléfono y «Combinar» en el PC.
+        val nombre = Conflictos.leerNombre(copia.name, Conflictos.esquema(v.leerConfig().parejaLlavero!!))
+        assertEquals("personal.kdbx", nombre?.original)
+        assertEquals("path1", nombre?.camino)
+        esperar("no se ha encolado la subida de la copia") { encolados().isNotEmpty() }
+        assertFalse(aviso.exists())
+    }
+
+    @Test
+    fun los_guardados_viejos_que_siguen_van_a_la_misma_copia() {
+        leer(uriBase)
+        base.writeBytes(Banco.otraBase())
+        escribir(uriBase, "wt", Banco.terceraBase())
+        esperar("no hay una copia en la fila") { copias().size == 1 }
+        val primera = copias().single()
+        // La app sigue sin leer la base nueva y vuelve a guardar: es lo mismo
+        // con un cambio más, y va encima de su copia, no a otra.
+        val luego = Banco.base(entera = true)
+        escribir(uriBase, "wt", luego)
+        assertEquals(listOf(primera), copias())
+        assertArrayEquals(luego, primera.readBytes())
+        assertArrayEquals(Banco.otraBase(), base.readBytes())
+
+        // Si alguien toca la copia (se ha combinado en el PC y ha vuelto otra),
+        // el guardado siguiente no la pisa: va a una nueva.
+        primera.writeBytes(Banco.otraBase())
+        escribir(uriBase, "wt", Banco.terceraBase())
+        esperar("no hay una segunda copia: ${llavero.list()?.toList()}") { copias().size == 2 }
+        assertArrayEquals(Banco.otraBase(), primera.readBytes())
+    }
+
+    @Test
+    fun tras_leer_la_base_nueva_el_guardado_va_encima() {
+        // Recargar o combinar en la app de KeePass lee la base otra vez: lo
+        // que guarde después ya lleva el cambio del otro dispositivo.
+        leer(uriBase)
+        base.writeBytes(Banco.otraBase())
+        assertArrayEquals(Banco.otraBase(), leer(uriBase))
+        val combinada = Banco.terceraBase()
+        escribir(uriBase, "wt", combinada)
+        assertArrayEquals(combinada, base.readBytes())
+        assertTrue("ha salido una copia sin motivo", copias().isEmpty())
+    }
+
+    @Test
+    fun lo_que_guarda_la_app_cuenta_como_lo_que_tiene() {
+        // Leer, guardar y guardar otra vez sin leer en medio: la base del disco
+        // es la que puso ella, así que no es una versión vieja.
+        leer(uriBase)
+        escribir(uriBase, "wt", Banco.otraBase())
+        // Lo último del cierre es encolar la subida: lo de antes ya está apuntado.
+        esperar("no se ha encolado la subida") { encolados().isNotEmpty() }
+        val otra = Banco.terceraBase()
+        escribir(uriBase, "wt", otra)
+        assertArrayEquals(otra, base.readBytes())
+        assertTrue("ha salido una copia sin motivo", copias().isEmpty())
+    }
+
+    @Test
+    fun sin_ninguna_lectura_apuntada_el_guardado_va_encima_como_antes() {
+        // Una app que abrió la base antes de esta versión de prdrive: no se
+        // sabe qué tiene, y no se aparta nada.
+        base.writeBytes(Banco.otraBase())
+        val nueva = Banco.terceraBase()
+        escribir(uriBase, "wt", nueva)
+        assertArrayEquals(nueva, base.readBytes())
+        assertTrue(copias().isEmpty())
+        assertFalse(File(v.state, Lecturas.FICHERO).exists())
     }
 
     @Test

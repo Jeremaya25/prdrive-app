@@ -81,6 +81,8 @@ app/          Android: solo dibuja y llama
 ├── documentos/VolumenProvider.kt  el volumen en la app de Archivos, sin .prdrive/
 ├── documentos/GuardadoAtomico.kt  los guardados de las bases del llavero, enteros
 │                     o ninguno
+├── documentos/Lecturas.kt  qué versión de cada base tiene cada app de KeePass:
+│                     un guardado sobre una vieja va a una copia de conflicto
 └── androidTest/  el spike contra rclone de verdad, la pasada entera, el
                   proveedor, los vectores del motor otra vez en Android
                   (MotorEnAndroidTest), lo que el actualizador mira de un APK
@@ -507,6 +509,31 @@ decisiones que no se ven en el código:
     guardado se corta, se borra: una base vacía está rota y pararía todo el
     llavero. Un cliente que separa el descriptor (`FileDescriptorDetachedException`)
     cuenta como guardado cortado, con su motivo: no se pierde en silencio.
+- **Un guardado sobre una versión vieja va aparte** (`Lecturas.kt`). KeePassDX
+  4.5.6 ve que la base ha cambiado en el disco (una pasada ha traído la de otro
+  dispositivo) solo por la fecha y el tamaño, avisa, y deja guardar encima sin
+  volver a leerla (`checkDatabaseInfo`, `SaveDatabaseRunnable`): ese guardado
+  borraría el cambio del otro dispositivo, que quedaría solo en `.prversions/`.
+  Así que el proveedor apunta en `state/llavero-lecturas.json`, por app
+  (`callingPackage`) y por base, la huella SHA-256 de lo que le ha dado al leer
+  con `"r"` y de lo que ha puesto ella. Al cerrar un guardado, si la base del
+  disco no es la que esa app conoce, va a
+  `<base>.conflicto-dispositivo<AAAAMMDDhhmmss>.kdbx`, se apunta en la fila y se
+  notifica; los guardados viejos siguientes van a esa misma copia mientras nadie
+  la toque. Las reglas finas:
+  - Recargar o combinar en la app de KeePass leen la base, y lo que guarde
+    después va encima. Solo cuenta `"r"`: un `"rw"` da una copia, pero no se
+    sabe si la app la lee, y contarlo dejaría pasar un guardado viejo.
+  - Sin nada apuntado (una app que abrió la base antes de esto) va encima, como
+    siempre; y si no se puede apuntar, también: falla abierto, porque fallar
+    cerrado apartaría todos los guardados.
+  - El número de la copia es la fecha y la hora, no el primer libre como
+    `copia_propia()` de prdrive: dos dispositivos que apartan a la vez sacarían
+    los dos un `1`, y bisync haría una copia de la copia, que «Combinar» no
+    ofrece. `conflicts.leer_nombre` la reconoce igual (el número no tiene tope).
+  - prdrive no cambia: en el PC la copia es una copia de conflicto más, y el
+    escritorio no lo necesita, porque KeePassXC recarga la base o combina lo
+    que no ha guardado.
 - **La llave se ve, y se protege solo mientras el llavero está activo.**
   `llave.keyx` tiene que verse (la app de KeePass la necesita para abrir la
   base), pero es de solo lectura. Y con `[keychain]` en el `sync_config.toml`
