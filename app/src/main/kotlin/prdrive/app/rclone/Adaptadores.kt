@@ -1,6 +1,7 @@
 package prdrive.app.rclone
 
 import java.io.File
+import java.io.IOException
 import prdrive.engine.Bisync
 import prdrive.engine.Catalogo
 import prdrive.engine.Pasada
@@ -74,14 +75,18 @@ object Adaptadores {
      */
     private fun apartarListados(llamada: Pasada.Llamada, final: Rclone.Final?) {
         val base = final?.salida?.get("basePath") as? String
-        val listados = if (base != null) {
-            listOf(File(base + Bisync.PATH1_SUFFIX), File(base + Bisync.PATH2_SUFFIX))
-        } else {
-            // Sin su `basePath`, todos los del workdir, que es de la pareja.
+        if (base == null) {
+            // Sin su `basePath`, todos los del workdir, que es de la pareja. Lo
+            // que no se pueda apartar no tapa la cancelación: como `markFailed`,
+            // que no mira si lo ha conseguido.
             val workdir = llamada.parametros["workdir"] as? String ?: return
-            File(workdir).listFiles { f -> f.name.endsWith(Bisync.PATH1_SUFFIX) || f.name.endsWith(Bisync.PATH2_SUFFIX) }
-                ?.toList().orEmpty()
+            try {
+                Bisync.apartarListados(File(workdir))
+            } catch (_: IOException) {
+            }
+            return
         }
+        val listados = listOf(File(base + Bisync.PATH1_SUFFIX), File(base + Bisync.PATH2_SUFFIX))
         for (lst in listados.filter { it.isFile }) {
             val err = File(lst.path + "-err")
             err.delete()

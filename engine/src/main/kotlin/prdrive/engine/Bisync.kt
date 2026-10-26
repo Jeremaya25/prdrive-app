@@ -2,6 +2,7 @@ package prdrive.engine
 
 import java.io.File
 import java.io.IOException
+import java.nio.file.Files
 import java.security.MessageDigest
 
 /**
@@ -648,6 +649,43 @@ object Bisync {
         // Como `Path.rename()`: si no se puede, es un error y no «no había baseline».
         if (!workdir.renameTo(destino)) throw IOException("No se pudo apartar $workdir a $destino")
         return destino
+    }
+
+    /**
+     * Aparta los listados de una pareja como rclone aparta los de una pasada
+     * que no ha podido cerrar bien: cada `*.path1.lst` y `*.path2.lst` del
+     * [workdir] pasa a `<nombre>-err` ([ERR_SUFFIX]), borrando antes el `-err`
+     * que hubiera (`markFailed`, cmd/bisync/lockfile.go). Sin ellos la pareja
+     * queda `broken` ([pairState]) y la pasada siguiente pide `--resync`, que
+     * no borra nada.
+     *
+     * A diferencia de `markFailed`, que no mira si lo ha conseguido, un listado
+     * que no se puede apartar es un [IOException]: quien los aparta antes de
+     * cambiar un extremo no puede seguir creyendo que lo ha hecho. Antes de
+     * lanzarlo se prueba con los demás, porque con uno solo apartado la pareja
+     * ya queda `broken`.
+     *
+     * @return los listados ya apartados (los `-err`), en orden; ninguno si no
+     *   había workdir o no tenía listados.
+     */
+    fun apartarListados(workdir: File): List<File> {
+        if (!workdir.exists()) return emptyList()
+        val listados = workdir.listFiles { f -> f.name.endsWith(PATH1_SUFFIX) || f.name.endsWith(PATH2_SUFFIX) }
+            ?: throw IOException("No se puede leer $workdir")
+        val apartados = ArrayList<File>()
+        var error: IOException? = null
+        for (lst in listados.filter { it.isFile }.sortedBy { it.name }) {
+            val err = File(lst.path + "-err")
+            try {
+                Files.deleteIfExists(err.toPath())
+                Files.move(lst.toPath(), err.toPath())
+                apartados.add(err)
+            } catch (e: IOException) {
+                if (error == null) error = e else error.addSuppressed(e)
+            }
+        }
+        error?.let { throw it }
+        return apartados
     }
 
     /**

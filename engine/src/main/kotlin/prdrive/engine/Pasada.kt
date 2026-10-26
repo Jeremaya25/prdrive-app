@@ -703,6 +703,9 @@ object Pasada {
      *   ([SIN_COMPROBAR_ACCESO]): falla cerrado.
      * @property dormir Cómo se espera antes de mirar otra vez una base que no
      *   está entera ([Llavero.rotas]); se pasa para que los tests no esperen.
+     * @property resyncMode El `--resync-mode` de los `--resync` de esta
+     *   ejecución, por encima del de la pareja ([Orden.flagsDeLaPasada]); `null`,
+     *   el suyo. Una pasada normal no lo lleva nunca. Lo pone [Mudanza].
      */
     data class Contexto(
         val simulacro: Boolean = false,
@@ -713,6 +716,7 @@ object Pasada {
         val cifrado: Boolean = false,
         val dormir: (Long) -> Unit = { Thread.sleep(it) },
         val accesoCompartido: ((Pareja) -> String?)? = null,
+        val resyncMode: String? = null,
     )
 
     /** El sufijo de las versiones de una pasada: `~%Y%m%d-%H%M%S`. */
@@ -883,7 +887,7 @@ object Pasada {
                 p, binario = "rclone", filtros = ffile?.absolutePath,
                 config = volumen.rcloneConf.absolutePath, logfile = "",
                 workdir = volumen.workdir(p).absolutePath,
-                simulacro = simulacro, resync = resync, sello = ctx.sello,
+                simulacro = simulacro, resync = resync, sello = ctx.sello, resyncMode = ctx.resyncMode,
             )
             try {
                 rclone.ejecutar(llamadaDe(tramos, opciones), alProgreso)
