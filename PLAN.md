@@ -180,6 +180,39 @@ hacerlo.
 - **Una SD o un USB como volumen.** Pide el permiso de «acceso a todos los
   archivos», y ahí bisync no se puede fiar de las fechas de modificación.
 
+## 5. Una pareja en una carpeta compartida (#10): el paso 0
+
+La pregunta de la que depende todo lo demás: ¿conserva rclone las fechas de
+modificación en `/storage/emulated/0/` (FUSE), con `MANAGE_EXTERNAL_STORAGE`
+dado? Bisync decide por ellas. Lo mide `FechasCompartidasTest`, y la línea
+`FechasCompartidas` del logcat da los números.
+
+- **API 37 (emulador `Medium_Phone_API_37.0`, x86_64): pasan los dos tests.**
+  - La precisión que dice `operations/fsinfo` de la carpeta compartida es de
+    **1 ns** (la de un remote `local`: rclone no la mide en el sistema de
+    ficheros; lo que vale es que la hora de la copia es exactamente la del
+    original).
+  - Una hora pasada con milisegundos (`2023-11-14T22:13:20.123Z`) llega igual
+    a la copia, a la hora: `copiada = original`. Dos segundos después sigue
+    igual: la carpeta no la toca después.
+  - Una bisync contra la carpeta compartida (un `combine` con ella de upstream,
+    un cambio en cada lado) no repite copias: la segunda pasada dice
+    `No changes found`, literal.
+- **API 30, 33 y 35: pendientes.** Solo hay un emulador (API 37), y bajar las
+  imágenes de sistema espera a que lo apruebe quien decide. Hasta entonces el
+  paso 0 está medido en un solo API: el resultado de API 37 no dice nada de
+  Android 11 (donde FUSE se estrenó para `/sdcard`) ni de 13.
+- **Sin el permiso**, en el proceso de la app (comprobado con un test de
+  instrumentación, que corre como la app): `ajena.txt`, creado por otro dueño,
+  **no aparece al listar la carpeta** (`list()` da vacío), aunque `exists()`
+  dice que sí, y **leerlo da `EACCES`**. Con el permiso, aparece y se lee.
+  Crear un fichero propio en `Documents/` funciona en los dos casos.
+- **`adb shell run-as prdrive.app ls` no vale para esto**: da `Permission
+  denied` también con el permiso dado (`appops get` dice `allow`), porque
+  `run-as` no es el proceso de la app. Lo que se mira, desde dentro.
+- **Sin decidir aquí:** que el paso 0 salga bien en API 37 es un sí a medias;
+  la decisión de seguir es de quien lleva el plan, con los otros tres APIs.
+
 ## Fuera, salvo que cambie algo
 
 VeraCrypt y BitLocker; y el vigilante de montaje, que no tiene disco que
