@@ -18629,7 +18629,12 @@
             "host",
             "type"
           ],
-          "notas": []
+          "notas": [],
+          "del_catalogo": {
+            "opciones": null,
+            "claves": null,
+            "notas": []
+          }
         },
         {
           "caso": "otro en defaults",
@@ -18650,7 +18655,12 @@
           ],
           "notas": [
             "En el dispositivo el remote se llamará 'casa' y no 'nas': es el nombre que usan los remote_path del catálogo."
-          ]
+          ],
+          "del_catalogo": {
+            "opciones": null,
+            "claves": null,
+            "notas": []
+          }
         },
         {
           "caso": "otro en [remote]",
@@ -18676,7 +18686,14 @@
           "notas": [
             "En el dispositivo el remote se llamará 'nube' y no 'nas': es el nombre que usan los remote_path del catálogo.",
             "No se usa el [remote] del catálogo: le falta «host = …»."
-          ]
+          ],
+          "del_catalogo": {
+            "opciones": null,
+            "claves": null,
+            "notas": [
+              "No se usa el [remote] del catálogo: le falta «host = …»."
+            ]
+          }
         },
         {
           "caso": "[remote] sin nombre",
@@ -18701,7 +18718,14 @@
           "notas": [
             "En el dispositivo el remote se llamará 'casa' y no 'nas': es el nombre que usan los remote_path del catálogo.",
             "No se usa el [remote] del catálogo: le falta «host = …»."
-          ]
+          ],
+          "del_catalogo": {
+            "opciones": null,
+            "claves": null,
+            "notas": [
+              "No se usa el [remote] del catálogo: le falta «host = …»."
+            ]
+          }
         },
         {
           "caso": "con espacios",
@@ -18722,7 +18746,12 @@
           ],
           "notas": [
             "En el dispositivo el remote se llamará 'casa' y no 'nas': es el nombre que usan los remote_path del catálogo."
-          ]
+          ],
+          "del_catalogo": {
+            "opciones": null,
+            "claves": null,
+            "notas": []
+          }
         },
         {
           "caso": "sin nombre en ningún sitio",
@@ -18739,7 +18768,12 @@
             "host",
             "type"
           ],
-          "notas": []
+          "notas": [],
+          "del_catalogo": {
+            "opciones": null,
+            "claves": null,
+            "notas": []
+          }
         },
         {
           "caso": "nombre vacío",
@@ -18761,7 +18795,12 @@
             "host",
             "type"
           ],
-          "notas": []
+          "notas": [],
+          "del_catalogo": {
+            "opciones": null,
+            "claves": null,
+            "notas": []
+          }
         },
         {
           "caso": "sin [remote]",
@@ -18782,7 +18821,12 @@
             "type",
             "user"
           ],
-          "notas": []
+          "notas": [],
+          "del_catalogo": {
+            "opciones": null,
+            "claves": null,
+            "notas": []
+          }
         },
         {
           "caso": "[remote] igual",
@@ -18806,7 +18850,20 @@
             "host",
             "user"
           ],
-          "notas": []
+          "notas": [],
+          "del_catalogo": {
+            "opciones": {
+              "type": "sftp",
+              "host": "h",
+              "user": "u"
+            },
+            "claves": [
+              "type",
+              "host",
+              "user"
+            ],
+            "notas": []
+          }
         },
         {
           "caso": "[remote] igual en otro orden",
@@ -18830,7 +18887,20 @@
             "host",
             "type"
           ],
-          "notas": []
+          "notas": [],
+          "del_catalogo": {
+            "opciones": {
+              "user": "u",
+              "host": "h",
+              "type": "sftp"
+            },
+            "claves": [
+              "user",
+              "host",
+              "type"
+            ],
+            "notas": []
+          }
         },
         {
           "caso": "[remote] con otro host",
@@ -18859,7 +18929,22 @@
           ],
           "notas": [
             "Las opciones del backend salen del [remote] del catálogo, que es el que comparten todos los dispositivos."
-          ]
+          ],
+          "del_catalogo": {
+            "opciones": {
+              "type": "sftp",
+              "host": "otro",
+              "user": "u",
+              "port": "2222"
+            },
+            "claves": [
+              "type",
+              "host",
+              "user",
+              "port"
+            ],
+            "notas": []
+          }
         },
         {
           "caso": "[remote] sin type",
@@ -18881,7 +18966,12 @@
             "type",
             "user"
           ],
-          "notas": []
+          "notas": [],
+          "del_catalogo": {
+            "opciones": null,
+            "claves": null,
+            "notas": []
+          }
         },
         {
           "caso": "[remote] con type vacío",
@@ -18903,7 +18993,12 @@
             "type",
             "user"
           ],
-          "notas": []
+          "notas": [],
+          "del_catalogo": {
+            "opciones": null,
+            "claves": null,
+            "notas": []
+          }
         },
         {
           "caso": "[remote] con las rutas de la clave",
@@ -18928,7 +19023,20 @@
             "host",
             "user"
           ],
-          "notas": []
+          "notas": [],
+          "del_catalogo": {
+            "opciones": {
+              "type": "sftp",
+              "host": "h",
+              "user": "u"
+            },
+            "claves": [
+              "type",
+              "host",
+              "user"
+            ],
+            "notas": []
+          }
         },
         {
           "caso": "[remote] con booleanos, números y listas",
@@ -18968,7 +19076,28 @@
           ],
           "notas": [
             "Las opciones del backend salen del [remote] del catálogo, que es el que comparten todos los dispositivos."
-          ]
+          ],
+          "del_catalogo": {
+            "opciones": {
+              "type": "sftp",
+              "host": "otro",
+              "disable_hashcheck": "true",
+              "set_modtime": "false",
+              "port": "22",
+              "idle_timeout": "1.5",
+              "ciphers": "['aes128-ctr', 'aes256-ctr']"
+            },
+            "claves": [
+              "type",
+              "host",
+              "disable_hashcheck",
+              "set_modtime",
+              "port",
+              "idle_timeout",
+              "ciphers"
+            ],
+            "notas": []
+          }
         },
         {
           "caso": "[remote] de un tipo sin obligatorias",
@@ -18993,7 +19122,119 @@
           ],
           "notas": [
             "Las opciones del backend salen del [remote] del catálogo, que es el que comparten todos los dispositivos."
-          ]
+          ],
+          "del_catalogo": {
+            "opciones": {
+              "type": "s3",
+              "provider": "AWS",
+              "region": "eu-west-1"
+            },
+            "claves": [
+              "type",
+              "provider",
+              "region"
+            ],
+            "notas": []
+          }
+        },
+        {
+          "caso": "[remote] de tipo local",
+          "carga": "sftp con clave",
+          "catalogo": {
+            "remote": {
+              "type": "local"
+            }
+          },
+          "nombre": "nas",
+          "opciones": {
+            "type": "local"
+          },
+          "claves": [
+            "type"
+          ],
+          "notas": [
+            "Las opciones del backend salen del [remote] del catálogo, que es el que comparten todos los dispositivos."
+          ],
+          "del_catalogo": {
+            "opciones": {
+              "type": "local"
+            },
+            "claves": [
+              "type"
+            ],
+            "notas": []
+          }
+        },
+        {
+          "caso": "[remote] de tipo alias",
+          "carga": "sftp con clave",
+          "catalogo": {
+            "remote": {
+              "type": "alias",
+              "remote": "disp:"
+            }
+          },
+          "nombre": "nas",
+          "opciones": {
+            "type": "alias",
+            "remote": "disp:"
+          },
+          "claves": [
+            "type",
+            "remote"
+          ],
+          "notas": [
+            "Las opciones del backend salen del [remote] del catálogo, que es el que comparten todos los dispositivos."
+          ],
+          "del_catalogo": {
+            "opciones": {
+              "type": "alias",
+              "remote": "disp:"
+            },
+            "claves": [
+              "type",
+              "remote"
+            ],
+            "notas": []
+          }
+        },
+        {
+          "caso": "[remote] con el type entre espacios",
+          "carga": "sftp con clave",
+          "catalogo": {
+            "remote": {
+              "type": " sftp ",
+              "host": "otro",
+              "user": "u"
+            }
+          },
+          "nombre": "nas",
+          "opciones": {
+            "type": " sftp ",
+            "host": "otro",
+            "user": "u"
+          },
+          "claves": [
+            "type",
+            "host",
+            "user"
+          ],
+          "notas": [
+            "Las opciones del backend salen del [remote] del catálogo, que es el que comparten todos los dispositivos."
+          ],
+          "del_catalogo": {
+            "opciones": {
+              "type": " sftp ",
+              "host": "otro",
+              "user": "u"
+            },
+            "claves": [
+              "type",
+              "host",
+              "user"
+            ],
+            "notas": []
+          }
         },
         {
           "caso": "[remote] con una orden",
@@ -19017,7 +19258,20 @@
           "notas": [
             "Las opciones del backend salen del [remote] del catálogo, que es el que comparten todos los dispositivos.",
             "El catálogo traía `ssh`: no se hereda, porque es una orden de este equipo."
-          ]
+          ],
+          "del_catalogo": {
+            "opciones": {
+              "type": "sftp",
+              "host": "otro"
+            },
+            "claves": [
+              "type",
+              "host"
+            ],
+            "notas": [
+              "El catálogo traía `ssh`: no se hereda, porque es una orden de este equipo."
+            ]
+          }
         },
         {
           "caso": "[remote] con dos órdenes",
@@ -19042,7 +19296,20 @@
           "notas": [
             "Las opciones del backend salen del [remote] del catálogo, que es el que comparten todos los dispositivos.",
             "El catálogo traía `bearer_token_command` y `ssh`: no se heredan, porque son órdenes de este equipo."
-          ]
+          ],
+          "del_catalogo": {
+            "opciones": {
+              "type": "webdav",
+              "url": "https://otro/dav"
+            },
+            "claves": [
+              "type",
+              "url"
+            ],
+            "notas": [
+              "El catálogo traía `bearer_token_command` y `ssh`: no se heredan, porque son órdenes de este equipo."
+            ]
+          }
         },
         {
           "caso": "[remote] con un secreto",
@@ -19066,7 +19333,20 @@
           "notas": [
             "Las opciones del backend salen del [remote] del catálogo, que es el que comparten todos los dispositivos.",
             "El catálogo traía `pass`: no se hereda, porque el catálogo no guarda secretos. Se puede quitar de su [remote]."
-          ]
+          ],
+          "del_catalogo": {
+            "opciones": {
+              "type": "sftp",
+              "host": "otro"
+            },
+            "claves": [
+              "type",
+              "host"
+            ],
+            "notas": [
+              "El catálogo traía `pass`: no se hereda, porque el catálogo no guarda secretos. Se puede quitar de su [remote]."
+            ]
+          }
         },
         {
           "caso": "[remote] con secretos",
@@ -19095,7 +19375,22 @@
           "notas": [
             "Las opciones del backend salen del [remote] del catálogo, que es el que comparten todos los dispositivos.",
             "El catálogo traía `PASS`, `api_key` y `key_file_pass`: no se heredan, porque el catálogo no guarda secretos. Se pueden quitar de su [remote]."
-          ]
+          ],
+          "del_catalogo": {
+            "opciones": {
+              "type": "sftp",
+              "host": "otro",
+              "access_key_id": "no-es-secreto"
+            },
+            "claves": [
+              "type",
+              "host",
+              "access_key_id"
+            ],
+            "notas": [
+              "El catálogo traía `PASS`, `api_key` y `key_file_pass`: no se heredan, porque el catálogo no guarda secretos. Se pueden quitar de su [remote]."
+            ]
+          }
         },
         {
           "caso": "[remote] con órdenes y secretos",
@@ -19121,7 +19416,21 @@
             "Las opciones del backend salen del [remote] del catálogo, que es el que comparten todos los dispositivos.",
             "El catálogo traía `ssh`: no se hereda, porque es una orden de este equipo.",
             "El catálogo traía `pass`: no se hereda, porque el catálogo no guarda secretos. Se puede quitar de su [remote]."
-          ]
+          ],
+          "del_catalogo": {
+            "opciones": {
+              "type": "sftp",
+              "host": "otro"
+            },
+            "claves": [
+              "type",
+              "host"
+            ],
+            "notas": [
+              "El catálogo traía `ssh`: no se hereda, porque es una orden de este equipo.",
+              "El catálogo traía `pass`: no se hereda, porque el catálogo no guarda secretos. Se puede quitar de su [remote]."
+            ]
+          }
         },
         {
           "caso": "[remote] sin host",
@@ -19145,7 +19454,14 @@
           ],
           "notas": [
             "No se usa el [remote] del catálogo: le falta «host = …»."
-          ]
+          ],
+          "del_catalogo": {
+            "opciones": null,
+            "claves": null,
+            "notas": [
+              "No se usa el [remote] del catálogo: le falta «host = …»."
+            ]
+          }
         },
         {
           "caso": "[remote] con el host en blanco",
@@ -19170,7 +19486,14 @@
           ],
           "notas": [
             "No se usa el [remote] del catálogo: le falta «host = …»."
-          ]
+          ],
+          "del_catalogo": {
+            "opciones": null,
+            "claves": null,
+            "notas": [
+              "No se usa el [remote] del catálogo: le falta «host = …»."
+            ]
+          }
         },
         {
           "caso": "[remote] que solo tenía ssh",
@@ -19196,7 +19519,15 @@
           "notas": [
             "El catálogo traía `ssh`: no se hereda, porque es una orden de este equipo.",
             "No se usa el [remote] del catálogo: sin `ssh`, que no se hereda, le falta «host = …»."
-          ]
+          ],
+          "del_catalogo": {
+            "opciones": null,
+            "claves": null,
+            "notas": [
+              "El catálogo traía `ssh`: no se hereda, porque es una orden de este equipo.",
+              "No se usa el [remote] del catálogo: sin `ssh`, que no se hereda, le falta «host = …»."
+            ]
+          }
         },
         {
           "caso": "[remote] que solo tenía órdenes",
@@ -19222,7 +19553,15 @@
           "notas": [
             "El catálogo traía `bearer_token_command` y `ssh`: no se heredan, porque son órdenes de este equipo.",
             "No se usa el [remote] del catálogo: sin `bearer_token_command` y `ssh`, que no se heredan, le falta «host = …»."
-          ]
+          ],
+          "del_catalogo": {
+            "opciones": null,
+            "claves": null,
+            "notas": [
+              "El catálogo traía `bearer_token_command` y `ssh`: no se heredan, porque son órdenes de este equipo.",
+              "No se usa el [remote] del catálogo: sin `bearer_token_command` y `ssh`, que no se heredan, le falta «host = …»."
+            ]
+          }
         },
         {
           "caso": "[remote] sin host y con una orden que no lo arregla",
@@ -19248,7 +19587,15 @@
           "notas": [
             "El catálogo traía `bearer_token_command`: no se hereda, porque es una orden de este equipo.",
             "No se usa el [remote] del catálogo: le falta «host = …»."
-          ]
+          ],
+          "del_catalogo": {
+            "opciones": null,
+            "claves": null,
+            "notas": [
+              "El catálogo traía `bearer_token_command`: no se hereda, porque es una orden de este equipo.",
+              "No se usa el [remote] del catálogo: le falta «host = …»."
+            ]
+          }
         },
         {
           "caso": "[remote] webdav sin url",
@@ -19274,7 +19621,15 @@
           "notas": [
             "El catálogo traía `bearer_token_command`: no se hereda, porque es una orden de este equipo.",
             "No se usa el [remote] del catálogo: le falta «url = …»."
-          ]
+          ],
+          "del_catalogo": {
+            "opciones": null,
+            "claves": null,
+            "notas": [
+              "El catálogo traía `bearer_token_command`: no se hereda, porque es una orden de este equipo.",
+              "No se usa el [remote] del catálogo: le falta «url = …»."
+            ]
+          }
         },
         {
           "caso": "con contraseña y el [remote] igual",
@@ -19299,7 +19654,12 @@
             "url",
             "user"
           ],
-          "notas": []
+          "notas": [],
+          "del_catalogo": {
+            "opciones": null,
+            "claves": null,
+            "notas": []
+          }
         },
         {
           "caso": "con contraseña y otro [remote]",
@@ -19326,7 +19686,14 @@
           ],
           "notas": [
             "El [remote] del catálogo describe otra conexión: este dispositivo se queda con la que se acaba de comprobar, porque sus contraseñas, claves y órdenes no se dan a una conexión que no se ha comprobado."
-          ]
+          ],
+          "del_catalogo": {
+            "opciones": null,
+            "claves": null,
+            "notas": [
+              "El [remote] del catálogo describe otra conexión: este dispositivo se queda con la que se acaba de comprobar, porque sus contraseñas, claves y órdenes no se dan a una conexión que no se ha comprobado."
+            ]
+          }
         },
         {
           "caso": "con contraseña y un [remote] con órdenes y secretos",
@@ -19356,7 +19723,16 @@
             "El catálogo traía `bearer_token_command`: no se hereda, porque es una orden de este equipo.",
             "El catálogo traía `pass`: no se hereda, porque el catálogo no guarda secretos. Se puede quitar de su [remote].",
             "El [remote] del catálogo describe otra conexión: este dispositivo se queda con la que se acaba de comprobar, porque sus contraseñas, claves y órdenes no se dan a una conexión que no se ha comprobado."
-          ]
+          ],
+          "del_catalogo": {
+            "opciones": null,
+            "claves": null,
+            "notas": [
+              "El catálogo traía `bearer_token_command`: no se hereda, porque es una orden de este equipo.",
+              "El catálogo traía `pass`: no se hereda, porque el catálogo no guarda secretos. Se puede quitar de su [remote].",
+              "El [remote] del catálogo describe otra conexión: este dispositivo se queda con la que se acaba de comprobar, porque sus contraseñas, claves y órdenes no se dan a una conexión que no se ha comprobado."
+            ]
+          }
         },
         {
           "caso": "con contraseña y un [remote] incompleto",
@@ -19382,7 +19758,14 @@
           ],
           "notas": [
             "El [remote] del catálogo describe otra conexión: este dispositivo se queda con la que se acaba de comprobar, porque sus contraseñas, claves y órdenes no se dan a una conexión que no se ha comprobado."
-          ]
+          ],
+          "del_catalogo": {
+            "opciones": null,
+            "claves": null,
+            "notas": [
+              "El [remote] del catálogo describe otra conexión: este dispositivo se queda con la que se acaba de comprobar, porque sus contraseñas, claves y órdenes no se dan a una conexión que no se ha comprobado."
+            ]
+          }
         },
         {
           "caso": "con contraseña y sin type",
@@ -19405,7 +19788,12 @@
             "url",
             "user"
           ],
-          "notas": []
+          "notas": [],
+          "del_catalogo": {
+            "opciones": null,
+            "claves": null,
+            "notas": []
+          }
         },
         {
           "caso": "con ssh y otro [remote]",
@@ -19427,7 +19815,14 @@
           ],
           "notas": [
             "El [remote] del catálogo describe otra conexión: este dispositivo se queda con la que se acaba de comprobar, porque sus contraseñas, claves y órdenes no se dan a una conexión que no se ha comprobado."
-          ]
+          ],
+          "del_catalogo": {
+            "opciones": null,
+            "claves": null,
+            "notas": [
+              "El [remote] del catálogo describe otra conexión: este dispositivo se queda con la que se acaba de comprobar, porque sus contraseñas, claves y órdenes no se dan a una conexión que no se ha comprobado."
+            ]
+          }
         }
       ],
       "secretas": [

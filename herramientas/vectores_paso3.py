@@ -282,6 +282,12 @@ CASOS_PARA_ALINEAR = [
                  "ciphers": ["aes128-ctr", "aes256-ctr"]}}),
     ("[remote] de un tipo sin obligatorias", "sftp con clave",
      {"remote": {"type": "s3", "provider": "AWS", "region": "eu-west-1"}}),
+    # Otro tipo que el del código: prdrive lo adopta y el teléfono no
+    # (`Pairing.alinearConCatalogo`, PLAN.md §2).
+    ("[remote] de tipo local", "sftp con clave", {"remote": {"type": "local"}}),
+    ("[remote] de tipo alias", "sftp con clave", {"remote": {"type": "alias", "remote": "disp:"}}),
+    ("[remote] con el type entre espacios", "sftp con clave",
+     {"remote": {"type": " sftp ", "host": "otro", "user": "u"}}),
     # Lo que no se hereda.
     ("[remote] con una orden", "sftp con clave",
      {"remote": {"type": "sftp", "host": "otro", "ssh": "ssh otro"}}),
@@ -338,7 +344,12 @@ por el trozo `account_key`, no por la regla de `_key`."""
 
 def vectores_alinear(pairing) -> dict:
     """`profile.align_with_catalog()`: el remote que se escribe en el dispositivo
-    (su nombre y sus opciones) y las notas que lo dicen, y `es_secreta()`."""
+    (su nombre y sus opciones) y las notas que lo dicen, y `es_secreta()`.
+
+    De cada caso va también lo que contesta `_opciones_del_catalogo()` por su
+    cuenta (`del_catalogo`): el teléfono la refleja tal cual, y se separa de
+    prdrive solo en `align_with_catalog()`, donde no adopta un `[remote]` de otro
+    tipo que el del código."""
     from install import profile  # noqa: PLC0415
     cargas = {
         nombre: pairing.dumps("nas", opciones, key_name="id_ed25519",
@@ -347,11 +358,18 @@ def vectores_alinear(pairing) -> dict:
     }
     salida = []
     for caso, carga, raw in CASOS_PARA_ALINEAR:
-        ajustado, notas = profile.align_with_catalog(profile.loads(cargas[carga]), raw)
+        perfil = profile.loads(cargas[carga])
+        ajustado, notas = profile.align_with_catalog(perfil, raw)
+        heredadas, de_opciones = profile._opciones_del_catalogo(   # noqa: SLF001
+            perfil.options, dict(raw.get("remote") or {}))
         salida.append({
             "caso": caso, "carga": carga, "catalogo": raw, "nombre": ajustado.remote_name,
             "opciones": dict(ajustado.options), "claves": list(ajustado.options),
             "notas": notas,
+            "del_catalogo": {
+                "opciones": heredadas, "claves": None if heredadas is None else list(heredadas),
+                "notas": de_opciones,
+            },
         })
     return {
         "cargas": cargas, "casos": salida,

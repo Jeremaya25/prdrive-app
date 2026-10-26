@@ -269,6 +269,18 @@ object Pairing {
      * ([opcionesDelCatalogo]). La clave privada y los known_hosts no son
      * opciones: viajan con el QR y nunca con el catálogo.
      *
+     * **Diferencia deliberada con prdrive: solo del mismo tipo.** prdrive adopta
+     * el `type` del `[remote]` aunque no sea el de la conexión que se acaba de
+     * comprobar, y el teléfono no: el catálogo lo escribe cualquiera con acceso
+     * al remoto, y con `type = "local"` las parejas apuntarían al almacenamiento
+     * interno de la app (una pareja hacia `.prdrive/keys` dejaría la clave privada
+     * en una carpeta que se ve en la app de Archivos, y un espejo de subida
+     * vaciaría lo de dentro); con `alias` o un `webdav` sin contraseña, a otro
+     * sitio. Un cambio de tipo de verdad pediría credenciales nuevas, que el
+     * catálogo no lleva, así que no se pierde nada. Se compara sin espacios
+     * alrededor, como `faltan()`. Apuntado en PLAN.md §2 para arreglarlo en
+     * prdrive.
+     *
      * @return la carga ajustada y las notas de lo que se ha cambiado o dejado de
      *   heredar (ninguna si todo coincidía), para poder decirlo.
      */
@@ -286,21 +298,33 @@ object Pairing {
                     "nombre que usan los remote_path del catálogo.",
             )
         }
-        val (opciones, deOpciones) = opcionesDelCatalogo(carga.opciones, tabla)
+        val (delCatalogo, deOpciones) = opcionesDelCatalogo(carga.opciones, tabla)
+        val propio = carga.opciones["type"] ?: ""
+        val opciones = delCatalogo?.takeIf { stripPy(it.getValue("type")) == stripPy(propio) }
         if (opciones != null) {
             // Se adoptan aunque sean las mismas: el orden de las líneas del
             // rclone.conf es entonces el del catálogo, como en el escritorio.
-            if (ajustada.opciones != opciones) {
-                notas.add(
-                    "Las opciones del backend salen del [remote] del catálogo, que es el que " +
-                        "comparten todos los dispositivos.",
-                )
-            }
+            if (ajustada.opciones != opciones) notas.add(NOTA_OPCIONES_DEL_CATALOGO)
             ajustada = ajustada.copy(opciones = opciones)
         }
         notas.addAll(deOpciones)
+        if (delCatalogo != null && opciones == null) notas.add(notaOtroTipo(delCatalogo.getValue("type"), propio))
         return ajustada to notas
     }
+
+    /** La nota de `align_with_catalog()` cuando las opciones del backend salen del catálogo. */
+    const val NOTA_OPCIONES_DEL_CATALOGO =
+        "Las opciones del backend salen del [remote] del catálogo, que es el que comparten todos los " +
+            "dispositivos."
+
+    /**
+     * La nota del teléfono cuando no adopta un `[remote]` de otro tipo que el del
+     * código. Es suya, no de prdrive (que lo adopta): ver [alinearConCatalogo].
+     */
+    fun notaOtroTipo(delCatalogo: String, propio: String): String =
+        "El [remote] del catálogo es de tipo '${stripPy(delCatalogo)}' y no '${stripPy(propio)}', que es " +
+            "el de la conexión del código: este teléfono se queda con la que se acaba de comprobar, " +
+            "porque el catálogo no puede cambiar el tipo de conexión."
 
     /**
      * `_opciones_del_catalogo()` de install/profile.py: las opciones del backend
