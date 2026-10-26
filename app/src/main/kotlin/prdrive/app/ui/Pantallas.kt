@@ -458,8 +458,8 @@ private fun Principal(m: Modelo) {
                     verLog = { log = f },
                     aprobar = { conRed { m.aprobarResync(f.nombre) } },
                     mover = { moviendo = f.nombre },
-                    terminar = { m.terminarDeMover(f.nombre) },
-                    volver = { m.volverAlVolumen(f.nombre) },
+                    terminar = { conRed { m.terminarDeMover(f.nombre) } },
+                    volver = { conRed { m.volverAlVolumen(f.nombre) } },
                     darPermiso = { darPermisoCompartido(contexto, m) },
                 )
             }
@@ -475,8 +475,13 @@ private fun Principal(m: Modelo) {
             nombre = nombre,
             conPermiso = permisoCompartido,
             darPermiso = { darPermisoCompartido(contexto, m) },
+            // Como «Sincronizar»: la mudanza pasa bisync contra el remoto, y sin el
+            // permiso de red local (API 37) una dirección privada se cuelga. Se
+            // pide antes del selector, para que su resultado ya pueda mover.
             elegir = {
-                elegirCarpeta.launch(DocumentsContract.buildDocumentUri(Compartir.AUTORIDAD, "primary:Documents"))
+                conRed {
+                    elegirCarpeta.launch(DocumentsContract.buildDocumentUri(Compartir.AUTORIDAD, "primary:Documents"))
+                }
             },
             cerrar = { moviendo = null },
         )
