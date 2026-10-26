@@ -106,10 +106,12 @@ herramientas/
 │                          `release`
 └── actions/compilar-apk/  lo que comparten: el .aar, los tests del motor y el
                            APK sin firmar
-.claude/      los hooks de Claude Code (settings.json): hooks/generados.py no
-              deja editar a mano lo que se genera, y hooks/reglas.py avisa de
-              lo que cruza una regla que el compilador no ve (Android en el
-              motor, \d de ICU, String.format, colores en las pantallas)
+.claude/      lo de Claude Code. Los hooks (settings.json): hooks/generados.py
+              no deja editar a mano lo que se genera, y hooks/reglas.py avisa
+              de lo que cruza una regla que el compilador no ve (Android en el
+              motor, \d de ICU, String.format, colores en las pantallas). Las
+              skills: skills/vectores (regenerar los valores esperados) y
+              skills/emulador (los tests de app/ sin pisar un dispositivo)
 VERSION       la versión de la app, y la única («Versiones y releases»)
 ```
 
