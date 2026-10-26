@@ -33,14 +33,15 @@ class MudanzaTest {
     }
 
     /**
-     * Un volumen con la pareja `vault` (`local = "vault"`), sin entrada en
-     * `compartidas.json`: con baseline y un fichero en su carpeta privada.
+     * Un volumen con la pareja `vault` (`local = "vault"`, más lo que diga
+     * [pareja]), sin entrada en `compartidas.json`: con baseline y un fichero en
+     * su carpeta privada.
      */
-    private fun volumen(): kotlin.Pair<Volumen, Pareja> {
+    private fun volumen(pareja: Map<String, Any?> = emptyMap()): kotlin.Pair<Volumen, Pareja> {
         val v = Volumen(File(temporal(), "volumen"))
         val raw = mapOf(
             "defaults" to mapOf("device_remote" to "disp", "remote" to "nas"),
-            "pair" to listOf(mapOf("name" to "vault", "local" to "vault", "remote_path" to "/copia/vault")),
+            "pair" to listOf(mapOf("name" to "vault", "local" to "vault", "remote_path" to "/copia/vault") + pareja),
         )
         v.escribirConfig(raw, "")
         val config = v.leerConfig()
@@ -83,6 +84,11 @@ class MudanzaTest {
     ) = Mudanza.Entorno(
         rclone, Oraculo.opciones, Pasada.Contexto(accesoCompartido = { null }), probarFechas, recargar,
     )
+
+    /** Lo que deja rclone al apartar los listados (`markFailed`), hecho a mano. */
+    private fun apartarAMano(v: Volumen, p: Pareja) {
+        for (lst in v.workdir(p).listFiles()!!) assertTrue(lst.renameTo(File(lst.path + "-err")))
+    }
 
     /** Los nombres del workdir de la pareja, ordenados. */
     private fun workdir(v: Volumen, p: Pareja): List<String> = v.workdir(p).list().orEmpty().sorted()
@@ -235,7 +241,7 @@ class MudanzaTest {
         val destino = destino()
         // Lo que deja un corte justo tras apuntar la entrada: los listados
         // apartados, la entrada `ENTRANDO` y el `rclone.conf` sin la redirección.
-        for (lst in v.workdir(p).listFiles()!!) assertTrue(lst.renameTo(File(lst.path + "-err")))
+        apartarAMano(v, p)
         Compartidas.escribir(
             v.compartidas,
             mapOf("vault" to Compartidas.Entrada(destino.path, Compartidas.Estado.ENTRANDO)),
@@ -283,6 +289,63 @@ class MudanzaTest {
         assertEquals(Mudanza.RESYNC_MODE, rclone.llamadas[1].parametros["resyncMode"])
         assertEquals(Compartidas.Estado.LISTA, Compartidas.leer(v.compartidas)["vault"]?.estado)
         assertTrue(obsidian.isFile, "lo de la carpeta compartida no se toca")
+    }
+
+    @Test
+    fun `terminar lleva a la carpeta compartida lo que solo tenia la copia privada, con su fecha`() {
+        val (v, p) = volumen(mapOf("exclude" to listOf("*.tmp")))
+        val destino = destino()
+        val privada = Mudanza.carpetaPrivada(v, p)
+        val fecha = 1_600_000_000_000L
+        File(privada, "nota.md").writeText("de la copia")
+        // Lo que los filtros dejan fuera y las versiones de Path1: ni en el remoto ni en la carpeta.
+        val borrador = File(privada, "borrador.tmp").apply { writeText("sin sincronizar"); setLastModified(fecha) }
+        val version = File(privada, "$VERSIONS_DIR/x").apply {
+            parentFile.mkdirs()
+            writeText("una versión")
+            setLastModified(fecha + 2000)
+        }
+        val rclone = RcloneFalso()
+        // Lo que baja el --resync: la nota, que también tiene la copia. Y lo que
+        // dejaría una vez anterior cortada a media copia: su temporal.
+        val aMedias = File(destino, "borrador.tmp" + Mudanza.SUFIJO_LLEVANDO)
+        val recargar = {
+            File(destino, "nota.md").writeText("del remoto")
+            aMedias.writeText("sin sin")
+        }
+
+        val hecho = Mudanza.entrar(v, "vault", destino, entorno(rclone, recargar = { recargar() }))
+
+        assertTrue(hecho.ok, hecho.motivo)
+        assertFalse(privada.exists())
+        assertEquals("del remoto", File(destino, "nota.md").readText(), "lo que ya tiene la carpeta no se toca")
+        val llevado = File(destino, "borrador.tmp")
+        assertEquals("sin sincronizar", llevado.readText())
+        assertEquals(fecha, llevado.lastModified())
+        val llevada = File(destino, "$VERSIONS_DIR/x")
+        assertEquals("una versión", llevada.readText())
+        assertEquals(fecha + 2000, llevada.lastModified())
+        assertFalse(borrador.exists() || version.exists())
+        assertFalse(aMedias.exists(), "el temporal de un corte anterior se rehace")
+    }
+
+    @Test
+    fun `si algo no se puede llevar a la carpeta compartida no se borra la copia privada`() {
+        val (v, p) = volumen()
+        val destino = destino()
+        val privada = Mudanza.carpetaPrivada(v, p)
+        File(privada, "$VERSIONS_DIR/x").apply { parentFile.mkdirs(); writeText("una versión") }
+        val rclone = RcloneFalso()
+        // En la carpeta, un fichero donde la copia tiene una carpeta.
+        val recargar = { File(destino, VERSIONS_DIR).writeText("no soy una carpeta") }
+
+        val hecho = Mudanza.entrar(v, "vault", destino, entorno(rclone, recargar = { recargar() }))
+
+        assertNotNull(hecho.motivo)
+        assertEquals(2, rclone.llamadas.size, "el --resync ha ido bien")
+        assertEquals(Compartidas.Estado.ENTRANDO, Compartidas.leer(v.compartidas)["vault"]?.estado)
+        assertTrue(File(privada, "$VERSIONS_DIR/x").isFile, "la copia privada no se borra")
+        assertEquals("no soy una carpeta", File(destino, VERSIONS_DIR).readText())
     }
 
     @Test
@@ -350,6 +413,48 @@ class MudanzaTest {
     }
 
     @Test
+    fun `volver con permiso tras un corte entre el combine y la entrada acaba sin pasar antes`() {
+        val (v, p) = volumen()
+        val destino = destino()
+        desdeLista(v, destino)
+        // Un «Volver» cortado tras reescribir `[disp]`: los listados apartados, el
+        // combine en el volumen y la entrada todavía `LISTA`.
+        apartarAMano(v, p)
+        v.actualizarCombine(v.leerConfig(), emptyMap())
+        val rclone = RcloneFalso()
+
+        val hecho = Mudanza.salir(v, "vault", conPasada = true, entorno(rclone))
+
+        assertTrue(hecho.ok, hecho.motivo)
+        assertEquals(1, rclone.llamadas.size, "no se intenta la pasada normal")
+        assertEquals(true, rclone.llamadas.single().parametros["resync"])
+        assertEquals(Mudanza.RESYNC_MODE, rclone.llamadas.single().parametros["resyncMode"])
+        assertNull(Compartidas.leer(v.compartidas)["vault"])
+        assertTrue(combineSinEntradas(v) in v.leerRcloneConf())
+        assertTrue(File(destino, "nota.md").isFile)
+    }
+
+    @Test
+    fun `volver con permiso tras un corte justo despues de apartar los listados acaba sin pasar antes`() {
+        val (v, p) = volumen()
+        val destino = destino()
+        desdeLista(v, destino)
+        // Cortado tras apartar los listados: el combine aún apunta a la carpeta.
+        apartarAMano(v, p)
+        assertTrue(upstream("vault", destino.path) in v.leerRcloneConf())
+        val rclone = RcloneFalso()
+
+        val hecho = Mudanza.salir(v, "vault", conPasada = true, entorno(rclone))
+
+        assertTrue(hecho.ok, hecho.motivo)
+        assertEquals(1, rclone.llamadas.size, "no se intenta la pasada normal")
+        assertEquals(true, rclone.llamadas.single().parametros["resync"])
+        assertEquals(Mudanza.RESYNC_MODE, rclone.llamadas.single().parametros["resyncMode"])
+        assertNull(Compartidas.leer(v.compartidas)["vault"])
+        assertTrue(combineSinEntradas(v) in v.leerRcloneConf())
+    }
+
+    @Test
     fun `volver con algo en la carpeta privada se para`() {
         val (v, p) = volumen()
         val destino = destino()
@@ -374,7 +479,7 @@ class MudanzaTest {
         val destino = destino()
         // Cortado tras el combine: la entrada `ENTRANDO`, los listados apartados
         // y la copia privada, que ya está en el remoto, entera.
-        for (lst in v.workdir(p).listFiles()!!) assertTrue(lst.renameTo(File(lst.path + "-err")))
+        apartarAMano(v, p)
         Compartidas.escribir(
             v.compartidas,
             mapOf("vault" to Compartidas.Entrada(destino.path, Compartidas.Estado.ENTRANDO)),

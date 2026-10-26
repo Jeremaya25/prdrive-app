@@ -237,18 +237,25 @@ que en el remoto) o lo que creó Obsidian al abrirla antes de tiempo (su
    pasada lo para (sección 2).
 6. El `--resync`, aprobado (lo ha pedido la persona) y con
    `resync-mode = path2`. La carpeta estaba vacía: baja lo del remoto.
-7. Si acaba bien, se borra la copia privada `volumen/vault/` (sin seguir
-   enlaces, como borra el proveedor) y la entrada pasa a `lista`: lo que tenía
-   está en el remoto (3) y en la carpeta (6). Si falla, todo se queda como
-   está, la fila dice «Falta terminar de mover» y su botón repite el
-   `rclone.conf` del paso 5, el 6 y el 7.
+7. Si acaba bien, lo que la copia privada `volumen/vault/` tiene y la carpeta
+   no (lo que los filtros dejan fuera, `.prversions/`, lo escrito en el último
+   momento) se lleva a la carpeta con su fecha, sin seguir enlaces y sin pisar
+   nada: lo que la carpeta ya tiene es la copia sincronizada. Después se borra
+   la copia privada (sin seguir enlaces, como borra el proveedor) y la entrada
+   pasa a `lista`: lo que se sincroniza está en el remoto (3) y en la carpeta
+   (6), y lo demás, en la carpeta. Si algo no se puede llevar, no se borra
+   nada. Si falla, todo se queda como está, la fila dice «Falta terminar de
+   mover» y su botón repite el `rclone.conf` del paso 5, el 6 y el 7.
 
 **Volver al volumen**:
 
 1. Si hay permiso, una pasada normal que acabe bien, para que lo último de
    Obsidian llegue al remoto. Sin permiso esa pasada no se puede hacer, pero se
    puede volver igual, y se dice antes: lo que no se subió se queda en la
-   carpeta compartida, que no se toca.
+   carpeta compartida, que no se toca. Tampoco se hace si la pareja no está
+   entera en su carpeta (la entrada no vale, el `rclone.conf` no la lleva o no
+   hay baseline): es un «Volver» anterior que se cortó después de su pasada, y
+   repetirla abortaría siempre. Se dice, y se sigue.
 2. La carpeta privada tiene que estar vacía o sin crear: una con algo no se
    pisa. Salvo a medio mover (`entrando`): entonces es la copia de antes, y ya
    está en el remoto.

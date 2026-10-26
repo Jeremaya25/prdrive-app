@@ -31,7 +31,9 @@ import java.nio.file.attribute.BasicFileAttributes
  *   entre los dos deja una entrada que el `rclone.conf` no lleva, y la pasada
  *   se para sin llamar a rclone ([Pasada.COMBINE_VIEJO]).
  * - La copia privada solo se borra tras un `--resync` que acaba bien: lo que
- *   tenía está en el remoto (la pasada de antes) y en la carpeta (el `--resync`).
+ *   se sincroniza está en el remoto (la pasada de antes) y en la carpeta (el
+ *   `--resync`), y lo que no (lo que los filtros dejan fuera, `.prversions/`)
+ *   se lleva antes a la carpeta, con su fecha.
  * - La carpeta compartida no se borra nunca: es de la persona y de Obsidian.
  *
  * Los dos `--resync` llevan `resync-mode = path2` ([RESYNC_MODE]): en caso de
@@ -201,8 +203,10 @@ object Mudanza {
      * Por orden: (1) la entrada está `entrando`; (2) el `rclone.conf` y rclone
      * recargado otra vez, que arregla un corte entre la entrada y el
      * `rclone.conf`; (3) el `--resync`, con [RESYNC_MODE]: si falla, se para y se
-     * deja todo; (4) se borra la copia privada ([carpetaPrivada]) sin seguir
-     * enlaces; (5) la entrada pasa a `lista`.
+     * deja todo; (4) lo que la copia privada ([carpetaPrivada]) tiene y la
+     * carpeta no (lo que los filtros dejan fuera, `.prversions/`) se lleva a la
+     * carpeta con su fecha, y después se borra la copia sin seguir enlaces; si
+     * algo no se puede llevar, no se borra nada; (5) la entrada pasa a `lista`.
      */
     fun terminar(volumen: Volumen, nombre: String, e: Entorno): Hecho {
         require(!e.ctx.simulacro) { SIN_SIMULACRO }
@@ -241,7 +245,23 @@ object Mudanza {
                 )
             }
 
+            // Lo que solo tiene la copia privada (lo que los filtros dejan fuera,
+            // `.prversions/`, lo escrito en el último momento) no está en el
+            // remoto ni en la carpeta: se lleva allí antes de borrarla.
             val privada = carpetaPrivada(volumen, pareja)
+            val llevados = paso({
+                "El --resync ha ido bien, pero no se ha podido llevar a ${entrada.ruta} lo que solo tenía " +
+                    "la copia del volumen ($it). No se ha borrado nada: lo ya llevado está allí y lo demás " +
+                    "sigue en la copia. Cuando se arregle, vuelve a usar «Terminar de mover»."
+            }) {
+                llevarLoQueFalta(privada, File(entrada.ruta))
+            }
+            if (llevados > 0) {
+                e.decir(
+                    "[$nombre] $llevados fichero(s) que solo tenía la copia del volumen (lo que no se " +
+                        "sincroniza, como $VERSIONS_DIR/) se han llevado a ${entrada.ruta}, con su fecha.",
+                )
+            }
             e.decir("[$nombre] Lo de la copia del volumen ya está en el remoto y en ${entrada.ruta}: se borra $privada.")
             paso({
                 "El --resync ha ido bien, pero no se ha podido borrar la copia del volumen ($it). " +
@@ -272,7 +292,10 @@ object Mudanza {
      * Por orden: (1) tiene entrada; (2) con [conPasada] (hay permiso), una
      * pasada normal que acaba bien, para que lo último de la carpeta compartida
      * llegue al remoto; sin él, lo que no se subió se queda en la carpeta
-     * compartida; (3) la carpeta privada está vacía o sin crear, salvo a medio
+     * compartida. Esa pasada se salta si la pareja no está entera en su carpeta
+     * (la entrada no vale, el `rclone.conf` no la lleva o no hay baseline): un
+     * «Volver» anterior se cortó después de su pasada, y repetirla abortaría
+     * siempre; (3) la carpeta privada está vacía o sin crear, salvo a medio
      * mover (`entrando`: es la copia de antes, que ya está en el remoto); (4) se
      * apartan los listados; (5) el `rclone.conf` sin la redirección y rclone
      * recargado; (6) se quita la entrada; (7) el `--resync`, con [RESYNC_MODE],
@@ -288,12 +311,35 @@ object Mudanza {
             val pareja = parejaDe(config, nombre)
 
             if (conPasada) {
-                val antes = pasadaNormal(volumen, pareja, e).also { pasadas.add(it) }
-                if (!antes.ok) {
-                    throw Parada(
-                        "Antes de volver hace falta una pasada que acabe bien, para que lo último de " +
-                            "${entrada.ruta} llegue al remoto, y no ha sido así: ${porQue(antes)}. No se ha " +
-                            "cambiado nada; arréglalo y vuelve a intentarlo.",
+                // Solo se pasa si la pareja está entera en su carpeta. Si no, esa
+                // pasada abortaría (`COMBINE_VIEJO`) o quedaría saltada (sin
+                // baseline), y volver se quedaría atascado justo cuando hay que
+                // acabar algo que se cortó.
+                val noEntera = when {
+                    pareja.carpetaExterna == null ->
+                        "la entrada ya no vale" + (pareja.problemaCompartida?.let { " ($it)" } ?: "")
+                    !Compartidas.alDia(volumen.leerRcloneConf(), pareja) ||
+                        !Bisync.pairState(volumen.workdir(pareja)).hasBaseline ->
+                        if (entrada.estado == Compartidas.Estado.ENTRANDO) {
+                            "la mudanza a esa carpeta no llegó a acabar"
+                        } else {
+                            "un «Volver al volumen» anterior se cortó después de su pasada"
+                        }
+                    else -> null
+                }
+                if (noEntera == null) {
+                    val antes = pasadaNormal(volumen, pareja, e).also { pasadas.add(it) }
+                    if (!antes.ok) {
+                        throw Parada(
+                            "Antes de volver hace falta una pasada que acabe bien, para que lo último de " +
+                                "${entrada.ruta} llegue al remoto, y no ha sido así: ${porQue(antes)}. No se " +
+                                "ha cambiado nada; arréglalo y vuelve a intentarlo.",
+                        )
+                    }
+                } else {
+                    e.decir(
+                        "[$nombre] No se pasa antes de volver: $noEntera. Lo que no se haya subido se queda " +
+                            "en ${entrada.ruta}, que no se toca.",
                     )
                 }
             }
@@ -412,6 +458,75 @@ object Mudanza {
                 r.lineas.firstOrNull { it.startsWith("[${r.pareja}] ") && ("ERROR" in it || "FALLÓ" in it) }
                     ?: "ha acabado con el código ${r.codigo}"
             }
+
+    /**
+     * Lleva a [destino] cada fichero (y cada enlace, como enlace) de [origen]
+     * que [destino] no tiene en la misma ruta relativa, con su fecha de
+     * modificación y creando las carpetas que falten. Lo que [destino] ya tiene
+     * no se toca: es la copia sincronizada. No se sigue ningún enlace, ni en
+     * [origen] ni en las carpetas de [destino] por las que se pasa: uno en medio
+     * es un error, no un sitio al que escribir. Las carpetas vacías no se llevan.
+     * [origen] queda como estaba: quien llama lo borra después, entero.
+     *
+     * @return cuántos se han llevado.
+     * @throws IOException al primero que no se puede llevar (los anteriores ya
+     *   están en [destino]).
+     */
+    private fun llevarLoQueFalta(origen: File, destino: File): Int {
+        val raiz = origen.toPath()
+        if (!Files.isDirectory(raiz, LinkOption.NOFOLLOW_LINKS)) return 0
+        // Primero se apunta todo y después se mueve: así no se saca nada de una
+        // carpeta mientras se está recorriendo.
+        val ficheros = ArrayList<kotlin.Pair<Path, BasicFileAttributes>>()
+        Files.walkFileTree(
+            raiz,
+            object : SimpleFileVisitor<Path>() {
+                override fun visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult {
+                    if (attrs.isRegularFile || attrs.isSymbolicLink) ficheros.add(file to attrs)
+                    return FileVisitResult.CONTINUE
+                }
+            },
+        )
+        val otra = destino.toPath()
+        var llevados = 0
+        for ((fichero, attrs) in ficheros) {
+            val relativa = raiz.relativize(fichero)
+            val donde = otra.resolve(relativa)
+            if (Files.exists(donde, LinkOption.NOFOLLOW_LINKS)) continue
+            relativa.parent?.let { carpetaSinEnlaces(otra, it) }
+            // De la memoria de la app a la compartida es otro sistema de
+            // ficheros: mover es copiar y borrar, y un corte a media copia dejaría
+            // con su nombre un fichero a medias, que la vez siguiente se daría por
+            // llevado antes de borrar el original. Así que se copia a un temporal
+            // al lado, con su fecha, y se renombra (eso sí, de un golpe). El
+            // original se queda: se va con la copia privada entera.
+            val temporal = donde.resolveSibling(donde.fileName.toString() + SUFIJO_LLEVANDO)
+            Files.deleteIfExists(temporal)
+            Files.copy(fichero, temporal, LinkOption.NOFOLLOW_LINKS)
+            if (attrs.isRegularFile) Files.setLastModifiedTime(temporal, attrs.lastModifiedTime())
+            // Sin REPLACE_EXISTING: si algo aparece ahí entretanto, falla en vez
+            // de pisarlo.
+            Files.move(temporal, donde)
+            llevados++
+        }
+        return llevados
+    }
+
+    /** El sufijo del temporal de [llevarLoQueFalta], junto a su destino. */
+    internal const val SUFIJO_LLEVANDO = ".~prdrive-llevando"
+
+    /** Crea (si falta) [relativa] dentro de [raiz], tramo a tramo y sin pasar por un enlace ni un fichero. */
+    private fun carpetaSinEnlaces(raiz: Path, relativa: Path) {
+        var actual = raiz
+        for (tramo in relativa) {
+            actual = actual.resolve(tramo)
+            when {
+                Files.isSymbolicLink(actual) -> throw IOException("'$actual' es un enlace")
+                !Files.exists(actual, LinkOption.NOFOLLOW_LINKS) -> Files.createDirectory(actual)
+                !Files.isDirectory(actual, LinkOption.NOFOLLOW_LINKS) -> throw IOException("'$actual' no es una carpeta")
+            }
+        }
+    }
 
     /**
      * Borra [carpeta] entera sin seguir enlaces, como borra el proveedor: un
