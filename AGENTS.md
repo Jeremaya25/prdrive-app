@@ -111,7 +111,10 @@ herramientas/
               de lo que cruza una regla que el compilador no ve (Android en el
               motor, \d de ICU, String.format, colores en las pantallas). Las
               skills: skills/vectores (regenerar los valores esperados) y
-              skills/emulador (los tests de app/ sin pisar un dispositivo)
+              skills/emulador (los tests de app/ sin pisar un dispositivo). Los
+              subagentes: agents/espejo-reviewer (un cambio del motor contra
+              el Python de prdrive) y agents/rclone-fuente (lo que se dice de
+              rclone, contra su código de la versión fijada)
 VERSION       la versión de la app, y la única («Versiones y releases»)
 ```
 
