@@ -108,12 +108,16 @@ internal object Lecturas {
         apuntar(state, app, base, Conocida(huella))
 
     /**
-     * [app] ha guardado [base] y ha ido a [puesto]: si es la base, ya conoce lo
-     * que hay en ella; si es una copia aparte, sigue con la versión que tenía, y
-     * sus guardados siguientes van a esa copia.
+     * [app] ha guardado [base], lo guardado tiene la huella [huella] y ha ido a
+     * [puesto]: si es la base, ya conoce lo que hay en ella; si es una copia
+     * aparte, sigue con la versión que tenía, y sus guardados siguientes van a
+     * esa copia.
+     *
+     * La huella es la de lo que se puso, no la de lo que hay ahora en
+     * [puesto]: una pasada puede haberlo cambiado ya, y entonces se daría por
+     * sabida una versión que la app no tiene.
      */
-    fun apuntarEscritura(state: File, app: String, base: File, puesto: File) {
-        val huella = huella(puesto) ?: return
+    fun apuntarEscritura(state: File, app: String, base: File, puesto: File, huella: String) {
         // Leer y escribir de una vez: una lectura de la misma app en medio no se pierde.
         synchronized(cerrojo) {
             if (puesto == base) {

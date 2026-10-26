@@ -312,13 +312,14 @@ class ProveedorLlaveroTest {
     @Test
     fun sin_ninguna_lectura_apuntada_el_guardado_va_encima_como_antes() {
         // Una app que abrió la base antes de esta versión de prdrive: no se
-        // sabe qué tiene, y no se aparta nada.
+        // sabe qué tiene, y no se aparta nada. (Después del guardado sí hay
+        // algo apuntado: lo que ha puesto ella.)
+        assertFalse(File(v.state, Lecturas.FICHERO).exists())
         base.writeBytes(Banco.otraBase())
         val nueva = Banco.terceraBase()
         escribir(uriBase, "wt", nueva)
         assertArrayEquals(nueva, base.readBytes())
         assertTrue(copias().isEmpty())
-        assertFalse(File(v.state, Lecturas.FICHERO).exists())
     }
 
     @Test

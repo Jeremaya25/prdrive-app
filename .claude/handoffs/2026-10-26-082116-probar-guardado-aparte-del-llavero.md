@@ -90,6 +90,12 @@ El commit `311cdb7` (rama `ccr-9c5adb27-393d23`, ya en `origin`) implementa la �
 
 ### Immediate Next Steps
 
+> **Hecho el 26/10/2026** (sesión siguiente, en el emulador de la persona): los
+> pasos 1 a 3 y el apunte del 4. `ProveedorLlaveroTest` destapó una prueba mal
+> planteada y una carrera en el código (la huella de lo puesto), arregladas; la
+> batería entera pasa, y la prueba a mano con KeePassDX salió como se esperaba.
+> Detalle en `PLAN.md` §1. Quedan el PR y `VERSION`.
+
 1. En una máquina con emulador (API 37 x86_64, el de siempre) y el `.aar` construido (`rclone/construir.sh`), lanza la clase:
    `ANDROID_SERIAL=emulator-5554 ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=prdrive.app.ProveedorLlaveroTest`
    Tienen que pasar las de antes y las cinco nuevas. Si falla alguna, el informe está en `app/build/reports/androidTests/connected/debug/`.

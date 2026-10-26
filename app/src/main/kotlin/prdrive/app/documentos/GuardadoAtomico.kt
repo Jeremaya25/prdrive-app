@@ -120,7 +120,9 @@ internal object GuardadoAtomico {
      * @param destino adónde va el guardado, preguntado al cerrar y solo si ha
      *   llegado algo: [base] o una copia de conflicto en su carpeta. Si falla,
      *   la base.
-     * @param alPoner lo que se hace tras poner el guardado, con dónde ha ido.
+     * @param alPoner lo que se hace tras poner el guardado, con dónde ha ido y
+     *   la huella de lo puesto ([Lecturas.huella]; `null` si no se ha podido
+     *   sacar).
      * @param alCortar lo que se hace con un guardado que ha llegado roto, con
      *   lo que dice [Kdbx.comprobar].
      * @param alAcabar lo último, y una sola vez por llamada, sea cual sea el
@@ -133,7 +135,7 @@ internal object GuardadoAtomico {
         temporales: File,
         handler: Handler,
         destino: () -> File = { base },
-        alPoner: (File) -> Unit,
+        alPoner: (File, String?) -> Unit,
         alCortar: (String) -> Unit,
         alAcabar: () -> Unit,
     ): ParcelFileDescriptor {
@@ -172,7 +174,7 @@ internal object GuardadoAtomico {
         base: File,
         error: IOException?,
         destino: () -> File,
-        alPoner: (File) -> Unit,
+        alPoner: (File, String?) -> Unit,
         alCortar: (String) -> Unit,
     ) {
         if (error is ParcelFileDescriptor.FileDescriptorDetachedException) {
@@ -214,6 +216,10 @@ internal object GuardadoAtomico {
             avisar { alCortar(estado.motivo) }
             return
         }
+        // La huella de lo que se pone, del temporal y antes de moverlo: una vez
+        // en su sitio, una pasada puede cambiarlo antes de que se apunte, y se
+        // daría por sabida una versión que la app no tiene ([Lecturas]).
+        val huella = Lecturas.huella(tmp)
         try {
             Files.move(tmp.toPath(), donde.toPath(), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)
         } catch (e: IOException) {
@@ -222,7 +228,7 @@ internal object GuardadoAtomico {
             return
         }
         sincronizarCarpeta(donde.parentFile)
-        avisar { alPoner(donde) }
+        avisar { alPoner(donde, huella) }
     }
 
     /**

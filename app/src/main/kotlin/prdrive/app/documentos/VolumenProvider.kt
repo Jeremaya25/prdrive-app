@@ -324,12 +324,12 @@ class VolumenProvider : DocumentsProvider() {
                 temporales = temporales,
                 handler = guardados,
                 destino = { Lecturas.destino(state, app, f) },
-                alPoner = { puesto ->
+                alPoner = { puesto, huella ->
                     // Un guardado bueno de esta base, aunque haya ido aparte:
                     // lo que se cortó ya está guardado.
                     if (GuardadoAtomico.quitarCortado(state, f.name)) Avisos.guardadoBueno(c)
                     val nueva = puesto != f && app != null && Lecturas.conocida(state, app, f.name)?.aparte != puesto.name
-                    if (app != null) Lecturas.apuntarEscritura(state, app, f, puesto)
+                    if (app != null && huella != null) Lecturas.apuntarEscritura(state, app, f, puesto, huella)
                     if (puesto != f) apartado(c, f, puesto, nueva)
                     Disparos.alGuardar(c)
                 },

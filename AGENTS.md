@@ -527,6 +527,12 @@ decisiones que no se ven en el código:
   - Sin nada apuntado (una app que abrió la base antes de esto) va encima, como
     siempre; y si no se puede apuntar, también: falla abierto, porque fallar
     cerrado apartaría todos los guardados.
+  - La huella de lo que pone la app se saca del temporal, antes de moverlo
+    (`GuardadoAtomico`), no del fichero ya en su sitio: lo que viene después del
+    cierre corre en el hilo del proveedor, y una pasada que trae la base justo
+    entonces haría apuntar una versión que la app no tiene; su guardado
+    siguiente la pisaría. Lo destapó `ProveedorLlaveroTest` en un emulador
+    cargado.
   - El número de la copia es la fecha y la hora, no el primer libre como
     `copia_propia()` de prdrive: dos dispositivos que apartan a la vez sacarían
     los dos un `1`, y bisync haría una copia de la copia, que «Combinar» no
