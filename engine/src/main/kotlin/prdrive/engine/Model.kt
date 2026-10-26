@@ -583,6 +583,10 @@ fun comprobarSeguridad(crudo: Map<String, Any?>) {
  * habla de rutas **relativas a la raíz del volumen**, que es lo que dice el
  * TOML, y quien necesite la absoluta la resuelve.
  *
+ * La excepción es una pareja que vive en una carpeta compartida
+ * ([carpetaExterna], de `compartidas.json`): su `local` sigue siendo el de
+ * siempre (de él salen el nombre de sesión de bisync y los filtros), y solo
+ * cambia la carpeta a la que apunta su upstream del `combine`.
  */
 data class Pareja(
     val name: String,
@@ -615,6 +619,20 @@ data class Pareja(
      * mano que no lo diga cuenta sus flags como de la pareja.
      */
     val origenFlags: Map<String, String> = emptyMap(),
+    /**
+     * La ruta absoluta de la carpeta compartida en la que vive la pareja, o
+     * `null` si vive en el volumen. No sale del TOML: la pone
+     * [Config.conCompartidas] desde `compartidas.json`, y solo si la entrada
+     * vale.
+     */
+    val carpetaExterna: String? = null,
+    /**
+     * Por qué la entrada de `compartidas.json` de esta pareja no se ha
+     * aplicado, o `null`. Con motivo, la pareja sigue apuntando al volumen y
+     * la pasada no debe correr (la carpeta del volumen está vacía y se daría
+     * por borrada).
+     */
+    val problemaCompartida: String? = null,
 ) {
     val isBisync: Boolean get() = mode.isBisync
 
@@ -677,10 +695,12 @@ data class Pareja(
     /**
      * La carpeta local de la pareja dentro de un volumen: el `local_abs` del
      * escritorio, con el volumen dicho por quien lo sabe. La pareja de la raíz
-     * es el volumen mismo.
+     * es el volumen mismo, y una pareja compartida ([carpetaExterna]) vive en
+     * su carpeta compartida, no en el volumen.
      */
     fun carpetaEn(volumen: java.io.File): java.io.File =
-        if (esRaiz) volumen else java.io.File(volumen, tramosLocales.joinToString("/"))
+        if (carpetaExterna != null) java.io.File(carpetaExterna)
+        else if (esRaiz) volumen else java.io.File(volumen, tramosLocales.joinToString("/"))
 }
 
 // ---------------------------------------------------------------------------
@@ -724,6 +744,33 @@ data class Config(
     }
 
     /**
+     * Este config con las carpetas compartidas de [entradas] (`compartidas.json`)
+     * aplicadas a sus parejas.
+     *
+     * Idempotente: antes de aplicar nada deja [Pareja.carpetaExterna] y
+     * [Pareja.problemaCompartida] a `null` en todas, así que aplicarlo a un
+     * config ya aplicado (o con otras entradas) no arrastra lo de antes. Una
+     * entrada que vale redirige la pareja; una que no vale la deja donde está
+     * y dice por qué en [Pareja.problemaCompartida]. Una entrada sin pareja se
+     * ignora.
+     *
+     * @param raiz la raíz del volumen, para que ninguna ruta lo toque.
+     */
+    fun conCompartidas(entradas: Map<String, Compartidas.Entrada>, raiz: java.io.File): Config =
+        copy(
+            pairs = pairs.map { pareja ->
+                val limpia = pareja.copy(carpetaExterna = null, problemaCompartida = null)
+                val entrada = entradas[pareja.name] ?: return@map limpia
+                val motivo = Compartidas.problema(this, pareja.name, entrada.ruta, raiz, entradas - pareja.name)
+                if (motivo == null) {
+                    limpia.copy(carpetaExterna = entrada.ruta)
+                } else {
+                    limpia.copy(problemaCompartida = motivo)
+                }
+            },
+        )
+
+    /**
      * El `upstreams` del remote `combine`, calculado con TODAS las parejas
      * (también la del llavero).
      *
@@ -739,7 +786,7 @@ data class Config(
         val tops = LinkedHashMap<String, String>()
         for (pareja in pairs) {
             val nombre = pareja.topLevelDir
-            val ruta = unir(raizDelVolumen, pareja.tramosLocales.take(1))
+            val ruta = pareja.carpetaExterna ?: unir(raizDelVolumen, pareja.tramosLocales.take(1))
             // Dos parejas que pidan el mismo nombre para carpetas distintas solo
             // puede pasar con la raíz: `local = "."` la declara como
             // RAIZ_UPSTREAM y otra pareja tiene una carpeta que se llama justo

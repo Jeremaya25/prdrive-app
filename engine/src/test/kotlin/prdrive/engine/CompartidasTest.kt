@@ -146,4 +146,125 @@ class CompartidasTest {
         assertNotNull(Compartidas.problema(config, "otra", "/storage/emulated/0/vault", raiz, emptyMap()))
         assertNotNull(Compartidas.problema(config, "vault", "vault", raiz, emptyMap()))
     }
+
+    // --- La redirección en el combine ---
+
+    private val rutaVault = "/storage/emulated/0/Documents/vault"
+
+    private fun dosParejas(localVault: String = "vault"): Config =
+        config(pareja("notas", "notas"), pareja("vault", localVault))
+
+    private fun entradaVault(estado: Compartidas.Estado = Compartidas.Estado.LISTA) =
+        mapOf("vault" to Compartidas.Entrada(rutaVault, estado))
+
+    /** Los tramos de un `upstreams`: entre comillas y separados por espacios. */
+    private fun tramos(upstreams: String): List<String> =
+        upstreams.removeSurrounding("\"").split("\" \"")
+
+    @Test
+    fun `con una entrada el upstream de la pareja es su carpeta y los demas no cambian`() {
+        val raiz = temporal()
+        val c = dosParejas()
+        val sin = c.upstreamsDeCombine(raiz.absolutePath)
+        val con = c.conCompartidas(entradaVault(), raiz).upstreamsDeCombine(raiz.absolutePath)
+        val esperado = tramos(sin).map {
+            if (it.startsWith("vault=")) upstream("vault", rutaVault).removeSurrounding("\"") else it
+        }
+        assertEquals(esperado, tramos(con))
+        assertTrue(con != sin)
+    }
+
+    @Test
+    fun `una ruta con espacios cabe en el upstream`() {
+        val raiz = temporal()
+        val ruta = "/storage/emulated/0/Documents/mi vault"
+        val e = mapOf("vault" to Compartidas.Entrada(ruta, Compartidas.Estado.LISTA))
+        val con = dosParejas().conCompartidas(e, raiz).upstreamsDeCombine(raiz.absolutePath)
+        assertTrue(con.contains(upstream("vault", ruta)), con)
+    }
+
+    @Test
+    fun `una entrada que no vale no redirige nada y deja su motivo`() {
+        val raiz = temporal()
+        val c = dosParejas("a/vault")
+        val aplicada = c.conCompartidas(entradaVault(), raiz)
+        assertEquals(c.upstreamsDeCombine(raiz.absolutePath), aplicada.upstreamsDeCombine(raiz.absolutePath))
+        val vault = aplicada.pairs.first { it.name == "vault" }
+        assertNull(vault.carpetaExterna)
+        assertNotNull(vault.problemaCompartida)
+    }
+
+    @Test
+    fun `una entrada de una pareja que no esta se ignora`() {
+        val raiz = temporal()
+        val c = config(pareja("notas", "notas"))
+        assertEquals(c, c.conCompartidas(entradaVault(), raiz))
+    }
+
+    @Test
+    fun `aplicar las compartidas dos veces da lo mismo`() {
+        val raiz = temporal()
+        val c = dosParejas()
+        val una = c.conCompartidas(entradaVault(), raiz)
+        assertEquals(una, una.conCompartidas(entradaVault(), raiz))
+        // Y sin entradas lo anterior se borra: un config ya aplicado no arrastra nada.
+        assertEquals(c, una.conCompartidas(emptyMap(), raiz))
+    }
+
+    @Test
+    fun `la pareja compartida conserva su nombre de sesion y sus filtros`() {
+        val raiz = temporal()
+        val tipos = Bisync.tiposDeRemote("[nas]\ntype = sftp\n")
+        val c = dosParejas()
+        val con = c.conCompartidas(entradaVault(), raiz)
+        val antes = c.pairs.first { it.name == "vault" }
+        val despues = con.pairs.first { it.name == "vault" }
+        assertNotNull(despues.carpetaExterna)
+        assertEquals(Bisync.expectedPrefix(antes, tipos), Bisync.expectedPrefix(despues, tipos))
+        assertEquals(Bisync.filtersContent(antes), Bisync.filtersContent(despues))
+    }
+
+    @Test
+    fun `la carpeta de una pareja compartida es la suya`() {
+        val raiz = temporal()
+        val vault = dosParejas().conCompartidas(entradaVault(), raiz).pairs.first { it.name == "vault" }
+        assertEquals(File(rutaVault), vault.carpetaEn(raiz))
+    }
+
+    private fun volumenConDosParejas(): Volumen {
+        val v = Volumen(File(temporal(), "volumen"))
+        v.escribirConfig(
+            mapOf(
+                "defaults" to mapOf("device_remote" to "disp", "remote" to "nas"),
+                "pair" to listOf(pareja("notas", "notas"), pareja("vault", "vault")),
+            ),
+            "",
+        )
+        return v
+    }
+
+    @Test
+    fun `leerConfig trae las compartidas puestas`() {
+        val v = volumenConDosParejas()
+        Compartidas.escribir(v.compartidas, entradaVault())
+        val config = v.leerConfig()
+        assertEquals(rutaVault, config.pairs.first { it.name == "vault" }.carpetaExterna)
+        assertNull(config.pairs.first { it.name == "notas" }.carpetaExterna)
+    }
+
+    @Test
+    fun `leerConfig con el fichero de compartidas roto lo dice`() {
+        val v = volumenConDosParejas()
+        v.compartidas.writeText("{esto no es json")
+        assertFailsWith<ConfigError> { v.leerConfig() }
+    }
+
+    @Test
+    fun `reescribir el combine con un config sin compartidas conserva la redireccion`() {
+        val v = volumenConDosParejas()
+        Compartidas.escribir(v.compartidas, entradaVault())
+        v.rcloneConf.writeText("[nas]\ntype = sftp\n")
+        v.actualizarCombine(parseConfig(loadRaw(v.config.readText())))
+        assertTrue(v.rcloneConf.readText().contains(upstream("vault", rutaVault)), v.rcloneConf.readText())
+    }
 }
