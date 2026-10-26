@@ -34,6 +34,9 @@ class Volumen(val raiz: File) {
     val filtros: File get() = File(programa, "filters")
     val logs: File get() = File(programa, "logs")
 
+    /** `compartidas.json`: qué parejas viven en una carpeta compartida ([Compartidas]). */
+    val compartidas: File get() = File(programa, Compartidas.FICHERO)
+
     /** El workdir de bisync de una pareja: `state/<pareja>/`. */
     fun workdir(pareja: Pareja): File = File(state, pareja.workdir)
 

@@ -1,0 +1,185 @@
+package prdrive.engine
+
+import java.io.File
+import java.io.IOException
+import java.nio.file.InvalidPathException
+import java.nio.file.Path
+import java.nio.file.Paths
+
+/**
+ * Compartidas.kt — Las parejas que viven fuera del volumen, en una carpeta de
+ * la memoria compartida del teléfono (`Documents/…`), y lo que hace falta para
+ * que una pareja o una ruta puedan hacerlo.
+ *
+ * No es espejo de ningún fichero de Python de prdrive: es una diferencia del
+ * teléfono, como el `device_remote` obligatorio. El escritorio no tiene
+ * volumen virtual del que sacar una carpeta, y `compartidas.json` no lo lee ni
+ * lo escribe. Va en `.prdrive/`, fuera del `sync_config.toml`, para que el
+ * config siga siendo el de un dispositivo de prdrive. El diseño, en
+ * `docs/superpowers/specs/2026-10-26-carpeta-compartida-design.md` (§1).
+ *
+ * ```
+ * {"vault": {"ruta": "/storage/emulated/0/Documents/vault", "estado": "lista"}}
+ * ```
+ *
+ * El motor no toca el almacenamiento compartido: lee y escribe el fichero y
+ * dice qué vale. Quien lo aplica es la app.
+ */
+object Compartidas {
+
+    /** El nombre del fichero, dentro de `.prdrive/`. */
+    const val FICHERO = "compartidas.json"
+
+    /**
+     * En qué punto del traslado está una pareja: [ENTRANDO] cuando se ha
+     * decidido y aún no se ha terminado, [LISTA] cuando la carpeta compartida
+     * es la buena.
+     */
+    enum class Estado(val texto: String) {
+        ENTRANDO("entrando"),
+        LISTA("lista"),
+    }
+
+    /** Dónde vive una pareja: la ruta absoluta de su carpeta y en qué estado está. */
+    data class Entrada(val ruta: String, val estado: Estado)
+
+    /**
+     * Las entradas del fichero, por nombre de pareja; ninguna si no existe.
+     *
+     * Un fichero que no se lee, que no es JSON o que no tiene la forma de
+     * arriba **no** se toma por vacío: sin él, las parejas compartidas
+     * apuntarían a su carpeta privada del volumen, que está vacía, y la
+     * pasada siguiente las daría por borradas. Por eso se lee con [leerJson]
+     * y no con `Store.readJson`, que se traga los errores.
+     */
+    fun leer(fichero: File): Map<String, Entrada> {
+        if (!fichero.exists()) return emptyMap()
+        val datos = try {
+            leerJson(fichero.readText(Charsets.UTF_8))
+        } catch (e: IOException) {
+            throw roto(fichero, "no se puede leer (${e.message})")
+        } catch (e: JsonError) {
+            throw roto(fichero, "no es JSON (${e.message})")
+        }
+        if (datos !is Map<*, *>) throw roto(fichero, "no es un objeto")
+        val entradas = LinkedHashMap<String, Entrada>()
+        for ((nombre, valor) in datos) {
+            val entrada = valor as? Map<*, *>
+            val ruta = entrada?.get("ruta")
+            val estado = Estado.entries.firstOrNull { it.texto == entrada?.get("estado") }
+            if (nombre !is String || ruta !is String || estado == null) {
+                throw roto(
+                    fichero,
+                    "tiene una entrada que no es {\"ruta\": texto, \"estado\": " +
+                        "\"entrando\" o \"lista\"} (la de '$nombre')",
+                )
+            }
+            entradas[nombre] = Entrada(ruta, estado)
+        }
+        return entradas
+    }
+
+    private fun roto(fichero: File, motivo: String) = ConfigError(
+        "El fichero de las carpetas compartidas ($fichero) $motivo. Sin él, las parejas " +
+            "compartidas apuntarían a su carpeta privada del volumen, que está vacía. " +
+            "Arréglalo o restáuralo desde una copia antes de sincronizar.",
+    )
+
+    /** Escribe las entradas de forma atómica; `IOException` si no se ha podido. */
+    fun escribir(fichero: File, entradas: Map<String, Entrada>) {
+        val datos = LinkedHashMap<String, Any?>()
+        for ((nombre, entrada) in entradas) {
+            datos[nombre] = linkedMapOf("ruta" to entrada.ruta, "estado" to entrada.estado.texto)
+        }
+        if (!Store.writeJson(fichero, datos)) throw IOException("No he podido escribir $fichero")
+    }
+
+    /**
+     * Por qué la pareja no puede vivir fuera del volumen, o `null`.
+     *
+     * Una pareja compartida es una carpeta de primer nivel que cambia de sitio
+     * (`combine` la declara por su primer tramo), así que tiene que ser una sola
+     * carpeta, sin nada más colgando de ella.
+     */
+    fun problemaPareja(config: Config, nombre: String): String? {
+        val pareja = config.pairs.firstOrNull { it.name == nombre }
+            ?: return "No existe ninguna pareja que se llame '$nombre' en el config."
+        if (pareja.llavero) {
+            return "'$nombre' es la pareja del llavero: vive en .keychain/ y no se puede " +
+                "mover. Elige otra pareja."
+        }
+        if (!pareja.isBisync) {
+            return "'$nombre' no es bisync (es '${pareja.mode.name}'): solo las parejas " +
+                "bisync pueden vivir en una carpeta compartida. Cámbiale el modo o elige otra."
+        }
+        if (pareja.tramosLocales.size != 1) {
+            return "'$nombre' sincroniza '${pareja.local}', y solo se puede mover una pareja " +
+                "cuya carpeta local sea una sola, de primer nivel. Cámbiale 'local' a un " +
+                "nombre de carpeta suelto o elige otra pareja."
+        }
+        val deLaRaiz = config.pairs.firstOrNull { it !== pareja && it.esRaiz }
+        if (deLaRaiz != null) {
+            return "La pareja '${deLaRaiz.name}' sincroniza el volumen entero, y lo que saliera " +
+                "de él seguiría dentro de ella. Cámbiale 'local' o quítala antes de mover '$nombre'."
+        }
+        val comparte = config.pairs.firstOrNull { it !== pareja && it.topLevelDir == pareja.topLevelDir }
+        if (comparte != null) {
+            return "La pareja '${comparte.name}' también sincroniza dentro de " +
+                "'${pareja.topLevelDir}': moverla a otra carpeta la dejaría sin ella. " +
+                "Cámbiale 'local' a otra carpeta o mueve solo una pareja por carpeta."
+        }
+        return null
+    }
+
+    /**
+     * Por qué la ruta no vale como carpeta compartida de la pareja, o `null`.
+     *
+     * Tiene que ser absoluta y estar ya normalizada (sin `.`, `..`, tramos
+     * vacíos ni `/` al final), y no puede ser el volumen ni tocarlo, ni tocar la
+     * de otra pareja: dos parejas sobre las mismas carpetas se pisarían. Todo se
+     * compara por tramos (`Path.startsWith`), no por texto, y vale igual con
+     * rutas de Linux que con las de Windows, donde también corren los tests.
+     */
+    fun problemaRuta(ruta: String, raiz: File, otras: Map<String, Entrada>): String? {
+        val camino = caminoDe(ruta)
+        if (camino == null || !(camino.isAbsolute || ruta.startsWith("/"))) {
+            return "La ruta '$ruta' no es absoluta. Elige una carpeta con su ruta completa " +
+                "(por ejemplo /storage/emulated/0/Documents/mi-carpeta)."
+        }
+        if (camino.normalize().toString().replace('\\', '/') != ruta.replace('\\', '/')) {
+            return "La ruta '$ruta' no está normalizada: no puede llevar '.', '..', barras " +
+                "repetidas ni acabar en '/'. Escríbela directa, como " +
+                "/storage/emulated/0/Documents/mi-carpeta."
+        }
+        // La raíz, tal como se dio y resuelta: en Android los enlaces pueden
+        // llevar dos nombres a la misma carpeta.
+        for (volumen in listOf(raiz.absoluteFile, raiz.canonicalFile).distinct()) {
+            if (solapan(camino, volumen.toPath())) {
+                return "La ruta '$ruta' es el volumen de prdrive ('$volumen'), está dentro de él " +
+                    "o lo contiene. Elige una carpeta que esté fuera, como una de Documents."
+            }
+        }
+        for ((nombre, otra) in otras) {
+            val caminoOtra = caminoDe(otra.ruta) ?: continue
+            if (solapan(camino, caminoOtra)) {
+                return "La ruta '$ruta' se solapa con la de la pareja '$nombre' (${otra.ruta}): " +
+                    "dos parejas no pueden compartir carpeta ni caer una dentro de otra. " +
+                    "Elige una carpeta aparte."
+            }
+        }
+        return null
+    }
+
+    /** Las dos reglas, la de la pareja primero. */
+    fun problema(config: Config, nombre: String, ruta: String, raiz: File, otras: Map<String, Entrada>): String? =
+        problemaPareja(config, nombre) ?: problemaRuta(ruta, raiz, otras)
+
+    private fun caminoDe(ruta: String): Path? = try {
+        Paths.get(ruta)
+    } catch (_: InvalidPathException) {
+        null
+    }
+
+    /** Si una es la otra, o una cae dentro de la otra. */
+    private fun solapan(a: Path, b: Path): Boolean = a.startsWith(b) || b.startsWith(a)
+}
