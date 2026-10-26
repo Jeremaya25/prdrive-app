@@ -1,8 +1,14 @@
 package prdrive.app.ui
 
+import android.content.ActivityNotFoundException
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
+import android.os.Environment
+import android.provider.DocumentsContract
 import android.provider.Settings
+import java.io.File
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -48,6 +54,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -65,6 +72,7 @@ import kotlinx.coroutines.withContext
 import prdrive.app.Actualizador
 import prdrive.app.Estado
 import prdrive.app.Prdrive
+import prdrive.app.compartidas.Compartir
 import prdrive.app.rclone.Rclone
 import prdrive.engine.MODES
 import prdrive.engine.Pasada
@@ -414,6 +422,20 @@ private fun Principal(m: Modelo) {
     }
     val conRed = conRedLocal { faltaRed = Prdrive.faltaRedLocal(contexto) }
     val conPermiso = conAvisos()
+    // La pareja que se va a mover (con el diálogo abierto o el selector de
+    // carpetas delante), y si ya está el permiso de acceso a todos los archivos,
+    // que se da en los ajustes y se mira al volver. Guardado: es solo un nombre.
+    var moviendo by rememberSaveable { mutableStateOf<String?>(null) }
+    var permisoCompartido by remember { mutableStateOf(Prdrive.permisoCompartido()) }
+    LifecycleResumeEffect(Unit) {
+        permisoCompartido = Prdrive.permisoCompartido()
+        onPauseOrDispose {}
+    }
+    val elegirCarpeta = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { arbol ->
+        val nombre = moviendo
+        moviendo = null
+        if (arbol != null && nombre != null) m.moverACompartida(nombre, arbol)
+    }
     Marco("prdrive") {
         Button(
             onClick = { conRed(m::sincronizar) },
@@ -431,7 +453,15 @@ private fun Principal(m: Modelo) {
             // Sin clave por nombre: dos parejas que se llamen igual no pueden
             // tumbar la pantalla (Compose no admite claves repetidas).
             items(m.filas) { f ->
-                FilaDePareja(f, m.resultados[f.nombre], m.ocupado == null, { log = f }, { conRed { m.aprobarResync(f.nombre) } })
+                FilaDePareja(
+                    f, m.resultados[f.nombre], m.ocupado == null,
+                    verLog = { log = f },
+                    aprobar = { conRed { m.aprobarResync(f.nombre) } },
+                    mover = { moviendo = f.nombre },
+                    terminar = { m.terminarDeMover(f.nombre) },
+                    volver = { m.volverAlVolumen(f.nombre) },
+                    darPermiso = { darPermisoCompartido(contexto, m) },
+                )
             }
             item {
                 Spacer(Modifier.height(8.dp))
@@ -440,6 +470,17 @@ private fun Principal(m: Modelo) {
         }
     }
     log?.let { f -> DialogoLog(f) { log = null } }
+    moviendo?.let { nombre ->
+        DialogoMover(
+            nombre = nombre,
+            conPermiso = permisoCompartido,
+            darPermiso = { darPermisoCompartido(contexto, m) },
+            elegir = {
+                elegirCarpeta.launch(DocumentsContract.buildDocumentUri(Compartir.AUTORIDAD, "primary:Documents"))
+            },
+            cerrar = { moviendo = null },
+        )
+    }
     m.avisoLlavero?.let { AvisoAntesDeAbrir(it, m::cerrarAvisoLlavero) }
     AbrirLaBase(m)
 }
@@ -576,11 +617,22 @@ private fun FilaDePareja(
     libre: Boolean,
     verLog: () -> Unit,
     aprobar: () -> Unit,
+    mover: () -> Unit,
+    terminar: () -> Unit,
+    volver: () -> Unit,
+    darPermiso: () -> Unit,
 ) {
     Card(modifier = Modifier.fillMaxWidth().testTag("fila-${f.nombre}")) {
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(f.nombre, style = MaterialTheme.typography.titleMedium)
             Text("${f.modo} · ${f.local}", style = MaterialTheme.typography.bodySmall)
+            f.compartida?.let {
+                Text(
+                    "En ${rutaCorta(it)}",
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.testTag("donde-${f.nombre}"),
+                )
+            }
             val cuando = f.ultimaBuena?.let(::haceCuanto)
             Text(if (cuando != null) "Al día: $cuando" else "Sin ninguna pasada buena todavía")
             val fallo = f.fallo
@@ -589,7 +641,45 @@ private fun FilaDePareja(
                 f.explicacion?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
                 if (fallo.log != null) TextButton(onClick = verLog) { Text("Ver el log") }
             }
-            if (f.pideResync.isNotEmpty() && ultimo?.ok != true) {
+            f.sinAcceso?.let { motivo ->
+                Text(motivo, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                // Solo el permiso se da con un botón: una tarjeta sin montar, no.
+                if (motivo == Prdrive.SIN_PERMISO_COMPARTIDO && Build.VERSION.SDK_INT >= 30) {
+                    OutlinedButton(onClick = darPermiso, modifier = Modifier.testTag("permiso-${f.nombre}")) {
+                        Text("Dar permiso")
+                    }
+                }
+            }
+            f.problemaCompartida?.let {
+                Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+            }
+            // A medio mover solo se ofrece terminar: pasarla con una pasada normal o
+            // con un --resync cualquiera la cogería con la carpeta a medio llenar.
+            if (f.entrando) {
+                Text(
+                    "A medio mover: no se sincroniza con las demás hasta que la termines.",
+                    color = MaterialTheme.colorScheme.tertiary,
+                    style = MaterialTheme.typography.bodySmall,
+                )
+                OutlinedButton(onClick = terminar, enabled = libre, modifier = Modifier.testTag("terminar-${f.nombre}")) {
+                    Text("Terminar de mover")
+                }
+            }
+            if (f.compartida != null && (!f.entrando || f.problemaCompartida != null)) {
+                OutlinedButton(onClick = volver, enabled = libre, modifier = Modifier.testTag("volver-${f.nombre}")) {
+                    Text("Volver al volumen")
+                }
+                Text(
+                    "La carpeta compartida se queda como está: bórrala tú cuando ya no la quieras.",
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            }
+            if (f.sePuedeCompartir) {
+                OutlinedButton(onClick = mover, enabled = libre, modifier = Modifier.testTag("mover-${f.nombre}")) {
+                    Text("Mover a una carpeta compartida…")
+                }
+            }
+            if (f.pideResync.isNotEmpty() && ultimo?.ok != true && !f.entrando) {
                 Text(
                     "Pide --resync: ${f.pideResync.joinToString("; ")}",
                     color = MaterialTheme.colorScheme.tertiary,
@@ -610,6 +700,60 @@ private fun FilaDePareja(
             }
         }
     }
+}
+
+/** La ruta de una carpeta compartida como la ve la persona: desde la raíz del almacenamiento (`Documents/vault`). */
+private fun rutaCorta(ruta: String): String =
+    File(ruta).relativeToOrNull(Environment.getExternalStorageDirectory())?.path?.takeIf { it.isNotEmpty() } ?: ruta
+
+/**
+ * Abre la pantalla de Android en la que se da el permiso de acceso a todos los
+ * archivos. No hay resultado que esperar: al volver a la app se vuelve a mirar.
+ * En un teléfono que no tenga esa pantalla, se dice dónde está el ajuste.
+ */
+private fun darPermisoCompartido(contexto: Context, m: Modelo) {
+    try {
+        contexto.startActivity(Compartir.pedirPermiso(contexto))
+    } catch (_: ActivityNotFoundException) {
+        m.avisar("No encuentro la pantalla del permiso. Búscalo en los ajustes de la app prdrive: «Acceso a todos los archivos».")
+    }
+}
+
+/**
+ * Antes de mover una pareja: qué cambia (la carpeta deja de ser privada) y, si
+ * falta, el permiso; con él, elegir la carpeta. [elegir] abre el selector de
+ * carpetas del sistema.
+ */
+@Composable
+private fun DialogoMover(
+    nombre: String,
+    conPermiso: Boolean,
+    darPermiso: () -> Unit,
+    elegir: () -> Unit,
+    cerrar: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = cerrar,
+        confirmButton = {
+            if (conPermiso) {
+                TextButton(onClick = elegir, modifier = Modifier.testTag("elegir-carpeta")) { Text("Elegir la carpeta") }
+            } else {
+                TextButton(onClick = darPermiso, modifier = Modifier.testTag("dar-permiso")) { Text("Dar permiso") }
+            }
+        },
+        dismissButton = { TextButton(onClick = cerrar) { Text("Cancelar") } },
+        title = { Text("Mover $nombre a una carpeta compartida") },
+        text = {
+            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(Compartir.AVISO_EXPOSICION)
+                Text(
+                    "Elige una carpeta vacía, o créala nueva: lo de la pareja se lleva allí y la copia del " +
+                        "volumen se borra al acabar.",
+                )
+                if (!conPermiso) Text(Prdrive.SIN_PERMISO_COMPARTIDO, color = MaterialTheme.colorScheme.error)
+            }
+        },
+    )
 }
 
 @Composable

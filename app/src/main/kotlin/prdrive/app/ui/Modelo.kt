@@ -2,6 +2,7 @@ package prdrive.app.ui
 
 import android.app.Application
 import android.net.Uri
+import android.os.Build
 import android.provider.DocumentsContract
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -16,17 +17,20 @@ import prdrive.app.Actualizador
 import prdrive.app.Estado
 import prdrive.app.Instalador
 import prdrive.app.Prdrive
+import prdrive.app.compartidas.Compartir
 import prdrive.app.documentos.VolumenProvider
 import prdrive.app.llavero.Avisos
 import prdrive.app.llavero.LlaveroApp
 import prdrive.app.rclone.Adaptadores
 import prdrive.engine.Catalogo
+import prdrive.engine.Compartidas
 import prdrive.engine.Config
 import prdrive.engine.ConfigError
 import prdrive.engine.Conflictos
 import prdrive.engine.LLAVERO
 import prdrive.engine.LLAVERO_LLAVE
 import prdrive.engine.LLAVERO_LOCAL
+import prdrive.engine.Mudanza
 import prdrive.engine.Pairing
 import prdrive.engine.Pasada
 import prdrive.engine.Volumen
@@ -324,9 +328,16 @@ class Modelo(app: Application) : AndroidViewModel(app) {
     private fun refrescar() {
         val v = Prdrive.iniciarRclone(contexto)
         val config = config()
-        filas = Estado.filas(v, config)
+        filas = filasDe(v, config)
         llavero = Estado.llavero(v, config, Prdrive.faltaRedLocal(contexto))
     }
+
+    /**
+     * Las filas de las parejas, con el acceso a las carpetas compartidas de
+     * ahora y la mudanza solo donde Android la deja (desde la API 30).
+     */
+    private fun filasDe(v: Volumen, config: Config): List<Estado.Fila> =
+        Estado.filas(v, config, Prdrive.accesoCompartido(), Build.VERSION.SDK_INT >= 30)
 
     /** La fila del llavero otra vez, de `state/` y del disco. */
     private fun releerLlavero() {
@@ -336,17 +347,19 @@ class Modelo(app: Application) : AndroidViewModel(app) {
     /**
      * Al volver a la app (de la app de KeePass, por ejemplo), la fila del
      * llavero puede haber cambiado: un guardado sin subir, uno cortado, una
-     * pasada de fondo. Solo se lee, sin red; con algo en marcha no hace falta,
-     * que al acabar se relee.
+     * pasada de fondo. Y las filas de las parejas, porque el permiso de acceso a
+     * todos los archivos se da y se quita en los ajustes. Solo se lee, sin red;
+     * con algo en marcha no hace falta, que al acabar se relee.
      */
     fun alVolver() {
         if (!sembrado || ocupado != null) return
         viewModelScope.launch(Dispatchers.IO) {
             try {
+                filas = filasDe(volumen, config())
                 releerLlavero()
             } catch (e: Exception) {
                 // Un config a medio escribir: la próxima vez.
-                android.util.Log.w("Modelo", "Releyendo la fila del llavero", e)
+                android.util.Log.w("Modelo", "Releyendo las filas", e)
             }
         }
     }
@@ -362,8 +375,16 @@ class Modelo(app: Application) : AndroidViewModel(app) {
             val config = config()
             val ctx = Pasada.Contexto(keepLogs = config.keepLogs, accesoCompartido = Prdrive.accesoCompartido())
             lineas = emptyList()
+            // Una pareja a medio mover no se pasa con las demás: su carpeta
+            // compartida puede estar a medio llenar, y una pasada normal vería
+            // borrados y los llevaría al remoto. Solo la pasa «Terminar de mover».
+            val entradas = Compartidas.leer(v.compartidas)
             try {
                 for (p in config.delUsuario) {
+                    if (entradas[p.name]?.estado == Compartidas.Estado.ENTRANDO) {
+                        decir("[${p.name}] A medio mover: se pasa con «Terminar de mover».")
+                        continue
+                    }
                     val r = Pasada.pasarOFallar(
                         v, p, Adaptadores.pasada, Adaptadores.opciones, ctx,
                         { progreso = Progreso.de(p.name, it) }, ::decir,
@@ -374,7 +395,7 @@ class Modelo(app: Application) : AndroidViewModel(app) {
                 // entre las parejas, pero «Sincronizar» lo pasa.
                 if (config.parejaLlavero != null) pasarLlavero()
             } finally {
-                filas = Estado.filas(v, config)
+                filas = filasDe(v, config)
                 releerLlavero()
             }
         }
@@ -536,12 +557,87 @@ class Modelo(app: Application) : AndroidViewModel(app) {
                 )
                 resultados = resultados + (p.name to r)
             } finally {
-                filas = Estado.filas(v, config)
+                filas = filasDe(v, config)
+            }
+        }
+    }
+
+    // --- las carpetas compartidas ---------------------------------------------------
+
+    /**
+     * «Mover a una carpeta compartida…»: lleva la pareja [nombre] a la carpeta
+     * [arbol] que ha elegido la persona ([Mudanza.entrar]).
+     *
+     * Sin el permiso de acceso a todos los archivos no se llama a [Mudanza]: la
+     * pasada de después no vería la carpeta entera. Y un árbol que la app no sabe
+     * traducir a una ruta (una SD, otro proveedor) se dice aquí, no se intenta.
+     */
+    fun moverACompartida(nombre: String, arbol: Uri) {
+        if (ocupado != null) return
+        if (!Prdrive.permisoCompartido()) {
+            error = Prdrive.SIN_PERMISO_COMPARTIDO
+            return
+        }
+        val carpeta = Compartir.rutaDeArbol(arbol)
+        if (carpeta == null) {
+            error = SIN_RUTA_COMPARTIDA
+            return
+        }
+        mudanza("Moviendo $nombre a ${carpeta.name}…", nombre) { v, e -> Mudanza.entrar(v, nombre, carpeta, e) }
+    }
+
+    /** «Terminar de mover»: acaba la mudanza de [nombre] que quedó a medias ([Mudanza.terminar]). */
+    fun terminarDeMover(nombre: String) {
+        if (ocupado != null) return
+        if (!Prdrive.permisoCompartido()) {
+            error = Prdrive.SIN_PERMISO_COMPARTIDO
+            return
+        }
+        mudanza("Terminando de mover $nombre…", nombre) { v, e -> Mudanza.terminar(v, nombre, e) }
+    }
+
+    /**
+     * «Volver al volumen»: devuelve [nombre] al volumen ([Mudanza.salir]). Sin el
+     * permiso se vuelve igual, sin la pasada de antes: la carpeta compartida no
+     * se toca, y lo que no se subió se queda en ella.
+     */
+    fun volverAlVolumen(nombre: String) {
+        if (ocupado != null) return
+        mudanza("Devolviendo $nombre al volumen…", nombre) { v, e ->
+            Mudanza.salir(v, nombre, Prdrive.permisoCompartido(), e)
+        }
+    }
+
+    /**
+     * Una mudanza ([hacer]) como trabajo de la pantalla y con el cerrojo del
+     * llavero: reescribe el `rclone.conf` y recarga rclone, como activar o quitar
+     * el llavero, y no puede hacerse con una pasada suya en marcha. Las pasadas
+     * que ha hecho se apuntan como las demás ([resultados]); si se ha parado,
+     * [error] dice por qué y qué hacer. Las filas se releen pase lo que pase.
+     */
+    private fun mudanza(que: String, nombre: String, hacer: (Volumen, Mudanza.Entorno) -> Mudanza.Hecho) {
+        trabajo(que) {
+            val v = Prdrive.iniciarRclone(contexto)
+            lineas = emptyList()
+            try {
+                val entorno = Compartir.entorno(contexto, config().keepLogs, { progreso = Progreso.de(nombre, it) }, ::decir)
+                val hecho = LlaveroApp.enExclusiva { hacer(v, entorno) }
+                for (r in hecho.pasadas) resultados = resultados + (r.pareja to r)
+                error = hecho.motivo
+            } finally {
+                filas = filasDe(v, config())
+                releerLlavero()
             }
         }
     }
 
     companion object {
         const val MAX_LINEAS = 200
+
+        /** Lo que se dice cuando la carpeta elegida no es una que la app pueda usar. */
+        const val SIN_RUTA_COMPARTIDA =
+            "Esa carpeta no sirve: tiene que estar en el almacenamiento interno del teléfono (dentro de " +
+                "Documents, por ejemplo), no en una tarjeta SD, en Descargas ni en una nube, y no puede ser " +
+                "el almacenamiento entero. Elige otra."
     }
 }
