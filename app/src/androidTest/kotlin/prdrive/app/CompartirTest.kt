@@ -83,6 +83,20 @@ class CompartirTest {
     }
 
     @Test
+    fun probar_las_fechas_de_una_carpeta_que_no_existe_no_la_deja_creada() {
+        Banco.volumen(Banco.pareja("notas"))
+        assertTrue("$carpeta ya existe", !carpeta.exists())
+        val temporal = Prdrive.temporal(Banco.contexto)
+
+        val problema = Compartir.probarFechas(carpeta, temporal)
+
+        assertNull(problema, problema)
+        // rclone la crea al copiar; tiene que quedar como estaba: sin carpeta.
+        assertTrue("La carpeta de prueba se ha quedado creada", !carpeta.exists())
+        assertEquals(emptyList<String>(), temporal.listFiles { f -> f.name.startsWith("fechas-") }?.map { it.name })
+    }
+
+    @Test
     fun una_carpeta_que_rclone_no_puede_usar_es_un_motivo_y_no_deja_nada() {
         Banco.volumen(Banco.pareja("notas"))
         // Un fichero donde debería haber una carpeta: copiar dentro falla.

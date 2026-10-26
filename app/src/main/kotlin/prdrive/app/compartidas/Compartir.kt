@@ -72,15 +72,17 @@ object Compartir {
      * después; decide [Compartidas.problemaFechas].
      *
      * Deja la carpeta exactamente como la encontró, ande bien o mal: el fichero
-     * de prueba se borra siempre. Mudanza solo quita una carpeta que creó si
-     * está vacía, y un resto se subiría con el `--resync`. Si ni así se puede
-     * borrar, es un motivo más, con el nombre del resto para que la persona lo
-     * quite. Un error de rclone no se propaga: es la respuesta (su mensaje).
+     * de prueba se borra siempre, y la carpeta también si no existía (rclone la
+     * crea al copiar). Mudanza solo quita una carpeta que creó si está vacía, y
+     * un resto se subiría con el `--resync`. Si ni así se puede borrar, es un
+     * motivo más, con el nombre del resto para que la persona lo quite. Un error de rclone no se propaga: es la respuesta (su mensaje).
      */
     fun probarFechas(carpeta: File, temporal: File): String? {
         val nombre = "prdrive-prueba-fechas-${System.nanoTime()}.tmp"
         val origen = File(temporal, "fechas-${System.nanoTime()}")
         val destino = carpeta.absolutePath
+        // `copyfile` crea la carpeta si no está: si no estaba, se quita al acabar.
+        val existia = carpeta.exists()
         val resultado = try {
             if (!origen.mkdirs()) throw IOException("no se pudo crear $origen")
             val fichero = File(origen, nombre).apply { writeText("prueba de fechas") }
@@ -108,10 +110,17 @@ object Compartir {
         } finally {
             origen.deleteRecursively()
             borrar(destino, nombre)
+            // `File.delete()` no quita una carpeta con algo dentro: solo la vacía.
+            if (!existia) carpeta.delete()
         }
+        val detalle = resultado?.let { " ($it)" } ?: ""
         if (File(carpeta, nombre).exists()) {
             return "No se ha podido borrar el fichero de prueba '$nombre' de '$destino'. Bórralo a mano " +
-                "y vuelve a intentarlo." + (resultado?.let { " ($it)" } ?: "")
+                "y vuelve a intentarlo.$detalle"
+        }
+        if (!existia && carpeta.exists()) {
+            return "No se ha podido quitar la carpeta '$destino', que la prueba de fechas ha creado. " +
+                "Bórrala a mano y vuelve a intentarlo.$detalle"
         }
         return resultado
     }
