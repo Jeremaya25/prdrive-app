@@ -1,8 +1,12 @@
 package prdrive.app
 
 import android.content.Context
+import android.os.Build
+import android.os.Environment
 import java.io.File
 import prdrive.app.rclone.Rclone
+import prdrive.engine.Pareja
+import prdrive.engine.Pasada
 import prdrive.engine.Volumen
 
 /**
@@ -60,4 +64,45 @@ object Prdrive {
         "Falta el permiso de red local: desde Android 17, sin él la app no puede llegar a un " +
             "servidor de tu red (un NAS en 192.168…, un PC en 10…). Dalo en los ajustes de la app " +
             "o con el botón de la pantalla, y vuelve a intentarlo."
+
+    /**
+     * Si la persona ha dado el permiso de «acceso a todos los archivos»
+     * (`MANAGE_EXTERNAL_STORAGE`). Solo existe desde API 30; antes no hay
+     * forma de ver lo que no ha creado la app, y una pareja compartida no puede
+     * correr.
+     */
+    fun permisoCompartido(): Boolean =
+        Build.VERSION.SDK_INT >= 30 && Environment.isExternalStorageManager()
+
+    /**
+     * La comprobación de acceso que necesita cada pasada de una pareja que vive
+     * en una carpeta compartida ([Pasada.Contexto.accesoCompartido]): `null` si
+     * la app la ve entera, o por qué no. Se mira en cada pasada, no solo al
+     * elegir la carpeta: la persona puede quitar el permiso o sacar la SD
+     * cuando quiera, y con la carpeta a medias de ver bisync daría por borrado
+     * lo que Android esconde.
+     *
+     * [tienePermiso] es un parámetro para poder probar la respuesta sin quitar
+     * el permiso de verdad.
+     */
+    fun accesoCompartido(tienePermiso: () -> Boolean = ::permisoCompartido): (Pareja) -> String? = { pareja ->
+        val carpeta = pareja.carpetaExterna
+        when {
+            !tienePermiso() -> SIN_PERMISO_COMPARTIDO
+            carpeta != null && Environment.getExternalStorageState(File(carpeta)) != Environment.MEDIA_MOUNTED ->
+                SIN_MONTAR
+            else -> null
+        }
+    }
+
+    /** Lo que se dice cuando falta el permiso de acceso a todos los archivos. */
+    const val SIN_PERMISO_COMPARTIDO =
+        "Falta el permiso de acceso a todos los archivos: sin él, Android esconde las notas que no " +
+            "ha creado prdrive, y sincronizar las borraría del remoto."
+
+    /** Lo que se dice cuando el almacenamiento de la carpeta compartida no está montado. */
+    const val SIN_MONTAR =
+        "El almacenamiento compartido no está disponible (¿una tarjeta SD sacada, o el teléfono " +
+            "conectado a un ordenador como disco?). Sin verlo entero, sincronizar daría por borradas " +
+            "las notas que contiene. Vuelve a intentarlo cuando esté montado."
 }

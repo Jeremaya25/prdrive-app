@@ -146,7 +146,10 @@ object Instalador {
         val pareja = config.pairs.first { it.name == nombre }
         return Pasada.pasarOFallar(
             v, pareja, Adaptadores.pasada, Adaptadores.opciones,
-            Pasada.Contexto(resyncAprobado = true, keepLogs = config.keepLogs), alProgreso, decir,
+            Pasada.Contexto(
+                resyncAprobado = true, keepLogs = config.keepLogs, accesoCompartido = Prdrive.accesoCompartido(),
+            ),
+            alProgreso, decir,
         )
     }
 

@@ -89,7 +89,9 @@ object LlaveroApp {
                 v, pareja, Adaptadores.pasada, Adaptadores.opciones,
                 // Android cifra el almacenamiento de la app: el teléfono cuenta
                 // como cifrado (el motor, por defecto, no).
-                Pasada.Contexto(cifrado = true, keepLogs = config.keepLogs),
+                Pasada.Contexto(
+                    cifrado = true, keepLogs = config.keepLogs, accesoCompartido = Prdrive.accesoCompartido(),
+                ),
                 alProgreso, decir,
             )
             // Las copias, de `state/` (lo que la pasada acaba de apuntar), como

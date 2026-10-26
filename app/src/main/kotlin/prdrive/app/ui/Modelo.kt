@@ -360,7 +360,7 @@ class Modelo(app: Application) : AndroidViewModel(app) {
         trabajo("Sincronizando…") {
             val v = Prdrive.iniciarRclone(contexto)
             val config = config()
-            val ctx = Pasada.Contexto(keepLogs = config.keepLogs)
+            val ctx = Pasada.Contexto(keepLogs = config.keepLogs, accesoCompartido = Prdrive.accesoCompartido())
             lineas = emptyList()
             try {
                 for (p in config.delUsuario) {
@@ -529,7 +529,9 @@ class Modelo(app: Application) : AndroidViewModel(app) {
             try {
                 val r = Pasada.pasarOFallar(
                     v, p, Adaptadores.pasada, Adaptadores.opciones,
-                    Pasada.Contexto(resyncAprobado = true, keepLogs = config.keepLogs),
+                    Pasada.Contexto(
+                        resyncAprobado = true, keepLogs = config.keepLogs, accesoCompartido = Prdrive.accesoCompartido(),
+                    ),
                     { progreso = Progreso.de(p.name, it) }, ::decir,
                 )
                 resultados = resultados + (p.name to r)

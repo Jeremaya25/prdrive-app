@@ -331,4 +331,38 @@ class CompartidasTest {
         assertTrue(Compartidas.alDia(combine(rara), parejaRara))
         assertFalse(Compartidas.alDia(combine(rutaVault), parejaRara))
     }
+
+    // La prueba de fechas de una carpeta compartida: la hora de lo copiado tiene que
+    // ser la del original (dentro de la precisión que dice rclone) y no moverse sola.
+
+    private val hora = java.time.Instant.parse("2023-11-14T22:13:20.123Z")
+    private val milisegundo = java.time.Duration.ofMillis(1)
+
+    @Test
+    fun `las fechas valen con la misma hora dentro de la precision y que no cambia`() {
+        // Igual, y con una diferencia que cabe en la precisión.
+        assertNull(Compartidas.problemaFechas(hora, hora, hora, milisegundo))
+        val redondeada = hora.plusNanos(500_000)
+        assertNull(Compartidas.problemaFechas(hora, redondeada, redondeada, milisegundo))
+        // Justo en el límite todavía vale.
+        val limite = hora.plus(milisegundo)
+        assertNull(Compartidas.problemaFechas(hora, limite, limite, milisegundo))
+    }
+
+    @Test
+    fun `una hora que cambia al releerla no vale`() {
+        assertNotNull(Compartidas.problemaFechas(hora, hora, hora.plusSeconds(2), milisegundo))
+        // Ni la que ya sale distinta al copiar, por más que luego se quede quieta.
+        val otra = hora.plusSeconds(1)
+        assertNotNull(Compartidas.problemaFechas(hora, otra, otra, milisegundo))
+    }
+
+    @Test
+    fun `una carpeta sin fechas no vale`() {
+        // rclone dice 100 años de precisión cuando el sitio no guarda fechas
+        // (`fs.ModTimeNotSupported`): todo cabría en ella, y no vale.
+        val cien = java.time.Duration.ofDays(365L * 100)
+        assertNotNull(Compartidas.problemaFechas(hora, hora, hora, cien))
+        assertNotNull(Compartidas.problemaFechas(hora, hora.plusSeconds(3), hora.plusSeconds(3), cien))
+    }
 }

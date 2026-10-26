@@ -5,6 +5,8 @@ import java.io.IOException
 import java.nio.file.InvalidPathException
 import java.nio.file.Path
 import java.nio.file.Paths
+import java.time.Duration
+import java.time.Instant
 
 /**
  * Compartidas.kt — Las parejas que viven fuera del volumen, en una carpeta de
@@ -228,6 +230,37 @@ object Compartidas {
             campos.add(texto.substring(inicio, i))
         }
         return campos
+    }
+
+    /**
+     * Por qué las fechas de una carpeta no sirven para bisync, o `null`.
+     *
+     * Bisync decide por la fecha de modificación: si la carpeta la redondea más
+     * de lo que dice o la cambia después de escribirla, una pareja ahí repetiría
+     * copias para siempre. Se prueba copiando un fichero con una hora conocida
+     * ([original]) y mirando la que queda ([copiada]) y la que sale 2 s después
+     * ([releida]). Vale si la copia está dentro de [precision] de la original,
+     * no se mueve sola y la [precision] es de verdad una precisión: cuando el
+     * sitio no guarda fechas, rclone dice 100 años (`fs.ModTimeNotSupported`,
+     * `fs/types.go`), y cualquier hora cabría en ella.
+     */
+    fun problemaFechas(original: Instant, copiada: Instant, releida: Instant, precision: Duration): String? {
+        if (precision >= Duration.ofDays(1)) {
+            return "Esa carpeta no guarda la fecha de modificación de los ficheros (rclone le calcula " +
+                "una precisión de ${precision.toDays()} días), y sin ella bisync no sabe qué ha " +
+                "cambiado. Elige una carpeta del almacenamiento interno del teléfono."
+        }
+        if (Duration.between(original, copiada).abs() > precision) {
+            return "Esa carpeta no conserva la fecha de modificación de lo que se copia: el fichero de " +
+                "prueba tenía $original y ha quedado con $copiada (rclone le da una precisión de " +
+                "${precision.toNanos()} ns). Bisync repetiría copias sin parar. Elige otra carpeta."
+        }
+        if (releida != copiada) {
+            return "Esa carpeta cambia sola la fecha de modificación de los ficheros: el de prueba " +
+                "quedó con $copiada y dos segundos después tenía $releida. Bisync repetiría copias " +
+                "sin parar. Elige otra carpeta."
+        }
+        return null
     }
 
     private fun caminoDe(ruta: String): Path? = try {
