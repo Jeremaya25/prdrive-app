@@ -263,6 +263,20 @@ object Compartidas {
         return null
     }
 
+    /**
+     * Las carpetas de primer nivel del volumen que ya no son de su pareja: el
+     * [Pareja.topLevelDir] de cada pareja de [config] con entrada en [entradas].
+     *
+     * Valga o no la entrada y en cualquier estado: mientras la pareja tenga
+     * entrada, su carpeta privada del volumen no es la buena (o va a dejar de
+     * serlo), y lo que se escriba ahí lo daría por cambios de la pareja la
+     * pasada siguiente. Una entrada de una pareja que no está en el config se
+     * ignora. Quien lo usa es el proveedor de documentos, que no deja escribir
+     * en ellas.
+     */
+    fun tramosReservados(config: Config, entradas: Map<String, Entrada>): Set<String> =
+        config.pairs.filter { it.name in entradas }.mapTo(LinkedHashSet()) { it.topLevelDir }
+
     private fun caminoDe(ruta: String): Path? = try {
         Paths.get(ruta)
     } catch (_: InvalidPathException) {

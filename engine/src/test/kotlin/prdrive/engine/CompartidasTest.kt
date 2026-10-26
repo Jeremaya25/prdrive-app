@@ -332,6 +332,20 @@ class CompartidasTest {
         assertFalse(Compartidas.alDia(combine(rutaVault), parejaRara))
     }
 
+    @Test
+    fun `los tramos reservados son los de las parejas con entrada`() {
+        val c = config(pareja("notas", "notas"), pareja("vault", "vault"), pareja("fotos", "a/fotos"))
+        val entradas = mapOf(
+            // Valga o no, y en cualquier estado.
+            "vault" to Compartidas.Entrada(rutaVault, Compartidas.Estado.LISTA),
+            "fotos" to Compartidas.Entrada("no es absoluta", Compartidas.Estado.ENTRANDO),
+            // Un nombre que no está en el config se ignora.
+            "fantasma" to Compartidas.Entrada("/storage/emulated/0/fantasma", Compartidas.Estado.LISTA),
+        )
+        assertEquals(setOf("vault", "a"), Compartidas.tramosReservados(c, entradas))
+        assertEquals(emptySet(), Compartidas.tramosReservados(c, emptyMap()))
+    }
+
     // La prueba de fechas de una carpeta compartida: la hora de lo copiado tiene que
     // ser la del original (dentro de la precisión que dice rclone) y no moverse sola.
 
