@@ -49,3 +49,7 @@ rclone/build/
 # El jar del wrapper SÍ va al repositorio: es lo que fija la versión de Gradle
 # para todo el mundo. Lo excluía el `*.jar` de arriba.
 !gradle/wrapper/gradle-wrapper.jar
+
+# Los ajustes de Claude Code de cada máquina (los compartidos están en
+# .claude/settings.json). .worktreeinclude lo copia a los worktrees nuevos.
+.claude/settings.local.json
