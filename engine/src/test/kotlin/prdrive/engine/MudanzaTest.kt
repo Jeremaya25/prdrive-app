@@ -90,6 +90,16 @@ class MudanzaTest {
         for (lst in v.workdir(p).listFiles()!!) assertTrue(lst.renameTo(File(lst.path + "-err")))
     }
 
+    /** Si el workdir de la pareja tiene listados sin apartar. */
+    private fun hayListados(v: Volumen, p: Pareja): Boolean =
+        workdir(v, p).any { it.endsWith(Bisync.PATH1_SUFFIX) || it.endsWith(Bisync.PATH2_SUFFIX) }
+
+    /** Hace que apartar los listados falle: su `-err` es una carpeta con algo, que no se borra. */
+    private fun apartarFalla(v: Volumen, p: Pareja) {
+        val lst = v.workdir(p).listFiles()!!.first { it.name.endsWith(Bisync.PATH1_SUFFIX) }
+        File(lst.path + "-err", "dentro").apply { parentFile.mkdirs(); writeText("no me borres") }
+    }
+
     /** Los nombres del workdir de la pareja, ordenados. */
     private fun workdir(v: Volumen, p: Pareja): List<String> = v.workdir(p).list().orEmpty().sorted()
 
@@ -119,15 +129,27 @@ class MudanzaTest {
             vistos.add(
                 listOf(
                     privada.exists(),
-                    workdir(v, p).any { it.endsWith(Bisync.PATH1_SUFFIX) || it.endsWith(Bisync.PATH2_SUFFIX) },
+                    hayListados(v, p),
                     upstream("vault", destino.path) in v.leerRcloneConf(),
                     Compartidas.leer(v.compartidas)["vault"]?.estado,
                     recargas,
                 ),
             )
         }
+        // Y lo que hay al recargar rclone: listados, entrada y combine.
+        val alRecargar = ArrayList<List<Any?>>()
+        val recargar = {
+            recargas++
+            alRecargar.add(
+                listOf(
+                    hayListados(v, p),
+                    Compartidas.leer(v.compartidas)["vault"]?.estado,
+                    upstream("vault", destino.path) in v.leerRcloneConf(),
+                ),
+            )
+        }
 
-        val hecho = Mudanza.entrar(v, "vault", destino, entorno(rclone))
+        val hecho = Mudanza.entrar(v, "vault", destino, entorno(rclone, recargar = { recargar() }))
 
         assertTrue(hecho.ok, hecho.motivo)
         assertEquals(2, falso.llamadas.size)
@@ -144,6 +166,9 @@ class MudanzaTest {
         assertEquals(true, vistos[1][2], "el rclone.conf ya apunta a la carpeta compartida")
         assertEquals(Compartidas.Estado.ENTRANDO, vistos[1][3])
         assertTrue((vistos[1][4] as Int) > 0, "rclone se recarga antes del --resync")
+        // La primera recarga es la de `entrar`, tras escribir `[disp]`: para
+        // entonces los listados ya están apartados y la entrada, apuntada.
+        assertEquals(listOf<Any?>(false, Compartidas.Estado.ENTRANDO, true), alRecargar.first())
 
         assertTrue(upstream("vault", destino.path) in v.leerRcloneConf())
         assertEquals(Compartidas.Estado.LISTA, Compartidas.leer(v.compartidas)["vault"]?.estado)
@@ -349,6 +374,74 @@ class MudanzaTest {
     }
 
     @Test
+    fun `si no se pueden apartar los listados no se apunta ni se redirige nada`() {
+        val (v, p) = volumen()
+        val destino = destino()
+        apartarFalla(v, p)
+        val rcloneAntes = v.leerRcloneConf()
+        val rclone = RcloneFalso()
+
+        val hecho = Mudanza.entrar(v, "vault", destino, entorno(rclone))
+
+        assertNotNull(hecho.motivo)
+        assertEquals(1, rclone.llamadas.size, "solo la pasada de antes")
+        assertNotEquals(true, rclone.llamadas.single().parametros["resync"])
+        assertFalse(v.compartidas.exists(), "no se escribe compartidas.json")
+        assertEquals(rcloneAntes, v.leerRcloneConf())
+        assertEquals(0, recargas)
+    }
+
+    @Test
+    fun `si no se puede apuntar la entrada el rclone_conf no cambia`() {
+        val (v, p) = volumen()
+        val destino = destino()
+        // El temporal de la escritura atómica de `compartidas.json` (`Store.writeText`),
+        // ocupado por una carpeta con algo: la escritura falla.
+        File(v.programa, v.compartidas.nameWithoutExtension + ".tmp/dentro")
+            .apply { parentFile.mkdirs(); writeText("x") }
+        val rcloneAntes = v.leerRcloneConf()
+        val rclone = RcloneFalso()
+
+        val hecho = Mudanza.entrar(v, "vault", destino, entorno(rclone))
+
+        assertNotNull(hecho.motivo)
+        assertFalse(v.compartidas.exists())
+        assertEquals(rcloneAntes, v.leerRcloneConf(), "el rclone.conf va después de la entrada")
+        assertEquals(1, rclone.llamadas.size, "ningún --resync")
+        assertFalse(hayListados(v, p), "los listados ya estaban apartados")
+        assertEquals(0, recargas)
+    }
+
+    @Test
+    fun `terminar quita los temporales de una vez anterior antes de pasar`() {
+        val (v, p) = volumen()
+        val destino = destino()
+        // Cortado tras el --resync, a media copia en el paso de llevar: la entrada
+        // `ENTRANDO`, el combine al día, y temporales en la carpeta.
+        apartarAMano(v, p)
+        Compartidas.escribir(
+            v.compartidas,
+            mapOf("vault" to Compartidas.Entrada(destino.path, Compartidas.Estado.ENTRANDO)),
+        )
+        v.actualizarCombine(v.leerConfig())
+        val sueltos = listOf(
+            File(destino, "nota.md" + Mudanza.SUFIJO_LLEVANDO),
+            File(destino, "sub/otra.md" + Mudanza.SUFIJO_LLEVANDO),
+        )
+        sueltos.forEach { it.parentFile.mkdirs(); it.writeText("a medias") }
+        val falso = RcloneFalso()
+        val vistos = ArrayList<Boolean>()
+        val rclone = Mirando(falso) { vistos.add(sueltos.any { it.exists() }) }
+
+        val hecho = Mudanza.terminar(v, "vault", entorno(rclone))
+
+        assertTrue(hecho.ok, hecho.motivo)
+        assertEquals(listOf(false), vistos, "ningún temporal llega a una llamada a rclone")
+        assertTrue(sueltos.none { it.exists() })
+        assertEquals("hola", File(destino, "nota.md").readText(), "y lo que faltaba se lleva entero")
+    }
+
+    @Test
     fun `una pareja que ya tiene entrada no se vuelve a mover`() {
         val (v, _) = volumen()
         val destino = destino()
@@ -388,23 +481,26 @@ class MudanzaTest {
 
     @Test
     fun `volver escribe el combine antes de quitar la entrada`() {
-        val (v, _) = volumen()
+        val (v, p) = volumen()
         val destino = destino()
         desdeLista(v, destino)
         val rclone = RcloneFalso()
         var entradaAlRecargar: Compartidas.Entrada? = null
         var combineAlRecargar = ""
+        var listadosAlRecargar = true
 
         val hecho = Mudanza.salir(
             v, "vault", conPasada = true,
             entorno(rclone, recargar = {
                 entradaAlRecargar = Compartidas.leer(v.compartidas)["vault"]
                 combineAlRecargar = v.leerRcloneConf()
+                listadosAlRecargar = hayListados(v, p)
             }),
         )
 
         assertTrue(hecho.ok, hecho.motivo)
         assertNotNull(entradaAlRecargar, "al recargar con el combine nuevo, la entrada sigue")
+        assertFalse(listadosAlRecargar, "los listados se apartan antes de tocar el combine")
         assertFalse(upstream("vault", destino.path) in combineAlRecargar)
         assertEquals(2, rclone.llamadas.size)
         assertNotEquals(true, rclone.llamadas[0].parametros["resync"], "con permiso, una pasada normal antes")
@@ -452,6 +548,24 @@ class MudanzaTest {
         assertEquals(Mudanza.RESYNC_MODE, rclone.llamadas.single().parametros["resyncMode"])
         assertNull(Compartidas.leer(v.compartidas)["vault"])
         assertTrue(combineSinEntradas(v) in v.leerRcloneConf())
+    }
+
+    @Test
+    fun `volver sin poder apartar los listados no toca el combine ni la entrada`() {
+        val (v, p) = volumen()
+        val destino = destino()
+        desdeLista(v, destino)
+        apartarFalla(v, p)
+        val rcloneAntes = v.leerRcloneConf()
+        val rclone = RcloneFalso()
+
+        val hecho = Mudanza.salir(v, "vault", conPasada = false, entorno(rclone))
+
+        assertNotNull(hecho.motivo)
+        assertTrue(rclone.llamadas.isEmpty())
+        assertEquals(rcloneAntes, v.leerRcloneConf())
+        assertEquals(Compartidas.Estado.LISTA, Compartidas.leer(v.compartidas)["vault"]?.estado)
+        assertEquals(0, recargas)
     }
 
     @Test

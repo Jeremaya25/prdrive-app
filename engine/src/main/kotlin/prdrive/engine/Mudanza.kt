@@ -108,7 +108,7 @@ object Mudanza {
         var apuntada = false
         try {
             val (config, entradas) = leer(volumen)
-            entradas[nombre]?.let { throw Parada(yaTieneEntrada(nombre, it)) }
+            entradas[nombre]?.let { throw Parada(yaTieneEntrada(config, nombre, it)) }
             Compartidas.problema(config, nombre, ruta, volumen.raiz, entradas)?.let { throw Parada(it) }
             val pareja = parejaDe(config, nombre)
 
@@ -202,11 +202,17 @@ object Mudanza {
      *
      * Por orden: (1) la entrada está `entrando`; (2) el `rclone.conf` y rclone
      * recargado otra vez, que arregla un corte entre la entrada y el
-     * `rclone.conf`; (3) el `--resync`, con [RESYNC_MODE]: si falla, se para y se
-     * deja todo; (4) lo que la copia privada ([carpetaPrivada]) tiene y la
-     * carpeta no (lo que los filtros dejan fuera, `.prversions/`) se lleva a la
-     * carpeta con su fecha, y después se borra la copia sin seguir enlaces; si
-     * algo no se puede llevar, no se borra nada; (5) la entrada pasa a `lista`.
+     * `rclone.conf`; (3) se quitan de la carpeta los temporales que dejara una
+     * vez anterior en (4), y el `--resync`, con [RESYNC_MODE] (o, si una vez
+     * anterior se cortó después de él y ya hay baseline, una pasada normal): si
+     * falla, se para y se deja todo; (4) lo que la copia privada
+     * ([carpetaPrivada]) tiene y la carpeta no (lo que los filtros dejan fuera,
+     * `.prversions/`) se lleva a la carpeta con su fecha, y después se borra la
+     * copia sin seguir enlaces; si algo no se puede llevar, no se borra nada;
+     * (5) la entrada pasa a `lista`.
+     *
+     * A medio mover, la fila solo ofrece «Terminar de mover» (y «Volver al
+     * volumen» si la entrada ya no vale): los motivos no mandan a otro sitio.
      */
     fun terminar(volumen: Volumen, nombre: String, e: Entorno): Hecho {
         require(!e.ctx.simulacro) { SIN_SIMULACRO }
@@ -236,12 +242,26 @@ object Mudanza {
                 e.recargar()
             }
 
+            // Lo que dejó a medias una vez anterior al llevar ficheros (paso 4) no
+            // puede llegar a la pasada: se subiría, y quitarlo después borraría
+            // en el remoto.
+            paso({
+                "No se ha podido quitar de ${entrada.ruta} un temporal de una vez anterior ($it). " +
+                    "Quítalo tú (acaba en $SUFIJO_LLEVANDO) y vuelve a usar «Terminar de mover»."
+            }) {
+                quitarTemporales(File(entrada.ruta))
+            }
+
+            // Un --resync; o, si una vez anterior se cortó después de él, una
+            // pasada normal (ya hay baseline, y no hace falta otro).
+            val conBaseline = Bisync.pairState(volumen.workdir(pareja)).hasBaseline
             val r = resync(volumen, pareja, e).also { pasadas.add(it) }
             if (!r.ok) {
+                val cual = if (r.resync || !conBaseline) "El --resync" else "La pasada"
                 throw Parada(
-                    "El --resync en la carpeta compartida no ha acabado bien: ${porQue(r)}. La pareja se " +
-                        "queda a medio mover, con la copia del volumen intacta: cuando se arregle, usa " +
-                        "«Terminar de mover» otra vez, o «Volver al volumen».",
+                    "$cual en la carpeta compartida no ha acabado bien: ${porQue(r)}. La pareja se queda a " +
+                        "medio mover, con la copia del volumen intacta: cuando se arregle, vuelve a usar " +
+                        "«Terminar de mover».",
                 )
             }
 
@@ -428,12 +448,23 @@ object Mudanza {
         config.pairs.firstOrNull { it.name == nombre }
             ?: throw Parada("No existe ninguna pareja que se llame '$nombre' en el config del volumen.")
 
-    private fun yaTieneEntrada(nombre: String, entrada: Compartidas.Entrada): String =
-        if (entrada.estado == Compartidas.Estado.ENTRANDO) {
-            "'$nombre' ya se está mudando a ${entrada.ruta}: usa «Terminar de mover» o «Volver al volumen»."
-        } else {
-            "'$nombre' ya vive en ${entrada.ruta}. Para llevarla a otra carpeta, vuélvela antes al volumen."
+    /**
+     * Por qué no se vuelve a mover una pareja con entrada. A medio mover la fila
+     * solo ofrece «Terminar de mover», salvo si la entrada ya no vale
+     * ([Pareja.problemaCompartida]): entonces también «Volver al volumen».
+     */
+    private fun yaTieneEntrada(config: Config, nombre: String, entrada: Compartidas.Entrada): String {
+        if (entrada.estado != Compartidas.Estado.ENTRANDO) {
+            return "'$nombre' ya vive en ${entrada.ruta}. Para llevarla a otra carpeta, vuélvela antes al volumen."
         }
+        val problema = config.pairs.firstOrNull { it.name == nombre }?.problemaCompartida
+        return if (problema == null) {
+            "'$nombre' ya se está mudando a ${entrada.ruta}: usa «Terminar de mover»."
+        } else {
+            "'$nombre' se estaba mudando a ${entrada.ruta}, pero la entrada ya no vale: $problema " +
+                "Arréglalo y usa «Terminar de mover», o usa «Volver al volumen»."
+        }
+    }
 
     /** Una pasada normal: sin `--resync`, aunque el contexto lo pida. */
     private fun pasadaNormal(volumen: Volumen, pareja: Pareja, e: Entorno): Pasada.Resultado =
@@ -502,11 +533,21 @@ object Mudanza {
             // original se queda: se va con la copia privada entera.
             val temporal = donde.resolveSibling(donde.fileName.toString() + SUFIJO_LLEVANDO)
             Files.deleteIfExists(temporal)
-            Files.copy(fichero, temporal, LinkOption.NOFOLLOW_LINKS)
-            if (attrs.isRegularFile) Files.setLastModifiedTime(temporal, attrs.lastModifiedTime())
-            // Sin REPLACE_EXISTING: si algo aparece ahí entretanto, falla en vez
-            // de pisarlo.
-            Files.move(temporal, donde)
+            try {
+                Files.copy(fichero, temporal, LinkOption.NOFOLLOW_LINKS)
+                if (attrs.isRegularFile) Files.setLastModifiedTime(temporal, attrs.lastModifiedTime())
+                // Sin REPLACE_EXISTING: si algo aparece ahí entretanto, falla en
+                // vez de pisarlo.
+                Files.move(temporal, donde)
+            } catch (ex: IOException) {
+                // El temporal está en la carpeta que se sincroniza: no se deja ahí.
+                try {
+                    Files.deleteIfExists(temporal)
+                } catch (otro: IOException) {
+                    ex.addSuppressed(otro)
+                }
+                throw ex
+            }
             llevados++
         }
         return llevados
@@ -514,6 +555,27 @@ object Mudanza {
 
     /** El sufijo del temporal de [llevarLoQueFalta], junto a su destino. */
     internal const val SUFIJO_LLEVANDO = ".~prdrive-llevando"
+
+    /**
+     * Quita de [carpeta] los temporales de [llevarLoQueFalta] que dejara un
+     * corte (los ficheros o enlaces que acaban en [SUFIJO_LLEVANDO]), sin seguir
+     * enlaces. Si no existe, no hace nada.
+     */
+    private fun quitarTemporales(carpeta: File) {
+        val raiz = carpeta.toPath()
+        if (!Files.isDirectory(raiz, LinkOption.NOFOLLOW_LINKS)) return
+        val temporales = ArrayList<Path>()
+        Files.walkFileTree(
+            raiz,
+            object : SimpleFileVisitor<Path>() {
+                override fun visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult {
+                    if (file.fileName.toString().endsWith(SUFIJO_LLEVANDO)) temporales.add(file)
+                    return FileVisitResult.CONTINUE
+                }
+            },
+        )
+        temporales.forEach { Files.deleteIfExists(it) }
+    }
 
     /** Crea (si falta) [relativa] dentro de [raiz], tramo a tramo y sin pasar por un enlace ni un fichero. */
     private fun carpetaSinEnlaces(raiz: Path, relativa: Path) {
