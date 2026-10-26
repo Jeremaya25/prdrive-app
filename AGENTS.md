@@ -114,7 +114,8 @@ herramientas/
               skills/emulador (los tests de app/ sin pisar un dispositivo). Los
               subagentes: agents/espejo-reviewer (un cambio del motor contra
               el Python de prdrive) y agents/rclone-fuente (lo que se dice de
-              rclone, contra su código de la versión fijada)
+              rclone, contra su código de la versión fijada). Todo se carga al
+              empezar una sesión: lo añadido después no lo ve esa sesión
 VERSION       la versión de la app, y la única («Versiones y releases»)
 ```
 
@@ -133,9 +134,9 @@ contra su documentación, y se cita el sitio.
 - **rclone como biblioteca, por `sync/bisync`.** `core/command` no sirve, por
   dos razones independientes:
   - Está declarado con `NeedsRequest` y `NeedsResponse`
-    (`fs/rc/internal.go:487`), y `librclone.RPC()` rechaza esos métodos («core/command
-    are not supported as they need request or response object»,
-    `librclone/librclone/librclone.go`).
+    (`fs/rc/internal.go:488-489`), y `librclone.RPC()` rechaza esos métodos
+    («method "core/command" needs request, not supported», con un 404;
+    `librclone/librclone/librclone.go:105-106`).
   - Su implementación (`rcRunCommand`) lanza rclone como proceso hijo con
     `os.Executable()`, que en Android es la app.
 
@@ -167,7 +168,11 @@ contra su documentación, y se cita el sitio.
   variables. Y sale mejor: con la configuración en flags o en el entorno,
   rclone añade un `{hexstring}` al nombre del Fs que `StripHexString` quita
   después (`cmd/bisync/bilib/canonical.go`). Definido en el fichero, no hay nada
-  que quitar, y el nombre de los listados es el del escritorio.
+  que quitar, y el nombre de los listados es el del escritorio, salvo si la ruta
+  de la pareja lleva llaves: `StripHexString` quita la primera `{…}` que
+  encuentre (`canonical.go:47-53`), que en el escritorio es la del sufijo y aquí
+  la de la carpeta (`disp:Fotos {2024}` sale `disp_Fotos_{2024}` en el
+  escritorio y `disp_Fotos_` en el teléfono). El motor sigue a rclone.
 - **La app de Archivos**: un `DocumentsProvider` publica el volumen sin pedir
   permisos. Al ser almacenamiento de la app, las fechas de modificación se
   conservan, que es lo que hace poco fiable a bisync en una SD o un USB.

@@ -1,6 +1,6 @@
 ---
 name: rclone-fuente
-description: Comprueba afirmaciones sobre el comportamiento de rclone contra su código fuente de la versión que fija prdrive, y da el fichero y la línea. Úsalo antes de escribir o aceptar un comentario, un AGENTS.md o un cambio que diga qué hace rclone (bisync, el RPC de librclone, sus opciones, sus logs), cuando una cita a rclone del código parezca dudosa, y al subir la versión de rclone para ver qué citas se han movido.
+description: Comprueba afirmaciones sobre el comportamiento de rclone contra su código fuente de la versión que fija prdrive, y da el fichero y la línea. Úsalo antes de escribir o aceptar un comentario, un AGENTS.md o un cambio que diga qué hace rclone (bisync, el RPC de librclone, sus opciones, sus logs), cuando una cita a rclone del código parezca dudosa, y al subir la versión de rclone para ver qué citas se han movido. Dale una sección o una lista de afirmaciones, no AGENTS.md entero: una sección larga son unos 20 minutos.
 tools: Read, Grep, Glob, Bash
 model: inherit
 ---
@@ -45,15 +45,28 @@ sistema lo deje. Se comparte con todas las compilaciones.
   (`fs.GetConfig(context.TODO())`).
 - Si la afirmación cita un fichero o una línea, comprueba que sigue ahí en esta
   versión; si se ha movido, da el sitio nuevo.
+- Si la afirmación mezcla lo que hace rclone con lo que hace la app o prdrive
+  («la pasada siguiente pide --resync»), juzga solo la parte de rclone y di en
+  qué fichero de Kotlin o Python está la otra, sin veredicto.
+- Lo justo para el veredicto. Lo que descubras de paso va al final, en «De
+  paso», una línea cada cosa, sin seguirlo.
+- No simules el Go en Python: si hace falta ejecutarlo, propón el caso para
+  `rclone/go/oraculo`.
 
 ## Qué devuelves
 
-Por cada afirmación, en este orden:
+Primero una línea: cuántas afirmaciones, y cuáles son falsas, en parte o no
+están en el código.
+
+Luego, por cada afirmación, en este orden:
 
 - La afirmación, en una línea.
-- Veredicto: **cierta**, **falsa** o **en parte**.
+- Veredicto: **cierta**, **falsa**, **en parte** o **no está en el código**
+  (una medida, lo que hacen Go o Android, lo que hace la app).
 - Dónde: `ruta/fichero.go:línea` (rclone vX.Y.Z), con la línea o las líneas que
   lo dicen, copiadas.
+- Si cita un fichero o una línea que se ha movido: «Cita: decía X, es Y». Una
+  cita movida no cambia el veredicto.
 - Si la línea de órdenes y el RPC se comportan distinto, cómo.
 
 Al final, lo que no pudiste resolver y qué haría falta (una prueba en el

@@ -55,7 +55,9 @@ prdrive distinto del de los vectores: dilo en el veredicto.
      hallazgo.
 4. Donde el código cita una fuente de rclone (`cmd/bisync/…`, `fs/…`), el motor
    sigue a rclone y no a prdrive: no lo juzgues contra el Python; apúntalo para
-   el agente `rclone-fuente`.
+   el agente `rclone-fuente`. Lo mismo con el `rclone.conf`: lo lee rclone con
+   `github.com/unknwon/goconfig` (`read.go`), así que lo que lo lee o lo
+   reescribe se compara con eso, no con Python.
 5. Las reglas de `engine/` (AGENTS.md, «Reglas que no se cruzan»): nada de
    Android, ninguna dependencia, solo rutas relativas a la raíz del volumen, y
    cada fichero nombra el Python que refleja y conserva sus citas a rclone.
@@ -70,10 +72,17 @@ prdrive importado (así no deja `__pycache__` en su carpeta). Lo que depende del
 sistema (rutas, `IS_WIN`) sale distinto en Windows: `herramientas/vectores.py`
 le hace creer a prdrive que corre en POSIX, y es lo que vale.
 
+Para un caso que necesita ficheros (uno que falta, una carpeta en su lugar),
+apunta la ruta a una que no existe o a una carpeta que ya existe: no crees ni
+borres nada, tampoco en una carpeta temporal. No ejecutes Gradle ni los
+generadores de vectores (escriben en `build/` y en los vectores): si un test lo
+resolvería, dilo al final.
+
 ## Qué devuelves
 
 Primero una línea de veredicto: «Sin diferencias con prdrive <commit corto>» o
-«N diferencias con prdrive <commit corto>». Luego, por cada hallazgo, en este
+«N diferencias con prdrive <commit corto>». Sin hallazgos, sigue una línea por
+cada punto de «Cómo» que has mirado. Con hallazgos, por cada uno, en este
 orden:
 
 - `engine/…/Fichero.kt:línea` ↔ `common/…py:línea`

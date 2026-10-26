@@ -106,6 +106,15 @@ hacerlo.
   es `Standard.Encode(Standard.Decode(tramo))` (`backend/local/local.go`,
   `cleanRootPath` y `Root`). El teléfono sigue a rclone, vigilado por
   `rclone/go/oraculo`.
+- **`expected_prefix()` se equivoca con llaves en la ruta de una pareja.** El
+  escritorio define el remote `combine` por el entorno (`pen_environment()`), y
+  rclone le pone al Fs un sufijo `{hash}` (`fs/newfs.go`); `StripHexString` quita
+  la primera `{…}` que encuentra (`cmd/bisync/bilib/canonical.go:47-53`), que es
+  ese sufijo. `expected_prefix()` escribe `disp:` sin él, así que con
+  `disp:Fotos {2024}` predice `disp_Fotos_` y rclone escribe `disp_Fotos_{2024}`:
+  el escritorio no encuentra sus listados. Comprobado contra el código de
+  v1.75.2, no en un escritorio. El teléfono no tiene sufijo y sigue a rclone
+  (AGENTS.md, «Arquitectura»).
 - **«Must run --resync» se queda sin explicación.** bisync lo escribe con
   mayúscula al abortar (`cmd/bisync/operations.go`), y la aguja de
   `KNOWN_ERRORS` es «must run --resync». El teléfono lo replica tal cual.
