@@ -56,6 +56,9 @@ import prdrive.engine.loadRaw
  * - Si el primer guardado de una base nueva no llega, o se abre y se cierra sin
  *   escribir, se quita también el marcador vacío que deja `createDocument`:
  *   `Llavero.rotas` lo contaría como base rota y pararía el llavero entero.
+ * - Adónde va un guardado entero lo dice quien abre (`destino`), al cerrar: la
+ *   base, o una copia de conflicto si la app guarda sobre una versión de la
+ *   base que ya no es la del disco ([Lecturas]).
  *
  * Dos escritores a la vez llevan cada uno su temporal: gana el último que
  * cierra, como con dos KeePassXC.
@@ -114,7 +117,12 @@ internal object GuardadoAtomico {
      *   es un enlace, se sustituye el enlace, no lo que señala).
      * @param modo el modo de `openDocument`, con una `w`.
      * @param handler el hilo donde se atiende el cierre.
-     * @param alPoner lo que se hace tras poner una base nueva.
+     * @param destino adónde va el guardado, preguntado al cerrar y solo si ha
+     *   llegado algo: [base] o una copia de conflicto en su carpeta. Si falla,
+     *   la base.
+     * @param alPoner lo que se hace tras poner el guardado, con dónde ha ido y
+     *   la huella de lo puesto ([Lecturas.huella]; `null` si no se ha podido
+     *   sacar).
      * @param alCortar lo que se hace con un guardado que ha llegado roto, con
      *   lo que dice [Kdbx.comprobar].
      * @param alAcabar lo último, y una sola vez por llamada, sea cual sea el
@@ -126,7 +134,8 @@ internal object GuardadoAtomico {
         modo: String,
         temporales: File,
         handler: Handler,
-        alPoner: () -> Unit,
+        destino: () -> File = { base },
+        alPoner: (File, String?) -> Unit,
         alCortar: (String) -> Unit,
         alAcabar: () -> Unit,
     ): ParcelFileDescriptor {
@@ -144,7 +153,7 @@ internal object GuardadoAtomico {
             }
             val pfd = ParcelFileDescriptor.open(t, ParcelFileDescriptor.parseMode(modo), handler) { error ->
                 try {
-                    alCerrar(t, base, error, alPoner, alCortar)
+                    alCerrar(t, base, error, destino, alPoner, alCortar)
                 } finally {
                     avisar(alAcabar)
                 }
@@ -160,7 +169,14 @@ internal object GuardadoAtomico {
         }
     }
 
-    private fun alCerrar(tmp: File, base: File, error: IOException?, alPoner: () -> Unit, alCortar: (String) -> Unit) {
+    private fun alCerrar(
+        tmp: File,
+        base: File,
+        error: IOException?,
+        destino: () -> File,
+        alPoner: (File, String?) -> Unit,
+        alCortar: (String) -> Unit,
+    ) {
         if (error is ParcelFileDescriptor.FileDescriptorDetachedException) {
             // El cliente sigue con el descriptor y puede seguir escribiendo: no
             // hay un final que comprobar. Se pierde, y se dice.
@@ -177,11 +193,13 @@ internal object GuardadoAtomico {
             quitarMarcador(base)
             return
         }
+        var donde = base
         val estado = try {
             // Lo escrito, en el disco antes de mirarlo y de ponerlo: si se va la
             // luz justo después del cambio de nombre, que no quede una base vacía.
             FileChannel.open(tmp.toPath(), StandardOpenOption.WRITE).use { it.force(true) }
-            if (tmp.length() == 0L || iguales(tmp, base)) {
+            if (tmp.length() > 0L) donde = elegir(destino, base)
+            if (tmp.length() == 0L || iguales(tmp, base) || (donde != base && iguales(tmp, donde))) {
                 // No se ha escrito nada: ni se pone ni se avisa. Un marcador
                 // vacío no se deja: es una base rota.
                 tmp.delete()
@@ -198,15 +216,30 @@ internal object GuardadoAtomico {
             avisar { alCortar(estado.motivo) }
             return
         }
+        // La huella de lo que se pone, del temporal y antes de moverlo: una vez
+        // en su sitio, una pasada puede cambiarlo antes de que se apunte, y se
+        // daría por sabida una versión que la app no tiene ([Lecturas]).
+        val huella = Lecturas.huella(tmp)
         try {
-            Files.move(tmp.toPath(), base.toPath(), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)
+            Files.move(tmp.toPath(), donde.toPath(), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)
         } catch (e: IOException) {
             tmp.delete()
             avisar { alCortar("no se ha podido poner en su sitio (${e.message})") }
             return
         }
-        sincronizarCarpeta(base.parentFile)
-        avisar(alPoner)
+        sincronizarCarpeta(donde.parentFile)
+        avisar { alPoner(donde, huella) }
+    }
+
+    /**
+     * Lo que dice [destino], si es la base o algo de su misma carpeta; si no, o
+     * si falla, la base: lo de antes de que existiera, y lo que pide la app.
+     */
+    private fun elegir(destino: () -> File, base: File): File = try {
+        destino().takeIf { it == base || it.parentFile == base.parentFile } ?: base
+    } catch (e: RuntimeException) {
+        Log.w(ETIQUETA, "Eligiendo dónde va el guardado de ${base.name}", e)
+        base
     }
 
     /** Si el temporal dice lo mismo que la base, byte a byte. Una base son unos cientos de KB. */

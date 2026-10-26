@@ -1,5 +1,6 @@
 package prdrive.app.documentos
 
+import android.content.Context
 import android.database.Cursor
 import android.database.MatrixCursor
 import android.os.CancellationSignal
@@ -15,6 +16,7 @@ import android.webkit.MimeTypeMap
 import java.io.File
 import java.io.FileNotFoundException
 import java.io.IOException
+import java.io.RandomAccessFile
 import java.nio.file.FileVisitResult
 import java.nio.file.Files
 import java.nio.file.LinkOption
@@ -27,8 +29,11 @@ import prdrive.app.R
 import prdrive.app.llavero.Avisos
 import prdrive.app.llavero.Disparos
 import prdrive.engine.CARPETA_PROGRAMA
+import prdrive.engine.ConfigError
+import prdrive.engine.Conflictos
 import prdrive.engine.LLAVERO_LLAVE
 import prdrive.engine.LLAVERO_LOCAL
+import prdrive.engine.TomlError
 
 /**
  * VolumenProvider.kt — El volumen, como una ubicación más de la app de Archivos.
@@ -57,7 +62,10 @@ import prdrive.engine.LLAVERO_LOCAL
  * se guardan de forma atómica ([GuardadoAtomico]): el cliente escribe en un
  * temporal de `.prdrive/tmp/`, que solo se pone encima de la base al cerrar y si
  * llega entera. Guardar una base encola la subida ([Disparos]); leerla no
- * encola nada (lo último del remoto lo trae «Abrir llavero»). La llave (`llave.keyx`) se ve, porque la app de KeePass
+ * encola nada (lo último del remoto lo trae «Abrir llavero»). Lo que cada app
+ * lee de una base se apunta ([Lecturas]): si luego guarda sobre una versión que
+ * ya no es la del disco (una pasada trajo otra mientras la tenía abierta), el
+ * guardado va a una copia de conflicto y no encima. La llave (`llave.keyx`) se ve, porque la app de KeePass
  * la necesita para abrir la base. Mientras el llavero está activo
  * ([GuardadoAtomico.llaveroActivo]), la llave no se escribe, ni se borra ni se
  * renombra, ni por su ruta ni por un enlace que lleve a ella; `.keychain/` no
@@ -249,15 +257,52 @@ class VolumenProvider : DocumentsProvider() {
             throw FileNotFoundException("La llave del llavero no se escribe")
         }
         if (escribe && GuardadoAtomico.esBase(t)) return guardarBase(f, mode)
+        if (!escribe && GuardadoAtomico.esBase(t)) return leerBase(f)
         // Se abre lo comprobado: el destino ya resuelto, no la ruta del enlace.
         return ParcelFileDescriptor.open(f.canonicalFile, ParcelFileDescriptor.parseMode(mode))
+    }
+
+    /**
+     * El paquete de la app que llama, o `null` si Android no lo dice. Sin él no
+     * se apunta nada, y sus guardados van encima, como antes de [Lecturas].
+     */
+    private fun quienLlama(): String? = try {
+        callingPackage
+    } catch (_: SecurityException) {
+        null
+    }
+
+    /**
+     * La lectura de una base del llavero ([f], la entrada de `.keychain/`):
+     * se apunta qué versión se le da a la app ([Lecturas.apuntarLectura]).
+     *
+     * La huella sale del mismo fichero abierto que se le da, con lecturas
+     * posicionales (no mueven la posición del descriptor): si una pasada pone
+     * otra base justo entonces, la app lee la que se ha apuntado.
+     */
+    private fun leerBase(f: File): ParcelFileDescriptor {
+        val app = quienLlama()
+        val state = Prdrive.volumen(context!!).state
+        RandomAccessFile(f.canonicalFile, "r").use { fichero ->
+            if (app != null) {
+                try {
+                    Lecturas.apuntarLectura(state, app, f.name, Lecturas.huella(fichero.channel))
+                } catch (e: IOException) {
+                    Log.w("VolumenProvider", "Apuntando la lectura de ${f.name}", e)
+                }
+            }
+            return ParcelFileDescriptor.dup(fichero.fd)
+        }
     }
 
     /**
      * El guardado de una base del llavero ([f], la entrada de `.keychain/`): un
      * temporal que se pone encima al cerrar, si llega entero. Uno roto se apunta
      * en `state/` y se notifica ([Avisos.guardadoCortado]), y uno bueno quita
-     * ese aviso si era de esta base y encola la subida.
+     * ese aviso si era de esta base y encola la subida. Uno bueno hecho sobre
+     * una versión que ya no es la del disco va a una copia de conflicto
+     * ([Lecturas.destino]), que se apunta en `state/conflicts.json` y se
+     * notifica la primera vez ([Avisos.guardadoAparte]).
      *
      * Mientras el temporal está abierto cuenta como un trabajo de la
      * autoactualización ([Actualizador.empezarTrabajo]): instalarse cierra el
@@ -268,6 +313,7 @@ class VolumenProvider : DocumentsProvider() {
     private fun guardarBase(f: File, mode: String): ParcelFileDescriptor {
         val c = context!!
         val state = Prdrive.volumen(c).state
+        val app = quienLlama()
         if (!Actualizador.empezarTrabajo()) {
             throw FileNotFoundException("No se puede guardar ${f.name}: se está instalando la versión nueva de prdrive")
         }
@@ -277,8 +323,14 @@ class VolumenProvider : DocumentsProvider() {
                 modo = mode,
                 temporales = temporales,
                 handler = guardados,
-                alPoner = {
+                destino = { Lecturas.destino(state, app, f) },
+                alPoner = { puesto, huella ->
+                    // Un guardado bueno de esta base, aunque haya ido aparte:
+                    // lo que se cortó ya está guardado.
                     if (GuardadoAtomico.quitarCortado(state, f.name)) Avisos.guardadoBueno(c)
+                    val nueva = puesto != f && app != null && Lecturas.conocida(state, app, f.name)?.aparte != puesto.name
+                    if (app != null && huella != null) Lecturas.apuntarEscritura(state, app, f, puesto, huella)
+                    if (puesto != f) apartado(c, f, puesto, nueva)
                     Disparos.alGuardar(c)
                 },
                 alCortar = { motivo ->
@@ -290,6 +342,25 @@ class VolumenProvider : DocumentsProvider() {
         } catch (e: IOException) {
             throw FileNotFoundException("No se puede guardar ${f.name}: ${e.message}")
         }
+    }
+
+    /**
+     * Tras un guardado que ha ido a la copia [copia] y no encima de [base]: la
+     * fila lo enseña ya (`state/conflicts.json`, sin esperar a la pasada, que
+     * necesita red) y, si la copia es [nueva], se notifica.
+     */
+    private fun apartado(c: Context, base: File, copia: File, nueva: Boolean) {
+        try {
+            val v = Prdrive.volumen(c)
+            v.leerConfig().parejaLlavero?.let { Conflictos.actualizarPareja(it, v.raiz, v.state) }
+        } catch (e: IOException) {
+            Log.w("VolumenProvider", "Apuntando la copia ${copia.name}", e)
+        } catch (e: ConfigError) {
+            Log.w("VolumenProvider", "Apuntando la copia ${copia.name}", e)
+        } catch (e: TomlError) {
+            Log.w("VolumenProvider", "Apuntando la copia ${copia.name}", e)
+        }
+        if (nueva) Avisos.guardadoAparte(c, base.name, copia)
     }
 
     private fun nombreValido(nombre: String) =
