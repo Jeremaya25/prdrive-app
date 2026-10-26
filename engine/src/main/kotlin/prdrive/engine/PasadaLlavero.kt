@@ -70,7 +70,7 @@ internal object PasadaLlavero {
             )
             return Pasada.LLAVERO_SIN_CIFRAR
         }
-        Llavero.preparar(carpeta, simulacro = ctx.simulacro, dormir = ctx.dormir)?.let {
+        Llavero.preparar(carpeta, simulacro = ctx.simulacro, hora = ctx.hora, dormir = ctx.dormir)?.let {
             decir("[${pareja.name}] NO SE SUBE: $it")
             return Pasada.LLAVERO_ROTO
         }

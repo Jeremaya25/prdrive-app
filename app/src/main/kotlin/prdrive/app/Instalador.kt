@@ -203,7 +203,7 @@ object Instalador {
             rcloneConf = v.leerRcloneConfSiSePuede(),
         )
         try {
-            Llavero.prepararCarpeta(v.raiz)
+            Llavero.prepararCarpeta(v.raiz, hora = Prdrive::hora)
             if (interna) {
                 val entrada = try {
                     contexto.contentResolver.openInputStream(llave!!)
