@@ -1,8 +1,12 @@
 package prdrive.app
 
 import android.content.Context
+import android.os.Build
+import android.system.ErrnoException
+import android.system.Os
 import java.io.File
 import prdrive.app.rclone.Rclone
+import prdrive.engine.Llavero
 import prdrive.engine.Volumen
 
 /**
@@ -18,6 +22,26 @@ object Prdrive {
     fun volumen(contexto: Context): Volumen = Volumen(File(contexto.filesDir, "volumen"))
 
     fun temporal(contexto: Context): File = File(contexto.noBackupFilesDir, "rclone")
+
+    /**
+     * La hora de modificación de un fichero en ns, la que guarda el sistema de
+     * ficheros: la que el motor tiene que comparar con la de prdrive y con la de
+     * los listados de rclone. No la de java.nio, que en Android hasta el 15 sale
+     * en segundos enteros ([Llavero.horaJvm] dice por qué): esta va por
+     * `Os.stat()`, que no pasa por libcore. `st_mtim` existe desde API 27; en
+     * la 26 queda la de java.nio.
+     *
+     * @throws java.io.IOException Si no se puede leer, como [Llavero.horaJvm].
+     */
+    fun hora(fichero: File): Long {
+        if (Build.VERSION.SDK_INT < 27) return Llavero.horaJvm(fichero)
+        val st = try {
+            Os.stat(fichero.path)
+        } catch (e: ErrnoException) {
+            throw e.rethrowAsIOException()
+        }
+        return st.st_mtim.tv_sec * 1_000_000_000L + st.st_mtim.tv_nsec
+    }
 
     /**
      * Deja rclone listo para el volumen. Se llama antes de cada cosa que hable

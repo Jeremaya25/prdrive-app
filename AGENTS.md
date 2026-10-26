@@ -659,6 +659,16 @@ guardado se pierde sin aviso.
   vectores en el dispositivo para que no se cuele otra.
 - **`String.format` usa las cifras del idioma del teléfono** (en árabe, `٠١`).
   Nada que acabe en un fichero o en un mensaje comparado pasa por él.
+- **La hora de un fichero, leída con java.nio, va en segundos enteros hasta
+  Android 15** (`Files.getLastModifiedTime`, `readAttributes`), aunque ext4
+  guarde los ns: libcore solo copia los ns de `stat` con `_POSIX_C_SOURCE`
+  (`Llavero.horaJvm` lo cuenta). `File.lastModified()` tampoco: segundos en
+  Android 11 y 13, ms en 15. En el 17 sale entera, y por eso no se vio mientras
+  los tests corrían solo en API 37. Poner la hora no pierde nada. Lo que el
+  motor compara con prdrive o con un listado de rclone lo lee con la función
+  que se le pasa (`hora`), y la app le da `Prdrive.hora` (`Os.stat`). Lo
+  vigilan los vectores del llavero con décimas, en un emulador de API 35 o
+  anterior.
 - **Ni el `.` ni el `$` son los de Python.** El `.` de Java tampoco casa con
   `\r`, `\u0085`, ` ` ni ` ` (y el de ICU, ni con `\u000b` ni con
   `\u000c`); el `$` de Python casa también delante de un `\n` final. Donde

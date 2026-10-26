@@ -680,6 +680,9 @@ object Pasada {
      *   ([LLAVERO_SIN_CIFRAR]). Por defecto no, como prdrive: falla cerrado.
      * @property dormir Cómo se espera antes de mirar otra vez una base que no
      *   está entera ([Llavero.rotas]); se pasa para que los tests no esperen.
+     * @property hora Cómo se lee la hora de un fichero del llavero, en ns. Por
+     *   defecto la de java.nio ([Llavero.horaJvm]), que en Android hasta el 15
+     *   sale en segundos enteros: la app pasa la suya.
      */
     data class Contexto(
         val simulacro: Boolean = false,
@@ -689,6 +692,7 @@ object Pasada {
         val sello: String = selloVersiones(),
         val cifrado: Boolean = false,
         val dormir: (Long) -> Unit = { Thread.sleep(it) },
+        val hora: (File) -> Long = Llavero::horaJvm,
     )
 
     /** El sufijo de las versiones de una pasada: `~%Y%m%d-%H%M%S`. */

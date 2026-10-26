@@ -532,6 +532,13 @@ def vectores_pendiente(llavero, model, bisync, config) -> list[dict]:
          [en("claves.kdbx", ns=t + 2 * SEG - 100)]),
         ("el listado, 2 s más tarde", [claves], [en("claves.kdbx", ns=t + 2 * SEG)]),
         ("el listado, 2 s más pronto", [claves], [en("claves.kdbx", ns=t - 2 * SEG)]),
+        # Bases con décimas: leída en segundos enteros (java.nio en Android hasta
+        # el 15, `Llavero.horaJvm`), la primera saldría a 1,5 s del listado y la
+        # segunda a 2,8 s, y las dos cambiarían de respuesta.
+        ("una base con décimas, 2,4 s después del listado",
+         [base("claves.kdbx", mtime=t + 2_900_000_000)], [en("claves.kdbx", ns=t + 500_000_000)]),
+        ("una base con décimas, 1,9 s antes del listado",
+         [base("claves.kdbx", mtime=t + 900_000_000)], [en("claves.kdbx", ns=t + 2_800_000_000)]),
         ("el listado, un día más tarde", [claves], [en("claves.kdbx", ns=t + 86_400 * SEG)]),
         ("sin listado", [claves], None),
         ("un listado que no se lee", [claves], b"\xff\xfe\x00"),
