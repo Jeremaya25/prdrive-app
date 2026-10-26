@@ -225,6 +225,12 @@ python herramientas/vectores.py ../prdrive
 cd rclone/go && go run ./oraculo ../../engine/src/test/resources/oraculo_rclone.json
 ```
 
+Desde un worktree, `../prdrive` no existe: prdrive está junto a la copia
+principal (`dirname "$(git worktree list --porcelain | sed -n '1s/^worktree //p')"`).
+Y si después `git status` marca un JSON que `git diff` no enseña, son solo
+finales de línea (el generador escribe LF y la copia tiene `core.autocrlf`): no
+hay cambio. La skill `vectores` lo hace todo.
+
 ## Órdenes
 
 ```bash
@@ -237,8 +243,11 @@ rclone/construir.sh        # el .aar (Go, gomobile y un NDK)
 ```
 
 `connectedDebugAndroidTest` instala y ejecuta en **todos** los dispositivos
-conectados, teléfonos incluidos. Con uno enchufado, se elige el emulador con
-`ANDROID_SERIAL=emulator-5554`. La batería entera son unos 30 s con el APK ya
+conectados, teléfonos incluidos, y **borra la app**: los tests vacían
+`filesDir/volumen` (`Banco.volumen`) y al acabar se desinstalan `prdrive.app` y
+`prdrive.app.test`. Un emparejamiento hecho a mano en ese dispositivo se pierde.
+Con uno enchufado, se elige el emulador con `ANDROID_SERIAL=emulator-5554` (la
+skill `emulador` dice cómo saber si un emulador está libre). La batería entera son unos 30 s con el APK ya
 compilado; mientras se trabaja en algo, una clase sola (unos 18 s, casi todo
 instalar):
 

@@ -15,8 +15,12 @@ prdrive.
 ## Qué revisar
 
 Lo que te diga quien te llama (un rango, unos ficheros). Si no dice nada:
-`git diff origin/main...HEAD -- engine/` más `git diff HEAD -- engine/` (lo que
-no está guardado).
+`git diff origin/main...HEAD -- engine/ herramientas/` más
+`git diff HEAD -- engine/ herramientas/` (lo que no está guardado) y los
+ficheros que git aún no sigue
+(`git ls-files --others --exclude-standard engine/ herramientas/`), que no
+salen en ningún `git diff`. Si todo sale vacío, dilo y para: no revises el motor
+entero.
 
 ## Dónde está prdrive
 
@@ -57,7 +61,13 @@ prdrive distinto del de los vectores: dilo en el veredicto.
    sigue a rclone y no a prdrive: no lo juzgues contra el Python; apúntalo para
    el agente `rclone-fuente`. Lo mismo con el `rclone.conf`: lo lee rclone con
    `github.com/unknwon/goconfig` (`read.go`), así que lo que lo lee o lo
-   reescribe se compara con eso, no con Python.
+   reescribe se compara con eso, no con Python. Tampoco son hallazgos las
+   diferencias deliberadas: las de AGENTS.md (`device_remote` obligatorio, el
+   `combine` en el `rclone.conf`, sin `local_abs`), las que el Kotlin explica en
+   un comentario («diferencia deliberada», «se separa de … a propósito») y un
+   `ConfigError` donde prdrive se cae (el caso lleva `"rompe"` en los vectores).
+   Lístalas aparte; una diferencia que se da por deliberada sin comentario que
+   lo diga sí es un hallazgo.
 5. Las reglas de `engine/` (AGENTS.md, «Reglas que no se cruzan»): nada de
    Android, ninguna dependencia, solo rutas relativas a la raíz del volumen, y
    cada fichero nombra el Python que refleja y conserva sus citas a rclone.
@@ -66,11 +76,20 @@ prdrive distinto del de los vectores: dilo en el veredicto.
    un test que añade un valor esperado escrito a mano es un hallazgo, y
    `vectores.json` u `oraculo_rclone.json` cambiados sin su generador, también.
 
-Si dudas de qué da Python, pregúntaselo:
-`cd "$prdrive" && PYTHONDONTWRITEBYTECODE=1 python -c '…'` con el módulo de
-prdrive importado (así no deja `__pycache__` en su carpeta). Lo que depende del
-sistema (rutas, `IS_WIN`) sale distinto en Windows: `herramientas/vectores.py`
-le hace creer a prdrive que corre en POSIX, y es lo que vale.
+Si dudas de qué da Python, pregúntaselo desde la raíz del repositorio, con
+prdrive cargado como lo carga el generador (raíz `/volumen` e `IS_WIN` apagado,
+que es lo que vale; importado sin más, en Windows las rutas salen distintas):
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 python -c '
+import sys; sys.path.insert(0, "herramientas")
+from pathlib import Path
+import vectores
+bisync, config_file, model, pairing = vectores.cargar(Path("<ruta de prdrive>"))
+print(…)'
+```
+
+Con `PYTHONDONTWRITEBYTECODE` no queda `__pycache__` ni aquí ni en prdrive.
 
 Para un caso que necesita ficheros (uno que falta, una carpeta en su lugar),
 apunta la ruta a una que no existe o a una carpeta que ya existe: no crees ni

@@ -1,6 +1,6 @@
 ---
 name: rclone-fuente
-description: Comprueba afirmaciones sobre el comportamiento de rclone contra su código fuente de la versión que fija prdrive, y da el fichero y la línea. Úsalo antes de escribir o aceptar un comentario, un AGENTS.md o un cambio que diga qué hace rclone (bisync, el RPC de librclone, sus opciones, sus logs), cuando una cita a rclone del código parezca dudosa, y al subir la versión de rclone para ver qué citas se han movido. Dale una sección o una lista de afirmaciones, no AGENTS.md entero: una sección larga son unos 20 minutos.
+description: Comprueba afirmaciones sobre el comportamiento de rclone contra su código fuente de la versión que fija prdrive, y da el fichero y la línea. Úsalo antes de escribir o aceptar un comentario, un AGENTS.md o un cambio que diga qué hace rclone (bisync, el RPC de librclone, sus opciones, sus logs), cuando una cita a rclone del código parezca dudosa, y al subir la versión de rclone para ver qué citas se han movido. Dale una sección o una lista de afirmaciones, no AGENTS.md entero (una sección larga son unos 20 minutos).
 tools: Read, Grep, Glob, Bash
 model: inherit
 ---
@@ -12,17 +12,21 @@ se comprueba en el código de la versión fijada y se cita el sitio (AGENTS.md,
 
 ## Qué versión
 
-La de `rclone/go/go.mod` (`github.com/rclone/rclone vX.Y.Z`), que tiene que ser
-la de `RCLONE_VERSION` en `common/pins.py` de prdrive (la carpeta `prdrive`
-junto a la copia principal: `dirname "$(git worktree list --porcelain | sed -n
-'1s/^worktree //p')"`). Si no coinciden, dilo antes que nada.
+La de `rclone/go/go.mod` (`github.com/rclone/rclone vX.Y.Z`), que es la del
+`.aar`. Tiene que ser la `rclone_version` de
+`engine/src/test/resources/vectores.json`, que sale de `RCLONE_VERSION` en
+`common/pins.py` de prdrive. Si no coinciden, dilo antes que nada y sigue con la
+de `go.mod`. Al subir rclone te darán dos versiones: busca cada cita en la vieja
+y en la nueva, y da el sitio en la nueva.
 
 ## Dónde está el código
 
 1. En la caché de módulos de Go, que ya lo tiene si se ha construido el `.aar`:
    `"$(go env GOMODCACHE)/github.com/rclone/rclone@vX.Y.Z"`. Sin `go` en el
    PATH, en Windows suele estar en `$USERPROFILE/sdk/go<versión>/bin`. En Git
-   Bash, pasa la ruta por `cygpath -u`.
+   Bash, pasa la ruta por `cygpath -u`. Resuelve la carpeta una vez y usa
+   después la ruta escrita: ni las variables ni el `cd` pasan de una llamada de
+   Bash a la siguiente.
 2. Si no está: `cd rclone/go && go mod download -json github.com/rclone/rclone`
    (su `Dir` es la carpeta).
 3. Sin Go: `git clone --depth 1 --branch vX.Y.Z https://github.com/rclone/rclone`
@@ -43,6 +47,11 @@ sistema lo deje. Se comparte con todas las compilaciones.
   distintos (`maxDelete` de bisync), métodos que el RPC rechaza (`NeedsRequest`,
   `NeedsResponse`), la configuración global frente a la de la llamada
   (`fs.GetConfig(context.TODO())`).
+- En la app solo existe lo que enlaza el `.aar`: los paquetes que importa
+  `rclone/go/rclone` (`rclone.go` registra `sync/bisync`, `sync/*`,
+  `operations/*` y `job/*`; `backends_corta.go`, los backends). Un método rc o
+  un backend de un paquete que no se importa ahí (`backend/all`, `cmd/…` salvo
+  `cmd/bisync`) no está en la app aunque esté en rclone: dilo en el veredicto.
 - Si la afirmación cita un fichero o una línea, comprueba que sigue ahí en esta
   versión; si se ha movido, da el sitio nuevo.
 - Si la afirmación mezcla lo que hace rclone con lo que hace la app o prdrive

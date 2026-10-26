@@ -1,6 +1,6 @@
 ---
 name: vectores
-description: Usar cuando se toca algo de engine/ que refleja a prdrive (Python) o a rclone, cuando se añade o cambia un caso en herramientas/vectores*.py o en rclone/go/oraculo, cuando un test del motor falla contra vectores.json u oraculo_rclone.json, o cuando prdrive ha cambiado y el motor tiene que ponerse al día.
+description: Regenera los valores esperados del motor (vectores.json desde prdrive con herramientas/vectores.py, oraculo_rclone.json desde el código de rclone con rclone/go/oraculo) y pasa :engine:test. Usar cuando se toca algo de engine/ que refleja a prdrive (Python) o a rclone, cuando se añade o cambia un caso en herramientas/vectores*.py o en rclone/go/oraculo, cuando un test del motor falla contra vectores.json u oraculo_rclone.json, cuando prdrive ha cambiado y el motor tiene que ponerse al día, o cuando cambia la versión de rclone (go.mod, RCLONE_VERSION) o la lista de backends.
 ---
 
 # Regenerar los valores esperados
@@ -25,8 +25,11 @@ mano»).
    ```bash
    principal="$(git worktree list --porcelain | sed -n '1s/^worktree //p')"
    prdrive="${PRDRIVE_DIR:-$(dirname "$principal")/prdrive}"
-   test -f "$prdrive/common/model.py"
+   test -f "$prdrive/common/model.py" && echo "$prdrive"
    ```
+
+   Las variables no pasan de una llamada de Bash a la siguiente: en los pasos de
+   abajo escribe la ruta que ha salido.
 
 2. **Contra qué commit.** Compara `git -C "$prdrive" rev-parse HEAD` con
    `prdrive.commit` de `vectores.json`, y mira `git -C "$prdrive" status --short`.
@@ -35,13 +38,21 @@ mano»).
 
 3. **Regenerar:** `python herramientas/vectores.py "$prdrive"`.
 
-4. **El oráculo**, solo si el cambio toca algo donde el motor sigue a rclone (el
+4. **El oráculo**, si el cambio toca algo donde el motor sigue a rclone (el
    nombre de sesión, la raíz de un remote `local`, los tipos y letras de
-   `options/info`):
+   `options/info`, el `DefaultMaxDelete` de bisync), la lista de backends
+   (`rclone/go/rclone/backends_corta.go`) o la versión de `rclone/go/go.mod`.
+   Entre paréntesis, para que el `cd` no se quede para el paso 5:
 
    ```bash
-   cd rclone/go && go run ./oraculo ../../engine/src/test/resources/oraculo_rclone.json
+   (cd rclone/go && go run ./oraculo ../../engine/src/test/resources/oraculo_rclone.json)
    ```
+
+   Si al regenerar cambia `rclone_version` en `vectores.json` (prdrive ha subido
+   `RCLONE_VERSION`), `OraculoRcloneTest` falla hasta que `go.mod` lleve esa
+   versión y el oráculo salga de ella. Subirla es además reconstruir el `.aar`
+   (skill `emulador`) y repasar las citas con el agente `rclone-fuente`: no la
+   subas sin decirlo.
 
    Sin `go` en el PATH, en Windows suele estar en `$USERPROFILE/sdk/go<versión>/bin`
    (la del `toolchain`). Si no hay Go, dilo y deja el oráculo como está.
@@ -52,6 +63,17 @@ mano»).
 
 6. **Qué ha cambiado:** `git diff --stat engine/src/test/resources/`. Explica
    qué casos se han movido y por qué.
+
+## Si un test falla contra los vectores
+
+- **Mismo commit de prdrive y el generador sin tocar:** regenerar no cambia
+  nada. Lo que está mal es el Kotlin: se arregla el motor (el agente
+  `espejo-reviewer` lo compara con el Python), nunca el vector.
+- **prdrive va por otro commit:** regenera; lo que falla ahora es lo que ha
+  movido prdrive, y se lleva al motor.
+- **Has cambiado el generador:** mira que el caso le pregunte a prdrive lo que
+  crees. Un `"rompe"` es prdrive que se cae: el motor tiene que dar un
+  `ConfigError`, no caerse.
 
 ## Errores comunes
 
