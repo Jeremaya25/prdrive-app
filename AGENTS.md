@@ -614,17 +614,18 @@ guardado se pierde sin aviso.
   `rememberSaveable` (el estado guardado de la actividad puede acabar en disco)
   ni se deja a la vista en el campo de texto.
 - **Las fechas se conservan en `/storage/emulated/0/`, con el permiso**
-  (`MANAGE_EXTERNAL_STORAGE`; `FechasCompartidasTest`). Medido en API 37: una
-  copia con rclone a `Documents/…` llega con la misma hora al milisegundo,
-  rclone dice que la precisión es de 1 ns, y la fecha no cambia después (dos
-  segundos más tarde, igual); una bisync contra esa carpeta dice `No changes
-  found` en la segunda pasada. API 30, 33 y 35 sin medir todavía. **Sin el
-  permiso**, un fichero que creó otra app no sale al listar la carpeta y leerlo
-  da `EACCES`, aunque `File.exists()` diga que sí. Y `run-as … ls` no sirve
-  para comprobarlo: no es el proceso de la app y da `Permission denied` hasta
-  con el permiso. El permiso se da en un test con `appops set prdrive.app
-  MANAGE_EXTERNAL_STORAGE allow`, leyendo la salida del shell hasta el final
-  antes de mirar `Environment.isExternalStorageManager()`.
+  (`MANAGE_EXTERNAL_STORAGE`; `FechasCompartidasTest`). Medido en emuladores
+  API 30, 33, 35 y 37, con el mismo resultado: una copia con rclone a
+  `Documents/…` llega con la misma hora al milisegundo, rclone dice que la
+  precisión es de 1 ns (es lo que dice para un remote `local`, no una medida), y
+  la fecha no cambia después (dos segundos más tarde, igual); una bisync contra
+  esa carpeta dice `No changes found` en la segunda pasada. Sin medir: un
+  teléfono de verdad. **Sin el permiso**, un fichero que creó otra app no sale
+  al listar la carpeta y leerlo da `EACCES`, aunque `File.exists()` diga que sí.
+  Y `run-as … ls` no sirve para comprobarlo: no es el proceso de la app y da
+  `Permission denied` hasta con el permiso. El permiso se da en un test con
+  `appops set prdrive.app MANAGE_EXTERNAL_STORAGE allow`, leyendo la salida del
+  shell hasta el final antes de mirar `Environment.isExternalStorageManager()`.
 - **Los tests de Compose en API 37** necesitan Espresso 3.7 (el que trae
   `ui-test` busca `InputManager.getInstance`, que ya no existe) y las reglas
   `junit4.v2` (las otras están obsoletas, y los avisos son errores).

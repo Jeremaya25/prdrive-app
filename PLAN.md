@@ -187,31 +187,38 @@ modificación en `/storage/emulated/0/` (FUSE), con `MANAGE_EXTERNAL_STORAGE`
 dado? Bisync decide por ellas. Lo mide `FechasCompartidasTest`, y la línea
 `FechasCompartidas` del logcat da los números.
 
-- **API 37 (emulador `Medium_Phone_API_37.0`, x86_64): pasan los dos tests.**
-  - La precisión que dice `operations/fsinfo` de la carpeta compartida es de
-    **1 ns** (la de un remote `local`: rclone no la mide en el sistema de
-    ficheros; lo que vale es que la hora de la copia es exactamente la del
-    original).
-  - Una hora pasada con milisegundos (`2023-11-14T22:13:20.123Z`) llega igual
-    a la copia, a la hora: `copiada = original`. Dos segundos después sigue
-    igual: la carpeta no la toca después.
-  - Una bisync contra la carpeta compartida (un `combine` con ella de upstream,
-    un cambio en cada lado) no repite copias: la segunda pasada dice
+- **Pasan los dos tests en los cuatro APIs** (emuladores x86_64 de Google APIs:
+  `prdrive_api30`, `prdrive_api33`, `prdrive_api35` y `Medium_Phone_API_37.0`).
+  En todos, la misma línea de `FechasCompartidas`:
+
+  | API | precisión (`fsinfo`) | original → copia | a los 2 s | 2.ª bisync |
+  |---|---|---|---|---|
+  | 30 | 1 ns | `…22:13:20.123Z` = `…22:13:20.123Z` | igual | `No changes found` |
+  | 33 | 1 ns | igual | igual | `No changes found` |
+  | 35 | 1 ns | igual | igual | `No changes found` |
+  | 37 | 1 ns | igual | igual | `No changes found` |
+
+  - La precisión de 1 ns es la que da rclone para un remote `local`: no la mide
+    en el sistema de ficheros. Lo que cuenta es que la hora de la copia es
+    exactamente la del original (con sus milisegundos), que no cambia después, y
+    que una bisync contra la carpeta compartida (un `combine` con ella de
+    upstream, un cambio en cada lado) no repite copias: la segunda pasada dice
     `No changes found`, literal.
-- **API 30, 33 y 35: pendientes.** Solo hay un emulador (API 37), y bajar las
-  imágenes de sistema espera a que lo apruebe quien decide. Hasta entonces el
-  paso 0 está medido en un solo API: el resultado de API 37 no dice nada de
-  Android 11 (donde FUSE se estrenó para `/sdcard`) ni de 13.
-- **Sin el permiso**, en el proceso de la app (comprobado con un test de
-  instrumentación, que corre como la app): `ajena.txt`, creado por otro dueño,
-  **no aparece al listar la carpeta** (`list()` da vacío), aunque `exists()`
-  dice que sí, y **leerlo da `EACCES`**. Con el permiso, aparece y se lee.
-  Crear un fichero propio en `Documents/` funciona en los dos casos.
+  - Solo se ha medido el milisegundo (la hora de prueba es `…:20.123`), no
+    por debajo.
+- **Sin el permiso**, en el proceso de la app (un test de instrumentación,
+  que corre como la app), igual en los cuatro APIs: `ajena.txt`, creado por
+  otro dueño (el shell), **no aparece al listar la carpeta** (`list()` da
+  vacío), aunque `exists()` dice que sí, y **leerlo da `EACCES`**. Con el
+  permiso, aparece y se lee. Crear un fichero propio en `Documents/` funciona
+  en los dos casos.
 - **`adb shell run-as prdrive.app ls` no vale para esto**: da `Permission
-  denied` también con el permiso dado (`appops get` dice `allow`), porque
-  `run-as` no es el proceso de la app. Lo que se mira, desde dentro.
-- **Sin decidir aquí:** que el paso 0 salga bien en API 37 es un sí a medias;
-  la decisión de seguir es de quien lleva el plan, con los otros tres APIs.
+  denied` también con el permiso dado (`appops get` dice `allow`), en los
+  cuatro APIs, porque `run-as` no es el proceso de la app. Lo que se mira,
+  desde dentro.
+- **La decisión de seguir es de quien lleva el plan.** El paso 0 sale bien en
+  todo lo medido: emuladores, no un teléfono de verdad (un fabricante puede
+  llevar otro FUSE).
 
 ## Fuera, salvo que cambie algo
 
