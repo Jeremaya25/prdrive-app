@@ -181,6 +181,55 @@ object Compartidas {
     fun problema(config: Config, nombre: String, ruta: String, raiz: File, otras: Map<String, Entrada>): String? =
         problemaPareja(config, nombre) ?: problemaRuta(ruta, raiz, otras)
 
+    /**
+     * Si el `rclone.conf` ya apunta la carpeta de [pareja] a su carpeta
+     * compartida: el `upstreams` de su `combine` ([Pareja.deviceRemote]) trae el
+     * par que [Config.upstreamsDeCombine] escribiría para ella.
+     *
+     * Un movimiento cortado entre apuntar la entrada y reescribir `[disp]`
+     * deja el `combine` en la carpeta privada del volumen, que está vacía: una
+     * pasada la daría por borrada. Los pares se comparan enteros, no por
+     * subcadena: el `upstreams` es una lista CSV con el espacio de separador
+     * (`fs.SpaceSepList`), y una ruta con comillas o espacios no puede
+     * hacerse pasar por otro par.
+     */
+    fun alDia(rcloneConf: String, pareja: Pareja): Boolean {
+        val carpeta = pareja.carpetaExterna ?: return false
+        val upstreams = Pairing.parseRcloneConf(rcloneConf)[pareja.deviceRemote]?.get("upstreams")
+            ?: return false
+        return upstream(pareja.topLevelDir, carpeta) in separarUpstreams(upstreams)
+    }
+
+    /** Los pares de un `upstreams`: campos separados por espacios, entrecomillados si empiezan por comilla. */
+    private fun separarUpstreams(texto: String): List<String> {
+        val campos = ArrayList<String>()
+        var i = 0
+        while (i < texto.length) {
+            if (texto[i] == ' ') {
+                i++
+                continue
+            }
+            val inicio = i
+            if (texto[i] == '"') {
+                i++
+                while (i < texto.length) {
+                    if (texto[i] != '"') {
+                        i++
+                    } else if (i + 1 < texto.length && texto[i + 1] == '"') {
+                        i += 2
+                    } else {
+                        break
+                    }
+                }
+                i = minOf(i + 1, texto.length)
+            } else {
+                while (i < texto.length && texto[i] != ' ') i++
+            }
+            campos.add(texto.substring(inicio, i))
+        }
+        return campos
+    }
+
     private fun caminoDe(ruta: String): Path? = try {
         Paths.get(ruta)
     } catch (_: InvalidPathException) {

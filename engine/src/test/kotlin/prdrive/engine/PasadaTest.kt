@@ -237,28 +237,6 @@ class PasadaTest {
 
     // --- la pasada -----------------------------------------------------------
 
-    /**
-     * Un rclone de mentira: apunta lo que le piden (también los `mkdir`) y
-     * contesta, por orden, lo que haya en [cola]; acabada la cola, [final].
-     */
-    private class RcloneFalso(
-        var final: Pasada.Final = Pasada.Final(true, "", "INFO : Bisync successful\n"),
-        vararg cola: Pasada.Final,
-    ) : Pasada.Rclone {
-        val llamadas = ArrayList<Pasada.Llamada>()
-        val mkdirs = ArrayList<String>()
-        private val pendientes = ArrayDeque(cola.toList())
-        override fun ejecutar(llamada: Pasada.Llamada, alProgreso: (Map<String, Any?>) -> Unit): Pasada.Final {
-            llamadas.add(llamada)
-            return pendientes.removeFirstOrNull() ?: final
-        }
-
-        override fun mkdir(destino: String): Pasada.Final {
-            mkdirs.add(destino)
-            return Pasada.Final(true, "", "")
-        }
-    }
-
     private val opcionesDeLaPasada get() = Oraculo.opciones
 
     private fun volumen(vararg parejas: Map<String, Any?>): kotlin.Pair<Volumen, Config> {
@@ -365,6 +343,101 @@ class PasadaTest {
         assertFalse(Resultados.rutaEstado(v.state).exists())
     }
 
+    // --- una pareja en una carpeta compartida ----------------------------------
+
+    /**
+     * Un volumen con la pareja `vault` (`local = "vault"`) movida a una carpeta
+     * compartida: la entrada de `compartidas.json` ([ruta], en otro temporal y
+     * con la carpeta creada) y el `rclone.conf` con su `combine` al día.
+     */
+    private fun volumenCompartido(
+        ruta: String = File(temporal(), "Documents/vault").apply { mkdirs() }.absolutePath,
+    ): kotlin.Pair<Volumen, Pareja> {
+        val v = Volumen(File(temporal(), "volumen"))
+        val raw = mapOf(
+            "defaults" to mapOf("device_remote" to "disp", "remote" to "nas"),
+            "pair" to listOf(mapOf("name" to "vault", "local" to "vault", "remote_path" to "/copia/vault")),
+        )
+        v.escribirConfig(raw, "")
+        Compartidas.escribir(v.compartidas, mapOf("vault" to Compartidas.Entrada(ruta, Compartidas.Estado.LISTA)))
+        val config = v.leerConfig()
+        v.rcloneConf.writeText("[nas]\ntype = sftp\n\n" + config.seccionCombine(v.raiz.absolutePath))
+        return v to config.pairs.single()
+    }
+
+    @Test
+    fun `una pareja con una entrada que no vale aborta sin llamar a rclone`() {
+        val (v, p) = volumenCompartido(ruta = "relativa/vault")
+        assertNotNull(p.problemaCompartida)
+        val rclone = RcloneFalso()
+        val r = Pasada.pasar(v, p, rclone, opcionesDeLaPasada, Pasada.Contexto(accesoCompartido = { null }))
+        assertEquals(Pasada.ABORTO, r.codigo)
+        assertEquals(p.problemaCompartida, r.explicacion)
+        assertTrue(rclone.llamadas.isEmpty(), "no se llama a rclone")
+        assertTrue(rclone.mkdirs.isEmpty())
+    }
+
+    @Test
+    fun `una pareja compartida sin comprobar el acceso aborta`() {
+        val (v, p) = volumenCompartido()
+        assertNotNull(p.carpetaExterna)
+        val rclone = RcloneFalso()
+        val r = Pasada.pasar(v, p, rclone, opcionesDeLaPasada, Pasada.Contexto())
+        assertEquals(Pasada.ABORTO, r.codigo)
+        assertEquals(Pasada.SIN_COMPROBAR_ACCESO, r.explicacion)
+        assertTrue(rclone.llamadas.isEmpty(), "no se llama a rclone")
+        assertEquals(
+            listOf("vault"),
+            Resultados.fallosDe(v.state, v.logs, listOf("vault")).map { it.pareja },
+            "el aborto se apunta",
+        )
+    }
+
+    @Test
+    fun `una pareja compartida aborta con lo que diga el acceso`() {
+        val (v, p) = volumenCompartido()
+        val rclone = RcloneFalso()
+        val r = Pasada.pasar(v, p, rclone, opcionesDeLaPasada, Pasada.Contexto(accesoCompartido = { "sin permiso" }))
+        assertEquals(Pasada.ABORTO, r.codigo)
+        assertEquals("sin permiso", r.explicacion)
+        assertTrue(r.lineas.any { "sin permiso" in it }, "se cuenta")
+        assertTrue(rclone.llamadas.isEmpty(), "no se llama a rclone")
+    }
+
+    @Test
+    fun `una pareja compartida con el rclone_conf viejo aborta`() {
+        val (v, p) = volumenCompartido()
+        // Un movimiento cortado entre escribir la entrada y reescribir `[disp]`:
+        // el `combine` sigue apuntando a la carpeta privada del volumen.
+        val sinEntradas = v.leerConfig().conCompartidas(emptyMap(), v.raiz)
+        v.rcloneConf.writeText("[nas]\ntype = sftp\n\n" + sinEntradas.seccionCombine(v.raiz.absolutePath))
+        val rclone = RcloneFalso()
+        val r = Pasada.pasar(v, p, rclone, opcionesDeLaPasada, Pasada.Contexto(accesoCompartido = { null }))
+        assertEquals(Pasada.ABORTO, r.codigo)
+        assertEquals(Pasada.COMBINE_VIEJO, r.explicacion)
+        assertTrue(rclone.llamadas.isEmpty(), "no se llama a rclone")
+    }
+
+    @Test
+    fun `una pareja compartida con acceso y el combine al dia pasa por su carpeta`() {
+        val (v, p) = volumenCompartido()
+        conBaseline(v, p, listOf("a.txt"))
+        val rclone = RcloneFalso()
+        val r = Pasada.pasar(v, p, rclone, opcionesDeLaPasada, Pasada.Contexto(accesoCompartido = { null }))
+        assertEquals(0, r.codigo, r.lineas.joinToString("\n"))
+        assertEquals(1, rclone.llamadas.size)
+    }
+
+    @Test
+    fun `a una pareja sin carpeta compartida no se le pregunta el acceso`() {
+        val (v, config) = volumen(notas)
+        val r = Pasada.pasar(
+            v, config.pairs[0], RcloneFalso(), opcionesDeLaPasada,
+            Pasada.Contexto(resyncAprobado = true, accesoCompartido = { error("no toca") }),
+        )
+        assertEquals(0, r.codigo)
+    }
+
     // --- la pasada del llavero -------------------------------------------------
 
     private val repeticiones get() = Vectores.objeto(Vectores.seccion("llavero"), "repeticiones")
@@ -399,24 +472,6 @@ class PasadaTest {
         val carpeta = pareja.carpetaEn(v.raiz).apply { mkdirs() }
         File(carpeta, Vectores.texto(Vectores.objeto(raw, "keychain"), "base")).writeBytes(baseDeLosVectores(entera))
         return v to pareja
-    }
-
-    /**
-     * Deja la pareja con baseline: los dos listados con [nombres] y el hash de
-     * sus filtros, para que la pasada sea normal y no un resync.
-     */
-    private fun conBaseline(v: Volumen, p: Pareja, nombres: List<String>) {
-        val prefijo = Bisync.expectedPrefix(p, Bisync.tiposDeRemote(v.leerRcloneConf()))
-        val workdir = v.workdir(p).apply { mkdirs() }
-        // El `lineFormat` de cmd/bisync/listing.go, que es lo que lee `listado_local()`.
-        val lineas = nombres.joinToString("") { "-        5 - - 2026-10-05T06:44:29.752645891+0000 \"$it\"\n" }
-        File(workdir, prefijo + Bisync.PATH1_SUFFIX).writeText("# bisync listing v1\n$lineas")
-        File(workdir, prefijo + Bisync.PATH2_SUFFIX).writeText("# bisync listing v1\n$lineas")
-        Bisync.filtersFileFor(p, v.filtros)!!.let { f ->
-            val md5 = java.security.MessageDigest.getInstance("MD5").digest(f.readBytes())
-                .joinToString("") { (it.toInt() and 0xff).toString(16).padStart(2, '0') }
-            File(f.path + ".md5").writeText(md5)
-        }
     }
 
     /** Lo que hay en `.keychain/`, con su LEEME: lo que el listado de la última pasada buena tiene que nombrar. */

@@ -6,6 +6,7 @@ import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -292,5 +293,42 @@ class CompartidasTest {
         assertFailsWith<ConfigError> { upstream("vault", "/x\ny") }
         assertFailsWith<ConfigError> { upstream("vault", "/x\ry") }
         assertFailsWith<ConfigError> { upstream("va\nult", "/x") }
+    }
+
+    private fun conf(combine: String) = "[nas]\ntype = sftp\n\n$combine"
+
+    @Test
+    fun `alDia solo dice que si el combine lleva el par de su carpeta`() {
+        val raiz = temporal()
+        val c = dosParejas()
+        val con = c.conCompartidas(entradaVault(), raiz)
+        val vault = con.pairs.first { it.name == "vault" }
+        assertTrue(Compartidas.alDia(conf(con.seccionCombine(raiz.absolutePath)), vault))
+        // El `combine` de antes del movimiento, el de otra carpeta y sin sección.
+        assertFalse(Compartidas.alDia(conf(c.seccionCombine(raiz.absolutePath)), vault))
+        val otra = c.conCompartidas(
+            mapOf("vault" to Compartidas.Entrada("$rutaVault-otra", Compartidas.Estado.LISTA)), raiz,
+        )
+        assertFalse(Compartidas.alDia(conf(otra.seccionCombine(raiz.absolutePath)), vault))
+        assertFalse(Compartidas.alDia("[nas]\ntype = sftp\n", vault))
+        // Una pareja que no está en una carpeta compartida no está «al día».
+        val sinMover = c.pairs.first { it.name == "vault" }
+        assertFalse(Compartidas.alDia(conf(con.seccionCombine(raiz.absolutePath)), sinMover))
+    }
+
+    @Test
+    fun `alDia compara el par entero, no un trozo de otra ruta`() {
+        val raiz = temporal()
+        val vault = dosParejas().conCompartidas(entradaVault(), raiz).pairs.first { it.name == "vault" }
+        // Una carpeta que lleva dentro, como texto, el par de `vault`.
+        val trampa = "[disp]\ntype = combine\nupstreams = " + upstream("otra", "/x ${upstream("vault", rutaVault)} y")
+        assertFalse(Compartidas.alDia(trampa, vault), trampa)
+        // Con la ruta del propio `vault` llena de espacios y comillas, sí. Se pone a
+        // mano: en Windows, donde también corren los tests, `"` no cabe en una ruta.
+        val rara = "/storage/emulated/0/Documents/mi \"vault\" 2"
+        val parejaRara = vault.copy(carpetaExterna = rara)
+        fun combine(ruta: String) = conf("[disp]\ntype = combine\nupstreams = ${upstream("vault", ruta)}\n")
+        assertTrue(Compartidas.alDia(combine(rara), parejaRara))
+        assertFalse(Compartidas.alDia(combine(rutaVault), parejaRara))
     }
 }
