@@ -106,6 +106,10 @@ herramientas/
 │                          `release`
 └── actions/compilar-apk/  lo que comparten: el .aar, los tests del motor y el
                            APK sin firmar
+.claude/      los hooks de Claude Code (settings.json): hooks/generados.py no
+              deja editar a mano lo que se genera, y hooks/reglas.py avisa de
+              lo que cruza una regla que el compilador no ve (Android en el
+              motor, \d de ICU, String.format, colores en las pantallas)
 VERSION       la versión de la app, y la única («Versiones y releases»)
 ```
 
@@ -296,6 +300,10 @@ otra:
 ```bash
 export JAVA_TOOL_OPTIONS='-Djdk.net.unixdomain.tmpdir=C:\Windows\Temp'
 ```
+
+Para Claude Code, en el `env` de `.claude/settings.local.json` (no se versiona:
+es de cada máquina). `.worktreeinclude` lo copia de la copia principal a cada
+worktree nuevo, así que tiene que estar también allí.
 
 ## Versiones y releases
 
