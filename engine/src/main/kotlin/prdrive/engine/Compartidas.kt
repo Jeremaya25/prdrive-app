@@ -141,6 +141,13 @@ object Compartidas {
      * rutas de Linux que con las de Windows, donde también corren los tests.
      */
     fun problemaRuta(ruta: String, raiz: File, otras: Map<String, Entrada>): String? {
+        // La ruta acaba escrita en el `rclone.conf` (el upstream del `combine`):
+        // un salto de línea en el nombre de una carpeta añadiría líneas al fichero.
+        if (ruta.any { it.isISOControl() }) {
+            return "La ruta '${ruta.filter { !it.isISOControl() }}' lleva algún carácter de control " +
+                "(un salto de línea, por ejemplo) en el nombre de una carpeta. Elige otra " +
+                "carpeta o renómbrala sin él."
+        }
         val camino = caminoDe(ruta)
         if (camino == null || !(camino.isAbsolute || ruta.startsWith("/"))) {
             return "La ruta '$ruta' no es absoluta. Elige una carpeta con su ruta completa " +

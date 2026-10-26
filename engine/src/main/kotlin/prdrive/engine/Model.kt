@@ -831,9 +831,23 @@ private fun unir(raiz: String, tramos: List<String>): String {
  * del dispositivo. Entre comillas caben tanto la barra final de la raíz de una
  * unidad como los espacios de la ruta, que es para lo que hacían falta. Una
  * comilla dentro de la ruta se dobla, como manda el CSV.
+ *
+ * Un salto de línea en el nombre o la ruta se rechaza: el teléfono escribe el
+ * upstream en el `rclone.conf` (el escritorio lo pasa en una variable de
+ * entorno), y una línea nueva ahí añadiría claves o secciones al fichero.
+ *
+ * @throws ConfigError si [nombre] o [ruta] llevan `\r` o `\n`.
  */
-fun upstream(nombre: String, ruta: String): String =
-    "\"$nombre=${ruta.replace("\"", "\"\"")}\""
+fun upstream(nombre: String, ruta: String): String {
+    if (nombre.any { it == '\r' || it == '\n' } || ruta.any { it == '\r' || it == '\n' }) {
+        throw ConfigError(
+            "El upstream '${nombre.filter { it != '\r' && it != '\n' }}' lleva un salto de línea " +
+                "en su nombre o en su ruta, y no puede escribirse en el rclone.conf. " +
+                "Renombra esa carpeta sin él.",
+        )
+    }
+    return "\"$nombre=${ruta.replace("\"", "\"\"")}\""
+}
 
 /** Capa de [BASE_FLAGS]: lo que lleva toda ejecución. */
 const val ORIGEN_BASE = "base"

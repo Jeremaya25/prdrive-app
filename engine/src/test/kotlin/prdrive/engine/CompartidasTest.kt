@@ -267,4 +267,30 @@ class CompartidasTest {
         v.actualizarCombine(parseConfig(loadRaw(v.config.readText())))
         assertTrue(v.rcloneConf.readText().contains(upstream("vault", rutaVault)), v.rcloneConf.readText())
     }
+
+    @Test
+    fun `una ruta con un caracter de control no vale`() {
+        val raiz = temporal()
+        for (mala in listOf("a\nb", "a\rb", "a\u0000b")) {
+            val ruta = "/storage/emulated/0/Documents/$mala"
+            assertNotNull(Compartidas.problemaRuta(ruta, raiz, emptyMap()), ruta)
+        }
+    }
+
+    @Test
+    fun `una entrada con un salto de linea no redirige nada y deja su motivo`() {
+        val raiz = temporal()
+        val c = dosParejas()
+        val e = mapOf("vault" to Compartidas.Entrada("$rutaVault\nx = y", Compartidas.Estado.LISTA))
+        val aplicada = c.conCompartidas(e, raiz)
+        assertEquals(c.upstreamsDeCombine(raiz.absolutePath), aplicada.upstreamsDeCombine(raiz.absolutePath))
+        assertNotNull(aplicada.pairs.first { it.name == "vault" }.problemaCompartida)
+    }
+
+    @Test
+    fun `un upstream con un salto de linea en el nombre o en la ruta se rechaza`() {
+        assertFailsWith<ConfigError> { upstream("vault", "/x\ny") }
+        assertFailsWith<ConfigError> { upstream("vault", "/x\ry") }
+        assertFailsWith<ConfigError> { upstream("va\nult", "/x") }
+    }
 }
