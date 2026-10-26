@@ -185,17 +185,38 @@ class PairingTest {
         assertFailsWith<Pairing.PairingError> { Pairing.rcloneConf(carga) }
     }
 
+    private val alinear get() = Vectores.objeto(Vectores.seccion("paso3"), "alinear")
+
     @Test
-    fun `el nombre del remote lo pone el catalogo, como align_with_catalog`() {
-        val alinear = Vectores.objeto(Vectores.seccion("paso3"), "alinear")
-        val carga = Pairing.leer(Vectores.texto(alinear, "carga"))
+    fun `el nombre y las opciones del remote los pone el catalogo, como align_with_catalog`() {
+        val cargas = Vectores.objeto(alinear, "cargas")
         for (caso in Vectores.objetos(alinear, "casos")) {
+            val donde = "«${caso["caso"]}»"
+            val carga = Pairing.leer(Vectores.texto(cargas, Vectores.texto(caso, "carga")))
             @Suppress("UNCHECKED_CAST")
             val (ajustada, notas) = Pairing.alinearConCatalogo(carga, caso["catalogo"] as Map<String, Any?>)
-            assertEquals(caso["nombre"], ajustada.remoteName, "«${caso["caso"]}»")
-            assertEquals(caso["notas"], notas, "«${caso["caso"]}»")
-            assertEquals(carga.opciones, ajustada.opciones, "las opciones se quedan las del código")
+            assertEquals(caso["nombre"], ajustada.remoteName, donde)
+            assertEquals(caso["opciones"], ajustada.opciones, donde)
+            // El orden es el de las líneas del rclone.conf.
+            assertEquals(Vectores.cadenas(caso, "claves"), ajustada.opciones.keys.toList(), "$donde: el orden")
+            assertEquals(caso["notas"], notas, donde)
+            // La clave y los known_hosts viajan con el QR, nunca con el catálogo.
+            assertTrue(carga.privateKey.contentEquals(ajustada.privateKey), "$donde: la clave es la del código")
+            assertEquals(carga.knownHosts, ajustada.knownHosts, "$donde: los known_hosts son los del código")
         }
+    }
+
+    @Test
+    fun `es secreto lo mismo que para es_secreta`() {
+        for (caso in Vectores.objetos(alinear, "secretas")) {
+            val nombre = Vectores.texto(caso, "nombre")
+            assertEquals(caso["secreta"], Pairing.esSecreta(nombre), reprPy(nombre))
+        }
+    }
+
+    @Test
+    fun `lo que rclone exige de cada backend es lo de OBLIGATORIAS`() {
+        assertEquals(alinear["obligatorias"], Pairing.OBLIGATORIAS)
     }
 
     @Test

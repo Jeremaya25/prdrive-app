@@ -162,10 +162,6 @@ hacerlo.
 
 ## 3. Lo que el paso 1 dejó a medias
 
-- **Heredar las opciones del `[remote]` del catálogo.** De
-  `profile.align_with_catalog()` solo se porta la regla del nombre; falta
-  `_opciones_del_catalogo()`, con lo que no se hereda (lo que ejecuta algo o es
-  secreto).
 - **Un simulacro desde la app** (`--dry-run`), que es lo que el instalador
   recomienda para probar los espejos. Con él, la carpeta de un espejo de subida
   se podría crear al instalar, como hace `make_local_dirs()`; hoy no se crea,

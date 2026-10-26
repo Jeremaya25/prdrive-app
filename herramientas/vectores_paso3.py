@@ -239,32 +239,126 @@ def vectores_rclone_conf(profile) -> dict:
     }
 
 
-CATALOGOS_PARA_ALINEAR = {
-    "mismo nombre": {"defaults": {"remote": "nas"}},
-    "otro en defaults": {"defaults": {"remote": "casa"}},
-    "otro en [remote]": {"remote": {"name": "nube", "type": "sftp"}, "defaults": {"remote": "casa"}},
-    "[remote] sin nombre": {"remote": {"type": "sftp"}, "defaults": {"remote": "casa"}},
-    "con espacios": {"defaults": {"remote": "  casa  "}},
-    "sin nombre en ningún sitio": {"defaults": {}},
-    "nombre vacío": {"remote": {"name": ""}, "defaults": {"remote": ""}},
+CARGAS_PARA_ALINEAR = {
+    # Lo mínimo, para la regla del nombre.
+    "sftp mínimo": ({"type": "sftp", "host": "h"}, None),
+    # Con clave: la clave no es una opción, así que hereda el host y el usuario.
+    "sftp con clave": ({"type": "sftp", "host": "h", "user": "u"}, b"CLAVE-DE-PRUEBA"),
+    # Con un secreto propio: se queda como está.
+    "webdav con contraseña": ({"type": "webdav", "url": "https://h/dav", "user": "u",
+                               "pass": "ofuscada"}, None),
+    # Con una orden propia: también. (El teléfono la rechaza después, al
+    # escribir su rclone.conf; aquí solo se alinea.)
+    "sftp con ssh": ({"type": "sftp", "ssh": "ssh -p 22 u@h"}, None),
 }
+
+CASOS_PARA_ALINEAR = [
+    # La regla del nombre.
+    ("mismo nombre", "sftp mínimo", {"defaults": {"remote": "nas"}}),
+    ("otro en defaults", "sftp mínimo", {"defaults": {"remote": "casa"}}),
+    ("otro en [remote]", "sftp mínimo",
+     {"remote": {"name": "nube", "type": "sftp"}, "defaults": {"remote": "casa"}}),
+    ("[remote] sin nombre", "sftp mínimo",
+     {"remote": {"type": "sftp"}, "defaults": {"remote": "casa"}}),
+    ("con espacios", "sftp mínimo", {"defaults": {"remote": "  casa  "}}),
+    ("sin nombre en ningún sitio", "sftp mínimo", {"defaults": {}}),
+    ("nombre vacío", "sftp mínimo", {"remote": {"name": ""}, "defaults": {"remote": ""}}),
+    # Las opciones de un [remote] completo.
+    ("sin [remote]", "sftp con clave", {"defaults": {"remote": "nas"}}),
+    ("[remote] igual", "sftp con clave",
+     {"remote": {"name": "nas", "type": "sftp", "host": "h", "user": "u"}}),
+    ("[remote] igual en otro orden", "sftp con clave",
+     {"remote": {"user": "u", "host": "h", "type": "sftp", "name": "nas"}}),
+    ("[remote] con otro host", "sftp con clave",
+     {"remote": {"name": "nas", "type": "sftp", "host": "otro", "user": "u", "port": 2222}}),
+    ("[remote] sin type", "sftp con clave", {"remote": {"name": "nas", "host": "otro"}}),
+    ("[remote] con type vacío", "sftp con clave", {"remote": {"type": "", "host": "otro"}}),
+    ("[remote] con las rutas de la clave", "sftp con clave",
+     {"remote": {"type": "sftp", "host": "h", "user": "u", "key_file": "/a/id",
+                 "known_hosts_file": "/a/known_hosts"}}),
+    ("[remote] con booleanos, números y listas", "sftp con clave",
+     {"remote": {"type": "sftp", "host": "otro", "disable_hashcheck": True,
+                 "set_modtime": False, "port": 22, "idle_timeout": 1.5,
+                 "ciphers": ["aes128-ctr", "aes256-ctr"]}}),
+    ("[remote] de un tipo sin obligatorias", "sftp con clave",
+     {"remote": {"type": "s3", "provider": "AWS", "region": "eu-west-1"}}),
+    # Lo que no se hereda.
+    ("[remote] con una orden", "sftp con clave",
+     {"remote": {"type": "sftp", "host": "otro", "ssh": "ssh otro"}}),
+    ("[remote] con dos órdenes", "sftp con clave",
+     {"remote": {"type": "webdav", "url": "https://otro/dav",
+                 "bearer_token_command": "token", "ssh": "ssh otro"}}),
+    ("[remote] con un secreto", "sftp con clave",
+     {"remote": {"type": "sftp", "host": "otro", "pass": "x"}}),
+    ("[remote] con secretos", "sftp con clave",
+     {"remote": {"type": "sftp", "host": "otro", "key_file_pass": "y", "PASS": "x",
+                 "api_key": "z", "access_key_id": "no-es-secreto"}}),
+    ("[remote] con órdenes y secretos", "sftp con clave",
+     {"remote": {"type": "sftp", "host": "otro", "ssh": "ssh otro", "pass": "x"}}),
+    # Lo que rclone exige.
+    ("[remote] sin host", "sftp con clave", {"remote": {"type": "sftp", "user": "u"}}),
+    ("[remote] con el host en blanco", "sftp con clave",
+     {"remote": {"type": "sftp", "host": "  ", "user": "u"}}),
+    ("[remote] que solo tenía ssh", "sftp con clave",
+     {"remote": {"type": "sftp", "user": "u", "ssh": "ssh otro"}}),
+    ("[remote] que solo tenía órdenes", "sftp con clave",
+     {"remote": {"type": "sftp", "ssh": "ssh otro", "bearer_token_command": "t"}}),
+    ("[remote] sin host y con una orden que no lo arregla", "sftp con clave",
+     {"remote": {"type": "sftp", "user": "u", "bearer_token_command": "t"}}),
+    ("[remote] webdav sin url", "sftp con clave",
+     {"remote": {"type": "webdav", "user": "u", "bearer_token_command": "t"}}),
+    # Una conexión con secretos u órdenes propios no se mezcla.
+    ("con contraseña y el [remote] igual", "webdav con contraseña",
+     {"remote": {"type": "webdav", "url": "https://h/dav", "user": "u"}}),
+    ("con contraseña y otro [remote]", "webdav con contraseña",
+     {"remote": {"type": "webdav", "url": "https://otro/dav", "user": "u"}}),
+    ("con contraseña y un [remote] con órdenes y secretos", "webdav con contraseña",
+     {"remote": {"type": "webdav", "url": "https://otro/dav", "pass": "x",
+                 "bearer_token_command": "t"}}),
+    ("con contraseña y un [remote] incompleto", "webdav con contraseña",
+     {"remote": {"type": "webdav", "user": "u"}}),
+    ("con contraseña y sin type", "webdav con contraseña", {"remote": {"url": "https://otro"}}),
+    ("con ssh y otro [remote]", "sftp con ssh", {"remote": {"type": "sftp", "host": "otro"}}),
+]
+
+NOMBRES_SECRETOS = [
+    "key", "pass", "password", "2fa", "user", "host", "type", "url", "PASS", " pass ",
+    "key\xa0", "api_key ", "key_file_pass", "token", "client_secret",
+    "service_account_credentials", "private_key_pem", "sas_url", "account_key",
+    "account_keys", "account_key_id", "access_grant", "connection_string", "cookie", "authorization", "headers",
+    "api_key", "sse_customer_key", "sse_customer_key_base64", "access_key_id",
+    "sse_kms_key_id", "key_id", "keyboard", "monkey", "my_key", "my_key_id", "_key",
+    "hostkey", "passive", "md5sum_command", "api_Key", "",
+]
+"""Nombres de opción para `es_secreta()`: los de su docstring, los que casi lo son
+y los que dependen de `strip()` y `lower()` (`\\u212a` es el signo Kelvin, que
+`lower()` da como una `k`). `account_keys` y `account_key_id` solo son secretos
+por el trozo `account_key`, no por la regla de `_key`."""
 
 
 def vectores_alinear(pairing) -> dict:
-    """`profile.align_with_catalog()`: el nombre del remote que se escribe en el
-    dispositivo, y la nota que lo dice. Solo la regla del nombre: las opciones
-    del `[remote]` del catálogo no las hereda el teléfono todavía."""
+    """`profile.align_with_catalog()`: el remote que se escribe en el dispositivo
+    (su nombre y sus opciones) y las notas que lo dicen, y `es_secreta()`."""
     from install import profile  # noqa: PLC0415
-    texto = pairing.dumps("nas", {"type": "sftp", "host": "h"}, key_name="id_ed25519",
-                          catalog_path="/prdrive-catalog/remote.toml")
+    cargas = {
+        nombre: pairing.dumps("nas", opciones, key_name="id_ed25519",
+                              catalog_path="/prdrive-catalog/remote.toml", private_key=clave)
+        for nombre, (opciones, clave) in CARGAS_PARA_ALINEAR.items()
+    }
     salida = []
-    for caso, raw in CATALOGOS_PARA_ALINEAR.items():
-        ajustado, notas = profile.align_with_catalog(profile.loads(texto), raw)
+    for caso, carga, raw in CASOS_PARA_ALINEAR:
+        ajustado, notas = profile.align_with_catalog(profile.loads(cargas[carga]), raw)
         salida.append({
-            "caso": caso, "catalogo": raw, "nombre": ajustado.remote_name,
-            "notas": [n for n in notas if n.startswith("En el dispositivo el remote se llamará")],
+            "caso": caso, "carga": carga, "catalogo": raw, "nombre": ajustado.remote_name,
+            "opciones": dict(ajustado.options), "claves": list(ajustado.options),
+            "notas": notas,
         })
-    return {"carga": texto, "casos": salida}
+    return {
+        "cargas": cargas, "casos": salida,
+        "secretas": [{"nombre": n, "secreta": profile.es_secreta(n)} for n in NOMBRES_SECRETOS],
+        "obligatorias": {tipo: [clave for clave, _ in claves]
+                         for tipo, claves in profile.OBLIGATORIAS.items()},
+    }
 
 
 def vectores(model, bisync, base: dict) -> dict:

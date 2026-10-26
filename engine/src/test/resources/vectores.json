@@ -18605,32 +18605,56 @@
       ]
     },
     "alinear": {
-      "carga": "catalog_path = \"/prdrive-catalog/remote.toml\"\nkey_name = \"id_ed25519\"\nprdrive = 1\nremote_name = \"nas\"\n[options]\nhost = \"h\"\ntype = \"sftp\"",
+      "cargas": {
+        "sftp mínimo": "catalog_path = \"/prdrive-catalog/remote.toml\"\nkey_name = \"id_ed25519\"\nprdrive = 1\nremote_name = \"nas\"\n[options]\nhost = \"h\"\ntype = \"sftp\"",
+        "sftp con clave": "catalog_path = \"/prdrive-catalog/remote.toml\"\nkey_name = \"id_ed25519\"\nprdrive = 1\nprivate_key_b64 = \"Q0xBVkUtREUtUFJVRUJB\"\nremote_name = \"nas\"\n[options]\nhost = \"h\"\ntype = \"sftp\"\nuser = \"u\"",
+        "webdav con contraseña": "catalog_path = \"/prdrive-catalog/remote.toml\"\nkey_name = \"id_ed25519\"\nprdrive = 1\nremote_name = \"nas\"\n[options]\npass = \"ofuscada\"\ntype = \"webdav\"\nurl = \"https://h/dav\"\nuser = \"u\"",
+        "sftp con ssh": "catalog_path = \"/prdrive-catalog/remote.toml\"\nkey_name = \"id_ed25519\"\nprdrive = 1\nremote_name = \"nas\"\n[options]\nssh = \"ssh -p 22 u@h\"\ntype = \"sftp\""
+      },
       "casos": [
         {
           "caso": "mismo nombre",
+          "carga": "sftp mínimo",
           "catalogo": {
             "defaults": {
               "remote": "nas"
             }
           },
           "nombre": "nas",
+          "opciones": {
+            "host": "h",
+            "type": "sftp"
+          },
+          "claves": [
+            "host",
+            "type"
+          ],
           "notas": []
         },
         {
           "caso": "otro en defaults",
+          "carga": "sftp mínimo",
           "catalogo": {
             "defaults": {
               "remote": "casa"
             }
           },
           "nombre": "casa",
+          "opciones": {
+            "host": "h",
+            "type": "sftp"
+          },
+          "claves": [
+            "host",
+            "type"
+          ],
           "notas": [
             "En el dispositivo el remote se llamará 'casa' y no 'nas': es el nombre que usan los remote_path del catálogo."
           ]
         },
         {
           "caso": "otro en [remote]",
+          "carga": "sftp mínimo",
           "catalogo": {
             "remote": {
               "name": "nube",
@@ -18641,12 +18665,22 @@
             }
           },
           "nombre": "nube",
+          "opciones": {
+            "host": "h",
+            "type": "sftp"
+          },
+          "claves": [
+            "host",
+            "type"
+          ],
           "notas": [
-            "En el dispositivo el remote se llamará 'nube' y no 'nas': es el nombre que usan los remote_path del catálogo."
+            "En el dispositivo el remote se llamará 'nube' y no 'nas': es el nombre que usan los remote_path del catálogo.",
+            "No se usa el [remote] del catálogo: le falta «host = …»."
           ]
         },
         {
           "caso": "[remote] sin nombre",
+          "carga": "sftp mínimo",
           "catalogo": {
             "remote": {
               "type": "sftp"
@@ -18656,32 +18690,60 @@
             }
           },
           "nombre": "casa",
+          "opciones": {
+            "host": "h",
+            "type": "sftp"
+          },
+          "claves": [
+            "host",
+            "type"
+          ],
           "notas": [
-            "En el dispositivo el remote se llamará 'casa' y no 'nas': es el nombre que usan los remote_path del catálogo."
+            "En el dispositivo el remote se llamará 'casa' y no 'nas': es el nombre que usan los remote_path del catálogo.",
+            "No se usa el [remote] del catálogo: le falta «host = …»."
           ]
         },
         {
           "caso": "con espacios",
+          "carga": "sftp mínimo",
           "catalogo": {
             "defaults": {
               "remote": "  casa  "
             }
           },
           "nombre": "casa",
+          "opciones": {
+            "host": "h",
+            "type": "sftp"
+          },
+          "claves": [
+            "host",
+            "type"
+          ],
           "notas": [
             "En el dispositivo el remote se llamará 'casa' y no 'nas': es el nombre que usan los remote_path del catálogo."
           ]
         },
         {
           "caso": "sin nombre en ningún sitio",
+          "carga": "sftp mínimo",
           "catalogo": {
             "defaults": {}
           },
           "nombre": "nas",
+          "opciones": {
+            "host": "h",
+            "type": "sftp"
+          },
+          "claves": [
+            "host",
+            "type"
+          ],
           "notas": []
         },
         {
           "caso": "nombre vacío",
+          "carga": "sftp mínimo",
           "catalogo": {
             "remote": {
               "name": ""
@@ -18691,9 +18753,861 @@
             }
           },
           "nombre": "nas",
+          "opciones": {
+            "host": "h",
+            "type": "sftp"
+          },
+          "claves": [
+            "host",
+            "type"
+          ],
           "notas": []
+        },
+        {
+          "caso": "sin [remote]",
+          "carga": "sftp con clave",
+          "catalogo": {
+            "defaults": {
+              "remote": "nas"
+            }
+          },
+          "nombre": "nas",
+          "opciones": {
+            "host": "h",
+            "type": "sftp",
+            "user": "u"
+          },
+          "claves": [
+            "host",
+            "type",
+            "user"
+          ],
+          "notas": []
+        },
+        {
+          "caso": "[remote] igual",
+          "carga": "sftp con clave",
+          "catalogo": {
+            "remote": {
+              "name": "nas",
+              "type": "sftp",
+              "host": "h",
+              "user": "u"
+            }
+          },
+          "nombre": "nas",
+          "opciones": {
+            "type": "sftp",
+            "host": "h",
+            "user": "u"
+          },
+          "claves": [
+            "type",
+            "host",
+            "user"
+          ],
+          "notas": []
+        },
+        {
+          "caso": "[remote] igual en otro orden",
+          "carga": "sftp con clave",
+          "catalogo": {
+            "remote": {
+              "user": "u",
+              "host": "h",
+              "type": "sftp",
+              "name": "nas"
+            }
+          },
+          "nombre": "nas",
+          "opciones": {
+            "user": "u",
+            "host": "h",
+            "type": "sftp"
+          },
+          "claves": [
+            "user",
+            "host",
+            "type"
+          ],
+          "notas": []
+        },
+        {
+          "caso": "[remote] con otro host",
+          "carga": "sftp con clave",
+          "catalogo": {
+            "remote": {
+              "name": "nas",
+              "type": "sftp",
+              "host": "otro",
+              "user": "u",
+              "port": 2222
+            }
+          },
+          "nombre": "nas",
+          "opciones": {
+            "type": "sftp",
+            "host": "otro",
+            "user": "u",
+            "port": "2222"
+          },
+          "claves": [
+            "type",
+            "host",
+            "user",
+            "port"
+          ],
+          "notas": [
+            "Las opciones del backend salen del [remote] del catálogo, que es el que comparten todos los dispositivos."
+          ]
+        },
+        {
+          "caso": "[remote] sin type",
+          "carga": "sftp con clave",
+          "catalogo": {
+            "remote": {
+              "name": "nas",
+              "host": "otro"
+            }
+          },
+          "nombre": "nas",
+          "opciones": {
+            "host": "h",
+            "type": "sftp",
+            "user": "u"
+          },
+          "claves": [
+            "host",
+            "type",
+            "user"
+          ],
+          "notas": []
+        },
+        {
+          "caso": "[remote] con type vacío",
+          "carga": "sftp con clave",
+          "catalogo": {
+            "remote": {
+              "type": "",
+              "host": "otro"
+            }
+          },
+          "nombre": "nas",
+          "opciones": {
+            "host": "h",
+            "type": "sftp",
+            "user": "u"
+          },
+          "claves": [
+            "host",
+            "type",
+            "user"
+          ],
+          "notas": []
+        },
+        {
+          "caso": "[remote] con las rutas de la clave",
+          "carga": "sftp con clave",
+          "catalogo": {
+            "remote": {
+              "type": "sftp",
+              "host": "h",
+              "user": "u",
+              "key_file": "/a/id",
+              "known_hosts_file": "/a/known_hosts"
+            }
+          },
+          "nombre": "nas",
+          "opciones": {
+            "type": "sftp",
+            "host": "h",
+            "user": "u"
+          },
+          "claves": [
+            "type",
+            "host",
+            "user"
+          ],
+          "notas": []
+        },
+        {
+          "caso": "[remote] con booleanos, números y listas",
+          "carga": "sftp con clave",
+          "catalogo": {
+            "remote": {
+              "type": "sftp",
+              "host": "otro",
+              "disable_hashcheck": true,
+              "set_modtime": false,
+              "port": 22,
+              "idle_timeout": 1.5,
+              "ciphers": [
+                "aes128-ctr",
+                "aes256-ctr"
+              ]
+            }
+          },
+          "nombre": "nas",
+          "opciones": {
+            "type": "sftp",
+            "host": "otro",
+            "disable_hashcheck": "true",
+            "set_modtime": "false",
+            "port": "22",
+            "idle_timeout": "1.5",
+            "ciphers": "['aes128-ctr', 'aes256-ctr']"
+          },
+          "claves": [
+            "type",
+            "host",
+            "disable_hashcheck",
+            "set_modtime",
+            "port",
+            "idle_timeout",
+            "ciphers"
+          ],
+          "notas": [
+            "Las opciones del backend salen del [remote] del catálogo, que es el que comparten todos los dispositivos."
+          ]
+        },
+        {
+          "caso": "[remote] de un tipo sin obligatorias",
+          "carga": "sftp con clave",
+          "catalogo": {
+            "remote": {
+              "type": "s3",
+              "provider": "AWS",
+              "region": "eu-west-1"
+            }
+          },
+          "nombre": "nas",
+          "opciones": {
+            "type": "s3",
+            "provider": "AWS",
+            "region": "eu-west-1"
+          },
+          "claves": [
+            "type",
+            "provider",
+            "region"
+          ],
+          "notas": [
+            "Las opciones del backend salen del [remote] del catálogo, que es el que comparten todos los dispositivos."
+          ]
+        },
+        {
+          "caso": "[remote] con una orden",
+          "carga": "sftp con clave",
+          "catalogo": {
+            "remote": {
+              "type": "sftp",
+              "host": "otro",
+              "ssh": "ssh otro"
+            }
+          },
+          "nombre": "nas",
+          "opciones": {
+            "type": "sftp",
+            "host": "otro"
+          },
+          "claves": [
+            "type",
+            "host"
+          ],
+          "notas": [
+            "Las opciones del backend salen del [remote] del catálogo, que es el que comparten todos los dispositivos.",
+            "El catálogo traía `ssh`: no se hereda, porque es una orden de este equipo."
+          ]
+        },
+        {
+          "caso": "[remote] con dos órdenes",
+          "carga": "sftp con clave",
+          "catalogo": {
+            "remote": {
+              "type": "webdav",
+              "url": "https://otro/dav",
+              "bearer_token_command": "token",
+              "ssh": "ssh otro"
+            }
+          },
+          "nombre": "nas",
+          "opciones": {
+            "type": "webdav",
+            "url": "https://otro/dav"
+          },
+          "claves": [
+            "type",
+            "url"
+          ],
+          "notas": [
+            "Las opciones del backend salen del [remote] del catálogo, que es el que comparten todos los dispositivos.",
+            "El catálogo traía `bearer_token_command` y `ssh`: no se heredan, porque son órdenes de este equipo."
+          ]
+        },
+        {
+          "caso": "[remote] con un secreto",
+          "carga": "sftp con clave",
+          "catalogo": {
+            "remote": {
+              "type": "sftp",
+              "host": "otro",
+              "pass": "x"
+            }
+          },
+          "nombre": "nas",
+          "opciones": {
+            "type": "sftp",
+            "host": "otro"
+          },
+          "claves": [
+            "type",
+            "host"
+          ],
+          "notas": [
+            "Las opciones del backend salen del [remote] del catálogo, que es el que comparten todos los dispositivos.",
+            "El catálogo traía `pass`: no se hereda, porque el catálogo no guarda secretos. Se puede quitar de su [remote]."
+          ]
+        },
+        {
+          "caso": "[remote] con secretos",
+          "carga": "sftp con clave",
+          "catalogo": {
+            "remote": {
+              "type": "sftp",
+              "host": "otro",
+              "key_file_pass": "y",
+              "PASS": "x",
+              "api_key": "z",
+              "access_key_id": "no-es-secreto"
+            }
+          },
+          "nombre": "nas",
+          "opciones": {
+            "type": "sftp",
+            "host": "otro",
+            "access_key_id": "no-es-secreto"
+          },
+          "claves": [
+            "type",
+            "host",
+            "access_key_id"
+          ],
+          "notas": [
+            "Las opciones del backend salen del [remote] del catálogo, que es el que comparten todos los dispositivos.",
+            "El catálogo traía `PASS`, `api_key` y `key_file_pass`: no se heredan, porque el catálogo no guarda secretos. Se pueden quitar de su [remote]."
+          ]
+        },
+        {
+          "caso": "[remote] con órdenes y secretos",
+          "carga": "sftp con clave",
+          "catalogo": {
+            "remote": {
+              "type": "sftp",
+              "host": "otro",
+              "ssh": "ssh otro",
+              "pass": "x"
+            }
+          },
+          "nombre": "nas",
+          "opciones": {
+            "type": "sftp",
+            "host": "otro"
+          },
+          "claves": [
+            "type",
+            "host"
+          ],
+          "notas": [
+            "Las opciones del backend salen del [remote] del catálogo, que es el que comparten todos los dispositivos.",
+            "El catálogo traía `ssh`: no se hereda, porque es una orden de este equipo.",
+            "El catálogo traía `pass`: no se hereda, porque el catálogo no guarda secretos. Se puede quitar de su [remote]."
+          ]
+        },
+        {
+          "caso": "[remote] sin host",
+          "carga": "sftp con clave",
+          "catalogo": {
+            "remote": {
+              "type": "sftp",
+              "user": "u"
+            }
+          },
+          "nombre": "nas",
+          "opciones": {
+            "host": "h",
+            "type": "sftp",
+            "user": "u"
+          },
+          "claves": [
+            "host",
+            "type",
+            "user"
+          ],
+          "notas": [
+            "No se usa el [remote] del catálogo: le falta «host = …»."
+          ]
+        },
+        {
+          "caso": "[remote] con el host en blanco",
+          "carga": "sftp con clave",
+          "catalogo": {
+            "remote": {
+              "type": "sftp",
+              "host": "  ",
+              "user": "u"
+            }
+          },
+          "nombre": "nas",
+          "opciones": {
+            "host": "h",
+            "type": "sftp",
+            "user": "u"
+          },
+          "claves": [
+            "host",
+            "type",
+            "user"
+          ],
+          "notas": [
+            "No se usa el [remote] del catálogo: le falta «host = …»."
+          ]
+        },
+        {
+          "caso": "[remote] que solo tenía ssh",
+          "carga": "sftp con clave",
+          "catalogo": {
+            "remote": {
+              "type": "sftp",
+              "user": "u",
+              "ssh": "ssh otro"
+            }
+          },
+          "nombre": "nas",
+          "opciones": {
+            "host": "h",
+            "type": "sftp",
+            "user": "u"
+          },
+          "claves": [
+            "host",
+            "type",
+            "user"
+          ],
+          "notas": [
+            "El catálogo traía `ssh`: no se hereda, porque es una orden de este equipo.",
+            "No se usa el [remote] del catálogo: sin `ssh`, que no se hereda, le falta «host = …»."
+          ]
+        },
+        {
+          "caso": "[remote] que solo tenía órdenes",
+          "carga": "sftp con clave",
+          "catalogo": {
+            "remote": {
+              "type": "sftp",
+              "ssh": "ssh otro",
+              "bearer_token_command": "t"
+            }
+          },
+          "nombre": "nas",
+          "opciones": {
+            "host": "h",
+            "type": "sftp",
+            "user": "u"
+          },
+          "claves": [
+            "host",
+            "type",
+            "user"
+          ],
+          "notas": [
+            "El catálogo traía `bearer_token_command` y `ssh`: no se heredan, porque son órdenes de este equipo.",
+            "No se usa el [remote] del catálogo: sin `bearer_token_command` y `ssh`, que no se heredan, le falta «host = …»."
+          ]
+        },
+        {
+          "caso": "[remote] sin host y con una orden que no lo arregla",
+          "carga": "sftp con clave",
+          "catalogo": {
+            "remote": {
+              "type": "sftp",
+              "user": "u",
+              "bearer_token_command": "t"
+            }
+          },
+          "nombre": "nas",
+          "opciones": {
+            "host": "h",
+            "type": "sftp",
+            "user": "u"
+          },
+          "claves": [
+            "host",
+            "type",
+            "user"
+          ],
+          "notas": [
+            "El catálogo traía `bearer_token_command`: no se hereda, porque es una orden de este equipo.",
+            "No se usa el [remote] del catálogo: le falta «host = …»."
+          ]
+        },
+        {
+          "caso": "[remote] webdav sin url",
+          "carga": "sftp con clave",
+          "catalogo": {
+            "remote": {
+              "type": "webdav",
+              "user": "u",
+              "bearer_token_command": "t"
+            }
+          },
+          "nombre": "nas",
+          "opciones": {
+            "host": "h",
+            "type": "sftp",
+            "user": "u"
+          },
+          "claves": [
+            "host",
+            "type",
+            "user"
+          ],
+          "notas": [
+            "El catálogo traía `bearer_token_command`: no se hereda, porque es una orden de este equipo.",
+            "No se usa el [remote] del catálogo: le falta «url = …»."
+          ]
+        },
+        {
+          "caso": "con contraseña y el [remote] igual",
+          "carga": "webdav con contraseña",
+          "catalogo": {
+            "remote": {
+              "type": "webdav",
+              "url": "https://h/dav",
+              "user": "u"
+            }
+          },
+          "nombre": "nas",
+          "opciones": {
+            "pass": "ofuscada",
+            "type": "webdav",
+            "url": "https://h/dav",
+            "user": "u"
+          },
+          "claves": [
+            "pass",
+            "type",
+            "url",
+            "user"
+          ],
+          "notas": []
+        },
+        {
+          "caso": "con contraseña y otro [remote]",
+          "carga": "webdav con contraseña",
+          "catalogo": {
+            "remote": {
+              "type": "webdav",
+              "url": "https://otro/dav",
+              "user": "u"
+            }
+          },
+          "nombre": "nas",
+          "opciones": {
+            "pass": "ofuscada",
+            "type": "webdav",
+            "url": "https://h/dav",
+            "user": "u"
+          },
+          "claves": [
+            "pass",
+            "type",
+            "url",
+            "user"
+          ],
+          "notas": [
+            "El [remote] del catálogo describe otra conexión: este dispositivo se queda con la que se acaba de comprobar, porque sus contraseñas, claves y órdenes no se dan a una conexión que no se ha comprobado."
+          ]
+        },
+        {
+          "caso": "con contraseña y un [remote] con órdenes y secretos",
+          "carga": "webdav con contraseña",
+          "catalogo": {
+            "remote": {
+              "type": "webdav",
+              "url": "https://otro/dav",
+              "pass": "x",
+              "bearer_token_command": "t"
+            }
+          },
+          "nombre": "nas",
+          "opciones": {
+            "pass": "ofuscada",
+            "type": "webdav",
+            "url": "https://h/dav",
+            "user": "u"
+          },
+          "claves": [
+            "pass",
+            "type",
+            "url",
+            "user"
+          ],
+          "notas": [
+            "El catálogo traía `bearer_token_command`: no se hereda, porque es una orden de este equipo.",
+            "El catálogo traía `pass`: no se hereda, porque el catálogo no guarda secretos. Se puede quitar de su [remote].",
+            "El [remote] del catálogo describe otra conexión: este dispositivo se queda con la que se acaba de comprobar, porque sus contraseñas, claves y órdenes no se dan a una conexión que no se ha comprobado."
+          ]
+        },
+        {
+          "caso": "con contraseña y un [remote] incompleto",
+          "carga": "webdav con contraseña",
+          "catalogo": {
+            "remote": {
+              "type": "webdav",
+              "user": "u"
+            }
+          },
+          "nombre": "nas",
+          "opciones": {
+            "pass": "ofuscada",
+            "type": "webdav",
+            "url": "https://h/dav",
+            "user": "u"
+          },
+          "claves": [
+            "pass",
+            "type",
+            "url",
+            "user"
+          ],
+          "notas": [
+            "El [remote] del catálogo describe otra conexión: este dispositivo se queda con la que se acaba de comprobar, porque sus contraseñas, claves y órdenes no se dan a una conexión que no se ha comprobado."
+          ]
+        },
+        {
+          "caso": "con contraseña y sin type",
+          "carga": "webdav con contraseña",
+          "catalogo": {
+            "remote": {
+              "url": "https://otro"
+            }
+          },
+          "nombre": "nas",
+          "opciones": {
+            "pass": "ofuscada",
+            "type": "webdav",
+            "url": "https://h/dav",
+            "user": "u"
+          },
+          "claves": [
+            "pass",
+            "type",
+            "url",
+            "user"
+          ],
+          "notas": []
+        },
+        {
+          "caso": "con ssh y otro [remote]",
+          "carga": "sftp con ssh",
+          "catalogo": {
+            "remote": {
+              "type": "sftp",
+              "host": "otro"
+            }
+          },
+          "nombre": "nas",
+          "opciones": {
+            "ssh": "ssh -p 22 u@h",
+            "type": "sftp"
+          },
+          "claves": [
+            "ssh",
+            "type"
+          ],
+          "notas": [
+            "El [remote] del catálogo describe otra conexión: este dispositivo se queda con la que se acaba de comprobar, porque sus contraseñas, claves y órdenes no se dan a una conexión que no se ha comprobado."
+          ]
         }
-      ]
+      ],
+      "secretas": [
+        {
+          "nombre": "key",
+          "secreta": true
+        },
+        {
+          "nombre": "pass",
+          "secreta": true
+        },
+        {
+          "nombre": "password",
+          "secreta": true
+        },
+        {
+          "nombre": "2fa",
+          "secreta": true
+        },
+        {
+          "nombre": "user",
+          "secreta": false
+        },
+        {
+          "nombre": "host",
+          "secreta": false
+        },
+        {
+          "nombre": "type",
+          "secreta": false
+        },
+        {
+          "nombre": "url",
+          "secreta": false
+        },
+        {
+          "nombre": "PASS",
+          "secreta": true
+        },
+        {
+          "nombre": " pass ",
+          "secreta": true
+        },
+        {
+          "nombre": "key ",
+          "secreta": true
+        },
+        {
+          "nombre": "api_key ",
+          "secreta": true
+        },
+        {
+          "nombre": "key_file_pass",
+          "secreta": true
+        },
+        {
+          "nombre": "token",
+          "secreta": true
+        },
+        {
+          "nombre": "client_secret",
+          "secreta": true
+        },
+        {
+          "nombre": "service_account_credentials",
+          "secreta": true
+        },
+        {
+          "nombre": "private_key_pem",
+          "secreta": true
+        },
+        {
+          "nombre": "sas_url",
+          "secreta": true
+        },
+        {
+          "nombre": "account_key",
+          "secreta": true
+        },
+        {
+          "nombre": "account_keys",
+          "secreta": true
+        },
+        {
+          "nombre": "account_key_id",
+          "secreta": true
+        },
+        {
+          "nombre": "access_grant",
+          "secreta": true
+        },
+        {
+          "nombre": "connection_string",
+          "secreta": true
+        },
+        {
+          "nombre": "cookie",
+          "secreta": true
+        },
+        {
+          "nombre": "authorization",
+          "secreta": true
+        },
+        {
+          "nombre": "headers",
+          "secreta": true
+        },
+        {
+          "nombre": "api_key",
+          "secreta": true
+        },
+        {
+          "nombre": "sse_customer_key",
+          "secreta": true
+        },
+        {
+          "nombre": "sse_customer_key_base64",
+          "secreta": true
+        },
+        {
+          "nombre": "access_key_id",
+          "secreta": false
+        },
+        {
+          "nombre": "sse_kms_key_id",
+          "secreta": false
+        },
+        {
+          "nombre": "key_id",
+          "secreta": false
+        },
+        {
+          "nombre": "keyboard",
+          "secreta": false
+        },
+        {
+          "nombre": "monkey",
+          "secreta": false
+        },
+        {
+          "nombre": "my_key",
+          "secreta": true
+        },
+        {
+          "nombre": "my_key_id",
+          "secreta": false
+        },
+        {
+          "nombre": "_key",
+          "secreta": true
+        },
+        {
+          "nombre": "hostkey",
+          "secreta": false
+        },
+        {
+          "nombre": "passive",
+          "secreta": true
+        },
+        {
+          "nombre": "md5sum_command",
+          "secreta": false
+        },
+        {
+          "nombre": "api_Key",
+          "secreta": true
+        },
+        {
+          "nombre": "",
+          "secreta": false
+        }
+      ],
+      "obligatorias": {
+        "sftp": [
+          "host"
+        ],
+        "webdav": [
+          "url"
+        ]
+      }
     }
   },
   "llavero": {

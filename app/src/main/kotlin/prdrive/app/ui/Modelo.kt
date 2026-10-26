@@ -96,6 +96,15 @@ class Modelo(app: Application) : AndroidViewModel(app) {
         private set
     var catalogo by mutableStateOf<Catalogo.Catalog?>(null)
         private set
+
+    /**
+     * Lo que el catálogo cambia de la conexión del código, o no hereda
+     * ([Pairing.alinearConCatalogo]). Se dice al elegir las parejas, antes de
+     * instalar, que es cuando todavía se puede no seguir: el «Según el catálogo»
+     * del asistente del escritorio.
+     */
+    var notasDelCatalogo by mutableStateOf<List<String>>(emptyList())
+        private set
     var elegidas by mutableStateOf<Set<String>>(emptySet())
         private set
 
@@ -111,7 +120,7 @@ class Modelo(app: Application) : AndroidViewModel(app) {
     var inicioTerminado by mutableStateOf(false)
         private set
 
-    /** Lo que el instalador ha ajustado (el nombre del remote) y los espejos, que no se inicializan. */
+    /** Lo que el instalador ha ajustado (el remote, según el catálogo) y los espejos, que no se inicializan. */
     var instalado by mutableStateOf<Instalador.Instalado?>(null)
         private set
 
@@ -238,6 +247,7 @@ class Modelo(app: Application) : AndroidViewModel(app) {
             Instalador.conectar(contexto, c)
             val cat = Instalador.leerCatalogo(contexto, c)
             catalogo = cat
+            notasDelCatalogo = Pairing.alinearConCatalogo(c, cat.raw).second
             elegidas = cat.names.toSet()
             // El llavero, desmarcado: es un paso opcional, como en el instalador.
             conLlavero = false

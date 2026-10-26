@@ -91,7 +91,10 @@ object Instalador {
      * parejas, el texto del config—: o se escribe entero, o no se escribe, y
      * entonces el primer arranque se puede repetir.
      *
-     * - El nombre del remote es el del catálogo ([Pairing.alinearConCatalogo]).
+     * - El nombre del remote es el del catálogo, y sus opciones las del
+     *   `[remote]` del catálogo si viene completo, menos lo que ejecuta algo o
+     *   es secreto ([Pairing.alinearConCatalogo]). La clave y los known_hosts
+     *   son los del código.
      * - La ruta del catálogo es la del código, siempre, como hace el instalador
      *   con la de su perfil: es de donde se ha leído.
      * - La carpeta de un espejo de subida NO se crea, a diferencia de

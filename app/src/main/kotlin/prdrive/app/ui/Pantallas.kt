@@ -315,6 +315,16 @@ private fun ColumnScope.PasoParejas(m: Modelo) {
     val cat = m.catalogo ?: return
     val parejas = prdrive.engine.Catalogo.pairsByName(cat)
     Text("Elige qué sincroniza este teléfono. Cada pareja es una carpeta suya y una del remoto.")
+    // Lo que el catálogo cambia de la conexión del código: antes de instalar,
+    // que es cuando todavía se puede no seguir.
+    for (nota in m.notasDelCatalogo) {
+        Text(
+            nota,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.tertiary,
+            modifier = Modifier.testTag("nota-catalogo"),
+        )
+    }
     LazyColumn(modifier = Modifier.weight(1f, fill = false)) {
         items(cat.names) { nombre ->
             val p = parejas[nombre].orEmpty()
