@@ -114,7 +114,7 @@ hacerlo.
   `disp:Fotos {2024}` predice `disp_Fotos_` y rclone escribe `disp_Fotos_{2024}`:
   el escritorio no encuentra sus listados. Comprobado contra el código de
   v1.75.2, no en un escritorio. El teléfono no tiene sufijo y sigue a rclone
-  (AGENTS.md, «Arquitectura»).
+  (AGENTS.md, «Arquitectura»). Abierto en prdrive: Jeremaya25/prdrive#177.
 - **«Must run --resync» se queda sin explicación.** bisync lo escribe con
   mayúscula al abortar (`cmd/bisync/operations.go`), y la aguja de
   `KNOWN_ERRORS` es «must run --resync». El teléfono lo replica tal cual.
