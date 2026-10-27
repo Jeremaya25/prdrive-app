@@ -17,8 +17,9 @@ import prdrive.engine.Store
 /**
  * Avisos.kt — Las notificaciones del llavero: solo lo que pide hacer algo
  * fuera de prdrive. Una copia de conflicto nueva (`Agente._copias_del_llavero()`
- * de `agente.py`) y un guardado que llegó cortado. Lo demás lo dice la fila de
- * la principal.
+ * de `agente.py`), un guardado que llegó cortado y uno que se ha puesto aparte
+ * porque la base había cambiado (`Lecturas`). Lo demás lo dice la fila de la
+ * principal.
  *
  * Sin el permiso de notificaciones (`POST_NOTIFICATIONS`, que se pide al
  * activar el llavero) no se avisa de nada, y queda la fila.
@@ -42,6 +43,16 @@ object Avisos {
      * (`COMBINAR_A_MANO`).
      */
     const val COMBINAR_FUERA = "Combínalas en el ordenador con «Abrir llavero», o en tu app de KeePass."
+
+    /**
+     * Lo que se dice de un guardado puesto aparte: es del teléfono (en el
+     * escritorio, KeePassXC recarga la base o combina lo que no ha guardado).
+     */
+    const val GUARDADO_APARTE =
+        "La base había cambiado en otro dispositivo después de que tu app de KeePass la abriera, y " +
+            "guardar encima habría borrado ese cambio. Lo que has guardado está en una copia: no se ha " +
+            "perdido nada. Antes de seguir, vuelve a abrir la base en tu app de KeePass (o elige " +
+            "«Recargar»). "
 
     /** La etiqueta de las notificaciones de una copia (el id sale de su ruta). */
     private const val ETIQUETA_COPIA = "llavero-copia"
@@ -112,6 +123,31 @@ object Avisos {
                 "Vuelve a guardar en tu app de KeePass.",
             null,
         )
+    }
+
+    /**
+     * Un guardado de [base] que ha ido a [copia] porque la app de KeePass
+     * guardaba sobre una versión vieja. Es la notificación de una copia de
+     * conflicto ([trasPasada]), con su etiqueta y su id, y queda apuntada como
+     * avisada: la pasada que la sube no la vuelve a decir. Sin permiso no se
+     * apunta, y la dirá la pasada cuando se pueda.
+     */
+    fun guardadoAparte(contexto: Context, base: String, copia: File) {
+        val ruta = relativa(copia, Prdrive.volumen(contexto).raiz)
+        synchronized(cerrojo) {
+            val gestor = NotificationManagerCompat.from(contexto)
+            if (!puede(gestor)) return
+            canal(contexto)
+            avisar(
+                contexto, gestor, ETIQUETA_COPIA, ruta.hashCode(),
+                "Tu guardado de $base está aparte",
+                GUARDADO_APARTE + COMBINAR_FUERA,
+                copia.name,
+            )
+            val fichero = avisados(contexto)
+            fichero.parentFile?.mkdirs()
+            Store.writeJson(fichero, mapOf("copias" to (leer(fichero) + ruta).sorted()))
+        }
     }
 
     /** Un guardado bueno deja atrás el cortado: su notificación, fuera. */

@@ -23249,6 +23249,32 @@
           "sin_listar": []
         },
         {
+          "caso": "una base con décimas, 2,4 s después del listado",
+          "ficheros": [
+            {
+              "ruta": "claves.kdbx",
+              "tamano": 100,
+              "mtime_ns": 1790000002900000000
+            }
+          ],
+          "listado_hex": "2320626973796e63206c697374696e672076312066726f6d20323032362d31302d30355430363a34343a32392e3735323634353839315a0a2d202020202020313030202d202d20323032362d30392d32315431343a31333a32302e3530303030303030302b303030302022636c617665732e6b646278220a",
+          "pendiente": true,
+          "sin_listar": []
+        },
+        {
+          "caso": "una base con décimas, 1,9 s antes del listado",
+          "ficheros": [
+            {
+              "ruta": "claves.kdbx",
+              "tamano": 100,
+              "mtime_ns": 1790000000900000000
+            }
+          ],
+          "listado_hex": "2320626973796e63206c697374696e672076312066726f6d20323032362d31302d30355430363a34343a32392e3735323634353839315a0a2d202020202020313030202d202d20323032362d30392d32315431343a31333a32322e3830303030303030302b303030302022636c617665732e6b646278220a",
+          "pendiente": false,
+          "sin_listar": []
+        },
+        {
           "caso": "el listado, un día más tarde",
           "ficheros": [
             {

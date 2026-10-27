@@ -89,6 +89,9 @@ object Banco {
     /** Otra base entera, distinta de la de [base]: la de KDBX 4.1 con otra semilla. */
     fun otraBase(): ByteArray = bytes(casosKdbx.first { it["caso"] == "KDBX 4 con otra semilla" && it["entera"] == true })
 
+    /** Una tercera base entera, distinta de [base] y de [otraBase]: la de KDBX 4 sin bloques de datos. */
+    fun terceraBase(): ByteArray = bytes(casosKdbx.first { it["caso"] == "KDBX 4 sin bloques de datos" && it["entera"] == true })
+
     @Suppress("UNCHECKED_CAST")
     private val casosKdbx: List<Map<String, Any?>>
         get() = (vectores["llavero"] as Map<String, Any?>)["kdbx"] as List<Map<String, Any?>>

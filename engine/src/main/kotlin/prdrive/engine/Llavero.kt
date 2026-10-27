@@ -11,7 +11,6 @@ import java.nio.file.FileAlreadyExistsException
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 import java.nio.file.StandardOpenOption
-import java.nio.file.attribute.BasicFileAttributes
 import java.nio.file.attribute.FileTime
 import java.security.MessageDigest
 import java.time.LocalDate
@@ -191,6 +190,29 @@ object Llavero {
     }
 
     // -----------------------------------------------------------------------
+    // La hora de un fichero
+    // -----------------------------------------------------------------------
+
+    /**
+     * La hora de modificación de un fichero en ns (el `st_mtime_ns` de
+     * prdrive), leída con java.nio. Es la que usan por defecto las funciones
+     * que miran horas (su parámetro `hora`), y en una JVM de escritorio trae
+     * los ns.
+     *
+     * En Android no siempre: libcore copia los ns de `stat` solo
+     * `#if (_POSIX_C_SOURCE >= 200809L)` (`prepAttributes()`,
+     * `ojluni/src/main/native/UnixNativeDispatcher.c`), y en los emuladores de
+     * Android 11, 13 y 15 sale en segundos enteros aunque ext4 guarde los ns; en
+     * el 17, entera. `File.lastModified()` tampoco sirve: segundos en 11 y 13,
+     * milisegundos en 15. Con segundos, el LEEME de 1,9 s antes de la hora fija
+     * se reescribe, y [pendiente] no ve un guardado del mismo tamaño de 2 a 3 s
+     * después del listado. Así que la app pasa la suya, la de `Os.stat()`.
+     *
+     * @throws IOException Si no se puede leer.
+     */
+    fun horaJvm(fichero: File): Long = Files.getLastModifiedTime(fichero.toPath()).to(TimeUnit.NANOSECONDS)
+
+    // -----------------------------------------------------------------------
     // El LEEME
     // -----------------------------------------------------------------------
 
@@ -208,12 +230,13 @@ object Llavero {
      *   simulación (`--dry-run`) no escribe en el dispositivo: pasa `false`, y
      *   la corrección espera a la pasada de verdad. Uno recién creado siempre
      *   sale con su hora.
+     * @param hora Cómo se lee la hora del fichero, en ns ([horaJvm]).
      * @return `true` si lo ha escrito.
      */
-    fun asegurarLeeme(donde: File, corregirHora: Boolean = true): Boolean {
+    fun asegurarLeeme(donde: File, corregirHora: Boolean = true, hora: (File) -> Long = ::horaJvm): Boolean {
         val ruta = File(donde, LEEME)
         val creado = crearExclusivo(ruta, LEEME_TEXTO.toByteArray(Charsets.UTF_8))
-        if (creado != null && (creado || corregirHora) && esElLeemeNuestro(ruta)) ponerHoraFija(ruta)
+        if (creado != null && (creado || corregirHora) && esElLeemeNuestro(ruta)) ponerHoraFija(ruta, hora)
         return creado == true
     }
 
@@ -253,10 +276,10 @@ object Llavero {
      * reescribirla cada pasada solo gastaría escrituras. Si el sistema de
      * ficheros no deja, se queda como está: no es motivo para no sincronizar.
      */
-    private fun ponerHoraFija(ruta: File) {
+    private fun ponerHoraFija(ruta: File, hora: (File) -> Long) {
         val fija = LEEME_HORA * NS_POR_SEGUNDO
         try {
-            val actual = Files.getLastModifiedTime(ruta.toPath()).to(TimeUnit.NANOSECONDS)
+            val actual = hora(ruta)
             if (abs(actual - fija) < TOLERANCIA_HORA) return
             Files.setLastModifiedTime(ruta.toPath(), FileTime.from(fija, TimeUnit.NANOSECONDS))
         } catch (_: IOException) {
@@ -273,16 +296,18 @@ object Llavero {
      * @param carpeta La carpeta del llavero (`.keychain/` del volumen).
      * @param simulacro Si la pasada es un `--dry-run`: no le corrige la hora a
      *   un `LEEME.txt` que ya existe ([asegurarLeeme]).
+     * @param hora Cómo se lee la hora de un fichero, en ns ([horaJvm]).
      * @param dormir Lo que espera [rotas].
      * @return El motivo para no hacer la pasada, o `null` si se puede.
      */
     fun preparar(
         carpeta: File,
         simulacro: Boolean = false,
+        hora: (File) -> Long = ::horaJvm,
         dormir: (Long) -> Unit = { Thread.sleep(it) },
     ): String? {
         if (!carpeta.isDirectory) return null
-        asegurarLeeme(carpeta, corregirHora = !simulacro)
+        asegurarLeeme(carpeta, corregirHora = !simulacro, hora = hora)
         val malas = rotas(carpeta, dormir)
         if (malas.isEmpty()) return null
         val lista = malas.joinToString("; ") { "${it.fichero.name}: ${it.motivo}" }
@@ -296,14 +321,15 @@ object Llavero {
      * ya lo hace.)
      *
      * @param raiz La raíz del volumen.
+     * @param hora Cómo se lee la hora de un fichero, en ns ([horaJvm]).
      * @throws IOException Si no se puede crear la carpeta.
      */
-    fun prepararCarpeta(raiz: File): File {
+    fun prepararCarpeta(raiz: File, hora: (File) -> Long = ::horaJvm): File {
         val donde = File(raiz, LLAVERO_LOCAL)
         if (!donde.isDirectory && !donde.mkdirs() && !donde.isDirectory) {
             throw IOException("No he podido crear $donde")
         }
-        asegurarLeeme(donde)
+        asegurarLeeme(donde, hora = hora)
         return donde
     }
 
@@ -488,20 +514,20 @@ object Llavero {
      *
      * @param carpeta La carpeta del llavero.
      * @param listado El listado `path1` ([listadoDe]).
+     * @param hora Cómo se lee la hora de una base, en ns ([horaJvm]).
      */
-    fun pendiente(carpeta: File, listado: File): Boolean {
+    fun pendiente(carpeta: File, listado: File, hora: (File) -> Long = ::horaJvm): Boolean {
         val lista = bases(carpeta)
         if (lista.isEmpty()) return false
         val visto = listadoLocal(listado) ?: return true
         for (fichero in lista) {
-            val atributos = try {
-                Files.readAttributes(fichero.toPath(), BasicFileAttributes::class.java)
+            val (tamano, ns) = try {
+                Pair(Files.size(fichero.toPath()), hora(fichero))
             } catch (_: IOException) {
                 return true
             }
             val linea = visto[rutaRelativa(carpeta, fichero)] ?: return true
-            val hora = atributos.lastModifiedTime().to(TimeUnit.NANOSECONDS)
-            if (linea.first != atributos.size() || abs(hora - linea.second) >= TOLERANCIA_HORA) return true
+            if (linea.first != tamano || abs(ns - linea.second) >= TOLERANCIA_HORA) return true
         }
         return false
     }

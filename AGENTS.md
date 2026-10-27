@@ -81,6 +81,8 @@ app/          Android: solo dibuja y llama
 ├── documentos/VolumenProvider.kt  el volumen en la app de Archivos, sin .prdrive/
 ├── documentos/GuardadoAtomico.kt  los guardados de las bases del llavero, enteros
 │                     o ninguno
+├── documentos/Lecturas.kt  qué versión de cada base tiene cada app de KeePass:
+│                     un guardado sobre una vieja va a una copia de conflicto
 └── androidTest/  el spike contra rclone de verdad, la pasada entera, el
                   proveedor, los vectores del motor otra vez en Android
                   (MotorEnAndroidTest), lo que el actualizador mira de un APK
@@ -106,6 +108,16 @@ herramientas/
 │                          `release`
 └── actions/compilar-apk/  lo que comparten: el .aar, los tests del motor y el
                            APK sin firmar
+.claude/      lo de Claude Code. Los hooks (settings.json): hooks/generados.py
+              no deja editar a mano lo que se genera, y hooks/reglas.py avisa
+              de lo que cruza una regla que el compilador no ve (Android en el
+              motor, \d de ICU, String.format, colores en las pantallas). Las
+              skills: skills/vectores (regenerar los valores esperados) y
+              skills/emulador (los tests de app/ sin pisar un dispositivo). Los
+              subagentes: agents/espejo-reviewer (un cambio del motor contra
+              el Python de prdrive) y agents/rclone-fuente (lo que se dice de
+              rclone, contra su código de la versión fijada). Todo se carga al
+              empezar una sesión: lo añadido después no lo ve esa sesión
 VERSION       la versión de la app, y la única («Versiones y releases»)
 ```
 
@@ -124,9 +136,9 @@ contra su documentación, y se cita el sitio.
 - **rclone como biblioteca, por `sync/bisync`.** `core/command` no sirve, por
   dos razones independientes:
   - Está declarado con `NeedsRequest` y `NeedsResponse`
-    (`fs/rc/internal.go:487`), y `librclone.RPC()` rechaza esos métodos («core/command
-    are not supported as they need request or response object»,
-    `librclone/librclone/librclone.go`).
+    (`fs/rc/internal.go:488-489`), y `librclone.RPC()` rechaza esos métodos
+    («method "core/command" needs request, not supported», con un 404;
+    `librclone/librclone/librclone.go:105-106`).
   - Su implementación (`rcRunCommand`) lanza rclone como proceso hijo con
     `os.Executable()`, que en Android es la app.
 
@@ -158,7 +170,11 @@ contra su documentación, y se cita el sitio.
   variables. Y sale mejor: con la configuración en flags o en el entorno,
   rclone añade un `{hexstring}` al nombre del Fs que `StripHexString` quita
   después (`cmd/bisync/bilib/canonical.go`). Definido en el fichero, no hay nada
-  que quitar, y el nombre de los listados es el del escritorio.
+  que quitar, y el nombre de los listados es el del escritorio, salvo si la ruta
+  de la pareja lleva llaves: `StripHexString` quita la primera `{…}` que
+  encuentre (`canonical.go:47-53`), que en el escritorio es la del sufijo y aquí
+  la de la carpeta (`disp:Fotos {2024}` sale `disp_Fotos_{2024}` en el
+  escritorio y `disp_Fotos_` en el teléfono). El motor sigue a rclone.
 - **La app de Archivos**: un `DocumentsProvider` publica el volumen sin pedir
   permisos. Al ser almacenamiento de la app, las fechas de modificación se
   conservan, que es lo que hace poco fiable a bisync en una SD o un USB.
@@ -211,6 +227,12 @@ python herramientas/vectores.py ../prdrive
 cd rclone/go && go run ./oraculo ../../engine/src/test/resources/oraculo_rclone.json
 ```
 
+Desde un worktree, `../prdrive` no existe: prdrive está junto a la copia
+principal (`dirname "$(git worktree list --porcelain | sed -n '1s/^worktree //p')"`).
+Y si después `git status` marca un JSON que `git diff` no enseña, son solo
+finales de línea (el generador escribe LF y la copia tiene `core.autocrlf`): no
+hay cambio. La skill `vectores` lo hace todo.
+
 ## Órdenes
 
 ```bash
@@ -223,8 +245,11 @@ rclone/construir.sh        # el .aar (Go, gomobile y un NDK)
 ```
 
 `connectedDebugAndroidTest` instala y ejecuta en **todos** los dispositivos
-conectados, teléfonos incluidos. Con uno enchufado, se elige el emulador con
-`ANDROID_SERIAL=emulator-5554`. La batería entera son unos 30 s con el APK ya
+conectados, teléfonos incluidos, y **borra la app**: los tests vacían
+`filesDir/volumen` (`Banco.volumen`) y al acabar se desinstalan `prdrive.app` y
+`prdrive.app.test`. Un emparejamiento hecho a mano en ese dispositivo se pierde.
+Con uno enchufado, se elige el emulador con `ANDROID_SERIAL=emulator-5554` (la
+skill `emulador` dice cómo saber si un emulador está libre). La batería entera son unos 30 s con el APK ya
 compilado; mientras se trabaja en algo, una clase sola (unos 18 s, casi todo
 instalar):
 
@@ -296,6 +321,10 @@ otra:
 ```bash
 export JAVA_TOOL_OPTIONS='-Djdk.net.unixdomain.tmpdir=C:\Windows\Temp'
 ```
+
+Para Claude Code, en el `env` de `.claude/settings.local.json` (no se versiona:
+es de cada máquina). `.worktreeinclude` lo copia de la copia principal a cada
+worktree nuevo, así que tiene que estar también allí.
 
 ## Versiones y releases
 
@@ -507,6 +536,37 @@ decisiones que no se ven en el código:
     guardado se corta, se borra: una base vacía está rota y pararía todo el
     llavero. Un cliente que separa el descriptor (`FileDescriptorDetachedException`)
     cuenta como guardado cortado, con su motivo: no se pierde en silencio.
+- **Un guardado sobre una versión vieja va aparte** (`Lecturas.kt`). KeePassDX
+  4.5.6 ve que la base ha cambiado en el disco (una pasada ha traído la de otro
+  dispositivo) solo por la fecha y el tamaño, avisa, y deja guardar encima sin
+  volver a leerla (`checkDatabaseInfo`, `SaveDatabaseRunnable`): ese guardado
+  borraría el cambio del otro dispositivo, que quedaría solo en `.prversions/`.
+  Así que el proveedor apunta en `state/llavero-lecturas.json`, por app
+  (`callingPackage`) y por base, la huella SHA-256 de lo que le ha dado al leer
+  con `"r"` y de lo que ha puesto ella. Al cerrar un guardado, si la base del
+  disco no es la que esa app conoce, va a
+  `<base>.conflicto-dispositivo<AAAAMMDDhhmmss>.kdbx`, se apunta en la fila y se
+  notifica; los guardados viejos siguientes van a esa misma copia mientras nadie
+  la toque. Las reglas finas:
+  - Recargar o combinar en la app de KeePass leen la base, y lo que guarde
+    después va encima. Solo cuenta `"r"`: un `"rw"` da una copia, pero no se
+    sabe si la app la lee, y contarlo dejaría pasar un guardado viejo.
+  - Sin nada apuntado (una app que abrió la base antes de esto) va encima, como
+    siempre; y si no se puede apuntar, también: falla abierto, porque fallar
+    cerrado apartaría todos los guardados.
+  - La huella de lo que pone la app se saca del temporal, antes de moverlo
+    (`GuardadoAtomico`), no del fichero ya en su sitio: lo que viene después del
+    cierre corre en el hilo del proveedor, y una pasada que trae la base justo
+    entonces haría apuntar una versión que la app no tiene; su guardado
+    siguiente la pisaría. Lo destapó `ProveedorLlaveroTest` en un emulador
+    cargado.
+  - El número de la copia es la fecha y la hora, no el primer libre como
+    `copia_propia()` de prdrive: dos dispositivos que apartan a la vez sacarían
+    los dos un `1`, y bisync haría una copia de la copia, que «Combinar» no
+    ofrece. `conflicts.leer_nombre` la reconoce igual (el número no tiene tope).
+  - prdrive no cambia: en el PC la copia es una copia de conflicto más, y el
+    escritorio no lo necesita, porque KeePassXC recarga la base o combina lo
+    que no ha guardado.
 - **La llave se ve, y se protege solo mientras el llavero está activo.**
   `llave.keyx` tiene que verse (la app de KeePass la necesita para abrir la
   base), pero es de solo lectura. Y con `[keychain]` en el `sync_config.toml`
@@ -599,6 +659,16 @@ guardado se pierde sin aviso.
   vectores en el dispositivo para que no se cuele otra.
 - **`String.format` usa las cifras del idioma del teléfono** (en árabe, `٠١`).
   Nada que acabe en un fichero o en un mensaje comparado pasa por él.
+- **La hora de un fichero, leída con java.nio, va en segundos enteros hasta
+  Android 15** (`Files.getLastModifiedTime`, `readAttributes`), aunque ext4
+  guarde los ns: libcore solo copia los ns de `stat` con `_POSIX_C_SOURCE`
+  (`Llavero.horaJvm` lo cuenta). `File.lastModified()` tampoco: segundos en
+  Android 11 y 13, ms en 15. En el 17 sale entera, y por eso no se vio mientras
+  los tests corrían solo en API 37. Poner la hora no pierde nada. Lo que el
+  motor compara con prdrive o con un listado de rclone lo lee con la función
+  que se le pasa (`hora`), y la app le da `Prdrive.hora` (`Os.stat`). Lo
+  vigilan los vectores del llavero con décimas, en un emulador de API 35 o
+  anterior.
 - **Ni el `.` ni el `$` son los de Python.** El `.` de Java tampoco casa con
   `\r`, `\u0085`, ` ` ni ` ` (y el de ICU, ni con `\u000b` ni con
   `\u000c`); el `$` de Python casa también delante de un `\n` final. Donde

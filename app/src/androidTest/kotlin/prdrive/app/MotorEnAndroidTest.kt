@@ -383,7 +383,8 @@ class MotorEnAndroidTest {
         return s.toString()
     }
 
-    private fun horaDe(f: File): Long = Files.getLastModifiedTime(f.toPath()).to(TimeUnit.NANOSECONDS)
+    /** La hora como la lee la app: la de java.nio, en Android hasta el 15, no trae los ns ([Llavero.horaJvm]). */
+    private fun horaDe(f: File): Long = Prdrive.hora(f)
 
     /** Escribe los ficheros de un caso (`ruta`, `hex` o `tamano`, y `mtime_ns`). */
     private fun poner(donde: File, ficheros: List<Map<String, Any?>>) {
@@ -456,7 +457,11 @@ class MotorEnAndroidTest {
                 val donde = File(temporal(), LLAVERO_LOCAL)
                 if (caso["carpeta_existe"] == true) donde.mkdirs()
                 poner(donde, objetos(caso, "ficheros"))
-                assertEquals("$nombre: lo que devuelve", caso["devuelve"], Llavero.asegurarLeeme(donde, corregirHora = caso["corregir_hora"] == true))
+                assertEquals(
+                    "$nombre: lo que devuelve",
+                    caso["devuelve"],
+                    Llavero.asegurarLeeme(donde, corregirHora = caso["corregir_hora"] == true, hora = Prdrive::hora),
+                )
                 assertLeeme(objeto(caso, "despues"), donde, nombre)
             }
             for (caso in objetos(leeme, "bases")) {
@@ -478,7 +483,7 @@ class MotorEnAndroidTest {
                 }
                 val esperas = ArrayList<Long>()
                 val durante = objeto(caso, "durante_la_espera")
-                val motivo = Llavero.preparar(donde, simulacro = caso["simulacro"] == true) { ms ->
+                val motivo = Llavero.preparar(donde, simulacro = caso["simulacro"] == true, hora = Prdrive::hora) { ms ->
                     esperas.add(ms)
                     for ((ruta, datos) in durante) File(donde, ruta).writeBytes(hex(datos.toString()))
                 }
@@ -514,7 +519,7 @@ class MotorEnAndroidTest {
                 val donde = File(temporal(), LLAVERO_LOCAL).apply { mkdirs() }
                 poner(donde, objetos(caso, "ficheros"))
                 val lst = listadoDeCaso(caso["listado_hex"])
-                assertEquals("$nombre: pendiente", caso["pendiente"], Llavero.pendiente(donde, lst))
+                assertEquals("$nombre: pendiente", caso["pendiente"], Llavero.pendiente(donde, lst, hora = Prdrive::hora))
                 assertEquals("$nombre: sin listar", cadenas(caso, "sin_listar"), Llavero.sinListar(donde, lst))
             }
 

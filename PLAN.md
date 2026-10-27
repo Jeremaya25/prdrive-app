@@ -48,13 +48,33 @@ Falta:
     siguiente y la base queda como la combinada. Las demás agujas del llavero
     (el remoto vacío, `Skipped delete` de la simulación) son de líneas sin
     colores, pero ya no dependen de ello.
-  - **KeePassDX ve el cambio en disco, pero se puede pisar.** Con la base abierta
-    y una versión más nueva bajada por «Sincronizar», al volver avisa («modified
-    outside the app») y ofrece combinar, guardar encima o recargar. Si se cierra
-    el aviso con «OK» y se guarda, pisa el cambio del otro dispositivo: queda
-    solo en `.prversions/`, sin copia de conflicto ni aviso de prdrive. Decidir
-    si «Sincronizar» debe saltarse el llavero, o avisar, con la app de KeePass
-    abierta.
+  - **KeePassDX ve el cambio en disco, pero se podía pisar (arreglado).** Con
+    la base abierta y una versión más nueva bajada por «Sincronizar», al volver
+    avisa («modified outside the app») y ofrece combinar, guardar encima o
+    recargar. Si se cerraba el aviso con «OK» y se guardaba, pisaba el cambio
+    del otro dispositivo: quedaba solo en `.prversions/`, sin copia de conflicto
+    ni aviso. Visto en su código (4.5.6), detecta el cambio sin leer la base y
+    guardar no la lee. Ahora el proveedor sabe qué versión tiene cada app, y un
+    guardado sobre una vieja va a una copia de conflicto avisada (AGENTS.md, «El
+    llavero»). Probado el 26/10/2026 en el emulador API 37 con KeePassDX 4.5.6
+    (`com.kunzisoft.keepass.libre`) y una base hecha con `keepassxc-cli`:
+    - `callingPackage` es el de KeePassDX al leer y al guardar: la clave de
+      `state/llavero-lecturas.json` es su paquete. La base se lee al
+      desbloquear, y «Abrir llavero» otra vez la vuelve a leer.
+    - Tras «OK» y guardar, la base sigue siendo la del PC y lo guardado va a
+      `personal.conflicto-dispositivo<fecha>.kdbx` (lo que KeePassDX tenía más
+      lo nuevo, sin el cambio del PC); sale «Tu guardado de personal.kdbx está
+      aparte», la fila la cuenta y la copia sube al remoto.
+    - Guardar otra vez sin recargar va a la misma copia, sin notificación nueva.
+    - «Reload data» lee la base con `"r"`, y lo que se guarda después va encima.
+    - La fila, con la copia, dice el texto de un conflicto («Se guardó en dos
+      dispositivos sin sincronizar en medio…»), que aquí no cuenta lo que ha
+      pasado; la notificación sí. Pendiente de decidir si la fila distingue una
+      copia apartada.
+    - Las pruebas destaparon una carrera (arreglada): la huella de lo que pone
+      la app se sacaba del fichero ya en su sitio, en el hilo del proveedor, y
+      una pasada justo entonces hacía apuntar una versión que la app no tiene.
+      Ahora sale del temporal antes de moverlo.
   - **Abrir desde los recientes de KeePassDX fallaba (arreglado).** El permiso
     de `ACTION_VIEW` no era persistible: KeePassDX lo intentaba tomar («No
     persistable permission grants») y Android le negaba el proveedor. Con
@@ -106,6 +126,15 @@ hacerlo.
   es `Standard.Encode(Standard.Decode(tramo))` (`backend/local/local.go`,
   `cleanRootPath` y `Root`). El teléfono sigue a rclone, vigilado por
   `rclone/go/oraculo`.
+- **`expected_prefix()` se equivoca con llaves en la ruta de una pareja.** El
+  escritorio define el remote `combine` por el entorno (`pen_environment()`), y
+  rclone le pone al Fs un sufijo `{hash}` (`fs/newfs.go`); `StripHexString` quita
+  la primera `{…}` que encuentra (`cmd/bisync/bilib/canonical.go:47-53`), que es
+  ese sufijo. `expected_prefix()` escribe `disp:` sin él, así que con
+  `disp:Fotos {2024}` predice `disp_Fotos_` y rclone escribe `disp_Fotos_{2024}`:
+  el escritorio no encuentra sus listados. Comprobado contra el código de
+  v1.75.2, no en un escritorio. El teléfono no tiene sufijo y sigue a rclone
+  (AGENTS.md, «Arquitectura»). Abierto en prdrive: Jeremaya25/prdrive#177.
 - **«Must run --resync» se queda sin explicación.** bisync lo escribe con
   mayúscula al abortar (`cmd/bisync/operations.go`), y la aguja de
   `KNOWN_ERRORS` es «must run --resync». El teléfono lo replica tal cual.

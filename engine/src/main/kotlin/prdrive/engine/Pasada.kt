@@ -706,6 +706,9 @@ object Pasada {
      * @property resyncMode El `--resync-mode` de los `--resync` de esta
      *   ejecución, por encima del de la pareja ([Orden.flagsDeLaPasada]); `null`,
      *   el suyo. Una pasada normal no lo lleva nunca. Lo pone [Mudanza].
+     * @property hora Cómo se lee la hora de un fichero del llavero, en ns. Por
+     *   defecto la de java.nio ([Llavero.horaJvm]), que en Android hasta el 15
+     *   sale en segundos enteros: la app pasa la suya.
      */
     data class Contexto(
         val simulacro: Boolean = false,
@@ -717,6 +720,7 @@ object Pasada {
         val dormir: (Long) -> Unit = { Thread.sleep(it) },
         val accesoCompartido: ((Pareja) -> String?)? = null,
         val resyncMode: String? = null,
+        val hora: (File) -> Long = Llavero::horaJvm,
     )
 
     /** El sufijo de las versiones de una pasada: `~%Y%m%d-%H%M%S`. */

@@ -193,7 +193,11 @@ object Estado {
             fallo = fallo,
             explicacion = fallo?.let { explicacionLlavero(it, carpeta, faltaRedLocal) },
             pendiente = try {
-                Llavero.pendiente(carpeta, Llavero.listadoDe(v, pareja, Bisync.tiposDeRemote(v.leerRcloneConf())))
+                Llavero.pendiente(
+                    carpeta,
+                    Llavero.listadoDe(v, pareja, Bisync.tiposDeRemote(v.leerRcloneConf())),
+                    hora = Prdrive::hora,
+                )
             } catch (_: IOException) {
                 false
             },

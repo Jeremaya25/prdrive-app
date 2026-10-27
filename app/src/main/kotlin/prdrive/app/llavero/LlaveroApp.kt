@@ -88,9 +88,11 @@ object LlaveroApp {
             val r = Pasada.pasarOFallar(
                 v, pareja, Adaptadores.pasada, Adaptadores.opciones,
                 // Android cifra el almacenamiento de la app: el teléfono cuenta
-                // como cifrado (el motor, por defecto, no).
+                // como cifrado (el motor, por defecto, no). Y la hora de los
+                // ficheros, con sus ns (Prdrive.hora).
                 Pasada.Contexto(
-                    cifrado = true, keepLogs = config.keepLogs, accesoCompartido = Prdrive.accesoCompartido(),
+                    cifrado = true, keepLogs = config.keepLogs, hora = Prdrive::hora,
+                    accesoCompartido = Prdrive.accesoCompartido(),
                 ),
                 alProgreso, decir,
             )
@@ -113,7 +115,7 @@ object LlaveroApp {
         val v = Prdrive.volumen(contexto)
         val pareja = parejaDe(v) ?: return false
         val tipos = Bisync.tiposDeRemote(v.leerRcloneConf())
-        return Llavero.pendiente(pareja.carpetaEn(v.raiz), Llavero.listadoDe(v, pareja, tipos))
+        return Llavero.pendiente(pareja.carpetaEn(v.raiz), Llavero.listadoDe(v, pareja, tipos), hora = Prdrive::hora)
     }
 
     /**

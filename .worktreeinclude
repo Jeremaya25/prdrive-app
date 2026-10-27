@@ -1,0 +1,6 @@
+# Lo que Claude Code copia de la copia principal a cada worktree nuevo. Solo
+# copia lo que además está en .gitignore (sintaxis de .gitignore).
+
+# Los ajustes de Claude Code de esta máquina: en Windows, el JAVA_TOOL_OPTIONS
+# sin el que Gradle no arranca (AGENTS.md, «Órdenes»).
+.claude/settings.local.json
