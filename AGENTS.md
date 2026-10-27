@@ -30,7 +30,11 @@ engine/       Kotlin puro (JVM), SIN una línea de Android
 │               vacía, apartar y renombrar
 ├── Toml.kt     espejo de common/config_file.py: leer Y escribir, con el
 │               round-trip verificado
-├── Pairing.kt  la mitad que LEE de common/pairing.py: la carga del QR
+├── Pairing.kt  la mitad que LEE de common/pairing.py: la carga del QR; y de
+│               install/profile.py, el rclone.conf y lo que el catálogo decide
+│               de la conexión (align_with_catalog: el nombre y las opciones de
+│               su [remote], sin órdenes ni secretos y, a diferencia de prdrive,
+│               solo si es del mismo tipo que el QR)
 ├── Catalogo.kt la mitad que LEE de common/catalog.py: remote.toml o pairs.toml,
 │               la copia sin red y la carpeta que no es un fichero
 ├── Compartidas.kt  las parejas que viven en una carpeta compartida del teléfono

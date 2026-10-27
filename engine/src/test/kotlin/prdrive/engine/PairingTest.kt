@@ -185,17 +185,80 @@ class PairingTest {
         assertFailsWith<Pairing.PairingError> { Pairing.rcloneConf(carga) }
     }
 
+    private val alinear get() = Vectores.objeto(Vectores.seccion("paso3"), "alinear")
+
+    private val cargas get() = Vectores.objeto(alinear, "cargas")
+
+    private fun cargaDe(caso: Map<String, Any?>): Pairing.Carga =
+        Pairing.leer(Vectores.texto(cargas, Vectores.texto(caso, "carga")))
+
+    @Suppress("UNCHECKED_CAST")
+    private fun catalogoDe(caso: Map<String, Any?>): Map<String, Any?> = caso["catalogo"] as Map<String, Any?>
+
     @Test
-    fun `el nombre del remote lo pone el catalogo, como align_with_catalog`() {
-        val alinear = Vectores.objeto(Vectores.seccion("paso3"), "alinear")
-        val carga = Pairing.leer(Vectores.texto(alinear, "carga"))
+    fun `lo que se hereda del remote del catalogo es lo de _opciones_del_catalogo`() {
         for (caso in Vectores.objetos(alinear, "casos")) {
-            @Suppress("UNCHECKED_CAST")
-            val (ajustada, notas) = Pairing.alinearConCatalogo(carga, caso["catalogo"] as Map<String, Any?>)
-            assertEquals(caso["nombre"], ajustada.remoteName, "«${caso["caso"]}»")
-            assertEquals(caso["notas"], notas, "«${caso["caso"]}»")
-            assertEquals(carga.opciones, ajustada.opciones, "las opciones se quedan las del código")
+            val donde = "«${caso["caso"]}»"
+            val esperado = Vectores.objeto(caso, "del_catalogo")
+            val (opciones, notas) = Pairing.opcionesDelCatalogo(
+                cargaDe(caso).opciones, tablaDe(catalogoDe(caso), "remote") ?: emptyMap(),
+            )
+            assertEquals(esperado["opciones"], opciones, donde)
+            assertEquals(esperado["claves"], opciones?.keys?.toList(), "$donde: el orden")
+            assertEquals(esperado["notas"], notas, donde)
         }
+    }
+
+    @Test
+    fun `el nombre y las opciones del remote los pone el catalogo, como align_with_catalog`() {
+        val deOtroTipo = ArrayList<String>()
+        for (caso in Vectores.objetos(alinear, "casos")) {
+            val donde = "«${caso["caso"]}»"
+            val carga = cargaDe(caso)
+            val (ajustada, notas) = Pairing.alinearConCatalogo(carga, catalogoDe(caso))
+            assertEquals(caso["nombre"], ajustada.remoteName, donde)
+            @Suppress("UNCHECKED_CAST")
+            val dePrdrive = caso["opciones"] as Map<String, Any?>
+            val tipoPrdrive = stripPy(dePrdrive["type"].toString())
+            val tipoPropio = stripPy(carga.opciones["type"] ?: "")
+            if (tipoPrdrive == tipoPropio) {
+                // Lo mismo que prdrive, byte a byte.
+                assertEquals(dePrdrive, ajustada.opciones, donde)
+                // El orden es el de las líneas del rclone.conf.
+                assertEquals(Vectores.cadenas(caso, "claves"), ajustada.opciones.keys.toList(), "$donde: el orden")
+                assertEquals(caso["notas"], notas, donde)
+            } else {
+                // prdrive adopta un [remote] de otro tipo y el teléfono no: se
+                // queda con la conexión del código y lo dice en vez de la nota
+                // de las opciones adoptadas.
+                deOtroTipo.add(Vectores.texto(caso, "caso"))
+                assertEquals(carga.opciones, ajustada.opciones, "$donde: las opciones son las del código")
+                assertEquals(
+                    Vectores.cadenas(caso, "notas").filter { it != Pairing.NOTA_OPCIONES_DEL_CATALOGO } +
+                        Pairing.notaOtroTipo(dePrdrive["type"].toString(), carga.opciones["type"] ?: ""),
+                    notas,
+                    donde,
+                )
+            }
+            // La clave y los known_hosts viajan con el QR, nunca con el catálogo.
+            assertTrue(carga.privateKey.contentEquals(ajustada.privateKey), "$donde: la clave es la del código")
+            assertEquals(carga.knownHosts, ajustada.knownHosts, "$donde: los known_hosts son los del código")
+        }
+        // Que la guarda se ha probado de verdad, con el caso que la justifica.
+        assertTrue("[remote] de tipo local" in deOtroTipo, "casos de otro tipo: $deOtroTipo")
+    }
+
+    @Test
+    fun `es secreto lo mismo que para es_secreta`() {
+        for (caso in Vectores.objetos(alinear, "secretas")) {
+            val nombre = Vectores.texto(caso, "nombre")
+            assertEquals(caso["secreta"], Pairing.esSecreta(nombre), reprPy(nombre))
+        }
+    }
+
+    @Test
+    fun `lo que rclone exige de cada backend es lo de OBLIGATORIAS`() {
+        assertEquals(alinear["obligatorias"], Pairing.OBLIGATORIAS)
     }
 
     @Test

@@ -159,13 +159,21 @@ hacerlo.
   es un objeto (`_parse_release` llama a `.get()` sin mirar), que no está entre
   lo que recoge. El teléfono corta el número en el `²` y lo cuenta como una
   respuesta rara (`Actualizacion.kt`); los vectores apuntan los dos casos.
+- **El catálogo puede cambiar el tipo del remote.** `_opciones_del_catalogo()`
+  adopta el `type` del `[remote]` aunque no sea el de la conexión que se acaba
+  de comprobar, y el catálogo lo escribe cualquiera con acceso al remoto. Con
+  `type = "local"` las parejas apuntan al disco del propio equipo (en el
+  teléfono, al almacenamiento interno de la app: una pareja hacia
+  `.prdrive/keys` dejaría la clave privada a la vista en la app de Archivos, y
+  un espejo de subida vaciaría lo de dentro); con `alias` o un `webdav` sin
+  contraseña, a otro sitio. Un cambio de tipo de verdad pediría credenciales
+  nuevas, que el catálogo no lleva. El teléfono solo adopta un `[remote]` del
+  mismo tipo que el del QR, y si no lo dice en una nota
+  (`Pairing.alinearConCatalogo`); los vectores guardan lo que hace prdrive
+  (`del_catalogo` y los casos de otro tipo).
 
 ## 3. Lo que el paso 1 dejó a medias
 
-- **Heredar las opciones del `[remote]` del catálogo.** De
-  `profile.align_with_catalog()` solo se porta la regla del nombre; falta
-  `_opciones_del_catalogo()`, con lo que no se hereda (lo que ejecuta algo o es
-  secreto).
 - **Un simulacro desde la app** (`--dry-run`), que es lo que el instalador
   recomienda para probar los espejos. Con él, la carpeta de un espejo de subida
   se podría crear al instalar, como hace `make_local_dirs()`; hoy no se crea,
