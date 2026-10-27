@@ -1,10 +1,11 @@
 """
 punta_a_punta.py — El servidor de la prueba de punta a punta (`PuntaAPuntaTest`).
 
-Monta en una carpeta de trabajo un remoto de prueba —un catálogo con una pareja
-bisync `notas`, un espejo de bajada `fotos` y el llavero (`[keychain]`), con
-ficheros ya dentro y una base de KeePassXC entera en `keychain/`—, una clave
-para el teléfono y otra para el servidor, y la carga del QR que las junta, hecha
+Monta en una carpeta de trabajo un remoto de prueba —un catálogo con dos parejas
+bisync (`notas` y `vault`, la que la prueba muda a una carpeta compartida), un
+espejo de bajada `fotos` y el llavero (`[keychain]`), con ficheros ya dentro y
+una base de KeePassXC entera en `keychain/`—, una clave para el teléfono y otra
+para el servidor, y la carga del QR que las junta, hecha
 con el `pairing.dumps()` de prdrive (y comprobada con su `leer()`). Después
 arranca `rclone serve sftp` sobre el remoto, escuchando SOLO en 127.0.0.1: el
 emulador ve el PC en 10.0.2.2.
@@ -42,6 +43,11 @@ local = "sync-data/notas"
 remote_path = "/copia/notas"
 
 [[pair]]
+name = "vault"
+local = "vault"
+remote_path = "/copia/vault"
+
+[[pair]]
 name = "fotos"
 local = "sync-data/fotos"
 remote_path = "/copia/fotos"
@@ -58,6 +64,10 @@ FICHEROS = {
     # bisync se para por seguridad.
     "copia/notas/quieto.txt": "quieto\n",
     "copia/fotos/foto.txt": "una foto\n",
+    # El vault que la tercera prueba muda a una carpeta compartida: con un
+    # fichero que no se toca, por lo mismo que en `notas`.
+    "copia/vault/nota.md": "una nota del vault\n",
+    "copia/vault/quieto.md": "quieto\n",
 }
 
 

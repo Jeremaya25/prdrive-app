@@ -20,6 +20,10 @@ import java.time.format.DateTimeFormatter
  * <raiz>/.prdrive/        sync_config.toml, rclone.conf, keys/, state/, filters/, logs/
  * ```
  *
+ * No toda pareja cuelga de la raíz: una pareja puede vivir en una carpeta
+ * compartida del teléfono ([Compartidas], `.prdrive/compartidas.json`), y
+ * entonces solo el upstream de su `combine` apunta fuera del volumen.
+ *
  * El motor no sabe dónde está [raiz]: en la app es `filesDir/volumen`, y la
  * pasa quien la sabe.
  */
@@ -33,6 +37,9 @@ class Volumen(val raiz: File) {
     val state: File get() = File(programa, "state")
     val filtros: File get() = File(programa, "filters")
     val logs: File get() = File(programa, "logs")
+
+    /** `compartidas.json`: qué parejas viven en una carpeta compartida ([Compartidas]). */
+    val compartidas: File get() = File(programa, Compartidas.FICHERO)
 
     /** El workdir de bisync de una pareja: `state/<pareja>/`. */
     fun workdir(pareja: Pareja): File = File(state, pareja.workdir)
@@ -52,8 +59,14 @@ class Volumen(val raiz: File) {
     /** Si el volumen ya está sembrado: tiene config y `rclone.conf`. */
     val sembrado: Boolean get() = config.isFile && rcloneConf.isFile
 
-    /** El `sync_config.toml` del volumen, resuelto. */
-    fun leerConfig(): Config = parseConfig(loadRaw(config.readText(Charsets.UTF_8)))
+    /**
+     * El `sync_config.toml` del volumen, resuelto, con las carpetas compartidas
+     * de `compartidas.json` puestas ([Config.conCompartidas]). Un
+     * `compartidas.json` que no se lee es un [ConfigError], no «ninguna»: ver
+     * [Compartidas.leer].
+     */
+    fun leerConfig(): Config =
+        parseConfig(loadRaw(config.readText(Charsets.UTF_8))).conCompartidas(Compartidas.leer(compartidas), raiz)
 
     /**
      * El `rclone.conf` del volumen, o vacío si no hay. Para mirarlo (los tipos
@@ -106,10 +119,14 @@ class Volumen(val raiz: File) {
      * y el config sale de él. El instalador lo vuelve a escribir, con el
      * `combine`, en cuanto hay parejas elegidas.
      *
+     * El `combine` lleva las carpetas compartidas de `compartidas.json` (un
+     * fichero roto es un [ConfigError] antes de escribir nada).
+     *
      * @return lo escrito.
      */
     fun escribirRemoto(carga: Pairing.Carga, config: Config?): List<File> {
-        val texto = Pairing.rcloneConf(carga, config?.seccionCombine(raiz.absolutePath) ?: "")
+        val seccion = config?.conCompartidas(Compartidas.leer(compartidas), raiz)?.seccionCombine(raiz.absolutePath)
+        val texto = Pairing.rcloneConf(carga, seccion ?: "")
         val escrito = ArrayList<File>()
         val clave = carga.privateKey
         if (clave != null) {
@@ -138,15 +155,26 @@ class Volumen(val raiz: File) {
      * Reescribe la sección `[disp]` del `rclone.conf` cuando cambian las parejas
      * del config, dejando la del remoto como estaba.
      *
+     * El [config] no tiene por qué traer las carpetas compartidas puestas:
+     * siempre se aplican [entradas] (por defecto las del fichero) antes de
+     * escribir, con lo que reescribir el `combine` con un config recién leído
+     * del TOML no devuelve las parejas compartidas al volumen. Quien acaba de
+     * cambiar las entradas y aún no las ha escrito las pasa aquí.
+     *
      * @throws IOException si no se puede leer (o no está) o escribir: uno que
      *   no se ha leído se deja como está.
+     * @throws ConfigError si [entradas] se lee del fichero y está roto.
      */
-    fun actualizarCombine(config: Config) {
+    fun actualizarCombine(
+        config: Config,
+        entradas: Map<String, Compartidas.Entrada> = Compartidas.leer(compartidas),
+    ) {
         // Uno que no se puede leer no se rehace solo con el `combine`: se iría el remoto.
         val actual = leerRcloneConfSiSePuede() ?: throw IOException("No he podido leer $rcloneConf")
         val nombre = config.deviceRemote ?: return
         val sinCombine = quitarSeccion(actual, nombre).trimEnd('\n')
-        val texto = (if (sinCombine.isEmpty()) "" else sinCombine + "\n\n") + config.seccionCombine(raiz.absolutePath)
+        val seccion = config.conCompartidas(entradas, raiz).seccionCombine(raiz.absolutePath)
+        val texto = (if (sinCombine.isEmpty()) "" else sinCombine + "\n\n") + seccion
         if (!Store.writeText(rcloneConf, texto)) throw IOException("No he podido escribir $rcloneConf")
     }
 

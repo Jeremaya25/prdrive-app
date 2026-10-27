@@ -181,4 +181,80 @@ class VolumenProviderTest {
         assertTrue(proveedor.isChildDocument(VolumenProvider.ID_RAIZ, carpeta))
         assertFalse(proveedor.isChildDocument(carpeta, VolumenProvider.ID_RAIZ))
     }
+
+    /**
+     * Una pareja con entrada en `compartidas.json` (en cualquier estado) ya no
+     * vive en el volumen: su copia privada no se toca desde la app de Archivos,
+     * o la próxima pasada encontraría cambios que nadie hizo en la carpeta buena.
+     */
+    private fun compartir(estado: prdrive.engine.Compartidas.Estado = prdrive.engine.Compartidas.Estado.LISTA) {
+        val v = Prdrive.volumen(Banco.contexto)
+        v.escribirConfig(
+            mapOf(
+                "defaults" to mapOf("device_remote" to "disp", "remote" to "nas"),
+                "pair" to listOf(
+                    mapOf("name" to "vault", "mode" to "bisync", "local" to "vault", "remote_path" to "x/vault"),
+                    mapOf("name" to "notas", "mode" to "bisync", "local" to "notas", "remote_path" to "x/notas"),
+                ),
+            ),
+            "",
+        )
+        File(raiz, "vault/dentro").mkdirs()
+        File(raiz, "vault/a.txt").writeText("privada")
+        File(raiz, "notas").mkdirs()
+        prdrive.engine.Compartidas.escribir(
+            v.compartidas,
+            mapOf("vault" to prdrive.engine.Compartidas.Entrada("/storage/emulated/0/Documents/vault", estado)),
+        )
+    }
+
+    private fun seNiega(que: String, accion: () -> Unit) {
+        try {
+            accion()
+            fail("se ha podido: $que")
+        } catch (_: FileNotFoundException) {
+            // lo esperado
+        }
+    }
+
+    @Test
+    fun una_pareja_compartida_no_deja_escribir_ni_crear_su_carpeta_privada() {
+        for (estado in prdrive.engine.Compartidas.Estado.entries) {
+            compartir(estado)
+            val vault = "${VolumenProvider.ID_RAIZ}/vault"
+            seNiega("escribir un fichero de dentro ($estado)") { proveedor.openDocument("$vault/a.txt", "w", null).close() }
+            seNiega("escribir con rw ($estado)") { proveedor.openDocument("$vault/a.txt", "rw", null).close() }
+            seNiega("crear un fichero dentro ($estado)") { proveedor.createDocument(vault, "text/plain", "nuevo.txt") }
+            seNiega("crear una carpeta en lo de dentro ($estado)") {
+                proveedor.createDocument("$vault/dentro", Document.MIME_TYPE_DIR, "x")
+            }
+            seNiega("borrar un fichero de dentro ($estado)") { proveedor.deleteDocument("$vault/a.txt") }
+            seNiega("borrar la carpeta ($estado)") { proveedor.deleteDocument(vault) }
+            seNiega("renombrar un fichero de dentro ($estado)") { proveedor.renameDocument("$vault/a.txt", "b.txt") }
+            seNiega("renombrar la carpeta ($estado)") { proveedor.renameDocument(vault, "otra") }
+            // Ni crear otra con su nombre, ni renombrar una a su nombre.
+            File(raiz, "vault").deleteRecursively()
+            seNiega("crear vault en la raíz ($estado)") {
+                proveedor.createDocument(VolumenProvider.ID_RAIZ, Document.MIME_TYPE_DIR, "vault")
+            }
+            seNiega("renombrar otra carpeta a vault ($estado)") {
+                proveedor.renameDocument("${VolumenProvider.ID_RAIZ}/notas", "vault")
+            }
+            assertFalse(File(raiz, "vault").exists())
+            assertTrue(File(raiz, "notas").isDirectory)
+        }
+    }
+
+    @Test
+    fun una_pareja_compartida_deja_leer_su_carpeta_privada() {
+        compartir()
+        val vault = "${VolumenProvider.ID_RAIZ}/vault"
+        assertEquals(listOf("a.txt", "dentro"), hijos(vault))
+        proveedor.openDocument("$vault/a.txt", "r", null).use { pfd ->
+            assertEquals("privada", java.io.FileInputStream(pfd.fileDescriptor).readBytes().decodeToString())
+        }
+        // Y las demás parejas siguen escribiéndose.
+        val id = proveedor.createDocument("${VolumenProvider.ID_RAIZ}/notas", "text/plain", "n.txt")
+        proveedor.deleteDocument(id)
+    }
 }

@@ -54,4 +54,40 @@ class OrdenTest {
             assertEquals(caso["max_delete_efectivo"], Orden.maxDeleteEfectivo(p), "$donde: max-delete")
         }
     }
+
+    @Test
+    fun `el resync-mode de la pasada manda en un resync y no sale en una pasada normal`() {
+        val p = parseConfig(
+            mapOf(
+                "defaults" to mapOf("device_remote" to "disp", "remote" to "nas"),
+                "pair" to listOf(
+                    mapOf(
+                        "name" to "vault", "local" to "vault", "remote_path" to "/copia/vault",
+                        "flags" to mapOf("resync-mode" to "newer"),
+                        "extra_flags" to listOf("--resync-mode=older"),
+                    ),
+                ),
+            ),
+        ).pairs.single()
+
+        fun modos(resync: Boolean): List<String> {
+            val args = Orden.ordenRclone(
+                Orden.tramos(
+                    p, binario = "rclone", filtros = null, config = "rclone.conf", logfile = "",
+                    workdir = "state/vault", resync = resync, resyncMode = Mudanza.RESYNC_MODE,
+                ),
+            )
+            val salida = ArrayList<String>()
+            for ((i, arg) in args.withIndex()) {
+                when {
+                    arg.startsWith("--resync-mode=") -> salida.add(arg.substringAfter('='))
+                    arg == "--resync-mode" -> salida.add(args[i + 1])
+                }
+            }
+            return salida
+        }
+
+        assertEquals(listOf(Mudanza.RESYNC_MODE), modos(resync = true))
+        assertEquals(emptyList(), modos(resync = false))
+    }
 }

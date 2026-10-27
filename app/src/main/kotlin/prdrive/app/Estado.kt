@@ -6,12 +6,14 @@ import prdrive.app.documentos.GuardadoAtomico
 import prdrive.app.llavero.LlaveroApp
 import prdrive.engine.Bisync
 import prdrive.engine.Catalogo
+import prdrive.engine.Compartidas
 import prdrive.engine.Config
 import prdrive.engine.ConfigError
 import prdrive.engine.Conflictos
 import prdrive.engine.LLAVERO
 import prdrive.engine.LLAVERO_LLAVE
 import prdrive.engine.Llavero
+import prdrive.engine.Pareja
 import prdrive.engine.Pasada
 import prdrive.engine.Resultados
 import prdrive.engine.Store
@@ -41,9 +43,32 @@ object Estado {
         /** Por qué pide `--resync`; vacío si no lo pide (o no es bisync). */
         val pideResync: List<String>,
         val conflictos: List<Conflictos.Conflicto>,
+        /** La carpeta compartida donde vive (la `ruta` de su entrada de `compartidas.json`), o `null` si vive en el volumen. */
+        val compartida: String? = null,
+        /** Si la entrada está a medio mover (`entrando`): solo se ofrece «Terminar de mover». */
+        val entrando: Boolean = false,
+        /** Por qué la app no la ve entera ([Prdrive.accesoCompartido]); solo si vive fuera del volumen. */
+        val sinAcceso: String? = null,
+        /** Por qué su entrada ya no se aplica ([Pareja.problemaCompartida]): la pareja sigue en el volumen. */
+        val problemaCompartida: String? = null,
+        /** Si se ofrece «Mover a una carpeta compartida…». */
+        val sePuedeCompartir: Boolean = false,
     )
 
-    fun filas(v: Volumen, config: Config): List<Fila> {
+    /**
+     * @param acceso lo que dice [Prdrive.accesoCompartido] de una pareja que vive
+     *   fuera del volumen: `null` si la ve entera, o por qué no. Por defecto,
+     *   siempre bien.
+     * @param conCompartir si el teléfono puede mover parejas a una carpeta
+     *   compartida (desde Android 11, API 30: antes no hay permiso que darle).
+     */
+    fun filas(
+        v: Volumen,
+        config: Config,
+        acceso: (Pareja) -> String? = { null },
+        conCompartir: Boolean = false,
+    ): List<Fila> {
+        val entradas = Compartidas.leer(v.compartidas)
         val buenas = Resultados.ultimasBuenas(v.state, config.names)
         val fallos = Resultados.fallos(v.state, v.logs, config).associateBy { it.pareja }
         val conflictos = Conflictos.cargar(config, v.raiz, v.state)
@@ -58,11 +83,17 @@ object Estado {
                 explicacion = fallo?.log?.let { leer(it)?.let(Pasada::explicar) },
                 pideResync = razonesResync(v, p),
                 conflictos = conflictos[p.name].orEmpty(),
+                compartida = entradas[p.name]?.ruta,
+                entrando = entradas[p.name]?.estado == Compartidas.Estado.ENTRANDO,
+                sinAcceso = if (p.carpetaExterna != null) acceso(p) else null,
+                problemaCompartida = p.problemaCompartida,
+                sePuedeCompartir = conCompartir && p.name !in entradas &&
+                    Compartidas.problemaPareja(config, p.name) == null,
             )
         }
     }
 
-    private fun razonesResync(v: Volumen, p: prdrive.engine.Pareja): List<String> {
+    private fun razonesResync(v: Volumen, p: Pareja): List<String> {
         if (!p.isBisync) return emptyList()
         return try {
             Bisync.resyncReasons(p, Bisync.pairState(v.workdir(p)), Bisync.filtersState(Bisync.filtersFileFor(p, v.filtros)))

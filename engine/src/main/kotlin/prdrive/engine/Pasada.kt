@@ -55,6 +55,25 @@ object Pasada {
      */
     const val LLAVERO_SIN_CIFRAR = 3
 
+    /**
+     * La pareja vive en una carpeta compartida y nadie ha comprobado que se vea
+     * entera (`Contexto.accesoCompartido`). Sin el permiso de «todos los
+     * archivos», Android esconde lo que creó otra app, bisync lo vería borrado y
+     * lo borraría en el remoto. Falla cerrado, como `Contexto.cifrado`.
+     */
+    const val SIN_COMPROBAR_ACCESO =
+        "La pareja vive en una carpeta compartida del teléfono y nadie ha comprobado que se " +
+            "vea entera: sincronizar podría borrar en el remoto lo que Android no deja ver."
+
+    /**
+     * El `rclone.conf` no lleva la carpeta compartida de la pareja: un
+     * movimiento cortado entre apuntarla y reescribir el `combine`. Sincronizar
+     * miraría la carpeta privada del volumen, que está vacía.
+     */
+    const val COMBINE_VIEJO =
+        "El rclone.conf no apunta la pareja a su carpeta compartida: un movimiento se quedó a " +
+            "medias. Se arregla con «Terminar de mover» o con «Volver al volumen»."
+
     /** Líneas de log que se enseñan cuando algo falla. */
     const val LOG_TAIL_LINES = 15
 
@@ -678,8 +697,15 @@ object Pasada {
      * @property cifrado Si el dispositivo está cifrado (`cifrada.estado()` en el
      *   escritorio). Sin él, un llavero sin contraseña no se sincroniza
      *   ([LLAVERO_SIN_CIFRAR]). Por defecto no, como prdrive: falla cerrado.
+     * @property accesoCompartido Si la app puede ver entera la carpeta compartida de
+     *   una pareja: `null` si sí, o por qué no. Solo se pregunta a las parejas que
+     *   viven fuera del volumen. Sin él, esas parejas no corren
+     *   ([SIN_COMPROBAR_ACCESO]): falla cerrado.
      * @property dormir Cómo se espera antes de mirar otra vez una base que no
      *   está entera ([Llavero.rotas]); se pasa para que los tests no esperen.
+     * @property resyncMode El `--resync-mode` de los `--resync` de esta
+     *   ejecución, por encima del de la pareja ([Orden.flagsDeLaPasada]); `null`,
+     *   el suyo. Una pasada normal no lo lleva nunca. Lo pone [Mudanza].
      * @property hora Cómo se lee la hora de un fichero del llavero, en ns. Por
      *   defecto la de java.nio ([Llavero.horaJvm]), que en Android hasta el 15
      *   sale en segundos enteros: la app pasa la suya.
@@ -692,6 +718,8 @@ object Pasada {
         val sello: String = selloVersiones(),
         val cifrado: Boolean = false,
         val dormir: (Long) -> Unit = { Thread.sleep(it) },
+        val accesoCompartido: ((Pareja) -> String?)? = null,
+        val resyncMode: String? = null,
         val hora: (File) -> Long = Llavero::horaJvm,
     )
 
@@ -770,6 +798,20 @@ object Pasada {
     }
 
     /**
+     * Por qué una pareja que vive (o debería vivir) en una carpeta compartida no
+     * puede correr, o `null`. Por orden: la entrada de `compartidas.json` no vale;
+     * nadie ha comprobado el acceso; el acceso dice que no; el `rclone.conf` no
+     * lleva su carpeta.
+     */
+    private fun problemaDeCompartida(volumen: Volumen, pareja: Pareja, ctx: Contexto): String? {
+        pareja.problemaCompartida?.let { return it }
+        if (pareja.carpetaExterna == null) return null
+        val acceso = ctx.accesoCompartido ?: return SIN_COMPROBAR_ACCESO
+        acceso(pareja)?.let { return it }
+        return if (Compartidas.alDia(volumen.leerRcloneConf(), pareja)) null else COMBINE_VIEJO
+    }
+
+    /**
      * Hace la pasada de una pareja (`_pasar_pareja()`), apunta el resultado y
      * los conflictos, y guarda el log si falla.
      *
@@ -808,6 +850,12 @@ object Pasada {
             cuenta("[${pareja.name}] ERROR: $it Se aborta.")
             return acabar(ABORTO)
         }
+        // Una pareja en una carpeta compartida no corre a ciegas: si no se ve
+        // entera, bisync daría por borrado en el remoto lo que no ve.
+        problemaDeCompartida(volumen, pareja, ctx)?.let {
+            cuenta("[${pareja.name}] ERROR: $it Se aborta.")
+            return acabar(ABORTO, explicacion = it)
+        }
 
         val tipos = Bisync.tiposDeRemote(volumen.leerRcloneConf())
         var needResync = ctx.forzarResync
@@ -843,7 +891,7 @@ object Pasada {
                 p, binario = "rclone", filtros = ffile?.absolutePath,
                 config = volumen.rcloneConf.absolutePath, logfile = "",
                 workdir = volumen.workdir(p).absolutePath,
-                simulacro = simulacro, resync = resync, sello = ctx.sello,
+                simulacro = simulacro, resync = resync, sello = ctx.sello, resyncMode = ctx.resyncMode,
             )
             try {
                 rclone.ejecutar(llamadaDe(tramos, opciones), alProgreso)

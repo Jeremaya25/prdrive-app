@@ -33,6 +33,10 @@ engine/       Kotlin puro (JVM), SIN una línea de Android
 ├── Pairing.kt  la mitad que LEE de common/pairing.py: la carga del QR
 ├── Catalogo.kt la mitad que LEE de common/catalog.py: remote.toml o pairs.toml,
 │               la copia sin red y la carpeta que no es un fichero
+├── Compartidas.kt  las parejas que viven en una carpeta compartida del teléfono
+│               (`.prdrive/compartidas.json`): leerlo y escribirlo, qué pareja y
+│               qué ruta valen, si el `rclone.conf` la lleva y si las fechas de
+│               una carpeta sirven. No refleja a prdrive: es del teléfono
 ├── Resultados.kt  espejo de common/results.py: state/last_run.json
 ├── Conflictos.kt  espejo de common/conflicts.py: los perdedores de bisync
 ├── Kdbx.kt     espejo de common/kdbx.py: si una base del llavero está entera,
@@ -49,6 +53,9 @@ engine/       Kotlin puro (JVM), SIN una línea de Android
 │               se pasa, y la traducción de la orden a parámetros del RPC
 ├── PasadaLlavero.kt  lo que sync.py hace distinto con el llavero: repetir un
 │               freno, crear la carpeta remota y reapuntar la base
+├── Mudanza.kt  mover una pareja a una carpeta compartida, terminar de moverla y
+│               devolverla al volumen: la secuencia entera, contra un `Rclone`
+│               que se pasa. Tampoco refleja a prdrive
 ├── Volumen.kt  espejo de install/: la carpeta del volumen, su .prdrive/ y lo
 │               que se escribe al emparejar
 └── Actualizacion.kt  espejo de common/update.py: la última release, la caché
@@ -68,6 +75,9 @@ app/          Android: solo dibuja y llama
 ├── Actualizador.kt   la app se pone al día sola: baja el APK de la release, lo
 │                     comprueba y se lo da a PackageInstaller («La
 │                     autoactualización»)
+├── compartidas/      Compartir: lo que la app pone para «Las carpetas compartidas»
+│                     (el permiso, la carpeta que elige la persona, la prueba de
+│                     fechas y el `Mudanza.Entorno`)
 ├── ui/               Modelo (el ViewModel), Pantallas (Compose), PantallaLlavero
 │                     (la fila del llavero y su casilla), Tema (claro u oscuro,
 │                     como diga el teléfono) y Escaner (el de códigos de Play
@@ -87,8 +97,10 @@ app/          Android: solo dibuja y llama
                   proveedor, los vectores del motor otra vez en Android
                   (MotorEnAndroidTest), lo que el actualizador mira de un APK
                   (ActualizadorTest), el modo oscuro (TemaTest), el llavero
-                  (el alta, el proveedor, los trabajos y la pantalla) y las
-                  pantallas de punta a punta contra un servidor SFTP
+                  (el alta, el proveedor, los trabajos y la pantalla), las
+                  carpetas compartidas (FechasCompartidasTest, CompartirTest,
+                  MudanzaEnAndroidTest y la pantalla, PantallaCompartidaTest)
+                  y las pantallas de punta a punta contra un servidor SFTP
                   (PuntaAPuntaTest)
 herramientas/
 ├── vectores.py        genera los valores esperados desde el prdrive de verdad
@@ -163,7 +175,9 @@ contra su documentación, y se cita el sitio.
 - **El volumen** es `filesDir/volumen/`: las carpetas de las parejas, y en
   `.prdrive/` el `rclone.conf`, `keys/`, `state/`, `filters/` y `logs/`. Es la
   distribución de un disco de prdrive, a propósito: el escritorio lee el estado
-  que escribe el teléfono.
+  que escribe el teléfono. Una pareja puede vivir fuera, en una carpeta
+  compartida del teléfono («Las carpetas compartidas»); lo demás, `.prdrive/`
+  incluida, no sale de `filesDir`.
 - **El remote `combine` va en el `rclone.conf`** (`[disp]`,
   `Config.seccionCombine()`), no en el entorno como en el escritorio
   (`pen_environment()`): una biblioteca no tiene proceso hijo al que pasarle
@@ -285,9 +299,15 @@ Ese `rclone` solo sirve SFTP en el PC: bisync corre en el teléfono, con el del
 se ha pasado con un v1.75.0 contra un `.aar` v1.75.2). El servidor lleva además
 el llavero: `[keychain]` en el catálogo y una base entera en `keychain/`, hecha
 con los constructores de `vectores_llavero.py` y comprobada con `kdbx.mirar()`.
-`PuntaAPuntaTest` tiene dos pruebas: la de siempre (sin marcar «El llavero») y
+`PuntaAPuntaTest` tiene tres pruebas: la de siempre (sin marcar «El llavero»),
 la que lo marca al emparejar y comprueba que `.keychain/` tiene los bytes del
-servidor y la fila dice «al día».
+servidor y la fila dice «al día», y la que muda la pareja `vault` (una bisync con
+`local = "vault"` y dos ficheros en el servidor) a una carpeta de
+`/sdcard/Documents/`, con el permiso dado por `appops`, crea allí un fichero,
+pulsa «Sincronizar» y mira que está en el servidor. Las dos primeras no notan la
+pareja nueva. El selector de carpetas del sistema no se maneja en un test:
+llama a `Mudanza.entrar` con `Compartir.entorno`, que es lo que hace la fila al
+volver de él.
 
 El módulo `app` solo existe si hay un SDK de Android (`ANDROID_HOME`,
 `ANDROID_SDK_ROOT` o `sdk.dir` en `local.properties`): el CI del motor no lo
@@ -632,6 +652,161 @@ la base abierta). Lo que salió y lo que falta, en `PLAN.md` §1. Y una cosa que
 la app no puede arreglar: si el proceso muere con un temporal abierto, ese
 guardado se pierde sin aviso.
 
+## Las carpetas compartidas
+
+Una pareja bisync del catálogo puede vivir en una carpeta del almacenamiento
+compartido del teléfono (`/storage/emulated/0/Documents/vault`) en vez de en el
+volumen, para que otra app la abra: el caso es Obsidian, que no alcanza el
+almacenamiento privado de prdrive y no acepta una carpeta del Storage Access
+Framework (lo dicen hilos de su foro, no su documentación). Todo lo demás se
+queda privado: `.prdrive/` (la clave, el `rclone.conf`, `state/`), el llavero y
+las demás parejas. Para el escritorio no cambia nada: el catálogo, el
+`sync_config.toml`, la pareja, sus filtros y sus baselines son los mismos. Dónde
+está la carpeta es un hecho del teléfono, como `filesDir`. El diseño completo,
+con lo descartado, en `docs/superpowers/specs/2026-10-26-carpeta-compartida-design.md`.
+
+- **La redirección es del `combine`**, no una clave del TOML ni un enlace. La
+  pareja conserva su `local = "vault"`, y lo que cambia es adónde apunta el
+  upstream `vault` del `[disp]` del `rclone.conf`. Sale solo lo demás: el nombre
+  de sesión de bisync se calcula del texto de los extremos (`disp:vault`, en el
+  motor y en rclone, que lo saca del nombre y la raíz del Fs `combine`), no de
+  adónde apunte el upstream, así que los listados y el `--filters-file` son los
+  mismos. Una clave nueva en el TOML metería en un config que sale de un catálogo
+  compartido algo que prdrive no conoce y que no es de la pareja, sino del
+  teléfono; un enlace simbólico es lo mismo escondido en el sistema de ficheros,
+  y choca con las reglas de enlaces de `VolumenProvider` y de
+  `Volumen.problemaContencion()`.
+- **El fichero del teléfono** es `.prdrive/compartidas.json` (`Compartidas.kt`,
+  `Volumen.compartidas`): por pareja, la ruta y un estado, `entrando` (la
+  carpeta compartida ya es la de la pareja, pero faltan el `--resync` y borrar la
+  copia privada) o `lista`. Uno que no se puede leer es un error que se dice,
+  no «no hay ninguna»: sin las entradas, las parejas apuntarían a sus carpetas
+  privadas, que están vacías. `Config.conCompartidas()` pone a cada pareja con
+  entrada su `carpetaExterna`, y `Pareja.carpetaEn(volumen)` da esa: así
+  `Conflictos`, `Estado`, `Pasada` y `Llavero` la ven sin más cambios. Una
+  entrada que no vale (`Compartidas.problema()`) no redirige nada y deja su
+  motivo en `problemaCompartida`. No es de prdrive: no hay vectores que
+  generar.
+- **El `rclone.conf` siempre al día.** `Volumen.leerConfig()`, `escribirRemoto()`
+  y `actualizarCombine()` ponen las compartidas ellos, también al config que
+  reciben. Quien reescribe el `rclone.conf` partiendo del TOML (activar o quitar
+  el llavero) no puede dejar caer la redirección: sin ella, la pareja apuntaría a
+  su carpeta privada vacía.
+- **El acceso falla cerrado.** Sin el permiso de «acceso a todos los archivos»,
+  Android le esconde a prdrive lo que no creó él (las notas nuevas de Obsidian),
+  bisync lo vería borrado y, por debajo del 25 % de `max-delete`, lo borraría del
+  remoto. La regla de siempre (hay baseline y no hay carpeta: abortar) no lo
+  para, porque la carpeta sigue ahí. Por eso una pasada de una pareja
+  compartida aborta (`ABORTO`) sin llamar a rclone si la entrada no vale
+  (`problemaCompartida`), si `Contexto.accesoCompartido` dice que no (el permiso
+  o el almacenamiento sin montar, en cada pasada: se puede quitar cuando se
+  quiera), **si ese `Contexto` no lo trae** (`SIN_COMPROBAR_ACCESO`: quien lance
+  pasadas sin saberlo no se salta el freno, como `Contexto.cifrado`) o si el
+  `rclone.conf` no lleva la carpeta (`COMBINE_VIEJO`: un movimiento cortado entre
+  la entrada y el `rclone.conf`). La app pasa `Prdrive.accesoCompartido()` en
+  cada sitio que crea un `Contexto`.
+- **La secuencia del movimiento es del motor** (`Mudanza.kt`), no de la app:
+  es donde un error costaría caro, y ahí se prueba en segundos y sin emulador. La
+  app pone el permiso, la carpeta y la prueba de fechas (`Compartir.kt`) en el
+  `Mudanza.Entorno`. Lo que manda es que **ningún corte, en ningún punto, deje
+  una pasada que borre en el remoto**, y de ahí el orden:
+  - *Mover* (`entrar`): la pareja puede vivir ahí (`Compartidas.problema()`); la
+    carpeta está **vacía o sin crear**; las fechas valen; una pasada normal que
+    acaba bien (el remoto tiene todo lo de la copia privada); **se apartan los
+    listados** (`.lst` → `.lst-err`); la entrada, `entrando`; el `rclone.conf` y
+    rclone recargado (`fscache`); y `terminar`. Los listados van antes que
+    nada: si el proceso muere desde ahí, la pasada siguiente pide `--resync`,
+    que no borra; sin esto, una normal contra una carpeta a medio llenar vería
+    borrados. La entrada va antes que el `rclone.conf`: un corte entre las dos
+    deja una entrada que el `rclone.conf` no lleva, y la pasada se para.
+  - *Terminar* (`terminar`, y «Terminar de mover» lo repite tras un corte): el
+    `rclone.conf` otra vez; se quitan de la carpeta compartida los temporales
+    que dejara una vez anterior; el `--resync` (o una pasada normal, si una vez
+    anterior se cortó después de él y ya hay baseline); se lleva a la carpeta lo
+    que solo tiene la copia privada; se borra la copia privada; la entrada pasa
+    a `lista`.
+  - *Volver* (`salir`): con permiso, una pasada normal que acaba bien, para
+    que lo último de Obsidian llegue al remoto; la carpeta privada tiene que
+    estar vacía o sin crear (salvo a medio mover: es la copia de antes, ya en el
+    remoto); se apartan los listados; el `rclone.conf` **sin** la redirección y
+    rclone recargado, y **después** se quita la entrada (al revés que al mover, y
+    por lo mismo); el `--resync`, que baja lo del remoto a la carpeta privada.
+    `salir` se salta su pasada previa si la pareja no está entera en su carpeta
+    (la entrada no vale, el `rclone.conf` no la lleva o no hay baseline): es un
+    «Volver» anterior que se cortó después de su pasada, y repetirla abortaría
+    siempre; se dice y se sigue. Sin permiso se vuelve igual, sin pasada, y se
+    dice antes: lo que no se subió se queda en la carpeta compartida.
+- **Los dos `--resync` llevan `resync-mode = path2`** (`Mudanza.RESYNC_MODE`): en
+  caso de duda, gana el remoto. La carpeta de destino empieza vacía, así que
+  lo único que puede haber es lo de un `--resync` anterior que se cortó (lo
+  mismo que en el remoto) o lo que crea Obsidian al abrirla antes de tiempo (su
+  `.obsidian/` de fábrica, que no debe pisar la del remoto).
+- **Solo a una carpeta vacía o sin crear**: nada que fusionar, nada que perder.
+  Adoptar una carpeta con ficheros queda fuera (`PLAN.md`).
+- **La copia privada solo se borra tras el `--resync`**, cuando lo que se
+  sincroniza está en el remoto (la pasada de antes) y en la carpeta (el
+  `--resync`). Lo que solo tiene la copia (lo que los filtros dejan fuera,
+  `.prversions/`, lo escrito en el último momento) **se lleva antes a la carpeta
+  compartida** con su fecha, sin seguir enlaces y sin pisar nada: se copia a un
+  temporal al lado (`….~prdrive-llevando`) y se renombra de un golpe, porque de
+  la memoria de la app a la compartida mover es copiar y borrar, y un corte a
+  media copia dejaría con su nombre un fichero a medias que la vez siguiente se
+  daría por llevado. Esos temporales sueltos se quitan antes de la pasada de
+  `terminar`: se subirían, y quitarlos después borraría en el remoto. Si algo no
+  se puede llevar, no se borra nada.
+- **La carpeta compartida no se borra nunca**: es de la persona y de Obsidian. Al
+  volver se dice «bórrala tú cuando ya no la quieras», como con la llave del
+  llavero.
+- **Dónde corre.** Cada mudanza va dentro de `LlaveroApp.enExclusiva` (reescribe
+  el `rclone.conf` y recarga rclone, como activar o quitar el llavero, y no puede
+  hacerse con una pasada suya en marcha) y de `Modelo.trabajo` (no se instala una
+  versión a medio mover). «Sincronizar» se salta una pareja `entrando`: su
+  carpeta puede estar a medio llenar, y solo la pasa «Terminar de mover». Los
+  botones de mover, terminar y volver piden la red local como «Sincronizar»
+  (`conRed`). Las pasadas de la mudanza son las de siempre
+  (`Pasada.pasarOFallar`): se apuntan y salen en la fila.
+- **Nada que se cuele en el `rclone.conf`.** La ruta acaba escrita ahí, en el
+  upstream del `combine`: `upstream()` rechaza `\r` y `\n` en el nombre y la ruta,
+  y `Compartidas.problemaRuta` cualquier carácter de control, porque una línea
+  nueva añadiría claves o secciones al fichero.
+- **Android 11 en adelante, y solo `primary`.** `MANAGE_EXTERNAL_STORAGE` solo
+  existe desde la API 30 (antes, otro permiso y otro modelo de almacenamiento: la
+  acción no se ofrece). Se pide al mover
+  (`Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION`); la app se
+  distribuye por GitHub, así que la política de permisos de Play no aplica. La
+  carpeta se elige con `ACTION_OPEN_DOCUMENT_TREE`, y solo vale un árbol de
+  `com.android.externalstorage.documents` con id `primary:<ruta>`, que se traduce
+  a `Environment.getExternalStorageDirectory()/<ruta>`. Una SD u otro proveedor
+  (Descargas, una nube) se rechaza diciendo por qué; el permiso del árbol no se
+  guarda, no hace falta. Las fechas se comprueban en cada teléfono
+  (`Compartir.probarFechas`) antes de mover: sin ellas bisync repetiría copias
+  para siempre.
+- **El proveedor no escribe en la carpeta privada de una pareja compartida.**
+  `VolumenProvider` no publica la carpeta compartida (ya se ve en Archivos), y
+  con una entrada en `compartidas.json`, en cualquier estado, no escribe, crea,
+  borra ni renombra nada bajo el `<primer tramo>/` de esa pareja en la raíz del
+  volumen. Mientras se mueve, lo que se escribiera en la copia privada no
+  llegaría a ningún sitio, y después sería una carpeta fantasma que no se
+  sincroniza. Leer, sí.
+- **La exposición se acepta al mover.** Fuera del volumen, la carpeta es de
+  cualquier app con acceso a todos los archivos y se ve al conectar el teléfono a
+  un ordenador (`Compartir.AVISO_EXPOSICION`, en el diálogo de mover). La clave y
+  el resto del volumen siguen privados. Al desinstalar, el vault se queda y
+  `.prdrive/` no: al volver a emparejar, esa carpeta ya no está vacía y no se
+  pisa, así que hay que elegir otra para mover la pareja (o vaciarla antes).
+- **Lo medido** (emuladores API 30, 33, 35 y 37; no un teléfono de verdad): rclone
+  conserva la fecha de lo que copia a `Documents/…` (al milisegundo, y no cambia
+  después), una bisync no repite copias, y **sin el permiso** un fichero con otro
+  dueño no sale al listar la carpeta y leerlo da `EACCES`. Los números, en «Ojo
+  con Android».
+
+Se prueba así: el orden y cada parada, en el motor (`MudanzaTest`,
+`CompartidasTest`); contra rclone de verdad en una carpeta de
+`/sdcard/Documents/` (`MudanzaEnAndroidTest`: mover y volver con el mismo
+nombre de sesión, un corte tras la entrada que `terminar` acaba, y sin permiso);
+y de punta a punta contra el servidor SFTP (`PuntaAPuntaTest`). Con Obsidian de
+verdad está **sin probar**: la lista de lo que falta, en `PLAN.md` §5.
+
 ## Convenios
 
 - Comentarios, KDoc y texto para el usuario en **español**. Igual que prdrive.
@@ -683,6 +858,19 @@ guardado se pierde sin aviso.
 - **La carga del QR lleva la clave privada.** No se guarda con
   `rememberSaveable` (el estado guardado de la actividad puede acabar en disco)
   ni se deja a la vista en el campo de texto.
+- **Las fechas se conservan en `/storage/emulated/0/`, con el permiso**
+  (`MANAGE_EXTERNAL_STORAGE`; `FechasCompartidasTest`). Medido en emuladores
+  API 30, 33, 35 y 37, con el mismo resultado: una copia con rclone a
+  `Documents/…` llega con la misma hora al milisegundo, rclone dice que la
+  precisión es de 1 ns (es lo que dice para un remote `local`, no una medida), y
+  la fecha no cambia después (dos segundos más tarde, igual); una bisync contra
+  esa carpeta dice `No changes found` en la segunda pasada. Sin medir: un
+  teléfono de verdad. **Sin el permiso**, un fichero con otro dueño (el shell, no la
+  app) no sale al listar la carpeta y leerlo da `EACCES`, aunque `File.exists()` diga que sí.
+  Y `run-as … ls` no sirve para comprobarlo: no es el proceso de la app y da
+  `Permission denied` hasta con el permiso. El permiso se da en un test con
+  `appops set prdrive.app MANAGE_EXTERNAL_STORAGE allow`, leyendo la salida del
+  shell hasta el final antes de mirar `Environment.isExternalStorageManager()`.
 - **Los tests de Compose en API 37** necesitan Espresso 3.7 (el que trae
   `ui-test` busca `InputManager.getInstance`, que ya no existe) y las reglas
   `junit4.v2` (las otras están obsoletas, y los avisos son errores).

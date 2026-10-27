@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <!-- rclone habla con el remoto. El volumen es almacenamiento privado de
          la app: no hace falta ningún permiso de ficheros. -->
@@ -9,6 +10,12 @@
          conexión se queda colgada hasta el timeout. Es de los que se piden al
          usarlo: se pide al conectar y al sincronizar. -->
     <uses-permission android:name="android.permission.ACCESS_LOCAL_NETWORK" />
+    <!-- Para que rclone escriba por ruta, en una carpeta compartida, lo que crea
+         otra app (Obsidian). Se pide solo al mover una pareja a una carpeta
+         compartida; sin moverla, no se pide nunca. -->
+    <uses-permission
+        android:name="android.permission.MANAGE_EXTERNAL_STORAGE"
+        tools:ignore="ScopedStorage" />
     <!-- Las notificaciones del llavero (llavero/Avisos.kt): una copia de
          conflicto nueva y un guardado que llegó cortado. Desde Android 13 se
          pide al usarlo: al activar el llavero. Sin él, lo dice la fila de la

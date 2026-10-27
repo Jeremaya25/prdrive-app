@@ -119,6 +119,10 @@ object Orden {
      *
      * @param workdir el workdir de bisync de la pareja, ya resuelto.
      * @param sello el sufijo de las versiones de esta pasada (`--suffix`).
+     * @param resyncMode el `--resync-mode` de esta pasada, por encima del de la
+     *   pareja, o `null` para dejar el suyo. Solo cuenta en un `--resync`.
+     *   Diferencia del teléfono, sin equivalente en `orden.py`: los `--resync`
+     *   de [Mudanza] lo ponen para que en caso de duda gane el remoto.
      */
     fun flagsDeLaPasada(
         pareja: Pareja,
@@ -129,6 +133,7 @@ object Orden {
         resync: Boolean = false,
         sello: String = "",
         forzar: Boolean = false,
+        resyncMode: String? = null,
     ): List<FlagEfectivo> {
         val flags = LinkedHashMap<String, FlagEfectivo>()
         for ((nombre, valor) in pareja.flags) {
@@ -144,6 +149,12 @@ object Orden {
             pone("workdir", workdir)
             if (resync) {
                 pone("resync", true)
+                if (resyncMode != null) {
+                    // El de la pasada manda: se quita el de la pareja, escrito
+                    // como se escriba, y en [tramos] también el de `extra_flags`.
+                    flags.keys.filter { esFlag(it, "resync-mode") }.forEach { flags.remove(it) }
+                    pone("resync-mode", resyncMode)
+                }
             } else {
                 // `--resync-mode` implica `--resync` (`setResyncDefaults()`,
                 // cmd/bisync/resync.go): dicho en una pasada normal la convierte
@@ -177,7 +188,7 @@ object Orden {
      * La orden de rclone de la pareja en trozos, cada uno con su origen, en el
      * orden exacto de la línea de órdenes: el subcomando con los dos extremos, el
      * filtrado, los flags (los que se apagan con `false` no salen) y los
-     * argumentos extra.
+     * argumentos extra. [resyncMode], como en [flagsDeLaPasada].
      */
     fun tramos(
         pareja: Pareja,
@@ -190,17 +201,20 @@ object Orden {
         resync: Boolean = false,
         sello: String = "",
         forzar: Boolean = false,
+        resyncMode: String? = null,
     ): List<Tramo> {
         val salida = ArrayList<Tramo>()
         salida.add(Tramo(listOf(binario, pareja.mode.verb, pareja.source, pareja.dest), ORIGEN_PRDRIVE))
         salida.addAll(tramosDeFiltrado(pareja, filtros))
-        for (flag in flagsDeLaPasada(pareja, config, logfile, workdir, simulacro, resync, sello, forzar)) {
+        for (flag in flagsDeLaPasada(pareja, config, logfile, workdir, simulacro, resync, sello, forzar, resyncMode)) {
             val args = flagsToArgs(mapOf(flag.nombre to flag.valor))
             if (args.isNotEmpty()) salida.add(Tramo(args, flag.origen, flag.nombre))
         }
         var extra = pareja.extraFlags
         if (saltaElTope(pareja, forzar, resync)) extra = sinFlag(extra, "max-delete")
-        if (pareja.isBisync && !resync) extra = sinFlag(extra, "resync-mode")
+        // rclone se queda con el último `--resync-mode`, y `extra_flags` va
+        // detrás: con el de la pasada puesto, el de la pareja no puede quedar.
+        if (pareja.isBisync && (!resync || resyncMode != null)) extra = sinFlag(extra, "resync-mode")
         extra.forEach { salida.add(Tramo(listOf(it), ORIGEN_EXTRA)) }
         return salida
     }

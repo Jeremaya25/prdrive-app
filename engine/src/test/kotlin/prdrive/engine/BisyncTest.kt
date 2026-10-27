@@ -343,4 +343,25 @@ class BisyncTest {
         )
         assertNull(Bisync.lastRun(espejo, workdir), "un copy no deja estado: no hay fecha")
     }
+
+    @Test
+    fun `apartar los listados los deja en -err como markFailed y la pareja pide resync`() {
+        val workdir = File(temporal(), "vault").apply { mkdirs() }
+        val path1 = File(workdir, "a" + Bisync.PATH1_SUFFIX).apply { writeText("nuevo 1") }
+        val path2 = File(workdir, "a" + Bisync.PATH2_SUFFIX).apply { writeText("nuevo 2") }
+        // Un `-err` de un aborto anterior se pisa; lo que no es un listado, no se toca.
+        File(path1.path + "-err").writeText("viejo")
+        val otro = File(workdir, "a.path1.lst-new").apply { writeText("otro") }
+
+        val apartados = Bisync.apartarListados(workdir)
+
+        assertEquals(listOf(File(path1.path + "-err"), File(path2.path + "-err")), apartados)
+        assertEquals("nuevo 1", apartados[0].readText())
+        assertEquals("nuevo 2", apartados[1].readText())
+        assertTrue(!path1.exists() && !path2.exists())
+        assertEquals("otro", otro.readText())
+        assertTrue(apartados.all { it.name.endsWith(Bisync.ERR_SUFFIX) })
+        assertEquals(false, Bisync.pairState(workdir).hasBaseline)
+        assertEquals(emptyList(), Bisync.apartarListados(File(temporal(), "nunca")), "sin workdir, nada")
+    }
 }

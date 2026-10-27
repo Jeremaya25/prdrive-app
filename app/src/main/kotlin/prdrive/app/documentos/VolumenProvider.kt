@@ -29,6 +29,7 @@ import prdrive.app.R
 import prdrive.app.llavero.Avisos
 import prdrive.app.llavero.Disparos
 import prdrive.engine.CARPETA_PROGRAMA
+import prdrive.engine.Compartidas
 import prdrive.engine.ConfigError
 import prdrive.engine.Conflictos
 import prdrive.engine.LLAVERO_LLAVE
@@ -73,6 +74,13 @@ import prdrive.engine.TomlError
  * como `.keychain` en la raíz o como `llave.keyx` dentro, que se haría pasar por
  * ellas.
  * Sin llavero son ficheros normales: al quitarlo se aconseja borrar la llave.
+ *
+ * **Una pareja en una carpeta compartida** (`.prdrive/compartidas.json`, en
+ * cualquier estado) deja su carpeta privada del volumen ([reservado]): no se
+ * escribe en nada de ella, ni se crea ni se borra ni se renombra, ni se crea o
+ * renombra nada con su nombre en la raíz. Lo que se escribiera ahí no llegaría a
+ * ningún sitio, y quedaría una carpeta fantasma que no se sincroniza. Leer y
+ * listar, sí.
  */
 class VolumenProvider : DocumentsProvider() {
 
@@ -110,6 +118,29 @@ class VolumenProvider : DocumentsProvider() {
      */
     private fun protegido(t: List<String>): Boolean =
         (GuardadoAtomico.esLlave(t) || GuardadoAtomico.esCarpeta(t)) && llaveroActivo()
+
+    /**
+     * Si [t] está en la carpeta privada de una pareja que vive en una carpeta
+     * compartida, o es el nombre de una (primer tramo, [Compartidas.tramosReservados]).
+     * Se lee del volumen en cada llamada, como [llaveroActivo]. Si el config o el
+     * fichero no se pueden leer no se reserva nada: la pasada ya se niega a
+     * correr con un `compartidas.json` roto, y aquí no hay nada que proteger si
+     * no se sabe qué.
+     */
+    private fun reservado(t: List<String>): Boolean {
+        if (t.isEmpty()) return false
+        val volumen = Prdrive.volumen(context!!)
+        return try {
+            val entradas = Compartidas.leer(volumen.compartidas)
+            entradas.isNotEmpty() && t[0] in Compartidas.tramosReservados(volumen.leerConfig(), entradas)
+        } catch (_: ConfigError) {
+            false
+        } catch (_: TomlError) {
+            false
+        } catch (_: IOException) {
+            false
+        }
+    }
 
     /** Si [f], resuelto, es la llave del llavero: un enlace del volumen puede llevar a ella. */
     private fun llevaALaLlave(f: File): Boolean =
@@ -256,6 +287,7 @@ class VolumenProvider : DocumentsProvider() {
         if (escribe && (GuardadoAtomico.esLlave(t) || llevaALaLlave(f)) && llaveroActivo()) {
             throw FileNotFoundException("La llave del llavero no se escribe")
         }
+        if (escribe && reservado(t)) throw FileNotFoundException("${t[0]} vive en una carpeta compartida: aquí no se escribe")
         if (escribe && GuardadoAtomico.esBase(t)) return guardarBase(f, mode)
         if (!escribe && GuardadoAtomico.esBase(t)) return leerBase(f)
         // Se abre lo comprobado: el destino ya resuelto, no la ruta del enlace.
@@ -379,6 +411,9 @@ class VolumenProvider : DocumentsProvider() {
         if (protegido(tramosPadre + displayName)) {
             throw FileNotFoundException("Con el llavero activo, no se crea otra $displayName")
         }
+        if (reservado(tramosPadre + displayName)) {
+            throw FileNotFoundException("${(tramosPadre + displayName)[0]} vive en una carpeta compartida: aquí no se crea nada")
+        }
         var nombre = displayName
         var n = 1
         while (true) {
@@ -411,6 +446,7 @@ class VolumenProvider : DocumentsProvider() {
         val t = tramos(documentId)
         if (t.isEmpty()) throw FileNotFoundException("La raíz no se borra")
         if (protegido(t)) throw FileNotFoundException("Con el llavero activo, $LLAVERO_LOCAL y su llave no se borran")
+        if (reservado(t)) throw FileNotFoundException("${t[0]} vive en una carpeta compartida: aquí no se borra nada")
         val f = fichero(documentId)
         try {
             borrarSinSeguirEnlaces(f.toPath())
@@ -444,11 +480,15 @@ class VolumenProvider : DocumentsProvider() {
         if (t.isEmpty()) throw FileNotFoundException("La raíz no se renombra")
         if (protegido(t)) throw FileNotFoundException("Con el llavero activo, $LLAVERO_LOCAL y su llave no se renombran")
         if (!nombreValido(displayName)) throw FileNotFoundException("Nombre no válido: $displayName")
+        if (reservado(t)) throw FileNotFoundException("${t[0]} vive en una carpeta compartida: aquí no se renombra nada")
         val f = fichero(documentId)
         val nuevoId = idDe(t.dropLast(1) + displayName)
         tramos(nuevoId) // ni `.prdrive` en la raíz
         if (protegido(tramos(nuevoId))) {
             throw FileNotFoundException("Con el llavero activo, nada se renombra como $displayName")
+        }
+        if (reservado(tramos(nuevoId))) {
+            throw FileNotFoundException("$displayName es una carpeta que vive en otro sitio: nada se renombra como ella")
         }
         val destino = File(f.parentFile, displayName)
         try {

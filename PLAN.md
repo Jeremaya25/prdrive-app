@@ -1,8 +1,8 @@
 # prdrive para Android — lo que queda
 
 El paso 1 está hecho: el volumen, el emparejamiento por QR, elegir parejas del
-catálogo, un «Sincronizar» que cuenta qué pasa y el llavero (`[keychain]`). Cómo
-está y por qué, en
+catálogo, un «Sincronizar» que cuenta qué pasa, el llavero (`[keychain]`) y una
+pareja en una carpeta compartida del teléfono (§5). Cómo está y por qué, en
 [`AGENTS.md`](AGENTS.md). Aquí solo lo que falta, en el orden en que tiene
 sentido hacerlo.
 
@@ -207,7 +207,99 @@ hacerlo.
   (`publish_fleet_note`), el diario de pasadas (`historial.py`), la medida de si
   una pasada movió algo, `--force` desde «Reparación» y `watch`.
 - **Una SD o un USB como volumen.** Pide el permiso de «acceso a todos los
-  archivos», y ahí bisync no se puede fiar de las fechas de modificación.
+  archivos», y ahí bisync no se puede fiar de las fechas de modificación. El
+  permiso y el riesgo de las fechas son los de §5 (una pareja en una carpeta
+  compartida), que ya los resuelve para el almacenamiento principal: ahí las
+  fechas sí se conservan, y una SD o un USB se mediría aparte.
+
+## 5. Una pareja en una carpeta compartida (#10)
+
+**Hecha**, para que Obsidian abra el vault de una pareja bisync: «Mover a una
+carpeta compartida…» y «Volver al volumen» en la fila de la pareja, con
+`MANAGE_EXTERNAL_STORAGE` (Android 11 o posterior) y una carpeta vacía o sin
+crear del almacenamiento principal. Cómo y por qué, en `AGENTS.md`, «Las carpetas
+compartidas»; el diseño, en
+`docs/superpowers/specs/2026-10-26-carpeta-compartida-design.md`. Probada en un
+emulador API 37: el motor sin dispositivo, la mudanza contra rclone de verdad
+(`MudanzaEnAndroidTest`) y de punta a punta contra el servidor SFTP
+(`PuntaAPuntaTest`). **Falta verla con Obsidian de verdad** (las comprobaciones
+a mano de abajo; instalar Obsidian pide un APK o una cuenta de Google, y no se
+hizo desde aquí).
+
+Lo que falta, fuera de esta versión:
+
+- **Adoptar una carpeta que ya tiene ficheros** y fusionarla. Hoy solo se mueve
+  a una vacía o sin crear: nada que fusionar, nada que perder.
+- **Una SD, un USB o cualquier volumen que no sea `primary`.** Solo el
+  almacenamiento principal (`primary:`) se traduce a una ruta, y las fechas de
+  los otros habría que medirlas.
+- **Android 8 a 10.** Antes de la API 30 el permiso es otro y el almacenamiento
+  tiene otro modelo.
+- **Comparar por tamaño y suma** (`--compare size,checksum`) en estas parejas, si
+  el teléfono de alguien no conserva las fechas. Lo medido (abajo) no lo pide,
+  pero es de emuladores: un fabricante puede llevar otro FUSE, y entonces la
+  prueba de fechas de «Mover» se niega a seguir.
+- **Elegir la carpeta compartida al emparejar**, en vez de después. Hoy se
+  empareja, se sincroniza y se mueve.
+- **Los espejos y las parejas anidadas** (`notas/vault`) o de la raíz.
+- **Plantillas de filtros para vaults** en la app. Es cosa del catálogo, y la
+  misma para el PC: excluir `.obsidian/workspace*.json` (README).
+
+**A mano, con Obsidian, en un emulador o un teléfono** (pendiente; apuntar aquí
+la versión de Obsidian y de Android con que se pruebe, y lo que salga):
+
+- [ ] Mover `vault` (dando el permiso), abrirla en Obsidian con «Abrir carpeta
+  como vault» (almacenamiento del dispositivo), editar una nota y pulsar
+  «Sincronizar»: la nota llega al remoto.
+- [ ] Editar una nota en el remoto (o en el PC), «Sincronizar» y verla en
+  Obsidian, con el vault abierto.
+- [ ] Editar la misma nota en los dos lados, «Sincronizar» y ver el conflicto en
+  la fila. Mirar cómo queda la copia (`nota.md.conflicto-remoto1`, que Obsidian
+  no indexa, o `nota.conflicto-remoto1.md` si el catálogo lleva `versions`) y
+  si se puede resolver desde Archivos.
+- [ ] Que el ruido de `.obsidian/` (`workspace*.json`) no provoque conflictos
+  sin excluirlo, y cuánto estorba si no se excluye.
+- [ ] La versión de Obsidian y de Android usadas.
+
+### El paso 0: las fechas
+
+La pregunta de la que dependía todo lo demás: ¿conserva rclone las fechas de
+modificación en `/storage/emulated/0/` (FUSE), con `MANAGE_EXTERNAL_STORAGE`
+dado? Bisync decide por ellas. Lo mide `FechasCompartidasTest`, y la línea
+`FechasCompartidas` del logcat da los números.
+
+- **Pasan los dos tests en los cuatro APIs** (emuladores x86_64 de Google APIs:
+  `prdrive_api30`, `prdrive_api33`, `prdrive_api35` y `Medium_Phone_API_37.0`).
+  En todos, la misma línea de `FechasCompartidas`:
+
+  | API | precisión (`fsinfo`) | original → copia | a los 2 s | 2.ª bisync |
+  |---|---|---|---|---|
+  | 30 | 1 ns | `…22:13:20.123Z` = `…22:13:20.123Z` | igual | `No changes found` |
+  | 33 | 1 ns | igual | igual | `No changes found` |
+  | 35 | 1 ns | igual | igual | `No changes found` |
+  | 37 | 1 ns | igual | igual | `No changes found` |
+
+  - La precisión de 1 ns es la que da rclone para un remote `local`: no la mide
+    en el sistema de ficheros. Lo que cuenta es que la hora de la copia es
+    exactamente la del original (con sus milisegundos), que no cambia después, y
+    que una bisync contra la carpeta compartida (un `combine` con ella de
+    upstream, un cambio en cada lado) no repite copias: la segunda pasada dice
+    `No changes found`, literal.
+  - Solo se ha medido el milisegundo (la hora de prueba es `…:20.123`), no
+    por debajo.
+- **Sin el permiso**, en el proceso de la app (un test de instrumentación,
+  que corre como la app), igual en los cuatro APIs: `ajena.txt`, creado por
+  otro dueño (el shell), **no aparece al listar la carpeta** (`list()` da
+  vacío), aunque `exists()` dice que sí, y **leerlo da `EACCES`**. Con el
+  permiso, aparece y se lee. Crear un fichero propio en `Documents/` funciona
+  en los dos casos.
+- **`adb shell run-as prdrive.app ls` no vale para esto**: da `Permission
+  denied` también con el permiso dado (`appops get` dice `allow`), en los
+  cuatro APIs, porque `run-as` no es el proceso de la app. Lo que se mira,
+  desde dentro.
+- **Se siguió.** El paso 0 salió bien en todo lo medido: emuladores, no un
+  teléfono de verdad (un fabricante puede llevar otro FUSE). Por eso «Mover»
+  repite la prueba de fechas en cada teléfono antes de tocar nada.
 
 ## Fuera, salvo que cambie algo
 
