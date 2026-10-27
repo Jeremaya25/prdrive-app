@@ -26,18 +26,20 @@ import org.junit.Assume.assumeTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import prdrive.app.compartidas.Compartir
 import prdrive.app.rclone.Rclone
 import prdrive.engine.LLAVERO
 import prdrive.engine.LLAVERO_LOCAL
+import prdrive.engine.Mudanza
 
 /**
  * PuntaAPuntaTest.kt — Las pantallas de verdad contra un
  * servidor de verdad, de la carga del QR a una segunda pasada.
  *
  * Necesita un servidor SFTP que el emulador vea en `10.0.2.2` con un catálogo
- * (el de la prueba tiene una pareja bisync `notas` y un espejo de bajada
- * `fotos`, con ficheros ya en el remoto, y el llavero con su base entera en
- * `keychain/`), y la carga de su QR en base64 como
+ * (el de la prueba tiene dos parejas bisync, `notas` y `vault`, un espejo de
+ * bajada `fotos`, con ficheros ya en el remoto, y el llavero con su base entera
+ * en `keychain/`), y la carga de su QR en base64 como
  * argumento de la instrumentación:
  *
  *     ./gradlew :app:connectedDebugAndroidTest \
@@ -210,6 +212,81 @@ class PuntaAPuntaTest {
             compose.waitUntilAtLeastOneExists(dice("fila-llavero", "al día"), 60_000)
             compose.onNodeWithTag("error").assertDoesNotExist()
             compose.onNodeWithTag("llavero-ambar").assertDoesNotExist()
+        }
+    }
+
+    /**
+     * Emparejar con la pantalla y mudar `vault` a una carpeta compartida de
+     * verdad (la que la persona elige con el selector del sistema, que un test
+     * no puede manejar: aquí la elige el test): lo del servidor baja, lo que
+     * Obsidian crea allí sube con «Sincronizar», y la fila dice dónde vive.
+     */
+    @Test
+    fun la_pareja_se_muda_a_una_carpeta_compartida_y_sincroniza_con_el_servidor() {
+        val b64 = InstrumentationRegistry.getArguments().getString("carga_b64")
+        assumeTrue("sin carga_b64: no hay servidor de prueba", !b64.isNullOrBlank())
+        val carga = String(Base64.getDecoder().decode(b64), Charsets.UTF_8)
+
+        val v = Prdrive.volumen(contexto)
+        v.raiz.deleteRecursively()
+        if (android.os.Build.VERSION.SDK_INT >= 37) {
+            InstrumentationRegistry.getInstrumentation().uiAutomation
+                .grantRuntimePermission(contexto.packageName, Prdrive.PERMISO_RED_LOCAL)
+        }
+        // El permiso de «acceso a todos los archivos» no se da con una pantalla
+        // en un test: se da por appops, y el shell solo acaba si se lee hasta el final.
+        val shell = InstrumentationRegistry.getInstrumentation().uiAutomation
+            .executeShellCommand("appops set prdrive.app MANAGE_EXTERNAL_STORAGE allow")
+        java.io.FileInputStream(shell.fileDescriptor).use { it.readBytes() }
+        shell.close()
+        assertTrue("No se pudo dar MANAGE_EXTERNAL_STORAGE", android.os.Environment.isExternalStorageManager())
+        val destino = File(android.os.Environment.getExternalStorageDirectory(), "Documents/prdrive-e2e-${System.nanoTime()}")
+        try {
+            ActivityScenario.launch(MainActivity::class.java).use {
+                compose.onNodeWithTag("carga").performTextInput(carga)
+                compose.onNodeWithTag("usarTexto").performScrollTo().performClick()
+                compose.onNodeWithTag("conectar").performScrollTo().performClick()
+
+                esperar("instalar")
+                compose.onNodeWithTag("elegir-vault").assertExists()
+                compose.onNodeWithTag("instalar").performClick()
+                esperar("empezar", 180)
+                errorEnPantalla()?.let { fail("la pantalla dice: $it") }
+                compose.waitUntilAtLeastOneExists(dice("resultado-vault", "vault: OK"), 30_000)
+                assertEquals("una nota del vault\n", File(v.raiz, "vault/nota.md").readText())
+                compose.onNodeWithTag("empezar").performClick()
+                esperar("sincronizar")
+                esperar("fila-vault", 30)
+                compose.onNodeWithTag("donde-vault").assertDoesNotExist()
+
+                // La mudanza: lo que hace la fila tras elegir la carpeta.
+                val dicho = ArrayList<String>()
+                val hecho = Mudanza.entrar(v, "vault", destino, Compartir.entorno(contexto, true, {}) { dicho.add(it) })
+                assertTrue("${hecho.motivo}\n" + dicho.joinToString("\n"), hecho.ok)
+                assertEquals("una nota del vault\n", File(destino, "nota.md").readText())
+                assertTrue("la copia privada sigue ahí", !File(v.raiz, "vault").exists())
+
+                // Lo que Obsidian crea en la carpeta compartida.
+                File(destino, "de-obsidian.md").writeText("escrito en Obsidian\n")
+                compose.onNodeWithTag("sincronizar").performClick()
+                compose.waitUntil(180_000) { compose.onAllNodes(hasTestTag("ocupado")).fetchSemanticsNodes().isEmpty() }
+                compose.onNodeWithTag("error").assertDoesNotExist()
+                captura("6-carpeta-compartida")
+
+                // En el servidor, visto con el rclone de la app: lo nuevo ha subido y lo de antes sigue.
+                val stat = Rclone.rpc("operations/stat", mapOf("fs" to "nas:/copia/vault", "remote" to "de-obsidian.md"))
+                assertTrue("no ha llegado al servidor: $stat", stat["item"] != null)
+                val nota = Rclone.rpc("operations/stat", mapOf("fs" to "nas:/copia/vault", "remote" to "nota.md"))
+                assertTrue("el servidor ha perdido la nota: $nota", nota["item"] != null)
+
+                // La fila dice dónde vive, y que la pasada fue bien.
+                compose.waitUntilAtLeastOneExists(hasTestTag("donde-vault"), 5000)
+                compose.waitUntilAtLeastOneExists(hasText("Al día", substring = true) and hasAnyAncestor(hasTestTag("fila-vault")), 5000)
+                val fallos = compose.onAllNodes(hasText("Falló", substring = true) and hasAnyAncestor(hasTestTag("fila-vault")))
+                assertTrue("la pasada de vault ha fallado", fallos.fetchSemanticsNodes().isEmpty())
+            }
+        } finally {
+            destino.deleteRecursively()
         }
     }
 }
