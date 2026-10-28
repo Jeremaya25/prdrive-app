@@ -8,7 +8,7 @@
 
 **Tech Stack:** Kotlin 2.4, Jetpack Compose con Material 3 (BOM 2026.09.00), Python 3 para el generador. Ninguna dependencia nueva.
 
-**Spec:** el lienzo «prdrive móvil · rediseño» (https://claude.ai/artifact/QefvmSp6RWpTVTHA2DJMVe: 19 pantallas y 6 en oscuro) y el sistema de diseño «prdrive» (https://claude.ai/code/artifact/bd675973-d734-4d4c-94cf-ea42ce5332b9, versión `1793185577-cb49`; su `README.md` dice cómo se escribe y se dibuja). Cada tarea nombra las pantallas del lienzo que implementa.
+**Spec:** el lienzo «prdrive móvil · rediseño» (https://claude.ai/artifact/QefvmSp6RWpTVTHA2DJMVe#page-dcb81aee8d83, con 19 pantallas y 6 en oscuro) y el sistema de diseño «prdrive» (https://claude.ai/code/artifact/bd675973-d734-4d4c-94cf-ea42ce5332b9, versión `1793185577-cb49`; su `README.md` dice cómo se escribe y se dibuja). Cada tarea nombra las pantallas del lienzo que implementa.
 
 ## Global Constraints
 
