@@ -213,6 +213,10 @@ class PuntaAPuntaTest {
             compose.onNodeWithTag("empezar").performClick()
             compose.waitUntilAtLeastOneExists(dice("fila-llavero", "al día"), 60_000)
             compose.onNodeWithTag("error").assertDoesNotExist()
+            // Lo que lo pondría en ámbar se ve en su sección.
+            compose.onNodeWithTag("seccion-llavero").performClick()
+            esperar("pantalla-llavero", 10)
+            compose.waitUntilAtLeastOneExists(dice("llavero-estado", "al día"), 10_000)
             compose.onNodeWithTag("llavero-ambar").assertDoesNotExist()
         }
     }

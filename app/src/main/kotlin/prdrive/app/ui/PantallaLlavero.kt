@@ -53,10 +53,12 @@ import prdrive.engine.Volumen
 import prdrive.engine.parseConfig
 
 /**
- * PantallaLlavero.kt — El llavero en las pantallas: su fila en la principal
- * («Abrir llavero», «Traer el llavero», quitarlo), el aviso de antes de abrir
- * y la casilla «El llavero» al emparejar. Como el resto de `ui/`, solo dibuja y
- * llama al [Modelo].
+ * PantallaLlavero.kt — Lo del llavero que usan varias pantallas: sus textos
+ * ([TextosLlavero], con la línea que dice cómo está), pedir las notificaciones
+ * antes de activarlo, abrir la base con la app de KeePass, el aviso de antes de
+ * abrir y la casilla «El llavero» al emparejar. La sección está en
+ * `llavero/SeccionLlavero.kt`. Como el resto de `ui/`, solo dibuja y llama al
+ * [Modelo].
  *
  * La fila es la línea de `llavero_editor.linea()` de prdrive; lo que no hay en
  * el teléfono (KeePassXC, «Combinar», crear un llavero) no sale.
@@ -149,10 +151,6 @@ internal object TextosLlavero {
     }
 }
 
-/** El ámbar de la fila: el mismo en claro y en oscuro, con su texto. */
-private val AMBAR = Color(0xFFFFE082)
-private val SOBRE_AMBAR = Color(0xFF3B2F00)
-
 /**
  * Una acción que activa el llavero: antes se piden las notificaciones (desde
  * Android 13), que es lo que avisa de una copia de conflicto o de un guardado
@@ -179,75 +177,6 @@ internal fun conAvisos(): (() -> Unit) -> Unit {
             else -> accion()
         }
     }
-}
-
-/**
- * La fila del llavero en la principal. Sin llavero activo, ofrece traerlo;
- * con él, dice cómo está (en ámbar si hay algo que mirar) y lo abre.
- *
- * [conRed] y [conPermiso] ([conAvisos]) vienen de la pantalla, que no se va
- * mientras Android pregunta: la fila y sus diálogos sí pueden irse, y con
- * ellos la respuesta.
- */
-@Composable
-internal fun FilaDelLlavero(
-    m: Modelo,
-    f: Estado.FilaLlavero,
-    conRed: (() -> Unit) -> Unit,
-    conPermiso: (() -> Unit) -> Unit,
-) {
-    val contexto = LocalContext.current
-    val libre = m.ocupado == null
-    var traer by remember { mutableStateOf(false) }
-    var quitar by remember { mutableStateOf(false) }
-    var menu by remember { mutableStateOf(false) }
-    val colores = if (f.ambar) {
-        CardDefaults.cardColors(containerColor = AMBAR, contentColor = SOBRE_AMBAR)
-    } else {
-        CardDefaults.cardColors()
-    }
-    Card(colors = colores, modifier = Modifier.fillMaxWidth().testTag("fila-llavero")) {
-        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Llavero", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
-                if (f.activo) {
-                    Box {
-                        TextButton(
-                            onClick = { menu = true },
-                            enabled = libre,
-                            modifier = Modifier.testTag("menu-llavero").semantics { contentDescription = "Más del llavero" },
-                        ) { Text("⋮", style = MaterialTheme.typography.titleMedium) }
-                        DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
-                            DropdownMenuItem(
-                                text = { Text("Quitar el llavero de este teléfono") },
-                                onClick = {
-                                    menu = false
-                                    quitar = true
-                                },
-                                modifier = Modifier.testTag("quitar-llavero"),
-                            )
-                        }
-                    }
-                }
-            }
-            if (!f.activo) {
-                Text("${f.base}: el remoto tiene un llavero, y este teléfono aún no lo trae.")
-                Text(TextosLlavero.QUE_ES, style = MaterialTheme.typography.bodySmall)
-                Button(onClick = { traer = true }, enabled = libre, modifier = Modifier.testTag("traer-llavero")) {
-                    Text("Traer el llavero")
-                }
-            } else {
-                EstadoDelLlavero(f)
-                Button(
-                    onClick = { conRed(m::abrirLlavero) },
-                    enabled = libre,
-                    modifier = Modifier.testTag("abrir-llavero"),
-                ) { Text("Abrir llavero") }
-            }
-        }
-    }
-    if (traer) ConfirmarTraer(m, f, conRed, conPermiso) { traer = false }
-    if (quitar) ConfirmarQuitar(m, f) { quitar = false }
 }
 
 /**
@@ -327,107 +256,6 @@ internal fun conLaLlave(intent: Intent, llave: Uri?, paquete: String?): Intent {
     return Intent(intent).setPackage(paquete).apply {
         clipData = ClipData.newRawUri(TextosLlavero.ETIQUETA_LLAVE_KEEPASSDX, llave)
     }
-}
-
-/** Cómo está el llavero: la línea de siempre y, si los hay, los motivos del ámbar. */
-@Composable
-private fun EstadoDelLlavero(f: Estado.FilaLlavero) {
-    val fallo = f.fallo
-    Text(
-        TextosLlavero.linea(f),
-        fontWeight = if (fallo != null) FontWeight.SemiBold else null,
-        modifier = Modifier.testTag("llavero-estado"),
-    )
-    if (!f.ambar) return
-    Column(modifier = Modifier.testTag("llavero-ambar"), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        if (fallo != null) f.explicacion?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
-        if (f.faltaLlave) Text(TextosLlavero.FALTA_LLAVE, style = MaterialTheme.typography.bodySmall)
-        f.cortado?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
-        if (f.conflictos.isNotEmpty()) {
-            Text(Avisos.LLAVERO_EN_CONFLICTO + Avisos.COMBINAR_FUERA, style = MaterialTheme.typography.bodySmall)
-            f.conflictos.flatMap { it.copias }.forEach {
-                Text("· ${it.name}", style = MaterialTheme.typography.bodySmall)
-            }
-        }
-    }
-}
-
-/**
- * La confirmación de «Traer el llavero», con lo que avisa prdrive
- * ([Volumen.avisosAlta]) y, si va sin contraseña, el selector de su fichero
- * llave: sin él no se trae.
- */
-@Composable
-private fun ConfirmarTraer(
-    m: Modelo,
-    f: Estado.FilaLlavero,
-    conRed: (() -> Unit) -> Unit,
-    conPermiso: (() -> Unit) -> Unit,
-    cerrar: () -> Unit,
-) {
-    var llave by remember { mutableStateOf<Uri?>(null) }
-    val elegir = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        if (uri != null) llave = uri
-    }
-    AlertDialog(
-        onDismissRequest = cerrar,
-        title = { Text("Traer el llavero") },
-        text = {
-            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("${f.base} se sincronizará en este teléfono, en $LLAVERO_LOCAL/. ${TextosLlavero.QUE_ES}")
-                f.avisos.forEach { Text(it, color = MaterialTheme.colorScheme.tertiary) }
-                if (f.llaveInterna) {
-                    Text(
-                        "Va sin contraseña: elige su fichero llave. Se copia dentro de la app, a " +
-                            "$LLAVERO_LOCAL/$LLAVERO_LLAVE.",
-                    )
-                    OutlinedButton(onClick = { elegir.launch(arrayOf("*/*")) }, modifier = Modifier.testTag("elegir-llave")) {
-                        Text(if (llave == null) "Elegir el fichero llave" else "Fichero llave elegido")
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(
-                onClick = {
-                    cerrar()
-                    val elegida = llave
-                    conPermiso { conRed { m.traerLlavero(elegida) } }
-                },
-                enabled = !f.llaveInterna || llave != null,
-                modifier = Modifier.testTag("confirmar-traer"),
-            ) { Text("Traer") }
-        },
-        dismissButton = { TextButton(onClick = cerrar) { Text("Cancelar") } },
-    )
-}
-
-/** La confirmación de quitarlo, con lo que avisa prdrive ([Volumen.avisosBaja]). */
-@Composable
-private fun ConfirmarQuitar(m: Modelo, f: Estado.FilaLlavero, cerrar: () -> Unit) {
-    AlertDialog(
-        onDismissRequest = cerrar,
-        title = { Text("Quitar el llavero de este teléfono") },
-        text = {
-            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(
-                    "Dejará de sincronizarse aquí. La carpeta $LLAVERO_LOCAL/ se queda, con la base, y el " +
-                        "remoto y los demás dispositivos siguen con él.",
-                )
-                f.avisos.forEach { Text(it, color = MaterialTheme.colorScheme.tertiary) }
-            }
-        },
-        confirmButton = {
-            TextButton(
-                onClick = {
-                    cerrar()
-                    m.quitarLlavero()
-                },
-                modifier = Modifier.testTag("confirmar-quitar"),
-            ) { Text("Quitar") }
-        },
-        dismissButton = { TextButton(onClick = cerrar) { Text("Cancelar") } },
-    )
 }
 
 /** Lo que «Abrir llavero» dice antes de abrir; al cerrarlo, se abre. */

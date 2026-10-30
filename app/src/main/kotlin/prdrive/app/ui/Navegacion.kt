@@ -49,6 +49,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import prdrive.app.Prdrive
 import prdrive.app.ui.inicio.Inicio
+import prdrive.app.ui.llavero.SeccionLlavero
 import prdrive.app.ui.parejas.Ficha
 import prdrive.app.ui.parejas.LogDePareja
 import prdrive.app.ui.parejas.Mover
@@ -300,7 +301,7 @@ fun Secciones(m: Modelo) {
                     null -> when (pila.seccion) {
                         Seccion.INICIO -> Inicio(m, pila::ir, pila::cambiar)
                         Seccion.PAREJAS -> Parejas(m, pila::ir)
-                        Seccion.LLAVERO -> LlaveroProvisional(m, conRed, conPermiso)
+                        Seccion.LLAVERO -> SeccionLlavero(m, conRed, conPermiso)
                         Seccion.AJUSTES -> Box(Modifier.fillMaxSize().testTag("pantalla-ajustes"))
                     }
                 }
@@ -343,15 +344,3 @@ private fun ArribaDeTodo(m: Modelo, enInicio: Boolean, faltaRed: Boolean, pedirR
 
 /** Lo que separa dos párrafos de un error ([Modelo.error]). */
 private const val PARRAFO = "\n\n"
-
-/** Hasta que esté la sección Llavero: la fila de antes, con traerlo, abrirlo y quitarlo. */
-@Composable
-private fun LlaveroProvisional(m: Modelo, conRed: (() -> Unit) -> Unit, conPermiso: (() -> Unit) -> Unit) {
-    Column(Modifier.fillMaxSize().testTag("pantalla-llavero").verticalScroll(rememberScrollState())) {
-        Cabecera("Llavero")
-        Column(Modifier.padding(horizontal = 16.dp)) {
-            val f = m.llavero
-            if (f != null) FilaDelLlavero(m, f, conRed, conPermiso) else Text(TextosLlavero.SIN_LLAVERO_REMOTO)
-        }
-    }
-}
