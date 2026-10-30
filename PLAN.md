@@ -174,10 +174,10 @@ hacerlo.
 
 ## 3. Lo que el paso 1 dejó a medias
 
-- **Un simulacro desde la app** (`--dry-run`), que es lo que el instalador
-  recomienda para probar los espejos. Con él, la carpeta de un espejo de subida
-  se podría crear al instalar, como hace `make_local_dirs()`; hoy no se crea,
-  para que «Sincronizar» no vacíe el remoto.
+- **La carpeta de un espejo de subida al instalar**, como hace
+  `make_local_dirs()`. El simulacro ya está («Hacer un simulacro…» en la ficha,
+  §6), pero «Sincronizar» no pasa por él, y un espejo de subida desde una
+  carpeta vacía vaciaría el remoto: hoy sigue sin crearse.
 - **Flags que el escritorio acepta y el RPC no lleva.** Hoy la pareja falla con
   una explicación:
   - Los de un backend (`--sftp-…`) podrían ir en una cadena de conexión, pero
@@ -199,21 +199,15 @@ hacerlo.
 
 ## 4. Lo siguiente
 
-- **Sincronizar sin abrir la app:** servicio en segundo plano y pasadas
-  periódicas, y lo que diga el `[daemon]` del config (que el instalador ya
-  escribe). Para empezar ya están la cancelación limpia de una pasada
-  (`job/stop` y esperar a que acabe), el cerrojo que las pone en fila y
-  WorkManager, que el llavero ya usa para sus pasadas (AGENTS.md, «El llavero»);
-  falta lo mismo para las parejas. Con él,
-  la autoactualización también puede mirar y bajar sin que se abra la app; hoy
-  solo lo hace al abrirla, que es cuando la app sirve de algo.
-- **Resolver conflictos:** hoy se detectan y se avisan (`Conflictos.kt`); falta
-  la pantalla que elige una versión.
+- **La autoactualización sin abrir la app.** Sincronizar sola ya existe
+  (AGENTS.md, «Sincronizar sola, parar y el simulacro»); la autoactualización
+  podría mirar y bajar desde ese mismo trabajo. Hoy solo lo hace al abrir la
+  app, que es cuando la app sirve de algo.
 - **Editar el catálogo:** hoy solo se lee. Escribirlo es la ceremonia de
   `catalog.push()`, y renombrar un `pairs.toml` antiguo.
 - **Lo que el escritorio apunta y el teléfono todavía no:** el parte de la flota
-  (`publish_fleet_note`), el diario de pasadas (`historial.py`), la medida de si
-  una pasada movió algo, `--force` desde «Reparación» y `watch`.
+  (`publish_fleet_note`), la medida de si una pasada movió algo, `--force` desde
+  «Reparación» y `watch`. El diario de pasadas (`historial.py`) ya se escribe.
 - **Una SD o un USB como volumen.** Pide el permiso de «acceso a todos los
   archivos», y ahí bisync no se puede fiar de las fechas de modificación. El
   permiso y el riesgo de las fechas son los de §5 (una pareja en una carpeta
@@ -336,19 +330,27 @@ Lo probado y cómo, en «Ojo con Android» y en los tests de `androidTest`
 adaptados). Quitar un permiso con `appops`/`revokeRuntimePermission` mata el
 proceso, que es también el del test: los tests de los permisos los fingen.
 
-**Fase 5, lo nuevo del lienzo.** Cada cosa pide trabajo en el motor o en la
-app que el rediseño no hacía; se van haciendo en este orden:
+**Fase 5, lo nuevo del lienzo.** Cada cosa pedía trabajo en el motor o en la
+app que el rediseño no hacía. Hecho (AGENTS.md, «Sincronizar sola, parar y el
+simulacro»):
 
 - Parar la pasada (Inicio sincronizando).
-- Simulacro de un espejo (`--dry-run`), y con él la carpeta de un espejo de
-  subida al emparejar (§3).
-- Resolver conflictos (§4).
-- Sincronizar sola: WorkManager con el `[daemon]` del config (§4).
-- Historial de pasadas en la ficha (§4, `historial.py`).
-- Elegir y cambiar la carpeta de una pareja, añadirla desde el catálogo y
-  quitarla del teléfono (#25 y #24).
+- Hacer un simulacro (`--dry-run`) desde la ficha, de cualquier modo.
+- Sincronizar sola: WorkManager con el `[daemon]` del config.
+- Las últimas pasadas en la ficha, del diario (`historial.py`).
 - Los pasos de la mudanza, marcados mientras se mueve.
-- Reparación (`--force`), Ver en Archivos y Emparejar de nuevo (Ajustes).
+- Ver en Archivos (Ajustes).
+
+Falta:
+
+- Resolver conflictos: hoy se detectan y se avisan (`Conflictos.kt`), y falta
+  la pantalla que elige una versión.
+- Elegir y cambiar la carpeta de una pareja, añadirla desde el catálogo y
+  quitarla del teléfono (#25 y la parte grande de #24): esperan a que el
+  catálogo diga qué es de cada dispositivo (prdrive#196).
+- Reparación (`--force`) y Emparejar de nuevo (Ajustes): borran o rehacen
+  estado, y piden su propio diseño de qué se conserva.
+- La carpeta de un espejo de subida al emparejar (§3).
 - iPhone: decidir entre SwiftUI y Compose Multiplatform.
 
 ## Fuera, salvo que cambie algo

@@ -116,8 +116,9 @@ object SegundoPlano {
     /**
      * Una vuelta: las parejas del `[daemon]` (o todas), una detrás de otra como
      * «Sincronizar», y el llavero el último. Una pareja a medio mover no se pasa
-     * (solo la pasa «Terminar de mover»), y una bisync que pide rehacer la
-     * referencia se salta: eso lo aprueba alguien que lo ha leído. Bloquea.
+     * (solo la pasa «Terminar de mover»), y a una bisync que pide rehacer la
+     * referencia no se le hace: falla como en «Sincronizar», porque eso lo
+     * aprueba alguien que ha leído por qué. Bloquea.
      */
     fun pasarTodo(c: Context) {
         val v = Prdrive.iniciarRclone(c)
