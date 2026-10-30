@@ -179,4 +179,32 @@ class PantallaCompartidaTest {
             assertNull("hay un resultado de la pareja", modelo!!.resultados["vault"])
         }
     }
+
+    /** #24, la parte pequeña: una pareja que no se puede mover dice por qué, en vez de no ofrecerlo sin más. */
+    @Test
+    fun una_pareja_anidada_dice_por_que_no_se_mueve() {
+        val (v, config) = Banco.volumen(Banco.pareja("notas"))
+        val anidada = Estado.filas(v, config, conCompartir = true).single()
+        assertNotNull("no dice por qué no se mueve", anidada.porQueNoSeComparte)
+        assertFalse(anidada.sePuedeCompartir)
+        val (v2, config2) = Banco.volumen(Banco.pareja("notas", local = "vault"))
+        val suelta = Estado.filas(v2, config2, conCompartir = true).single()
+        assertNull(suelta.porQueNoSeComparte)
+        assertTrue(suelta.sePuedeCompartir)
+    }
+
+    /** «Sincronizar esta pareja» (en su ficha) pasa esa y ninguna más, ni el llavero. */
+    @Test
+    fun sincronizar_una_pareja_no_pasa_las_demas() {
+        Banco.volumen(Banco.pareja("uno"), Banco.pareja("dos"))
+        ActivityScenario.launch(MainActivity::class.java).use { escena ->
+            var modelo: Modelo? = null
+            escena.onActivity { modelo = ViewModelProvider(it)[Modelo::class.java] }
+            compose.waitUntil(30_000) { hay("fila-uno") && !hay("ocupado") }
+            escena.onActivity { modelo!!.sincronizar(solo = "uno") }
+            compose.waitUntil(60_000) { modelo!!.resultados.containsKey("uno") }
+            compose.waitUntil(60_000) { !hay("ocupado") }
+            assertNull("pasó también «dos»", modelo!!.resultados["dos"])
+        }
+    }
 }

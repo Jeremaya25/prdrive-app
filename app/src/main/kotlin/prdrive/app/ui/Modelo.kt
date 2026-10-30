@@ -154,6 +154,10 @@ class Modelo(app: Application) : AndroidViewModel(app) {
     var remoto by mutableStateOf<String?>(null)
         private set
 
+    /** Las parejas del catálogo (de su copia, sin red) que este teléfono no usa. */
+    var sinUsar by mutableStateOf<List<String>>(emptyList())
+        private set
+
     /** La fila del llavero; `null` si no lo lleva ni se puede traer. */
     var llavero by mutableStateOf<Estado.FilaLlavero?>(null)
         private set
@@ -349,6 +353,7 @@ class Modelo(app: Application) : AndroidViewModel(app) {
         filas = filasDe(v, config)
         llavero = Estado.llavero(v, config, Prdrive.faltaRedLocal(contexto))
         remoto = remotoDe(v, config)
+        sinUsar = Catalogo.cached(v.state)?.names?.filter { it !in config.names }.orEmpty()
     }
 
     /** «nas · sftp»: el `remoteName` de las parejas y el tipo de su sección en el `rclone.conf`. */
@@ -399,9 +404,12 @@ class Modelo(app: Application) : AndroidViewModel(app) {
      * Pasa todas las parejas, una detrás de otra, como `run_all()`: un error de
      * una no se lleva las demás ([Pasada.pasarOFallar]), y las filas se
      * refrescan pase lo que pase.
+     *
+     * Con [solo], solo esa pareja («Sincronizar esta pareja», en su ficha), sin
+     * el llavero: como `sync.py` con un nombre.
      */
-    fun sincronizar() {
-        trabajo("Sincronizando…") {
+    fun sincronizar(solo: String? = null) {
+        trabajo(if (solo == null) "Sincronizando…" else "Sincronizando «$solo»…") {
             val v = Prdrive.iniciarRclone(contexto)
             val config = config()
             val ctx = Pasada.Contexto(keepLogs = config.keepLogs, accesoCompartido = Prdrive.accesoCompartido())
@@ -412,6 +420,7 @@ class Modelo(app: Application) : AndroidViewModel(app) {
             val entradas = Compartidas.leer(v.compartidas)
             try {
                 for (p in config.delUsuario) {
+                    if (solo != null && p.name != solo) continue
                     if (entradas[p.name]?.estado == Compartidas.Estado.ENTRANDO) {
                         decir("[${p.name}] A medio mover: se pasa con «Terminar de mover».")
                         continue
@@ -424,7 +433,7 @@ class Modelo(app: Application) : AndroidViewModel(app) {
                 }
                 // El llavero, el último, como `sync.py` sin nombres: no sale
                 // entre las parejas, pero «Sincronizar» lo pasa.
-                if (config.parejaLlavero != null) pasarLlavero()
+                if (solo == null && config.parejaLlavero != null) pasarLlavero()
             } finally {
                 filas = filasDe(v, config)
                 releerLlavero()
