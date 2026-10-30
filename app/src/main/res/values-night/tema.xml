@@ -2,9 +2,7 @@
 <!-- El tema de la ventana con el modo oscuro del teléfono. El claro, y por qué
      el fondo es este, en values/tema.xml. -->
 <resources>
-    <!-- El fondo de darkColorScheme(). -->
-    <color name="fondo">#141218</color>
-
+    <!-- El «paper» oscuro del sistema de diseño (values-night/fondo.xml). -->
     <style name="Tema" parent="android:Theme.Material.NoActionBar">
         <item name="android:windowBackground">@color/fondo</item>
     </style>
