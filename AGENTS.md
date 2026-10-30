@@ -70,6 +70,9 @@ rclone/
 │               y no a prdrive (escribe oraculo_rclone.json)
 ├── construir.sh   gomobile bind -> rclone/build/rclone.aar (no se versiona)
 app/          Android: solo dibuja y llama
+├── diseno/           el sistema de diseño «prdrive»: tokens.json (byte a byte el
+│                     del sistema) e iconos.json (sus 30 glifos). De aquí salen
+│                     tema/Tokens.kt, res/values*/fondo.xml y res/drawable/pd_*
 ├── Prdrive.kt        dónde vive el volumen, cómo arranca rclone y el permiso
 │                     de red local
 ├── Instalador.kt     el primer arranque sin pantallas (espejo del orden de
@@ -83,9 +86,12 @@ app/          Android: solo dibuja y llama
 │                     (el permiso, la carpeta que elige la persona, la prueba de
 │                     fechas y el `Mudanza.Entorno`)
 ├── ui/               Modelo (el ViewModel), Pantallas (Compose), PantallaLlavero
-│                     (la fila del llavero y su casilla), Tema (claro u oscuro,
+│                     (la fila del llavero y su casilla), Tema (los colores, la
+│                     letra y las formas del sistema de diseño, claro u oscuro
 │                     como diga el teléfono) y Escaner (el de códigos de Play
 │                     services)
+├── tema/Tokens.kt    los colores, espacios y radios del sistema de diseño
+│                     (generado por herramientas/diseno.py: no se edita)
 ├── llavero/          el llavero en la app («El llavero»): LlaveroApp (la pasada
 │                     y su cerrojo), TrabajoLlavero y Disparos (WorkManager) y
 │                     Avisos (las notificaciones)
@@ -114,8 +120,10 @@ herramientas/
 │                      frenos y el alta
 ├── vectores_actualizacion.py  su parte de common/update.py, con el
 │                      repositorio de la app y la respuesta de GitHub guardada
-└── punta_a_punta.py   el servidor (con el llavero y su base) y la carga del QR
-                       de PuntaAPuntaTest
+├── punta_a_punta.py   el servidor (con el llavero y su base) y la carga del QR
+│                      de PuntaAPuntaTest
+└── diseno.py          los colores, el fondo de la ventana y los glifos desde
+                       app/diseno/ (--comprobar: si están al día, como en el CI)
 .github/
 ├── workflows/engine.yml   el motor, en cada push
 ├── workflows/apk.yml      el APK de release sin firmar, en los PR que lo tocan
@@ -824,10 +832,15 @@ verdad está **sin probar**: la lista de lo que falta, en `PLAN.md` §5.
   (`una_pasada_que_falla_guarda_el_log_y_lo_explica`): el `.dex` de minSdk 26 no
   admite espacios en los nombres de método.
 - **En las pantallas no se escribe ningún color**: todo sale de
-  `MaterialTheme.colorScheme`. Es lo que hace que el modo oscuro salga solo
-  (`ui/Tema.kt`, que sigue al del teléfono); un `Color(0xFF…)` se vería igual
-  en los dos modos. El único color escrito es el fondo de la ventana
-  (`res/values*/tema.xml`), y `TemaTest` comprueba que es el de Compose.
+  `MaterialTheme.colorScheme` o de `Paleta.actual` (lo que Material no sabe
+  nombrar: `ink-3`, los fondos suaves de cada estado, la marca). Es lo que hace
+  que el modo oscuro salga solo (`ui/Tema.kt`, que sigue al del teléfono); un
+  `Color(0xFF…)` se vería igual en los dos modos. Los valores son los del
+  sistema de diseño «prdrive» (`app/diseno/tokens.json`), y solo están en
+  `tema/Tokens.kt`, que escribe `python herramientas/diseno.py` y no se edita a
+  mano; el fondo de la ventana (`res/values*/fondo.xml`) sale del mismo sitio,
+  y `TemaTest` comprueba que es el de Compose. Para cambiar un color, se cambia
+  el sistema y se copia otra vez (la cabecera de `diseno.py` dice cómo).
 
 ## Ojo con Android
 
