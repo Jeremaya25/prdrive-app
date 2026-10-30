@@ -1,7 +1,9 @@
 package prdrive.app.ui
 
+import android.app.Activity
 import android.content.ActivityNotFoundException
 import android.content.Context
+import android.content.ContextWrapper
 import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
@@ -14,6 +16,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.core.app.ActivityCompat
 import prdrive.app.Prdrive
 import prdrive.app.compartidas.Compartir
 import prdrive.app.ui.piezas.Aviso
@@ -27,6 +30,35 @@ import prdrive.app.ui.piezas.TonoAviso
  * local (desde API 37) antes de hablar con el remoto, y el acceso a todos los
  * archivos antes de mover una pareja a una carpeta compartida.
  */
+
+/**
+ * Qué permisos se han pedido ya. Tras dos negativas Android deja de preguntar,
+ * y pedir el permiso contesta «no» sin enseñar nada: lo que queda es darlo en
+ * los ajustes de la app. Android no lo dice; se sabe si se ha pedido antes y ya
+ * no pide explicar por qué (`shouldShowRequestPermissionRationale`), que antes
+ * de pedirlo por primera vez también es `false`.
+ */
+internal object Preguntas {
+
+    private const val PREFERENCIAS = "permisos-pedidos"
+
+    fun apuntar(c: Context, permiso: String) {
+        c.getSharedPreferences(PREFERENCIAS, Context.MODE_PRIVATE).edit().putBoolean(permiso, true).apply()
+    }
+
+    /** Si pedir [permiso] ya no enseña nada. Sin actividad no se sabe: se dice que sí pregunta. */
+    fun yaNoPregunta(c: Context, permiso: String): Boolean {
+        if (!c.getSharedPreferences(PREFERENCIAS, Context.MODE_PRIVATE).getBoolean(permiso, false)) return false
+        val actividad = actividadDe(c) ?: return false
+        return !ActivityCompat.shouldShowRequestPermissionRationale(actividad, permiso)
+    }
+
+    private tailrec fun actividadDe(c: Context): Activity? = when (c) {
+        is Activity -> c
+        is ContextWrapper -> actividadDe(c.baseContext)
+        else -> null
+    }
+}
 
 /**
  * Una acción que puede necesitar la red local: antes de hacerla se pide el
@@ -52,6 +84,7 @@ internal fun conRedLocal(alResponder: () -> Unit = {}): (() -> Unit) -> Unit {
             pendiente != null -> Unit
             Prdrive.faltaRedLocal(contexto) -> {
                 pendiente = accion
+                Preguntas.apuntar(contexto, Prdrive.PERMISO_RED_LOCAL)
                 lanzador.launch(Prdrive.PERMISO_RED_LOCAL)
             }
             else -> accion()

@@ -36,6 +36,8 @@ import prdrive.app.Prdrive
 import prdrive.app.documentos.VolumenProvider
 import prdrive.app.rclone.Rclone
 import prdrive.app.segundoplano.SegundoPlano
+import prdrive.app.ui.abrirAjustesDeLaApp
+import prdrive.app.ui.Preguntas
 import prdrive.app.ui.Cabecera
 import prdrive.app.ui.Letra
 import prdrive.app.ui.Modelo
@@ -67,7 +69,11 @@ import prdrive.app.ui.piezas.Tono
  * mata el proceso.
  */
 @Composable
-fun Ajustes(m: Modelo, faltaRedLocal: (Context) -> Boolean = Prdrive::faltaRedLocal) {
+fun Ajustes(
+    m: Modelo,
+    faltaRedLocal: (Context) -> Boolean = Prdrive::faltaRedLocal,
+    yaNoPregunta: (Context, String) -> Boolean = Preguntas::yaNoPregunta,
+) {
     val contexto = LocalContext.current
     // Cada vuelta a la app relee los permisos.
     var vueltas by remember { mutableIntStateOf(0) }
@@ -136,14 +142,15 @@ fun Ajustes(m: Modelo, faltaRedLocal: (Context) -> Boolean = Prdrive::faltaRedLo
                     val filas = mutableListOf<@Composable () -> Unit>()
                     if (Build.VERSION.SDK_INT >= 37) {
                         val falta = remember(vueltas) { faltaRedLocal(contexto) }
+                        val enAjustes = remember(vueltas) { falta && yaNoPregunta(contexto, Prdrive.PERMISO_RED_LOCAL) }
                         filas += {
                             Permiso(
                                 "Red local",
                                 "Para llegar a un remoto de tu casa (un NAS, otro ordenador).",
                                 dado = !falta,
-                                boton = "Dar",
+                                boton = if (enAjustes) "Abrir ajustes" else "Dar",
                                 etiqueta = "permiso-red-local",
-                            ) { conRed {} }
+                            ) { if (enAjustes) abrirAjustesDeLaApp(contexto) else conRed {} }
                         }
                     }
                     val usaCompartidas = m.filas.any { it.compartida != null || it.sePuedeCompartir }
@@ -169,14 +176,17 @@ fun Ajustes(m: Modelo, faltaRedLocal: (Context) -> Boolean = Prdrive::faltaRedLo
                             ContextCompat.checkSelfPermission(contexto, Manifest.permission.POST_NOTIFICATIONS) ==
                                 PackageManager.PERMISSION_GRANTED
                         }
+                        val enAjustes = remember(vueltas) {
+                            !dado && yaNoPregunta(contexto, Manifest.permission.POST_NOTIFICATIONS)
+                        }
                         filas += {
                             Permiso(
                                 "Notificaciones",
                                 "Avisan de un conflicto del llavero o de un guardado cortado.",
                                 dado = dado,
-                                boton = "Dar",
+                                boton = if (enAjustes) "Abrir ajustes" else "Dar",
                                 etiqueta = "permiso-notificaciones",
-                            ) { conPermiso { vueltas++ } }
+                            ) { if (enAjustes) abrirAjustesDeLaApp(contexto) else conPermiso { vueltas++ } }
                         }
                     }
                     val faltaInstalar = remember(vueltas) { Actualizador.faltaPermiso(contexto) }

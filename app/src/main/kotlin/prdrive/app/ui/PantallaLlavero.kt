@@ -154,6 +154,7 @@ internal fun conAvisos(): (() -> Unit) -> Unit {
                 ContextCompat.checkSelfPermission(contexto, Manifest.permission.POST_NOTIFICATIONS) !=
                 PackageManager.PERMISSION_GRANTED -> {
                 pendiente = accion
+                Preguntas.apuntar(contexto, Manifest.permission.POST_NOTIFICATIONS)
                 lanzador.launch(Manifest.permission.POST_NOTIFICATIONS)
             }
             else -> accion()

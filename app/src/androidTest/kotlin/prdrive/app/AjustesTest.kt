@@ -3,6 +3,8 @@ package prdrive.app
 import android.app.Activity
 import android.app.Instrumentation
 import android.content.Intent
+import android.net.Uri
+import android.provider.Settings
 import android.provider.DocumentsContract
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.performScrollTo
@@ -112,6 +114,41 @@ class AjustesTest {
                         hasAction(Intent.ACTION_VIEW),
                         hasData(DocumentsContract.buildRootUri(VolumenProvider.AUTORIDAD, VolumenProvider.ID_RAIZ)),
                         hasType(DocumentsContract.Root.MIME_TYPE_ITEM),
+                    ),
+                )
+            }
+        } finally {
+            Intents.release()
+        }
+    }
+
+    /**
+     * Tras dos negativas Android ya no pregunta, y pedir el permiso no hace
+     * nada: la fila lo sabe y lleva a los ajustes de la app. Se finge como el de
+     * arriba.
+     */
+    @Test
+    fun si_android_ya_no_pregunta_la_red_local_la_fila_abre_los_ajustes() {
+        if (android.os.Build.VERSION.SDK_INT < 37) return
+        Banco.volumen(Banco.pareja("uno"))
+        Intents.init()
+        try {
+            intending(hasAction(Settings.ACTION_APPLICATION_DETAILS_SETTINGS))
+                .respondWith(Instrumentation.ActivityResult(Activity.RESULT_OK, null))
+            ActivityScenario.launch(ComponentActivity::class.java).use { escena ->
+                escena.onActivity { actividad ->
+                    val modelo = ViewModelProvider(actividad)[Modelo::class.java]
+                    actividad.setContent {
+                        Tema { Ajustes(modelo, faltaRedLocal = { true }, yaNoPregunta = { _, _ -> true }) }
+                    }
+                }
+                compose.waitUntil(10_000) { hay("permiso-red-local") }
+                compose.onNode(hasText("Abrir ajustes") and hasAnyAncestor(hasTestTag("permiso-red-local")))
+                    .performScrollTo().performClick()
+                intended(
+                    allOf(
+                        hasAction(Settings.ACTION_APPLICATION_DETAILS_SETTINGS),
+                        hasData(Uri.fromParts("package", Banco.contexto.packageName, null)),
                     ),
                 )
             }
