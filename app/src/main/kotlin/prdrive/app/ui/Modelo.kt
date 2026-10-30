@@ -166,6 +166,22 @@ class Modelo(app: Application) : AndroidViewModel(app) {
     var pasoMudanza by mutableStateOf<Mudanza.Paso?>(null)
         private set
 
+    /** Lo que dijo el último simulacro: de qué pareja, el plan, y si acabó bien (si no, por qué). */
+    data class ResultadoSimulacro(
+        val pareja: String,
+        val plan: prdrive.engine.Simulacro.Plan,
+        val ok: Boolean,
+        val explicacion: String? = null,
+        val resync: Boolean = false,
+        /** El modo de la pareja, que dice hacia dónde copia un espejo y en qué lado borra. */
+        val modo: String = "bisync",
+        /** Su `--max-delete` efectivo, si lo lleva: el tope de lo que la pasada borraría. */
+        val tope: String? = null,
+    )
+
+    var simulacro by mutableStateOf<ResultadoSimulacro?>(null)
+        private set
+
     /** Las parejas del catálogo (de su copia, sin red) que este teléfono no usa. */
     var sinUsar by mutableStateOf<List<String>>(emptyList())
         private set
@@ -727,6 +743,37 @@ class Modelo(app: Application) : AndroidViewModel(app) {
             } finally {
                 releerLlavero()
             }
+        }
+    }
+
+    /**
+     * «Hacer un simulacro…»: la pasada de [nombre] con `--dry-run`, que no
+     * escribe nada ni se apunta, leída como un plan ([prdrive.engine.Simulacro]).
+     * Si la pareja pide rehacer la referencia, se simula eso, que es lo que
+     * haría la pasada siguiente una vez aprobado.
+     */
+    fun simular(nombre: String) {
+        trabajo("Haciendo el simulacro de «$nombre»…") {
+            val v = Prdrive.iniciarRclone(contexto)
+            val config = config()
+            val p = config.pairs.first { it.name == nombre }
+            val resync = filas.firstOrNull { it.nombre == nombre }?.pideResync?.isNotEmpty() == true
+            lineas = emptyList()
+            simulacro = null
+            val r = Pasada.pasarOFallar(
+                v, p, Adaptadores.pasada, Adaptadores.opciones,
+                Pasada.Contexto(
+                    simulacro = true, keepLogs = true, resyncAprobado = resync,
+                    accesoCompartido = Prdrive.accesoCompartido(),
+                ),
+                { progreso = Progreso.de(p.name, it) }, ::decir,
+            )
+            // El log del simulacro se lee y se tira: no es el de ninguna pasada.
+            val texto = r.log?.let { log -> Estado.leer(log).also { log.delete() } }.orEmpty()
+            simulacro = ResultadoSimulacro(
+                nombre, prdrive.engine.Simulacro.leer(texto), r.ok, r.explicacion, resync,
+                modo = p.mode.name, tope = p.flags["max-delete"]?.toString(),
+            )
         }
     }
 

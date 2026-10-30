@@ -59,6 +59,7 @@ import prdrive.app.ui.parejas.Ficha
 import prdrive.app.ui.parejas.LogDePareja
 import prdrive.app.ui.parejas.Mover
 import prdrive.app.ui.parejas.Parejas
+import prdrive.app.ui.parejas.Simulacro
 import prdrive.app.ui.piezas.Aviso
 import prdrive.app.ui.piezas.Glifo
 import prdrive.app.ui.piezas.Icono
@@ -88,6 +89,7 @@ sealed interface Destino {
     data class Ficha(val pareja: String) : Destino
     data class Log(val pareja: String) : Destino
     data class Mover(val pareja: String) : Destino
+    data class Simulacro(val pareja: String) : Destino
 }
 
 /** La sección elegida y lo que tiene encima, de abajo arriba. */
@@ -141,6 +143,7 @@ class Pila(seccion: Seccion = Seccion.INICIO, encima: List<Destino> = emptyList(
             is Destino.Ficha -> "ficha:${d.pareja}"
             is Destino.Log -> "log:${d.pareja}"
             is Destino.Mover -> "mover:${d.pareja}"
+            is Destino.Simulacro -> "simulacro:${d.pareja}"
         }
 
         private fun decodificar(texto: String): Destino? {
@@ -149,6 +152,7 @@ class Pila(seccion: Seccion = Seccion.INICIO, encima: List<Destino> = emptyList(
                 "ficha" -> Destino.Ficha(pareja)
                 "log" -> Destino.Log(pareja)
                 "mover" -> Destino.Mover(pareja)
+                "simulacro" -> Destino.Simulacro(pareja)
                 else -> null
             }
         }
@@ -301,6 +305,7 @@ fun Secciones(m: Modelo) {
                     is Destino.Ficha -> Ficha(m, d.pareja, pila::ir, { pila.atras() }, etiquetaVolver = pila.seccion.titulo)
                     is Destino.Log -> LogDePareja(m, d.pareja) { pila.atras() }
                     is Destino.Mover -> Mover(m, d.pareja, volver = { pila.atras() }, conRed = conRed)
+                    is Destino.Simulacro -> Simulacro(m, d.pareja, volver = { pila.atras() }, conRed = conRed)
                     null -> when (pila.seccion) {
                         Seccion.INICIO -> Inicio(m, pila::ir, pila::cambiar)
                         Seccion.PAREJAS -> Parejas(m, pila::ir)

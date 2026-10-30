@@ -142,7 +142,7 @@ fun Ficha(
                 }
             }
             Arreglos(m, f, libre) { rehaciendo = true }
-            Bloque("Cómo se sincroniza") { ComoSeSincroniza(f) }
+            Bloque("Cómo se sincroniza") { ComoSeSincroniza(f, libre) { ir(Destino.Simulacro(nombre)) } }
             Bloque("Dónde vive en este teléfono") { DondeVive(m, f, libre, ir, conRed) }
             if (f.fallo?.log != null) {
                 Boton(
@@ -258,7 +258,7 @@ private fun Arreglos(m: Modelo, f: Estado.Fila, libre: Boolean, rehacer: () -> U
 
 /** El modo en palabras, y las dos carpetas en monoespaciada. */
 @Composable
-private fun ComoSeSincroniza(f: Estado.Fila) {
+private fun ComoSeSincroniza(f: Estado.Fila, libre: Boolean, simular: () -> Unit) {
     val c = Paleta.actual
     val (titulo, cuerpo) = comoSeSincroniza(f.modo)
     Tarjeta {
@@ -276,6 +276,15 @@ private fun ComoSeSincroniza(f: Estado.Fila) {
         Dato("En el teléfono", f.compartida?.let(::rutaCorta) ?: f.local)
         Separador()
         Dato("En el remoto", f.remoto)
+        Separador()
+        Boton(
+            "Hacer un simulacro…",
+            simular,
+            Modifier.padding(horizontal = 4.dp, vertical = 4.dp).testTag("simulacro-${f.nombre}"),
+            peso = Peso.SILENCIOSO,
+            icono = Icono.EYE,
+            activo = libre && !f.entrando,
+        )
     }
 }
 
