@@ -88,6 +88,7 @@ class PantallaCompartidaTest {
     fun una_pareja_compartida_dice_donde_vive_y_ofrece_volver() {
         volumenCon(Compartidas.Estado.LISTA)
         abrir().use {
+            Banco.abrirFicha(compose, "vault")
             assertTrue("no dice dónde vive", hay("donde-vault"))
             assertTrue("no ofrece volver", hay("volver-vault"))
             assertFalse("ofrece mover una que ya está movida", hay("mover-vault"))
@@ -99,6 +100,7 @@ class PantallaCompartidaTest {
     fun una_pareja_a_medio_mover_ofrece_terminar_y_no_el_resync() {
         volumenCon(Compartidas.Estado.ENTRANDO)
         abrir().use {
+            Banco.abrirFicha(compose, "vault")
             assertTrue("no ofrece terminar", hay("terminar-vault"))
             assertFalse("ofrece el --resync a una que está a medio mover", hay("resync-vault"))
             assertFalse("ofrece mover una que está a medio mover", hay("mover-vault"))
@@ -114,6 +116,7 @@ class PantallaCompartidaTest {
         val dentro = File(v.raiz, "vault").path
         Compartidas.escribir(v.compartidas, mapOf("vault" to Compartidas.Entrada(dentro, Compartidas.Estado.ENTRANDO)))
         abrir().use {
+            Banco.abrirFicha(compose, "vault")
             assertTrue("no ofrece terminar", hay("terminar-vault"))
             assertTrue("no ofrece volver con la entrada rota", hay("volver-vault"))
             assertFalse(hay("resync-vault"))
@@ -126,11 +129,12 @@ class PantallaCompartidaTest {
     fun una_pareja_que_se_puede_mover_lo_ofrece_y_una_anidada_no() {
         Banco.volumen(Banco.pareja("vault", local = "vault"), Banco.pareja("notas"))
         abrir().use {
-            compose.waitUntil(30_000) { hay("fila-notas") }
+            Banco.abrirFicha(compose, "vault")
             assertTrue("no ofrece mover una de primer nivel", hay("mover-vault"))
-            assertFalse("ofrece mover una anidada", hay("mover-notas"))
             assertFalse(hay("volver-vault"))
             assertFalse(hay("donde-vault"))
+            Banco.abrirFicha(compose, "notas")
+            assertFalse("ofrece mover una anidada", hay("mover-notas"))
         }
     }
 
@@ -169,6 +173,7 @@ class PantallaCompartidaTest {
             // espera a la línea con la que el modelo cuenta que la salta.
             compose.waitUntil(60_000) { modelo!!.lineas.any { "[vault] A medio mover" in it } }
             compose.waitUntil(60_000) { !hay("ocupado") }
+            Banco.abrirFicha(compose, "vault")
             assertTrue("la fila dejó de ofrecer terminar", hay("terminar-vault"))
             assertFalse("pasó la pareja a medio mover", hay("resync-vault"))
             val apuntado = Resultados.rutaEstado(v.state)
@@ -191,6 +196,16 @@ class PantallaCompartidaTest {
         val suelta = Estado.filas(v2, config2, conCompartir = true).single()
         assertNull(suelta.porQueNoSeComparte)
         assertTrue(suelta.sePuedeCompartir)
+    }
+
+    @Test
+    fun una_pareja_anidada_lo_dice_en_su_ficha() {
+        Banco.volumen(Banco.pareja("notas"))
+        ActivityScenario.launch(MainActivity::class.java).use {
+            Banco.abrirFicha(compose, "notas")
+            assertTrue("no dice por qué no se puede mover", hay("no-compartir-notas"))
+            assertFalse(hay("mover-notas"))
+        }
     }
 
     /** «Sincronizar esta pareja» (en su ficha) pasa esa y ninguna más, ni el llavero. */

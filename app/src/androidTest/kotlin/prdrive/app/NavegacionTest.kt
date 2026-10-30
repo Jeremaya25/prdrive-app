@@ -2,6 +2,8 @@ package prdrive.app
 
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
@@ -12,6 +14,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.test.core.app.ActivityScenario
 import androidx.test.espresso.Espresso
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry
+import java.io.File
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -102,6 +106,34 @@ class NavegacionTest {
             esperarALaFila("p0")
             compose.onNodeWithTag("fila-p29").performScrollTo().assertIsDisplayed()
             compose.onNodeWithTag(Seccion.AJUSTES.etiqueta).assertIsDisplayed()
+        }
+    }
+
+    /**
+     * Con una pasada en marcha, lo que cambia algo se apaga también en la
+     * ficha: el modelo ya ignora el segundo toque, pero la pantalla no debe
+     * parecer que lo va a hacer. «dos» es de bajada y trae 3000 ficheros, para
+     * que la pasada dure lo bastante como para mirar.
+     */
+    @Test
+    fun con_un_trabajo_en_marcha_la_ficha_apaga_sus_botones() {
+        if (android.os.Build.VERSION.SDK_INT >= 37) {
+            InstrumentationRegistry.getInstrumentation().uiAutomation
+                .grantRuntimePermission(Banco.contexto.packageName, Prdrive.PERMISO_RED_LOCAL)
+        }
+        Banco.volumen(Banco.pareja("uno"), Banco.pareja("dos", "sync-data/dos", "mode" to "down"))
+        val origen = File(Banco.remoto, "dos").apply { mkdirs() }
+        repeat(3000) { File(origen, "f$it.txt").writeText("$it") }
+        ActivityScenario.launch(MainActivity::class.java).use {
+            esperarALaFila("uno")
+            compose.waitUntil(30_000) { compose.onAllNodes(hasTestTag("ocupado")).fetchSemanticsNodes().isEmpty() }
+            compose.onNodeWithTag("sincronizar").performClick()
+            compose.onNodeWithTag("fila-uno").performScrollTo().performClick()
+            esperarA("pantalla-pareja-uno")
+            esperarA("ocupado")
+            compose.onNodeWithTag("sincronizar-uno").assertIsNotEnabled()
+            compose.waitUntil(120_000) { compose.onAllNodes(hasTestTag("ocupado")).fetchSemanticsNodes().isEmpty() }
+            compose.onNodeWithTag("sincronizar-uno").assertIsEnabled()
         }
     }
 

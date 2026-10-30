@@ -142,14 +142,15 @@ class PuntaAPuntaTest {
             assertTrue("no ha llegado al servidor: $stat", stat["item"] != null)
 
             // La fila dice que está al día, sin fallos ni resync pendiente. Un
-            // fallo de la pasada no es un error de la pantalla: se ve en la fila.
-            // El chip de la fila en Inicio («al día», «falló»), y nada que revisar.
+            // fallo de la pasada no es un error de la pantalla: se ve en el chip
+            // de su fila en Inicio («al día», «falló») y en su ficha.
             compose.waitUntilAtLeastOneExists(dice("fila-notas", "al día"), 5000)
             for (pareja in listOf("notas", "fotos")) {
                 val fallos = compose.onAllNodes(dice("fila-$pareja", "falló"))
                 assertTrue("la pasada de $pareja ha fallado", fallos.fetchSemanticsNodes().isEmpty())
             }
-            compose.onAllNodes(hasText("«notas» pide rehacer la referencia", substring = true)).fetchSemanticsNodes().let {
+            Banco.abrirFicha(compose, "notas")
+            compose.onAllNodes(hasTestTag("resync-notas")).fetchSemanticsNodes().let {
                 assertTrue("sigue pidiendo resync", it.isEmpty())
             }
         }
@@ -258,6 +259,7 @@ class PuntaAPuntaTest {
                 compose.onNodeWithTag("empezar").performClick()
                 esperar("sincronizar")
                 esperar("fila-vault", 30)
+                Banco.abrirFicha(compose, "vault")
                 compose.onNodeWithTag("donde-vault").assertDoesNotExist()
 
                 // La mudanza: lo que hace la fila tras elegir la carpeta.
@@ -269,6 +271,8 @@ class PuntaAPuntaTest {
 
                 // Lo que Obsidian crea en la carpeta compartida.
                 File(destino, "de-obsidian.md").writeText("escrito en Obsidian\n")
+                compose.onNodeWithTag("seccion-inicio").performClick()
+                esperar("sincronizar")
                 compose.onNodeWithTag("sincronizar").performClick()
                 compose.waitUntil(180_000) { compose.onAllNodes(hasTestTag("ocupado")).fetchSemanticsNodes().isEmpty() }
                 compose.onNodeWithTag("error").assertDoesNotExist()
@@ -280,11 +284,12 @@ class PuntaAPuntaTest {
                 val nota = Rclone.rpc("operations/stat", mapOf("fs" to "nas:/copia/vault", "remote" to "nota.md"))
                 assertTrue("el servidor ha perdido la nota: $nota", nota["item"] != null)
 
-                // La fila dice dónde vive, y que la pasada fue bien.
-                compose.waitUntilAtLeastOneExists(hasTestTag("donde-vault"), 5000)
+                // Su chip en Inicio dice que la pasada fue bien, y su ficha, dónde vive.
                 compose.waitUntilAtLeastOneExists(dice("fila-vault", "al día"), 5000)
                 val fallos = compose.onAllNodes(dice("fila-vault", "falló"))
                 assertTrue("la pasada de vault ha fallado", fallos.fetchSemanticsNodes().isEmpty())
+                Banco.abrirFicha(compose, "vault")
+                compose.waitUntilAtLeastOneExists(hasTestTag("donde-vault"), 5000)
             }
         } finally {
             destino.deleteRecursively()

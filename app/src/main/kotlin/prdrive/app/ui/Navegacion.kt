@@ -49,6 +49,9 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import prdrive.app.Prdrive
 import prdrive.app.ui.inicio.Inicio
+import prdrive.app.ui.parejas.Ficha
+import prdrive.app.ui.parejas.LogDePareja
+import prdrive.app.ui.parejas.Parejas
 import prdrive.app.ui.piezas.Aviso
 import prdrive.app.ui.piezas.Fila
 import prdrive.app.ui.piezas.Glifo
@@ -290,15 +293,16 @@ fun Secciones(m: Modelo) {
             ArribaDeTodo(m, enInicio, faltaRed) { conRed {} }
             Box(Modifier.weight(1f).fillMaxWidth()) {
                 when (val d = pila.cima) {
-                    is Destino.Ficha -> Column(Modifier.fillMaxSize().testTag("pantalla-pareja-${d.pareja}")) {
-                        Cabecera(d.pareja, volver = { pila.atras() }, etiquetaVolver = pila.seccion.titulo)
-                        FichaProvisional(m, d.pareja)
-                    }
-                    is Destino.Log -> Box(Modifier.fillMaxSize().testTag("pantalla-log-${d.pareja}"))
+                    is Destino.Ficha -> Ficha(
+                        m, d.pareja, pila::ir, { pila.atras() },
+                        etiquetaVolver = pila.seccion.titulo,
+                        rehacer = { f -> conRed { m.aprobarResync(f.nombre) } },
+                    )
+                    is Destino.Log -> LogDePareja(m, d.pareja) { pila.atras() }
                     is Destino.Mover -> Box(Modifier.fillMaxSize().testTag("pantalla-mover-${d.pareja}"))
                     null -> when (pila.seccion) {
                         Seccion.INICIO -> Inicio(m, pila::ir, pila::cambiar)
-                        Seccion.PAREJAS -> ListaProvisional(m, pila::ir)
+                        Seccion.PAREJAS -> Parejas(m, pila::ir)
                         Seccion.LLAVERO -> LlaveroProvisional(m, conRed, conPermiso)
                         Seccion.AJUSTES -> Box(Modifier.fillMaxSize().testTag("pantalla-ajustes"))
                     }
@@ -342,19 +346,6 @@ private fun ArribaDeTodo(m: Modelo, enInicio: Boolean, faltaRed: Boolean, pedirR
 
 /** Lo que separa dos párrafos de un error ([Modelo.error]). */
 private const val PARRAFO = "\n\n"
-
-/** Hasta que esté la sección Parejas: una fila por pareja, que lleva a su ficha. */
-@Composable
-private fun ListaProvisional(m: Modelo, ir: (Destino) -> Unit) {
-    Column(Modifier.fillMaxSize().testTag("pantalla-parejas").verticalScroll(rememberScrollState())) {
-        Cabecera("Parejas")
-        Tarjeta(Modifier.padding(horizontal = 16.dp)) {
-            for (f in m.filas) {
-                Fila(f.nombre, Modifier.testTag("fila-${f.nombre}"), alPulsar = { ir(Destino.Ficha(f.nombre)) })
-            }
-        }
-    }
-}
 
 /** Hasta que esté la sección Llavero: la fila de antes, con traerlo, abrirlo y quitarlo. */
 @Composable

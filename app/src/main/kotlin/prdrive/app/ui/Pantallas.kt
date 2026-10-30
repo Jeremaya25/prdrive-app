@@ -356,63 +356,6 @@ private fun Resumen(nombre: String, r: Pasada.Resultado) {
 
 // --- principal -------------------------------------------------------------------
 
-/**
- * Hasta que esté la ficha de una pareja: su tarjeta de antes, con lo que se
- * puede hacer con ella (el log, rehacer la referencia, moverla, terminar de
- * moverla y devolverla al volumen).
- */
-@Composable
-internal fun FichaProvisional(m: Modelo, nombre: String) {
-    val contexto = LocalContext.current
-    var log by remember { mutableStateOf<Estado.Fila?>(null) }
-    val conRed = conRedLocal()
-    // La pareja que se va a mover (con el diálogo abierto o el selector de
-    // carpetas delante), y si ya está el permiso de acceso a todos los archivos,
-    // que se da en los ajustes y se mira al volver. Guardado: es solo un nombre.
-    var moviendo by rememberSaveable { mutableStateOf<String?>(null) }
-    var permisoCompartido by remember { mutableStateOf(Prdrive.permisoCompartido()) }
-    LifecycleResumeEffect(Unit) {
-        permisoCompartido = Prdrive.permisoCompartido()
-        onPauseOrDispose {}
-    }
-    val elegirCarpeta = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { arbol ->
-        val pareja = moviendo
-        moviendo = null
-        if (arbol != null && pareja != null) m.moverACompartida(pareja, arbol)
-    }
-    val f = m.filas.firstOrNull { it.nombre == nombre }
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp)) {
-        if (f != null) {
-            FilaDePareja(
-                f, m.resultados[f.nombre], m.ocupado == null,
-                verLog = { log = f },
-                aprobar = { conRed { m.aprobarResync(f.nombre) } },
-                mover = { moviendo = f.nombre },
-                terminar = { conRed { m.terminarDeMover(f.nombre) } },
-                volver = { conRed { m.volverAlVolumen(f.nombre) } },
-                darPermiso = { darPermisoCompartido(contexto, m) },
-            )
-        }
-    }
-    log?.let { fila -> DialogoLog(fila) { log = null } }
-    moviendo?.let { pareja ->
-        DialogoMover(
-            nombre = pareja,
-            conPermiso = permisoCompartido,
-            darPermiso = { darPermisoCompartido(contexto, m) },
-            // Como «Sincronizar»: la mudanza pasa bisync contra el remoto, y sin el
-            // permiso de red local (API 37) una dirección privada se cuelga. Se
-            // pide antes del selector, para que su resultado ya pueda mover.
-            elegir = {
-                conRed {
-                    elegirCarpeta.launch(DocumentsContract.buildDocumentUri(Compartir.AUTORIDAD, "primary:Documents"))
-                }
-            },
-            cerrar = { moviendo = null },
-        )
-    }
-}
-
 /** Las versiones, y buscar la nueva sin esperar al día siguiente. */
 @Composable
 private fun Pie() {
@@ -438,98 +381,6 @@ private fun Pie() {
         if (Actualizador.nueva == null) {
             Actualizador.aviso?.let {
                 Text(it, style = MaterialTheme.typography.bodySmall, modifier = Modifier.testTag("aviso-version"))
-            }
-        }
-    }
-}
-
-@Composable
-private fun FilaDePareja(
-    f: Estado.Fila,
-    ultimo: Pasada.Resultado?,
-    libre: Boolean,
-    verLog: () -> Unit,
-    aprobar: () -> Unit,
-    mover: () -> Unit,
-    terminar: () -> Unit,
-    volver: () -> Unit,
-    darPermiso: () -> Unit,
-) {
-    Card(modifier = Modifier.fillMaxWidth().testTag("fila-${f.nombre}")) {
-        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(f.nombre, style = MaterialTheme.typography.titleMedium)
-            Text("${f.modo} · ${f.local}", style = MaterialTheme.typography.bodySmall)
-            f.compartida?.let {
-                Text(
-                    "En ${rutaCorta(it)}",
-                    style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier.testTag("donde-${f.nombre}"),
-                )
-            }
-            val cuando = f.ultimaBuena?.let(::haceCuanto)
-            Text(if (cuando != null) "Al día: $cuando" else "Sin ninguna pasada buena todavía")
-            val fallo = f.fallo
-            if (fallo != null) {
-                Text("Falló el ${fallo.cuando}", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.SemiBold)
-                f.explicacion?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
-                if (fallo.log != null) TextButton(onClick = verLog) { Text("Ver el log") }
-            }
-            f.sinAcceso?.let { motivo ->
-                Text(motivo, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
-                // Solo el permiso se da con un botón: una tarjeta sin montar, no.
-                if (motivo == Prdrive.SIN_PERMISO_COMPARTIDO && Build.VERSION.SDK_INT >= 30) {
-                    OutlinedButton(onClick = darPermiso, modifier = Modifier.testTag("permiso-${f.nombre}")) {
-                        Text("Dar permiso")
-                    }
-                }
-            }
-            f.problemaCompartida?.let {
-                Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
-            }
-            // A medio mover solo se ofrece terminar: pasarla con una pasada normal o
-            // con un --resync cualquiera la cogería con la carpeta a medio llenar.
-            if (f.entrando) {
-                Text(
-                    "A medio mover: no se sincroniza con las demás hasta que la termines.",
-                    color = MaterialTheme.colorScheme.tertiary,
-                    style = MaterialTheme.typography.bodySmall,
-                )
-                OutlinedButton(onClick = terminar, enabled = libre, modifier = Modifier.testTag("terminar-${f.nombre}")) {
-                    Text("Terminar de mover")
-                }
-            }
-            if (f.compartida != null && (!f.entrando || f.problemaCompartida != null)) {
-                OutlinedButton(onClick = volver, enabled = libre, modifier = Modifier.testTag("volver-${f.nombre}")) {
-                    Text("Volver al volumen")
-                }
-                Text(
-                    "La carpeta compartida se queda como está: bórrala tú cuando ya no la quieras.",
-                    style = MaterialTheme.typography.bodySmall,
-                )
-            }
-            if (f.sePuedeCompartir) {
-                OutlinedButton(onClick = mover, enabled = libre, modifier = Modifier.testTag("mover-${f.nombre}")) {
-                    Text("Mover a una carpeta compartida…")
-                }
-            }
-            if (f.pideResync.isNotEmpty() && ultimo?.ok != true && !f.entrando) {
-                Text(
-                    "Pide --resync: ${f.pideResync.joinToString("; ")}",
-                    color = MaterialTheme.colorScheme.tertiary,
-                    style = MaterialTheme.typography.bodySmall,
-                )
-                OutlinedButton(onClick = aprobar, enabled = libre, modifier = Modifier.testTag("resync-${f.nombre}")) {
-                    Text("Rehacer la referencia (--resync)")
-                }
-            }
-            if (f.conflictos.isNotEmpty()) {
-                Text(
-                    "${f.conflictos.size} fichero(s) en conflicto: cambiaron en los dos lados y hay dos versiones.",
-                    color = MaterialTheme.colorScheme.error,
-                )
-                f.conflictos.take(Pasada.CONFLICTS_SHOWN).forEach {
-                    Text("· ${it.relativa}", style = MaterialTheme.typography.bodySmall)
-                }
             }
         }
     }
@@ -571,25 +422,6 @@ private fun DialogoMover(
                         "volumen se borra al acabar.",
                 )
                 if (!conPermiso) Text(Prdrive.SIN_PERMISO_COMPARTIDO, color = MaterialTheme.colorScheme.error)
-            }
-        },
-    )
-}
-
-@Composable
-private fun DialogoLog(f: Estado.Fila, cerrar: () -> Unit) {
-    // Leído fuera del hilo de la pantalla: un log puede ser grande.
-    val texto by produceState(emptyList<String>(), f) {
-        value = withContext(Dispatchers.IO) { f.fallo?.log?.let(Estado::leer)?.let { Pasada.cola(it, 60) } ?: emptyList() }
-    }
-    AlertDialog(
-        onDismissRequest = cerrar,
-        confirmButton = { TextButton(onClick = cerrar) { Text("Cerrar") } },
-        title = { Text("Log de ${f.nombre}") },
-        text = {
-            Column(Modifier.verticalScroll(rememberScrollState())) {
-                f.explicacion?.let { Text(it, fontWeight = FontWeight.SemiBold) }
-                Lineas(texto)
             }
         },
     )

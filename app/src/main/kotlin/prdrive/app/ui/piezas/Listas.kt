@@ -162,16 +162,24 @@ private fun Chevron() {
 
 /**
  * La fila de algo que revisar: la baldosa del tono, el [titulo] («vault» falló)
- * y el [cuerpo] con lo que pasa, y al tocarla, su arreglo.
+ * y el [cuerpo] con lo que pasa, y al tocarla, su arreglo. Sin [activa] no se
+ * toca (con un trabajo en marcha, si su arreglo cambia algo).
  */
 @Composable
-fun FilaDeAviso(titulo: String, cuerpo: String, tono: TonoAviso, alPulsar: () -> Unit, modifier: Modifier = Modifier) {
+fun FilaDeAviso(
+    titulo: String,
+    cuerpo: String,
+    tono: TonoAviso,
+    alPulsar: () -> Unit,
+    modifier: Modifier = Modifier,
+    activa: Boolean = true,
+) {
     val c = Paleta.actual
     Row(
         modifier = modifier
             .fillMaxWidth()
             .heightIn(min = 68.dp)
-            .clickable(onClick = alPulsar)
+            .clickable(enabled = activa, onClick = alPulsar)
             .semantics(mergeDescendants = true) {}
             .padding(start = 16.dp, end = 12.dp, top = 10.dp, bottom = 10.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
