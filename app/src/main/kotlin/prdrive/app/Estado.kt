@@ -10,6 +10,7 @@ import prdrive.engine.Compartidas
 import prdrive.engine.Config
 import prdrive.engine.ConfigError
 import prdrive.engine.Conflictos
+import prdrive.engine.Historial
 import prdrive.engine.LLAVERO
 import prdrive.engine.LLAVERO_LLAVE
 import prdrive.engine.Llavero
@@ -61,6 +62,10 @@ object Estado {
          * vive ya en una: para decirlo en vez de no ofrecerlo sin más (#24).
          */
         val porQueNoSeComparte: String? = null,
+        /** Sus últimas pasadas según el diario ([Historial]), la más reciente primero. */
+        val ultimas: List<Historial.Pasada> = emptyList(),
+        /** La racha de fallos en la que está, si la última pasada falló ([Historial.racha]). */
+        val racha: Historial.Racha? = null,
     )
 
     /**
@@ -80,6 +85,8 @@ object Estado {
         val buenas = Resultados.ultimasBuenas(v.state, config.names)
         val fallos = Resultados.fallos(v.state, v.logs, config).associateBy { it.pareja }
         val conflictos = Conflictos.cargar(config, v.raiz, v.state)
+        // El diario se lee una vez para todas (`historial.rachas()` hace lo mismo).
+        val diario = Historial.leer(v.state).groupBy { it.pareja }
         return config.delUsuario.map { p ->
             val fallo = fallos[p.name]
             val noSeComparte = if (conCompartir && p.name !in entradas) Compartidas.problemaPareja(config, p.name) else null
@@ -99,9 +106,14 @@ object Estado {
                 sePuedeCompartir = conCompartir && p.name !in entradas && noSeComparte == null,
                 remoto = p.remotePath,
                 porQueNoSeComparte = noSeComparte,
+                ultimas = diario[p.name].orEmpty().takeLast(ULTIMAS).reversed(),
+                racha = diario[p.name]?.let(Historial::racha),
             )
         }
     }
+
+    /** Cuántas pasadas del diario enseña la ficha de una pareja. */
+    const val ULTIMAS = 5
 
     private fun razonesResync(v: Volumen, p: Pareja): List<String> {
         if (!p.isBisync) return emptyList()

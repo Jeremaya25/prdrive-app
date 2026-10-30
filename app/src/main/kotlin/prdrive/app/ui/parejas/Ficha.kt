@@ -61,6 +61,9 @@ import prdrive.app.ui.piezas.Tono
 import prdrive.app.ui.piezas.TonoAviso
 import prdrive.app.ui.rutaCorta
 import prdrive.engine.Mudanza
+import android.text.format.Formatter
+import prdrive.engine.Store
+import prdrive.engine.Historial
 import prdrive.engine.Pasada
 
 /**
@@ -144,6 +147,7 @@ fun Ficha(
             Arreglos(m, f, libre) { rehaciendo = true }
             Bloque("Cómo se sincroniza") { ComoSeSincroniza(f, libre) { ir(Destino.Simulacro(nombre)) } }
             Bloque("Dónde vive en este teléfono") { DondeVive(m, f, libre, ir, conRed) }
+            if (f.ultimas.isNotEmpty()) Bloque("Últimas pasadas") { UltimasPasadas(f) }
             if (f.fallo?.log != null) {
                 Boton(
                     "Ver el log",
@@ -193,6 +197,38 @@ private fun textoDelPaso(paso: Mudanza.Paso, volviendo: Boolean): Pair<String, S
     Mudanza.Paso.BORRAR -> "Borrar la copia de la app" to "Solo cuando todo está en los dos sitios."
 }
 
+/**
+ * Desde cuándo falla, según el diario (`historial.racha()`): «Falla desde hace
+ * 2 h (o antes)» y cuántas de las últimas fueron bien.
+ */
+private fun textoDeRacha(r: Historial.Racha): String {
+    val desde = Store.desdeSello(r.desde)?.let(::haceCuanto) ?: r.desde
+    return "Falla desde $desde" + (if (r.exacta) "" else " (o antes)") +
+        ": ${r.buenas} de las últimas ${r.pasadas} fueron bien."
+}
+
+/** Las últimas pasadas de la pareja según el diario: cuándo, cuánto duró y movió, y cómo acabó. */
+@Composable
+private fun UltimasPasadas(f: Estado.Fila) {
+    val contexto = LocalContext.current
+    Tarjeta {
+        f.ultimas.forEachIndexed { i, p ->
+            if (i > 0) Separador()
+            val cuando = Store.desdeSello(p.inicio)?.let(::haceCuanto) ?: p.inicio
+            val detalle = listOfNotNull(
+                p.segundos?.let { s -> if (s < 60) "${s.toInt()} s" else "${(s / 60).toInt()} min" },
+                p.transferido?.let { b -> Formatter.formatShortFileSize(contexto, b.toLong()) + " movidos" },
+            ).joinToString(" · ").ifEmpty { null }
+            Fila(
+                cuando.replaceFirstChar { it.uppercase() },
+                Modifier.testTag("pasada-${f.nombre}-$i"),
+                detalle = detalle,
+                extremo = { if (p.ok) Chip("bien", tono = Tono.OK) else Chip("falló", tono = Tono.PELIGRO) },
+            )
+        }
+    }
+}
+
 /** Cuántas líneas de lo que cuenta una mudanza se ven en la ficha mientras dura. */
 private const val LINEAS_MUDANZA = 40
 
@@ -216,7 +252,11 @@ private fun Arreglos(m: Modelo, f: Estado.Fila, libre: Boolean, rehacer: () -> U
     if (fallo == null && !pideResync && f.conflictos.isEmpty()) return
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         if (fallo != null) {
-            Aviso("Falló el ${fallo.cuando}", tono = TonoAviso.PELIGRO, cuerpo = f.explicacion)
+            Aviso(
+                "Falló el ${fallo.cuando}",
+                tono = TonoAviso.PELIGRO,
+                cuerpo = listOfNotNull(f.explicacion, f.racha?.let(::textoDeRacha)).joinToString(" ").ifEmpty { null },
+            )
         }
         if (pideResync) {
             Tarjeta {
