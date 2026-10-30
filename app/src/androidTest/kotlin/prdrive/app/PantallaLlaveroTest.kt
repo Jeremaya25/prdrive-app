@@ -308,6 +308,22 @@ class PantallaLlaveroTest {
 
     // --- traerlo y quitarlo -------------------------------------------------------
 
+    /** Girar el teléfono con la confirmación de «Traer el llavero» delante no la cierra. */
+    @Test
+    fun recrear_la_actividad_no_cierra_la_confirmacion_de_traer() {
+        val (w, _) = Banco.volumen(Banco.pareja("notas"), catalogo = true)
+        catalogo(mapOf("base" to "personal.kdbx"))
+        Catalogo.pull(Adaptadores.catalogo(Prdrive.temporal(contexto)), loadRaw(w.config.readText()), w.state)
+        ActivityScenario.launch(MainActivity::class.java).use { escena ->
+            irAlLlavero()
+            esperar("traer-llavero")
+            compose.onNodeWithTag("traer-llavero").performClick()
+            esperar("confirmar-traer")
+            escena.recreate()
+            esperar("confirmar-traer")
+        }
+    }
+
     @Test
     fun traer_el_llavero_lo_activa_y_lo_baja() {
         // 1. Al emparejar: el catálogo trae `[keychain]`, y la casilla «El

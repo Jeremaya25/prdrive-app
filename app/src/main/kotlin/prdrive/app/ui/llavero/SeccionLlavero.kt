@@ -25,6 +25,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -63,8 +64,9 @@ import prdrive.engine.Volumen
  */
 @Composable
 fun SeccionLlavero(m: Modelo, conRed: (() -> Unit) -> Unit, conPermiso: (() -> Unit) -> Unit) {
-    var traer by remember { mutableStateOf(false) }
-    var quitar by remember { mutableStateOf(false) }
+    // Los diálogos, abiertos o no, se guardan con la actividad: girar el teléfono no los cierra.
+    var traer by rememberSaveable { mutableStateOf(false) }
+    var quitar by rememberSaveable { mutableStateOf(false) }
     val f = m.llavero
     val libre = m.ocupado == null
     Column(
@@ -284,7 +286,7 @@ private fun ConfirmarTraer(
     conPermiso: (() -> Unit) -> Unit,
     cerrar: () -> Unit,
 ) {
-    var llave by remember { mutableStateOf<Uri?>(null) }
+    var llave by rememberSaveable { mutableStateOf<Uri?>(null) }
     val elegir = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) llave = uri
     }
