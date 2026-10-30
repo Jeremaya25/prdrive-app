@@ -154,6 +154,10 @@ class Modelo(app: Application) : AndroidViewModel(app) {
     var remoto by mutableStateOf<String?>(null)
         private set
 
+    /** La pareja que se está moviendo (o devolviendo al volumen), si hay una: su ficha enseña cómo va. */
+    var mudando by mutableStateOf<String?>(null)
+        private set
+
     /** Las parejas del catálogo (de su copia, sin red) que este teléfono no usa. */
     var sinUsar by mutableStateOf<List<String>>(emptyList())
         private set
@@ -659,12 +663,14 @@ class Modelo(app: Application) : AndroidViewModel(app) {
         trabajo(que) {
             val v = Prdrive.iniciarRclone(contexto)
             lineas = emptyList()
+            mudando = nombre
             try {
                 val entorno = Compartir.entorno(contexto, config().keepLogs, { progreso = Progreso.de(nombre, it) }, ::decir)
                 val hecho = LlaveroApp.enExclusiva { hacer(v, entorno) }
                 for (r in hecho.pasadas) resultados = resultados + (r.pareja to r)
                 error = hecho.motivo
             } finally {
+                mudando = null
                 filas = filasDe(v, config())
                 releerLlavero()
             }

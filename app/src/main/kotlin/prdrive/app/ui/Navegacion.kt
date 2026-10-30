@@ -51,6 +51,7 @@ import prdrive.app.Prdrive
 import prdrive.app.ui.inicio.Inicio
 import prdrive.app.ui.parejas.Ficha
 import prdrive.app.ui.parejas.LogDePareja
+import prdrive.app.ui.parejas.Mover
 import prdrive.app.ui.parejas.Parejas
 import prdrive.app.ui.piezas.Aviso
 import prdrive.app.ui.piezas.Fila
@@ -293,13 +294,9 @@ fun Secciones(m: Modelo) {
             ArribaDeTodo(m, enInicio, faltaRed) { conRed {} }
             Box(Modifier.weight(1f).fillMaxWidth()) {
                 when (val d = pila.cima) {
-                    is Destino.Ficha -> Ficha(
-                        m, d.pareja, pila::ir, { pila.atras() },
-                        etiquetaVolver = pila.seccion.titulo,
-                        rehacer = { f -> conRed { m.aprobarResync(f.nombre) } },
-                    )
+                    is Destino.Ficha -> Ficha(m, d.pareja, pila::ir, { pila.atras() }, etiquetaVolver = pila.seccion.titulo)
                     is Destino.Log -> LogDePareja(m, d.pareja) { pila.atras() }
-                    is Destino.Mover -> Box(Modifier.fillMaxSize().testTag("pantalla-mover-${d.pareja}"))
+                    is Destino.Mover -> Mover(m, d.pareja, volver = { pila.atras() })
                     null -> when (pila.seccion) {
                         Seccion.INICIO -> Inicio(m, pila::ir, pila::cambiar)
                         Seccion.PAREJAS -> Parejas(m, pila::ir)

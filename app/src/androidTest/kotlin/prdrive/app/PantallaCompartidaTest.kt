@@ -1,11 +1,19 @@
 package prdrive.app
 
 import android.os.Environment
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
 import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.isEnabled
 import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
+import androidx.lifecycle.Lifecycle
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.lifecycle.ViewModelProvider
@@ -21,6 +29,8 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import prdrive.app.ui.Modelo
+import prdrive.app.ui.Tema
+import prdrive.app.ui.parejas.Mover
 import prdrive.engine.Compartidas
 import prdrive.engine.Resultados
 import prdrive.engine.Volumen
@@ -205,6 +215,55 @@ class PantallaCompartidaTest {
             Banco.abrirFicha(compose, "notas")
             assertTrue("no dice por qué no se puede mover", hay("no-compartir-notas"))
             assertFalse(hay("mover-notas"))
+        }
+    }
+
+    /** Rehacer la referencia se confirma en una hoja que dice qué va a pasar; «Ahora no» no pasa nada. */
+    @Test
+    fun el_resync_se_confirma_en_una_hoja() {
+        Banco.volumen(Banco.pareja("vault", local = "vault"))
+        ActivityScenario.launch(MainActivity::class.java).use { escena ->
+            var modelo: Modelo? = null
+            escena.onActivity { modelo = ViewModelProvider(it)[Modelo::class.java] }
+            // Sin listados, una bisync pide --resync.
+            Banco.abrirFicha(compose, "vault")
+            compose.waitUntil(10_000) { hay("resync-vault") }
+            compose.onNodeWithTag("resync-vault").performClick()
+            compose.waitUntil(10_000) { hay("confirmar-resync") }
+            compose.onNodeWithText("Ahora no").performClick()
+            compose.waitUntil(10_000) { !hay("confirmar-resync") }
+            assertNull("hizo una pasada", modelo!!.resultados["vault"])
+            assertTrue(hay("resync-vault"))
+        }
+    }
+
+    /**
+     * Sin el permiso de acceso a todos los archivos no se puede elegir carpeta;
+     * con él, sí, y se nota al volver a la app (de los ajustes de Android, donde
+     * se da). El permiso se finge: quitarlo de verdad con `appops` mata el
+     * proceso de la app, que es también el del test.
+     */
+    @Test
+    fun mover_pide_el_permiso_antes_de_elegir_la_carpeta() {
+        org.junit.Assume.assumeTrue("antes de Android 11 no se ofrece mover", android.os.Build.VERSION.SDK_INT >= 30)
+        Banco.volumen(Banco.pareja("vault", local = "vault"))
+        var permitido = false
+        ActivityScenario.launch(ComponentActivity::class.java).use { escena ->
+            escena.onActivity { actividad ->
+                val modelo = ViewModelProvider(actividad)[Modelo::class.java]
+                actividad.setContent { Tema { Mover(modelo, "vault", volver = {}, tienePermiso = { permitido }) } }
+            }
+            compose.waitUntil(10_000) { hay("pantalla-mover-vault") }
+            assertTrue("no ofrece dar el permiso", hay("dar-permiso"))
+            compose.onNodeWithTag("elegir-carpeta").performScrollTo().assertIsNotEnabled()
+            permitido = true
+            escena.moveToState(Lifecycle.State.STARTED)
+            escena.moveToState(Lifecycle.State.RESUMED)
+            compose.waitUntil(10_000) {
+                compose.onAllNodes(hasTestTag("elegir-carpeta") and isEnabled()).fetchSemanticsNodes().isNotEmpty()
+            }
+            compose.onNodeWithTag("elegir-carpeta").assertIsEnabled()
+            assertFalse("sigue pidiendo el permiso", hay("dar-permiso"))
         }
     }
 

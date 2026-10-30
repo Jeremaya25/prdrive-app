@@ -20,6 +20,10 @@ import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -46,6 +50,8 @@ import prdrive.app.ui.piezas.FilaDeAviso
 import prdrive.app.ui.piezas.Glifo
 import prdrive.app.ui.piezas.Icono
 import prdrive.app.ui.piezas.Peso
+import prdrive.app.ui.piezas.Progreso
+import prdrive.app.ui.piezas.Registro
 import prdrive.app.ui.piezas.Rotulo
 import prdrive.app.ui.piezas.Separador
 import prdrive.app.ui.piezas.Tamano
@@ -71,11 +77,14 @@ fun Ficha(
     ir: (Destino) -> Unit,
     volver: () -> Unit,
     etiquetaVolver: String = "Parejas",
-    rehacer: (Estado.Fila) -> Unit = {},
 ) {
     val conRed = conRedLocal()
     val f = m.filas.firstOrNull { it.nombre == nombre }
     val libre = m.ocupado == null
+    // La hoja de rehacer la referencia, abierta o no: se guarda con la actividad,
+    // para que girar el teléfono no la cierre.
+    var rehaciendo by rememberSaveable { mutableStateOf(false) }
+    if (rehaciendo && f != null) RehacerReferencia(m, f, conRed) { rehaciendo = false }
     Column(
         Modifier
             .fillMaxSize()
@@ -113,8 +122,14 @@ fun Ficha(
                     ancho = true,
                     activo = libre && !f.entrando,
                 )
+                // Mientras se mueve (o vuelve al volumen), cómo va: la barra y lo que va contando.
+                if (m.mudando == nombre) {
+                    val p = m.progreso
+                    Progreso(p?.fraccion, texto = p?.let { "${it.ficheros} de ${it.totalFicheros} ficheros" })
+                    if (m.lineas.isNotEmpty()) Registro(m.lineas.takeLast(LINEAS_MUDANZA))
+                }
             }
-            Arreglos(m, f, libre, rehacer)
+            Arreglos(m, f, libre) { rehaciendo = true }
             Bloque("Cómo se sincroniza") { ComoSeSincroniza(f) }
             Bloque("Dónde vive en este teléfono") { DondeVive(m, f, libre, ir, conRed) }
             if (f.fallo?.log != null) {
@@ -130,6 +145,9 @@ fun Ficha(
     }
 }
 
+/** Cuántas líneas de lo que cuenta una mudanza se ven en la ficha mientras dura. */
+private const val LINEAS_MUDANZA = 40
+
 /** Un bloque de la ficha: su rótulo y, debajo, lo suyo. */
 @Composable
 private fun Bloque(titulo: String, contenido: @Composable ColumnScope.() -> Unit) {
@@ -144,7 +162,7 @@ private fun Bloque(titulo: String, contenido: @Composable ColumnScope.() -> Unit
  * (que abre su hoja, [rehacer]) y los ficheros en conflicto.
  */
 @Composable
-private fun Arreglos(m: Modelo, f: Estado.Fila, libre: Boolean, rehacer: (Estado.Fila) -> Unit) {
+private fun Arreglos(m: Modelo, f: Estado.Fila, libre: Boolean, rehacer: () -> Unit) {
     val fallo = f.fallo
     val pideResync = f.pideResync.isNotEmpty() && m.resultados[f.nombre]?.ok != true && !f.entrando
     if (fallo == null && !pideResync && f.conflictos.isEmpty()) return
@@ -158,7 +176,7 @@ private fun Arreglos(m: Modelo, f: Estado.Fila, libre: Boolean, rehacer: (Estado
                     "Pide rehacer la referencia",
                     "No borra nada. Revisa antes lo que va a pasar.",
                     TonoAviso.AVISO,
-                    alPulsar = { rehacer(f) },
+                    alPulsar = rehacer,
                     modifier = Modifier.testTag("resync-${f.nombre}"),
                     activa = libre,
                 )
