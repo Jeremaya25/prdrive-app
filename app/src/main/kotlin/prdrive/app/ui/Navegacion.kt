@@ -48,6 +48,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import prdrive.app.Prdrive
+import prdrive.app.ui.ajustes.Ajustes
 import prdrive.app.ui.inicio.Inicio
 import prdrive.app.ui.llavero.SeccionLlavero
 import prdrive.app.ui.parejas.Ficha
@@ -302,7 +303,7 @@ fun Secciones(m: Modelo) {
                         Seccion.INICIO -> Inicio(m, pila::ir, pila::cambiar)
                         Seccion.PAREJAS -> Parejas(m, pila::ir)
                         Seccion.LLAVERO -> SeccionLlavero(m, conRed, conPermiso)
-                        Seccion.AJUSTES -> Box(Modifier.fillMaxSize().testTag("pantalla-ajustes"))
+                        Seccion.AJUSTES -> Ajustes(m)
                     }
                 }
             }

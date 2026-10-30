@@ -365,7 +365,19 @@ class Modelo(app: Application) : AndroidViewModel(app) {
         llavero = Estado.llavero(v, config, Prdrive.faltaRedLocal(contexto))
         remoto = remotoDe(v, config)
         sinUsar = Catalogo.cached(v.state)?.names?.filter { it !in config.names }.orEmpty()
+        rutaCatalogo = try {
+            @Suppress("UNCHECKED_CAST")
+            val defaults = loadRaw(v.config.readText(Charsets.UTF_8))["defaults"] as? Map<String, Any?> ?: emptyMap()
+            val remote = defaults["catalog_remote"] ?: defaults["remote"] ?: ""
+            "$remote:${defaults["catalog_path"] ?: prdrive.engine.DEFAULT_CATALOG_PATH}"
+        } catch (_: Exception) {
+            null
+        }
     }
+
+    /** Dónde está el catálogo de parejas en el remoto («nas:/prdrive-catalog/remote.toml»), para Ajustes. */
+    var rutaCatalogo by mutableStateOf<String?>(null)
+        private set
 
     /** «nas · sftp»: el `remoteName` de las parejas y el tipo de su sección en el `rclone.conf`. */
     private fun remotoDe(v: Volumen, config: Config): String? {

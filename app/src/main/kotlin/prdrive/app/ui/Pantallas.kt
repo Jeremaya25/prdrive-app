@@ -118,36 +118,6 @@ internal fun flecha(modo: String): String {
     }
 }
 
-/** Las versiones, y buscar la nueva sin esperar al día siguiente. */
-@Composable
-private fun Pie() {
-    val contexto = LocalContext.current
-    val version = remember { Actualizador.versionInstalada(contexto) }
-    val ocupado = Actualizador.fase in setOf(
-        Actualizador.Fase.BUSCANDO, Actualizador.Fase.DESCARGANDO, Actualizador.Fase.INSTALANDO,
-    )
-    Column {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                "prdrive $version · rclone ${Rclone.version()}",
-                style = MaterialTheme.typography.labelSmall,
-                modifier = Modifier.weight(1f),
-            )
-            TextButton(
-                onClick = { Actualizador.buscarAhora(contexto) },
-                enabled = !ocupado,
-                modifier = Modifier.testTag("buscar-version"),
-            ) { Text("Buscar actualizaciones") }
-        }
-        // Con una versión nueva, el aviso va en su tarjeta.
-        if (Actualizador.nueva == null) {
-            Actualizador.aviso?.let {
-                Text(it, style = MaterialTheme.typography.bodySmall, modifier = Modifier.testTag("aviso-version"))
-            }
-        }
-    }
-}
-
 /** La ruta de una carpeta compartida como la ve la persona: desde la raíz del almacenamiento (`Documents/vault`). */
 internal fun rutaCorta(ruta: String): String =
     File(ruta).relativeToOrNull(Environment.getExternalStorageDirectory())?.path?.takeIf { it.isNotEmpty() } ?: ruta
