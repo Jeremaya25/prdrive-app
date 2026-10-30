@@ -151,68 +151,6 @@ private fun Lineas(lineas: List<String>, modifier: Modifier = Modifier) {
 }
 
 /**
- * Un botón con contorno para dentro de una tarjeta de color
- * (`secondaryContainer`, `tertiaryContainer`). El contorno de serie es
- * `outlineVariant`, que en el modo oscuro es casi el color de esas tarjetas, y
- * el botón se quedaba en un texto suelto: con `outline` se ve en los dos modos.
- */
-@Composable
-private fun BotonEnTarjeta(onClick: () -> Unit, contenido: @Composable RowScope.() -> Unit) {
-    OutlinedButton(onClick = onClick, border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline), content = contenido)
-}
-
-/**
- * Una acción que puede necesitar la red local: antes de hacerla se pide el
- * permiso, si falta ([Prdrive.faltaRedLocal]). Se haga con permiso o sin él:
- * un remoto en internet no lo necesita, y si era uno de casa, el error que
- * salga ya lo explica. [alResponder] se llama cuando la persona contesta.
- */
-@Composable
-private fun conRedLocal(alResponder: () -> Unit = {}): (() -> Unit) -> Unit {
-    val contexto = LocalContext.current
-    var pendiente by remember { mutableStateOf<(() -> Unit)?>(null) }
-    val lanzador = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
-        alResponder()
-        val accion = pendiente
-        pendiente = null
-        accion?.invoke()
-    }
-    return { accion ->
-        when {
-            // Con la pregunta en pantalla, otro toque no la repite: Android
-            // contestaría a la segunda en seguida, como cancelada, y la acción
-            // iría sin permiso.
-            pendiente != null -> Unit
-            Prdrive.faltaRedLocal(contexto) -> {
-                pendiente = accion
-                lanzador.launch(Prdrive.PERMISO_RED_LOCAL)
-            }
-            else -> accion()
-        }
-    }
-}
-
-/** Lo que se ve mientras falta el permiso de red local, con cómo darlo. */
-@Composable
-private fun AvisoRedLocal(pedir: () -> Unit) {
-    val contexto = LocalContext.current
-    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer)) {
-        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text(Prdrive.SIN_RED_LOCAL, style = MaterialTheme.typography.bodySmall)
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                BotonEnTarjeta(onClick = pedir) { Text("Dar permiso") }
-                TextButton(onClick = {
-                    // Si ya se negó dos veces, Android no vuelve a preguntar: queda los ajustes.
-                    contexto.startActivity(
-                        Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", contexto.packageName, null)),
-                    )
-                }) { Text("Abrir ajustes") }
-            }
-        }
-    }
-}
-
-/**
  * Hace cuánto, en español: la app no tiene otro idioma, y el
  * `DateUtils` de Android lo diría en el del teléfono, en mitad de una frase.
  */
@@ -228,7 +166,7 @@ internal fun haceCuanto(ms: Long, ahora: Long = System.currentTimeMillis()): Str
 }
 
 /** Hacia dónde va lo que se copia en ese modo: los dos sentidos, de bajada o de subida. */
-private fun flecha(modo: String): String {
+internal fun flecha(modo: String): String {
     val m = MODES[modo] ?: return "↔"
     return when {
         m.isBisync -> "↔"
@@ -418,18 +356,16 @@ private fun Resumen(nombre: String, r: Pasada.Resultado) {
 
 // --- principal -------------------------------------------------------------------
 
+/**
+ * Hasta que esté la ficha de una pareja: su tarjeta de antes, con lo que se
+ * puede hacer con ella (el log, rehacer la referencia, moverla, terminar de
+ * moverla y devolverla al volumen).
+ */
 @Composable
-internal fun Principal(m: Modelo) {
+internal fun FichaProvisional(m: Modelo, nombre: String) {
     val contexto = LocalContext.current
     var log by remember { mutableStateOf<Estado.Fila?>(null) }
-    var faltaRed by remember { mutableStateOf(Prdrive.faltaRedLocal(contexto)) }
-    // Al volver de los ajustes de la app, el permiso puede haber cambiado.
-    LifecycleResumeEffect(Unit) {
-        faltaRed = Prdrive.faltaRedLocal(contexto)
-        onPauseOrDispose {}
-    }
-    val conRed = conRedLocal { faltaRed = Prdrive.faltaRedLocal(contexto) }
-    val conPermiso = conAvisos()
+    val conRed = conRedLocal()
     // La pareja que se va a mover (con el diálogo abierto o el selector de
     // carpetas delante), y si ya está el permiso de acceso a todos los archivos,
     // que se da en los ajustes y se mira al volver. Guardado: es solo un nombre.
@@ -440,47 +376,28 @@ internal fun Principal(m: Modelo) {
         onPauseOrDispose {}
     }
     val elegirCarpeta = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { arbol ->
-        val nombre = moviendo
+        val pareja = moviendo
         moviendo = null
-        if (arbol != null && nombre != null) m.moverACompartida(nombre, arbol)
+        if (arbol != null && pareja != null) m.moverACompartida(pareja, arbol)
     }
-    Marco("prdrive") {
-        Button(
-            onClick = { conRed(m::sincronizar) },
-            enabled = m.ocupado == null,
-            modifier = Modifier.fillMaxWidth().height(56.dp).testTag("sincronizar"),
-        ) { Text("Sincronizar", style = MaterialTheme.typography.titleMedium) }
-        if (faltaRed) AvisoRedLocal { conRed {} }
-        LineaDeProgreso(m.progreso)
-        Ocupado(m.ocupado)
-        Error(m.error)
-        LazyColumn(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            // Dentro de la lista, para que se pueda desplazar: en horizontal no cabe todo.
-            item { VersionNueva(libre = m.ocupado == null) }
-            m.llavero?.let { f -> item { FilaDelLlavero(m, f, conRed, conPermiso) } }
-            // Sin clave por nombre: dos parejas que se llamen igual no pueden
-            // tumbar la pantalla (Compose no admite claves repetidas).
-            items(m.filas) { f ->
-                FilaDePareja(
-                    f, m.resultados[f.nombre], m.ocupado == null,
-                    verLog = { log = f },
-                    aprobar = { conRed { m.aprobarResync(f.nombre) } },
-                    mover = { moviendo = f.nombre },
-                    terminar = { conRed { m.terminarDeMover(f.nombre) } },
-                    volver = { conRed { m.volverAlVolumen(f.nombre) } },
-                    darPermiso = { darPermisoCompartido(contexto, m) },
-                )
-            }
-            item {
-                Spacer(Modifier.height(8.dp))
-                Pie()
-            }
+    val f = m.filas.firstOrNull { it.nombre == nombre }
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp)) {
+        if (f != null) {
+            FilaDePareja(
+                f, m.resultados[f.nombre], m.ocupado == null,
+                verLog = { log = f },
+                aprobar = { conRed { m.aprobarResync(f.nombre) } },
+                mover = { moviendo = f.nombre },
+                terminar = { conRed { m.terminarDeMover(f.nombre) } },
+                volver = { conRed { m.volverAlVolumen(f.nombre) } },
+                darPermiso = { darPermisoCompartido(contexto, m) },
+            )
         }
     }
-    log?.let { f -> DialogoLog(f) { log = null } }
-    moviendo?.let { nombre ->
+    log?.let { fila -> DialogoLog(fila) { log = null } }
+    moviendo?.let { pareja ->
         DialogoMover(
-            nombre = nombre,
+            nombre = pareja,
             conPermiso = permisoCompartido,
             darPermiso = { darPermisoCompartido(contexto, m) },
             // Como «Sincronizar»: la mudanza pasa bisync contra el remoto, y sin el
@@ -493,101 +410,6 @@ internal fun Principal(m: Modelo) {
             },
             cerrar = { moviendo = null },
         )
-    }
-}
-
-/** Abre una página en el navegador. */
-private fun abrir(contexto: android.content.Context, url: String) {
-    try {
-        contexto.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
-    } catch (_: android.content.ActivityNotFoundException) {
-        // Un teléfono sin navegador: no hay a dónde ir.
-    }
-}
-
-/**
- * La versión nueva de la app, si la hay: cómo va ([Actualizador.fase]) y lo que
- * se puede hacer con ella. Sola, se baja al abrir y se instala al salir; los
- * botones son para no esperar, o para cuando Android pide que se confirme.
- */
-@Composable
-private fun VersionNueva(libre: Boolean) {
-    val rel = Actualizador.nueva ?: return
-    val contexto = LocalContext.current
-    // El permiso de instalar apps se da en los ajustes: al volver, puede haber cambiado. Y un intento
-    // sin preguntar que no sale cambia «se instalará sola» por el botón.
-    var vueltas by remember { mutableIntStateOf(0) }
-    LifecycleResumeEffect(Unit) {
-        vueltas++
-        onPauseOrDispose {}
-    }
-    val sola = remember(vueltas, Actualizador.fallosSinPreguntar) { Actualizador.seInstalaSola(contexto) }
-    val faltaPermiso = remember(vueltas) { Actualizador.faltaPermiso(contexto) }
-    val tamano = { n: Long -> Formatter.formatShortFileSize(contexto, n) }
-    Card(
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
-        modifier = Modifier.fillMaxWidth().testTag("version-nueva"),
-    ) {
-        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Versión nueva: ${rel.tag}", fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
-                TextButton(onClick = { abrir(contexto, rel.url) }) { Text("Novedades") }
-            }
-            when (Actualizador.fase) {
-                Actualizador.Fase.DESCARGANDO -> {
-                    val total = rel.apk?.tamano ?: 0L
-                    val hecho = Actualizador.bajado
-                    LinearProgressIndicator(
-                        progress = { if (total > 0) (hecho.toFloat() / total).coerceIn(0f, 1f) else 0f },
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                    Text("Bajándola: ${tamano(hecho)} de ${tamano(total)}", style = MaterialTheme.typography.bodySmall)
-                }
-                Actualizador.Fase.LISTA -> {
-                    Text(
-                        if (sola) "Lista. Se instalará sola cuando salgas de la app." else "Lista para instalar.",
-                        modifier = Modifier.testTag("version-lista"),
-                    )
-                    Button(
-                        onClick = { Actualizador.instalarAhora(contexto) },
-                        enabled = libre,
-                        modifier = Modifier.testTag("instalar-version"),
-                    ) { Text("Instalar ahora") }
-                    Text("Al instalarse, la app se cierra: vuelve a abrirla después.", style = MaterialTheme.typography.bodySmall)
-                    if (faltaPermiso) {
-                        Text(
-                            "Para que se instale sola, sin preguntar, permite que prdrive instale apps.",
-                            style = MaterialTheme.typography.bodySmall,
-                        )
-                        BotonEnTarjeta(onClick = {
-                            contexto.startActivity(
-                                Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:${contexto.packageName}")),
-                            )
-                        }) { Text("Permitir") }
-                    }
-                }
-                Actualizador.Fase.INSTALANDO -> Text("Instalando… la app se cerrará en un momento.")
-                Actualizador.Fase.CONFIRMAR -> {
-                    Text("Android pide que confirmes la instalación.")
-                    Button(
-                        onClick = { Actualizador.instalarAhora(contexto) },
-                        enabled = libre,
-                        modifier = Modifier.testTag("instalar-version"),
-                    ) { Text("Instalar") }
-                }
-                Actualizador.Fase.QUIETA, Actualizador.Fase.BUSCANDO -> {
-                    Actualizador.espera?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
-                    rel.apk?.let { apk ->
-                        BotonEnTarjeta(onClick = { Actualizador.descargarAhora(contexto) }) {
-                            Text("Descargar (${tamano(apk.tamano)})")
-                        }
-                    }
-                }
-            }
-            Actualizador.aviso?.let {
-                Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.tertiary)
-            }
-        }
     }
 }
 
@@ -714,21 +536,8 @@ private fun FilaDePareja(
 }
 
 /** La ruta de una carpeta compartida como la ve la persona: desde la raíz del almacenamiento (`Documents/vault`). */
-private fun rutaCorta(ruta: String): String =
+internal fun rutaCorta(ruta: String): String =
     File(ruta).relativeToOrNull(Environment.getExternalStorageDirectory())?.path?.takeIf { it.isNotEmpty() } ?: ruta
-
-/**
- * Abre la pantalla de Android en la que se da el permiso de acceso a todos los
- * archivos. No hay resultado que esperar: al volver a la app se vuelve a mirar.
- * En un teléfono que no tenga esa pantalla, se dice dónde está el ajuste.
- */
-private fun darPermisoCompartido(contexto: Context, m: Modelo) {
-    try {
-        contexto.startActivity(Compartir.pedirPermiso(contexto))
-    } catch (_: ActivityNotFoundException) {
-        m.avisar("No encuentro la pantalla del permiso. Búscalo en los ajustes de la app prdrive: «Acceso a todos los archivos».")
-    }
-}
 
 /**
  * Antes de mover una pareja: qué cambia (la carpeta deja de ser privada) y, si

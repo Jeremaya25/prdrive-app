@@ -53,6 +53,8 @@ object Estado {
         val problemaCompartida: String? = null,
         /** Si se ofrece «Mover a una carpeta compartida…». */
         val sePuedeCompartir: Boolean = false,
+        /** Su carpeta en el remoto (`remote_path`), tal como la dice el config. */
+        val remoto: String = "",
     )
 
     /**
@@ -89,6 +91,7 @@ object Estado {
                 problemaCompartida = p.problemaCompartida,
                 sePuedeCompartir = conCompartir && p.name !in entradas &&
                     Compartidas.problemaPareja(config, p.name) == null,
+                remoto = p.remotePath,
             )
         }
     }

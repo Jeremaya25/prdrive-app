@@ -21,6 +21,7 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.Scaffold
@@ -30,12 +31,14 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
@@ -44,10 +47,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.LifecycleResumeEffect
+import prdrive.app.Prdrive
+import prdrive.app.ui.inicio.Inicio
+import prdrive.app.ui.piezas.Aviso
 import prdrive.app.ui.piezas.Fila
 import prdrive.app.ui.piezas.Glifo
 import prdrive.app.ui.piezas.Icono
 import prdrive.app.ui.piezas.Tarjeta
+import prdrive.app.ui.piezas.TonoAviso
 
 /**
  * Navegacion.kt — Las cuatro secciones de abajo (Inicio, Parejas, Llavero y
@@ -255,33 +262,46 @@ fun Cabecera(
 
 /**
  * La app ya emparejada: la sección elegida, o lo que tiene encima, y la barra de
- * secciones abajo, fija. Lo que tiene que estar en todas las pantallas (abrir
- * la base del llavero cuando el modelo lo pide, el aviso de antes de abrirla)
- * va aquí y no en una sección: la que lo pidió puede no estar delante.
+ * secciones abajo, fija. Lo que tiene que estar en todas las pantallas va aquí y
+ * no en una sección, porque la que lo pidió puede no estar delante: arriba, lo
+ * que se está haciendo, el error y el permiso de red local que falta; y abrir la
+ * base del llavero cuando el modelo lo pide, con su aviso de antes.
  */
 @Composable
 fun Secciones(m: Modelo) {
     val pila = rememberPila()
+    val contexto = LocalContext.current
+    var faltaRed by remember { mutableStateOf(Prdrive.faltaRedLocal(contexto)) }
     BackHandler(enabled = pila.puedeVolver) { pila.atras() }
     // Al volver a la app (de la app de KeePass, de los ajustes), lo que se ve puede haber cambiado.
     LifecycleResumeEffect(Unit) {
+        faltaRed = Prdrive.faltaRedLocal(contexto)
         m.alVolver()
         onPauseOrDispose {}
     }
+    val conRed = conRedLocal { faltaRed = Prdrive.faltaRedLocal(contexto) }
+    val conPermiso = conAvisos()
+    val enInicio = pila.cima == null && pila.seccion == Seccion.INICIO
     Scaffold(
         containerColor = Paleta.actual.paper,
         bottomBar = { BarraSecciones(pila.seccion, pila::cambiar) },
     ) { margen ->
-        Box(Modifier.padding(margen).fillMaxSize()) {
-            when (val d = pila.cima) {
-                is Destino.Ficha -> Box(Modifier.fillMaxSize().testTag("pantalla-pareja-${d.pareja}"))
-                is Destino.Log -> Box(Modifier.fillMaxSize().testTag("pantalla-log-${d.pareja}"))
-                is Destino.Mover -> Box(Modifier.fillMaxSize().testTag("pantalla-mover-${d.pareja}"))
-                null -> when (pila.seccion) {
-                    Seccion.INICIO -> Box(Modifier.fillMaxSize().testTag("pantalla-inicio")) { Principal(m) }
-                    Seccion.PAREJAS -> ListaProvisional(m, pila::ir)
-                    Seccion.LLAVERO -> Box(Modifier.fillMaxSize().testTag("pantalla-llavero"))
-                    Seccion.AJUSTES -> Box(Modifier.fillMaxSize().testTag("pantalla-ajustes"))
+        Column(Modifier.padding(margen).fillMaxSize()) {
+            ArribaDeTodo(m, enInicio, faltaRed) { conRed {} }
+            Box(Modifier.weight(1f).fillMaxWidth()) {
+                when (val d = pila.cima) {
+                    is Destino.Ficha -> Column(Modifier.fillMaxSize().testTag("pantalla-pareja-${d.pareja}")) {
+                        Cabecera(d.pareja, volver = { pila.atras() }, etiquetaVolver = pila.seccion.titulo)
+                        FichaProvisional(m, d.pareja)
+                    }
+                    is Destino.Log -> Box(Modifier.fillMaxSize().testTag("pantalla-log-${d.pareja}"))
+                    is Destino.Mover -> Box(Modifier.fillMaxSize().testTag("pantalla-mover-${d.pareja}"))
+                    null -> when (pila.seccion) {
+                        Seccion.INICIO -> Inicio(m, pila::ir, pila::cambiar)
+                        Seccion.PAREJAS -> ListaProvisional(m, pila::ir)
+                        Seccion.LLAVERO -> LlaveroProvisional(m, conRed, conPermiso)
+                        Seccion.AJUSTES -> Box(Modifier.fillMaxSize().testTag("pantalla-ajustes"))
+                    }
                 }
             }
         }
@@ -289,6 +309,39 @@ fun Secciones(m: Modelo) {
     m.avisoLlavero?.let { AvisoAntesDeAbrir(it, m::cerrarAvisoLlavero) }
     AbrirLaBase(m)
 }
+
+/**
+ * Lo que va arriba de toda sección: lo que se está haciendo (en Inicio ya lo
+ * dice su título, con la etiqueta `ocupado`), el último error y, si falta, el
+ * permiso de red local con cómo darlo.
+ */
+@Composable
+private fun ArribaDeTodo(m: Modelo, enInicio: Boolean, faltaRed: Boolean, pedirRed: () -> Unit) {
+    val ocupado = m.ocupado
+    val error = m.error
+    if ((ocupado == null || enInicio) && error == null && !faltaRed) return
+    Column(
+        Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 4.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        if (ocupado != null && !enInicio) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                CircularProgressIndicator(Modifier.size(16.dp), color = Paleta.actual.accent, strokeWidth = 2.dp)
+                Text(ocupado, style = Letra.actual.texto, color = Paleta.actual.ink2, modifier = Modifier.testTag("ocupado"))
+            }
+        }
+        if (error != null) {
+            // El primer párrafo es lo que ha pasado; lo demás, lo que se puede hacer.
+            val titulo = error.substringBefore(PARRAFO)
+            val resto = error.substringAfter(PARRAFO, "").takeIf { it.isNotBlank() }
+            Aviso(titulo, Modifier.testTag("error"), tono = TonoAviso.PELIGRO, cuerpo = resto)
+        }
+        if (faltaRed) AvisoRedLocal(pedirRed)
+    }
+}
+
+/** Lo que separa dos párrafos de un error ([Modelo.error]). */
+private const val PARRAFO = "\n\n"
 
 /** Hasta que esté la sección Parejas: una fila por pareja, que lleva a su ficha. */
 @Composable
@@ -299,6 +352,18 @@ private fun ListaProvisional(m: Modelo, ir: (Destino) -> Unit) {
             for (f in m.filas) {
                 Fila(f.nombre, Modifier.testTag("fila-${f.nombre}"), alPulsar = { ir(Destino.Ficha(f.nombre)) })
             }
+        }
+    }
+}
+
+/** Hasta que esté la sección Llavero: la fila de antes, con traerlo, abrirlo y quitarlo. */
+@Composable
+private fun LlaveroProvisional(m: Modelo, conRed: (() -> Unit) -> Unit, conPermiso: (() -> Unit) -> Unit) {
+    Column(Modifier.fillMaxSize().testTag("pantalla-llavero").verticalScroll(rememberScrollState())) {
+        Cabecera("Llavero")
+        Column(Modifier.padding(horizontal = 16.dp)) {
+            val f = m.llavero
+            if (f != null) FilaDelLlavero(m, f, conRed, conPermiso) else Text(TextosLlavero.SIN_LLAVERO_REMOTO)
         }
     }
 }

@@ -6,6 +6,7 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -148,7 +149,8 @@ private fun glifoDelDisco(tono: Tono, icono: Icono?): Icono {
  * Una franja que hay que leer: un borrado, un fallo, una aclaración. Una
  * baldosa de 32 dp del color del tono con su glifo, el título en tinta y el
  * cuerpo debajo, sobre el fondo suave del tono. Uno de [TonoAviso.PELIGRO] se
- * anuncia en cuanto sale (`liveRegion` asertiva): es un fallo.
+ * anuncia en cuanto sale (`liveRegion` asertiva): es un fallo. [extra] va entre
+ * el cuerpo y las [acciones] (una barra de progreso, una línea con su etiqueta).
  */
 @Composable
 fun Aviso(
@@ -156,6 +158,7 @@ fun Aviso(
     modifier: Modifier = Modifier,
     tono: TonoAviso = TonoAviso.AVISO,
     cuerpo: String? = null,
+    extra: @Composable ColumnScope.() -> Unit = {},
     acciones: @Composable RowScope.() -> Unit = {},
 ) {
     val c = Paleta.actual
@@ -184,6 +187,7 @@ fun Aviso(
                 Text(titulo, style = Letra.actual.nombre, color = c.ink)
             }
             if (cuerpo != null) Text(cuerpo, style = Letra.actual.texto, color = c.ink2)
+            extra()
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically,

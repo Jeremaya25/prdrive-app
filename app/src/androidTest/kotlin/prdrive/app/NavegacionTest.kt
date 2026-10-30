@@ -7,6 +7,7 @@ import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.lifecycle.Lifecycle
 import androidx.test.core.app.ActivityScenario
 import androidx.test.espresso.Espresso
@@ -91,6 +92,16 @@ class NavegacionTest {
             esperarA("pantalla-pareja-uno")
             compose.onNodeWithTag("pantalla-pareja-uno").assertIsDisplayed()
             compose.onNodeWithTag(Seccion.PAREJAS.etiqueta).assertIsSelected()
+        }
+    }
+
+    @Test
+    fun con_treinta_parejas_inicio_se_desplaza_y_la_barra_queda() {
+        Banco.volumen(*Array(30) { Banco.pareja("p$it") })
+        ActivityScenario.launch(MainActivity::class.java).use {
+            esperarALaFila("p0")
+            compose.onNodeWithTag("fila-p29").performScrollTo().assertIsDisplayed()
+            compose.onNodeWithTag(Seccion.AJUSTES.etiqueta).assertIsDisplayed()
         }
     }
 

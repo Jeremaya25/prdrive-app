@@ -180,6 +180,12 @@ class PantallaLlaveroTest {
         }
     }
 
+    /** La sección Llavero, donde están traerlo, quitarlo y lo que lo pone en ámbar. */
+    private fun irAlLlavero() {
+        compose.onNodeWithTag("seccion-llavero").performClick()
+        esperar("pantalla-llavero")
+    }
+
     /** Espera a que no quede nada en marcha. */
     private fun libre(segundos: Long = 120) {
         compose.waitUntil(segundos * 1000) { compose.onAllNodes(hasTestTag("ocupado")).fetchSemanticsNodes().isEmpty() }
@@ -232,6 +238,7 @@ class PantallaLlaveroTest {
             libre()
             esperar("fila-llavero", "al día")
             assertArrayEquals(bytes, baseLocal(v).readBytes())
+            irAlLlavero()
             compose.onNodeWithTag("llavero-ambar").assertDoesNotExist()
 
             // La base cambia en el teléfono (lo que haría la app de KeePass):
@@ -281,6 +288,7 @@ class PantallaLlaveroTest {
         try {
             intending(hasAction(Intent.ACTION_VIEW)).respondWith(ActivityResult(Activity.RESULT_OK, null))
             ActivityScenario.launch(MainActivity::class.java).use {
+                irAlLlavero()
                 esperar("llavero-ambar", "falta su fichero llave")
                 compose.onNodeWithTag("abrir-llavero").performClick()
                 // Antes de abrir, el aviso; y no se abre hasta que se cierra.
@@ -322,6 +330,7 @@ class PantallaLlaveroTest {
         Catalogo.pull(Adaptadores.catalogo(Prdrive.temporal(contexto)), loadRaw(w.config.readText()), w.state)
         val otra = baseEnElRemoto()
         ActivityScenario.launch(MainActivity::class.java).use {
+            irAlLlavero()
             esperar("traer-llavero")
             assertNull(w.leerConfig().llavero)
             compose.onNodeWithTag("traer-llavero").performClick()

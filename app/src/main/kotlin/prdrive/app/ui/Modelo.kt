@@ -22,6 +22,7 @@ import prdrive.app.documentos.VolumenProvider
 import prdrive.app.llavero.Avisos
 import prdrive.app.llavero.LlaveroApp
 import prdrive.app.rclone.Adaptadores
+import prdrive.engine.Bisync
 import prdrive.engine.Catalogo
 import prdrive.engine.Compartidas
 import prdrive.engine.Config
@@ -144,6 +145,13 @@ class Modelo(app: Application) : AndroidViewModel(app) {
     // --- principal --------------------------------------------------------------
 
     var filas by mutableStateOf<List<Estado.Fila>>(emptyList())
+        private set
+
+    /**
+     * El remoto de las parejas y su tipo, como lo dice Inicio debajo de «Este
+     * teléfono» («nas · sftp»); con varios, todos. `null` hasta que se lee.
+     */
+    var remoto by mutableStateOf<String?>(null)
         private set
 
     /** La fila del llavero; `null` si no lo lleva ni se puede traer. */
@@ -340,6 +348,19 @@ class Modelo(app: Application) : AndroidViewModel(app) {
         val config = config()
         filas = filasDe(v, config)
         llavero = Estado.llavero(v, config, Prdrive.faltaRedLocal(contexto))
+        remoto = remotoDe(v, config)
+    }
+
+    /** «nas · sftp»: el `remoteName` de las parejas y el tipo de su sección en el `rclone.conf`. */
+    private fun remotoDe(v: Volumen, config: Config): String? {
+        val tipos = try {
+            Bisync.tiposDeRemote(v.leerRcloneConf())
+        } catch (_: java.io.IOException) {
+            emptyMap()
+        }
+        val nombres = config.delUsuario.map { it.remoteName }.distinct()
+        if (nombres.isEmpty()) return null
+        return nombres.joinToString(", ") { n -> tipos[n]?.tipo?.let { "$n · $it" } ?: n }
     }
 
     /**

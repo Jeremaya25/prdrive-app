@@ -143,12 +143,13 @@ class PuntaAPuntaTest {
 
             // La fila dice que está al día, sin fallos ni resync pendiente. Un
             // fallo de la pasada no es un error de la pantalla: se ve en la fila.
-            compose.waitUntilAtLeastOneExists(hasText("Al día", substring = true) and hasAnyAncestor(hasTestTag("fila-notas")), 5000)
+            // El chip de la fila en Inicio («al día», «falló»), y nada que revisar.
+            compose.waitUntilAtLeastOneExists(dice("fila-notas", "al día"), 5000)
             for (pareja in listOf("notas", "fotos")) {
-                val fallos = compose.onAllNodes(hasText("Falló", substring = true) and hasAnyAncestor(hasTestTag("fila-$pareja")))
+                val fallos = compose.onAllNodes(dice("fila-$pareja", "falló"))
                 assertTrue("la pasada de $pareja ha fallado", fallos.fetchSemanticsNodes().isEmpty())
             }
-            compose.onAllNodes(hasTestTag("resync-notas")).fetchSemanticsNodes().let {
+            compose.onAllNodes(hasText("«notas» pide rehacer la referencia", substring = true)).fetchSemanticsNodes().let {
                 assertTrue("sigue pidiendo resync", it.isEmpty())
             }
         }
@@ -281,8 +282,8 @@ class PuntaAPuntaTest {
 
                 // La fila dice dónde vive, y que la pasada fue bien.
                 compose.waitUntilAtLeastOneExists(hasTestTag("donde-vault"), 5000)
-                compose.waitUntilAtLeastOneExists(hasText("Al día", substring = true) and hasAnyAncestor(hasTestTag("fila-vault")), 5000)
-                val fallos = compose.onAllNodes(hasText("Falló", substring = true) and hasAnyAncestor(hasTestTag("fila-vault")))
+                compose.waitUntilAtLeastOneExists(dice("fila-vault", "al día"), 5000)
+                val fallos = compose.onAllNodes(dice("fila-vault", "falló"))
                 assertTrue("la pasada de vault ha fallado", fallos.fetchSemanticsNodes().isEmpty())
             }
         } finally {

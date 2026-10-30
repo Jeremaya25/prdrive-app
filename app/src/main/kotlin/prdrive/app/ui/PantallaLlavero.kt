@@ -129,6 +129,24 @@ internal object TextosLlavero {
 
     /** El título del selector de la reserva. */
     const val ABRIR_CON = "Abrir el llavero con tu app de KeePass"
+
+    /**
+     * Cómo está el llavero, en una frase: la línea de `llavero_editor.linea()`
+     * de prdrive, la que sale en Inicio y en su sección.
+     */
+    fun linea(f: Estado.FilaLlavero): String {
+        if (!f.activo) return "${f.base}: el remoto tiene un llavero, y este teléfono aún no lo trae."
+        val fallo = f.fallo
+        if (fallo != null) {
+            val cuando = Store.desdeSello(fallo.cuando)?.let { " (${haceCuanto(it)})" } ?: ""
+            return "${f.base}: la última pasada falló$cuando. Se vuelve a intentar al abrirlo y en cada guardado."
+        }
+        return when {
+            !f.hayBase -> "${f.base} todavía no está en el teléfono: «Abrir llavero» la trae del remoto."
+            f.pendiente -> "${f.base}, con cambios que aún no han subido."
+            else -> "${f.base}, al día" + (f.ultimaBuena?.let { " · última pasada ${haceCuanto(it)}." } ?: ".")
+        }
+    }
 }
 
 /** El ámbar de la fila: el mismo en claro y en oscuro, con su texto. */
@@ -315,21 +333,11 @@ internal fun conLaLlave(intent: Intent, llave: Uri?, paquete: String?): Intent {
 @Composable
 private fun EstadoDelLlavero(f: Estado.FilaLlavero) {
     val fallo = f.fallo
-    if (fallo != null) {
-        val cuando = Store.desdeSello(fallo.cuando)?.let { " (${haceCuanto(it)})" } ?: ""
-        Text(
-            "${f.base}: la última pasada falló$cuando. Se vuelve a intentar al abrirlo y en cada guardado.",
-            fontWeight = FontWeight.SemiBold,
-            modifier = Modifier.testTag("llavero-estado"),
-        )
-    } else {
-        val linea = when {
-            !f.hayBase -> "${f.base} todavía no está en el teléfono: «Abrir llavero» la trae del remoto."
-            f.pendiente -> "${f.base}, con cambios que aún no han subido."
-            else -> "${f.base}, al día" + (f.ultimaBuena?.let { " · última pasada ${haceCuanto(it)}." } ?: ".")
-        }
-        Text(linea, modifier = Modifier.testTag("llavero-estado"))
-    }
+    Text(
+        TextosLlavero.linea(f),
+        fontWeight = if (fallo != null) FontWeight.SemiBold else null,
+        modifier = Modifier.testTag("llavero-estado"),
+    )
     if (!f.ambar) return
     Column(modifier = Modifier.testTag("llavero-ambar"), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         if (fallo != null) f.explicacion?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
