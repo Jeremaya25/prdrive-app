@@ -370,6 +370,16 @@ class Modelo(app: Application) : AndroidViewModel(app) {
         error = null
     }
 
+    /**
+     * «Volver» desde elegir las parejas: al código leído, que sigue en memoria.
+     * La conexión ya escrita se queda; conectar otra vez la reescribe.
+     */
+    fun volverAlCodigo() {
+        if (ocupado != null || paso != Paso.PAREJAS) return
+        error = null
+        paso = Paso.CODIGO
+    }
+
     /** «Cerrar» en el aviso del error: ya se ha leído. */
     fun descartarError() {
         error = null

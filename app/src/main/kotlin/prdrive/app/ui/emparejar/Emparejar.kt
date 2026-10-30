@@ -1,6 +1,7 @@
 package prdrive.app.ui.emparejar
 
 import android.text.format.Formatter
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -81,6 +82,12 @@ import prdrive.engine.Pasada
  */
 @Composable
 fun Emparejar(m: Modelo) {
+    // Atrás vuelve un paso, como «Volver»; desde la bienvenida, y en la primera
+    // pasada (que sigue aunque la app se vaya al fondo), es de Android.
+    val enPareja = m.paso == Modelo.Paso.PAREJAS
+    BackHandler(enabled = m.ocupado == null && (enPareja || (m.paso == Modelo.Paso.CODIGO && m.carga != null))) {
+        if (enPareja) m.volverAlCodigo() else m.olvidarCodigo()
+    }
     Scaffold(containerColor = Paleta.actual.paper) { margen ->
         Column(Modifier.padding(margen).fillMaxSize()) {
             when (m.paso) {
@@ -180,6 +187,11 @@ private fun Bienvenida(m: Modelo) {
     // `remember` y no `rememberSaveable`: lleva la clave privada.
     var texto by remember { mutableStateOf("") }
     val libre = m.ocupado == null
+    // Atrás con el campo abierto lo cierra, y se lleva lo pegado.
+    BackHandler(enabled = pegando) {
+        pegando = false
+        texto = ""
+    }
     Paso(abajo = {
         Boton(
             "Escanear el código",
@@ -367,6 +379,7 @@ private fun ElegirParejas(m: Modelo) {
         )
         Text("La primera pasada junta los dos lados sin borrar nada.", style = Letra.actual.pista)
     }) {
+        Boton("Volver", m::volverAlCodigo, Modifier.padding(start = 4.dp), peso = Peso.SILENCIOSO, icono = Icono.BACK, activo = libre)
         Indicador(2)
         Titulo(
             "Elige qué sincroniza",
