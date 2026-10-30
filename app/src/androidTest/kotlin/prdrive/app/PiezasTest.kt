@@ -3,14 +3,22 @@ package prdrive.app
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.width
+import androidx.compose.material3.Text
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsOn
+import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertTouchHeightIsEqualTo
@@ -18,16 +26,21 @@ import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import prdrive.app.ui.Tema
 import prdrive.app.ui.piezas.Aviso
 import prdrive.app.ui.piezas.Boton
+import prdrive.app.ui.piezas.Casilla
 import prdrive.app.ui.piezas.Chip
+import prdrive.app.ui.piezas.Fila
+import prdrive.app.ui.piezas.Hoja
 import prdrive.app.ui.piezas.Insignia
 import prdrive.app.ui.piezas.Marca
 import prdrive.app.ui.piezas.Peso
@@ -111,5 +124,56 @@ class PiezasTest {
         assertEquals(TonoLinea.ERROR, tonoDeLinea("2026/10/30 12:00:00 ERROR : vault: fallo al copiar"))
         assertEquals(TonoLinea.AVISO, tonoDeLinea("2026/10/30 12:00:00 NOTICE: vault: algo que mirar"))
         assertEquals(TonoLinea.NORMAL, tonoDeLinea("Applying changes"))
+    }
+
+    @Test
+    fun una_fila_se_toca_entera() {
+        var veces = 0
+        compose.setContent { Tema { Fila("Documentos", alPulsar = { veces++ }, detalle = "Documentos ↔ docs") } }
+        compose.onNodeWithText("Documentos ↔ docs", useUnmergedTree = true).performClick()
+        assertEquals(1, veces)
+    }
+
+    @Test
+    fun una_casilla_se_marca_tocando_su_texto() {
+        var marcada by mutableStateOf(false)
+        compose.setContent { Tema { Casilla("El llavero", marcada, { marcada = it }, Modifier.testTag("c")) } }
+        compose.onNodeWithText("El llavero").performClick()
+        assertTrue(marcada)
+        compose.onNodeWithTag("c").assertIsOn()
+    }
+
+    @Test
+    fun una_fila_con_letra_grande_no_esconde_su_estado() {
+        compose.setContent {
+            val base = LocalDensity.current
+            CompositionLocalProvider(LocalDensity provides Density(base.density, fontScale = 2f)) {
+                Tema {
+                    Box(Modifier.width(360.dp)) {
+                        Fila(
+                            "Una pareja con un nombre muy largo, de sesenta caracteres!!",
+                            Modifier.testTag("fila"),
+                            alPulsar = {},
+                            detalle = "Documentos ↔ docs",
+                            extremo = { Chip("al día", Modifier.testTag("chip"), tono = Tono.OK) },
+                        )
+                    }
+                }
+            }
+        }
+        compose.onNodeWithTag("chip", useUnmergedTree = true).assertIsDisplayed()
+        val chip = compose.onNodeWithTag("chip", useUnmergedTree = true).getUnclippedBoundsInRoot()
+        val fila = compose.onNodeWithTag("fila").getUnclippedBoundsInRoot()
+        assertTrue("el chip (${chip.right}) se sale de la fila (${fila.right})", chip.right <= fila.right)
+        assertTrue("el chip no tiene ancho", chip.right > chip.left)
+    }
+
+    @Test
+    fun la_hoja_se_cierra_con_su_boton() {
+        var cerrada = false
+        compose.setContent { Tema { Hoja("Rehacer la referencia", alCerrar = { cerrada = true }) { Text("Nada se ha escrito todavía.") } } }
+        compose.onNodeWithTag("cerrar-hoja").performClick()
+        compose.waitForIdle()
+        assertTrue(cerrada)
     }
 }

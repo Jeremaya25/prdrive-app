@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -101,6 +102,24 @@ fun Boton(
             }
             Text(texto, style = medidas.letra, color = colores.letra, textAlign = TextAlign.Center)
         }
+    }
+}
+
+/**
+ * Un botón que es solo un glifo (cerrar una hoja, volver): sin texto al lado,
+ * así que lleva [descripcion], que es lo que oye quien no lo ve. Se toca en 48 dp.
+ */
+@Composable
+fun BotonDeIcono(icono: Icono, descripcion: String, alPulsar: () -> Unit, modifier: Modifier = Modifier) {
+    val c = Paleta.actual
+    Box(
+        modifier = modifier
+            .size(48.dp)
+            .clip(RoundedCornerShape(Tokens.radioMd))
+            .clickable(role = Role.Button, onClickLabel = descripcion, onClick = alPulsar),
+        contentAlignment = Alignment.Center,
+    ) {
+        CompositionLocalProvider(LocalContentColor provides c.ink2) { Glifo(icono, tamano = 20.dp, descripcion = descripcion) }
     }
 }
 
