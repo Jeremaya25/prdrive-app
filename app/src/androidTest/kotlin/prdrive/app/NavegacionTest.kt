@@ -5,6 +5,9 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsSelected
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.hasAnyChild
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithTag
@@ -21,11 +24,15 @@ import androidx.test.espresso.Espresso
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import java.io.File
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import prdrive.app.ui.Destino
 import prdrive.app.ui.Modelo
+import prdrive.app.ui.Pila
 import prdrive.app.ui.Seccion
 
 /**
@@ -173,6 +180,55 @@ class NavegacionTest {
             shell("settings put system font_scale 1.0")
         }
     }
+
+    /** Un doble toque en una fila abre su ficha una vez: atrás vuelve a la lista, no a otra ficha igual. */
+    @Test
+    fun ir_dos_veces_a_la_misma_pantalla_no_la_apila_dos_veces() {
+        val pila = Pila(Seccion.PAREJAS)
+        pila.ir(Destino.Ficha("uno"))
+        pila.ir(Destino.Ficha("uno"))
+        assertTrue(pila.atras())
+        assertNull("quedaba otra ficha igual debajo", pila.cima)
+    }
+
+    /** TalkBack dice «pestaña 2 de 4»: las cuatro secciones son un grupo. */
+    @Test
+    fun las_secciones_de_abajo_son_un_grupo_de_pestanas() {
+        Banco.volumen(Banco.pareja("uno"))
+        ActivityScenario.launch(MainActivity::class.java).use {
+            esperarA(Seccion.INICIO.etiqueta)
+            val grupo = SemanticsMatcher.keyIsDefined(SemanticsProperties.SelectableGroup) and
+                hasAnyChild(hasTestTag(Seccion.INICIO.etiqueta)) and hasAnyChild(hasTestTag(Seccion.AJUSTES.etiqueta))
+            assertTrue("la barra no es un grupo", compose.onAllNodes(grupo).fetchSemanticsNodes().isNotEmpty())
+        }
+    }
+
+    /** Volver de Mover deja la ficha donde estaba, no arriba del todo. */
+    @Test
+    fun volver_a_la_ficha_la_deja_donde_estaba() {
+        Banco.volumen(Banco.pareja("vault", "vault"))
+        shell("settings put system font_scale 2.0")
+        try {
+            ActivityScenario.launch(MainActivity::class.java).use {
+                Banco.abrirFicha(compose, "vault")
+                compose.waitUntil(30_000) { compose.onAllNodes(hasTestTag("ocupado")).fetchSemanticsNodes().isEmpty() }
+                compose.onNodeWithTag("mover-vault").performScrollTo()
+                val antes = desplazamiento("pantalla-pareja-vault")
+                assertTrue("la ficha no se ha desplazado ($antes)", antes > 0f)
+                compose.onNodeWithTag("mover-vault").performClick()
+                esperarA("pantalla-mover-vault")
+                Espresso.pressBack()
+                esperarA("pantalla-pareja-vault")
+                compose.waitForIdle()
+                assertEquals(antes, desplazamiento("pantalla-pareja-vault"), 1f)
+            }
+        } finally {
+            shell("settings put system font_scale 1.0")
+        }
+    }
+
+    private fun desplazamiento(etiqueta: String): Float =
+        compose.onNodeWithTag(etiqueta).fetchSemanticsNode().config[SemanticsProperties.VerticalScrollAxisRange].value()
 
     /** Una orden del shell, leída hasta el final (si no, puede no haber acabado). */
     private fun shell(orden: String) {

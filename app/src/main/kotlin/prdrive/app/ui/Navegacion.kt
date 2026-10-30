@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
@@ -26,11 +27,16 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.snapshots.SnapshotStateList
+import androidx.compose.runtime.toMutableStateList
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.saveable.listSaver
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -106,9 +112,17 @@ class Pila(seccion: Seccion = Seccion.INICIO, encima: List<Destino> = emptyList(
     /** Si el botón atrás tiene algo que hacer aquí: si no, es de Android. */
     val puedeVolver: Boolean get() = destinos.isNotEmpty() || seccion != Seccion.INICIO
 
+    /** Abre [d] encima; si ya es la de encima (un doble toque), no la repite. */
     fun ir(d: Destino) {
-        destinos.add(d)
+        if (cima != d) destinos.add(d)
     }
+
+    /**
+     * Una clave por pantalla de la pila, de abajo arriba: la raíz de la sección y
+     * cada una de encima con su altura. Con ella cada pantalla guarda lo suyo (el
+     * desplazamiento, una hoja abierta) mientras otra está encima.
+     */
+    val claves: List<String> get() = listOf("raiz:${seccion.name}") + destinos.mapIndexed { i, d -> "$i:${codificar(d)}" }
 
     /** Otra sección, desde su raíz: lo que hubiera encima se cierra. */
     fun cambiar(s: Seccion) {
@@ -174,7 +188,7 @@ fun BarraSecciones(actual: Seccion, alElegir: (Seccion) -> Unit) {
     Column(Modifier.fillMaxWidth().background(c.surface)) {
         HorizontalDivider(thickness = 1.dp, color = c.line)
         Row(
-            Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 8.dp, vertical = 6.dp),
+            Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 8.dp, vertical = 6.dp).selectableGroup(),
         ) {
             for (s in Seccion.entries) {
                 val elegida = s == actual
@@ -282,6 +296,13 @@ fun Cabecera(
 @Composable
 fun Secciones(m: Modelo) {
     val pila = rememberPila()
+    // Lo que guarda cada pantalla de la pila mientras otra está encima, y qué claves tiene.
+    val estados = rememberSaveableStateHolder()
+    val vistas = rememberSaveable(
+        saver = listSaver<SnapshotStateList<String>, String>({ it.toList() }, { it.toMutableStateList() }),
+    ) {
+        mutableStateListOf<String>()
+    }
     val contexto = LocalContext.current
     var faltaRed by remember { mutableStateOf(Prdrive.faltaRedLocal(contexto)) }
     BackHandler(enabled = pila.puedeVolver) { pila.atras() }
@@ -301,23 +322,37 @@ fun Secciones(m: Modelo) {
         Column(Modifier.padding(margen).fillMaxSize()) {
             ArribaDeTodo(m, enInicio, faltaRed) { conRed {} }
             Box(Modifier.weight(1f).fillMaxWidth()) {
-                when (val d = pila.cima) {
-                    is Destino.Ficha -> Ficha(m, d.pareja, pila::ir, { pila.atras() }, etiquetaVolver = pila.seccion.titulo)
-                    is Destino.Log -> LogDePareja(m, d.pareja) { pila.atras() }
-                    is Destino.Mover -> Mover(m, d.pareja, volver = { pila.atras() }, conRed = conRed)
-                    is Destino.Simulacro -> Simulacro(m, d.pareja, volver = { pila.atras() }, conRed = conRed)
-                    null -> when (pila.seccion) {
-                        Seccion.INICIO -> Inicio(m, pila::ir, pila::cambiar)
-                        Seccion.PAREJAS -> Parejas(m, pila::ir)
-                        Seccion.LLAVERO -> SeccionLlavero(m, conRed, conPermiso)
-                        Seccion.AJUSTES -> Ajustes(m)
-                    }
+                val claves = pila.claves
+                // Lo que se cierra (atrás, otra sección) se olvida: si se vuelve a
+                // abrir, empieza de cero. Las raíces de las secciones se quedan.
+                LaunchedEffect(claves) {
+                    (vistas - claves.toSet()).filterNot { it.startsWith("raiz:") }.forEach(estados::removeState)
+                    vistas.retainAll { it in claves || it.startsWith("raiz:") }
+                    vistas.addAll(claves.filterNot { it in vistas })
                 }
+                estados.SaveableStateProvider(claves.last()) { Pantalla(m, pila, conRed, conPermiso) }
             }
         }
     }
     m.avisoLlavero?.let { AvisoAntesDeAbrir(it, m::cerrarAvisoLlavero) }
     AbrirLaBase(m)
+}
+
+/** La pantalla de encima de la pila, o la raíz de su sección. */
+@Composable
+private fun Pantalla(m: Modelo, pila: Pila, conRed: (() -> Unit) -> Unit, conPermiso: (() -> Unit) -> Unit) {
+    when (val d = pila.cima) {
+        is Destino.Ficha -> Ficha(m, d.pareja, pila::ir, { pila.atras() }, etiquetaVolver = pila.seccion.titulo)
+        is Destino.Log -> LogDePareja(m, d.pareja) { pila.atras() }
+        is Destino.Mover -> Mover(m, d.pareja, volver = { pila.atras() }, conRed = conRed)
+        is Destino.Simulacro -> Simulacro(m, d.pareja, volver = { pila.atras() }, conRed = conRed)
+        null -> when (pila.seccion) {
+            Seccion.INICIO -> Inicio(m, pila::ir, pila::cambiar)
+            Seccion.PAREJAS -> Parejas(m, pila::ir)
+            Seccion.LLAVERO -> SeccionLlavero(m, conRed, conPermiso)
+            Seccion.AJUSTES -> Ajustes(m)
+        }
+    }
 }
 
 /**
