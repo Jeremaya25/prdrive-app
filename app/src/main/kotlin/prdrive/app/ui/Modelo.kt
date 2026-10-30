@@ -38,7 +38,7 @@ import prdrive.engine.Volumen
 import prdrive.engine.loadRaw
 
 /**
- * Modelo.kt — El estado de las dos pantallas y lo que hacen sus botones.
+ * Modelo.kt — El estado de las pantallas y lo que hacen sus botones.
  *
  * Todo lo que habla con rclone o con el disco bloquea, así que va fuera del
  * hilo de la pantalla, y de uno en uno: [ocupado] dice qué se está haciendo, y

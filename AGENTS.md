@@ -85,11 +85,25 @@ app/          Android: solo dibuja y llama
 ├── compartidas/      Compartir: lo que la app pone para «Las carpetas compartidas»
 │                     (el permiso, la carpeta que elige la persona, la prueba de
 │                     fechas y el `Mudanza.Entorno`)
-├── ui/               Modelo (el ViewModel), Pantallas (Compose), PantallaLlavero
-│                     (la fila del llavero y su casilla), Tema (los colores, la
-│                     letra y las formas del sistema de diseño, claro u oscuro
-│                     como diga el teléfono) y Escaner (el de códigos de Play
-│                     services)
+├── ui/               Modelo (el ViewModel), Pantallas (la raíz: emparejar o las
+│                     secciones), Navegacion (las cuatro secciones de abajo, la
+│                     pila de pantallas y lo que va arriba de todas), Permisos
+│                     (la red local y el acceso a todos los archivos),
+│                     PantallaLlavero (lo del llavero que usan varias: sus
+│                     textos, abrir la base, la casilla al emparejar), Tema (los
+│                     colores, la letra y las formas del sistema de diseño,
+│                     claro u oscuro como diga el teléfono) y Escaner (el de
+│                     códigos de Play services)
+├── ui/piezas/        las piezas del sistema de diseño: Marca, Iconos (los 30
+│                     glifos), Botones, Estados (chip, aviso, línea de estado,
+│                     progreso, registro), Listas (tarjeta, fila, casilla,
+│                     opción) y Hoja (la hoja inferior)
+├── ui/inicio/        Inicio, y Revisar: lo que cuenta como «cosas que revisar»
+├── ui/parejas/       Parejas, la Ficha de una pareja, su Log, la hoja de
+│                     RehacerReferencia y Mover a una carpeta compartida
+├── ui/llavero/       SeccionLlavero: estado, abrir, cómo funciona, traer y quitar
+├── ui/emparejar/     Emparejar en cuatro pasos
+├── ui/ajustes/       Ajustes: el remoto, los permisos y las actualizaciones
 ├── tema/Tokens.kt    los colores, espacios y radios del sistema de diseño
 │                     (generado por herramientas/diseno.py: no se edita)
 ├── llavero/          el llavero en la app («El llavero»): LlaveroApp (la pasada
@@ -106,7 +120,10 @@ app/          Android: solo dibuja y llama
 └── androidTest/  el spike contra rclone de verdad, la pasada entera, el
                   proveedor, los vectores del motor otra vez en Android
                   (MotorEnAndroidTest), lo que el actualizador mira de un APK
-                  (ActualizadorTest), el modo oscuro (TemaTest), el llavero
+                  (ActualizadorTest), el modo oscuro y los colores del
+                  sistema (TemaTest), las piezas (PiezasTest), las secciones y
+                  el botón atrás (NavegacionTest), lo que hay que revisar
+                  (RevisarTest), los ajustes (AjustesTest), el llavero
                   (el alta, el proveedor, los trabajos y la pantalla), las
                   carpetas compartidas (FechasCompartidasTest, CompartirTest,
                   MudanzaEnAndroidTest y la pantalla, PantallaCompartidaTest)
@@ -283,6 +300,9 @@ instalar):
 ./gradlew :app:connectedDebugAndroidTest \
     -Pandroid.testInstrumentationRunnerArguments.class=prdrive.app.RcloneSpikeTest
 ```
+
+Una clase, o un método (`…class=prdrive.app.PiezasTest#la_marca_dice_su_estado`):
+con varias separadas por comas solo pasa la primera.
 
 Gradle guarda la configuración entre órdenes (`org.gradle.configuration-cache`
 en `gradle.properties`): lo que se escriba en un `build.gradle.kts` dentro de
@@ -888,6 +908,19 @@ verdad está **sin probar**: la lista de lo que falta, en `PLAN.md` §5.
   `Permission denied` hasta con el permiso. El permiso se da en un test con
   `appops set prdrive.app MANAGE_EXTERNAL_STORAGE allow`, leyendo la salida del
   shell hasta el final antes de mirar `Environment.isExternalStorageManager()`.
+- **La biblioteca de Java es la de la API 26, no la del JDK 17.** El motor
+  compila contra el JDK 17, y lo que este tiene y Android no (`BigInteger.TWO`,
+  que no llega hasta la API 33; `readAllBytes`, `List.of`…) compila y en el
+  teléfono hace que la clase no cargue. `BigInteger.TWO` en `Conflictos` tumbaba
+  toda pasada de Android 8 a 12 sin que lo viera ningún test en API 37:
+  `hooks/reglas.py` avisa de los conocidos, y la batería se pasa también en el
+  emulador de API 30.
+- **Quitar un permiso en un test mata el proceso.** `appops set … deny` (el de
+  «acceso a todos los archivos») y `revokeRuntimePermission` hacen que Android
+  cierre la app, y en `androidTest` su proceso es el del test: la pasada se corta
+  con un `<failure>` vacío y sin pasar los tests que quedaban. Darlo, sí se
+  puede. Por eso las pantallas que miran un permiso lo reciben como función
+  (`Mover(tienePermiso)`, `Ajustes(faltaRedLocal)`), y su test lo finge.
 - **Los tests de Compose en API 37** necesitan Espresso 3.7 (el que trae
   `ui-test` busca `InputManager.getInstance`, que ya no existe) y las reglas
   `junit4.v2` (las otras están obsoletas, y los avisos son errores).

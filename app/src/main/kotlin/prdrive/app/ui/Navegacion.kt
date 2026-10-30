@@ -16,11 +16,9 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.LocalContentColor
@@ -56,10 +54,8 @@ import prdrive.app.ui.parejas.LogDePareja
 import prdrive.app.ui.parejas.Mover
 import prdrive.app.ui.parejas.Parejas
 import prdrive.app.ui.piezas.Aviso
-import prdrive.app.ui.piezas.Fila
 import prdrive.app.ui.piezas.Glifo
 import prdrive.app.ui.piezas.Icono
-import prdrive.app.ui.piezas.Tarjeta
 import prdrive.app.ui.piezas.TonoAviso
 
 /**

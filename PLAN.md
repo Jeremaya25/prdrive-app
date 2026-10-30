@@ -309,6 +309,48 @@ dado? Bisync decide por ellas. Lo mide `FechasCompartidasTest`, y la línea
   teléfono de verdad (un fabricante puede llevar otro FUSE). Por eso «Mover»
   repite la prueba de fechas en cada teléfono antes de tocar nada.
 
+## 6. El rediseño
+
+**Hecho, fases 0 a 4** del plan (`docs/superpowers/plans/2026-10-28-rediseno-movil-compose.md`),
+contra el lienzo «prdrive móvil · rediseño» y el sistema de diseño «prdrive»:
+
+- **El sistema en el repositorio.** `app/diseno/` es la copia del sistema (sus
+  tokens y sus 30 glifos), y `herramientas/diseno.py` escribe con ella los
+  colores (`tema/Tokens.kt`), el fondo de la ventana y los vectores `pd_*`; el CI
+  comprueba que están al día. `ui/Tema.kt` los pone en Material y en
+  `Paleta`/`Letra`, en claro y en oscuro según el teléfono.
+- **Las piezas** (`ui/piezas/`): la marca con su insignia, botones con toque de
+  48 dp y estado «ocupado», chip, aviso, línea de estado, progreso, registro,
+  filas, casillas, opciones y la hoja inferior.
+- **Cuatro secciones** (`ui/Navegacion.kt`): Inicio (cómo está todo en una
+  frase, lo que hay que revisar, el llavero y las parejas), Parejas (y las del
+  catálogo sin usar aquí), Llavero y Ajustes (el remoto, los permisos y las
+  actualizaciones). Encima, la ficha de cada pareja, su log y «Mover a una
+  carpeta compartida»; rehacer la referencia se confirma en una hoja.
+  Emparejar va en cuatro pasos. El botón atrás vuelve por donde se vino, y
+  girar el teléfono deja cada cosa donde estaba.
+- **#24, la parte pequeña:** una pareja que no se puede mover dice por qué.
+
+Lo probado y cómo, en «Ojo con Android» y en los tests de `androidTest`
+(`PiezasTest`, `NavegacionTest`, `RevisarTest`, `AjustesTest` y los de antes,
+adaptados). Quitar un permiso con `appops`/`revokeRuntimePermission` mata el
+proceso, que es también el del test: los tests de los permisos los fingen.
+
+**Fase 5, lo nuevo del lienzo.** Cada cosa pide trabajo en el motor o en la
+app que el rediseño no hacía; se van haciendo en este orden:
+
+- Parar la pasada (Inicio sincronizando).
+- Simulacro de un espejo (`--dry-run`), y con él la carpeta de un espejo de
+  subida al emparejar (§3).
+- Resolver conflictos (§4).
+- Sincronizar sola: WorkManager con el `[daemon]` del config (§4).
+- Historial de pasadas en la ficha (§4, `historial.py`).
+- Elegir y cambiar la carpeta de una pareja, añadirla desde el catálogo y
+  quitarla del teléfono (#25 y #24).
+- Los pasos de la mudanza, marcados mientras se mueve.
+- Reparación (`--force`), Ver en Archivos y Emparejar de nuevo (Ajustes).
+- iPhone: decidir entre SwiftUI y Compose Multiplatform.
+
 ## Fuera, salvo que cambie algo
 
 VeraCrypt y BitLocker; y el vigilante de montaje, que no tiene disco que
