@@ -43,6 +43,7 @@ from pathlib import Path, PurePosixPath, PureWindowsPath
 DESTINO = Path(__file__).resolve().parent.parent / "engine/src/test/resources/vectores.json"
 
 import vectores_actualizacion  # noqa: E402 — vive junto a este fichero
+import vectores_conflictos_editor  # noqa: E402 — vive junto a este fichero
 import vectores_historial  # noqa: E402 — vive junto a este fichero
 import vectores_llavero  # noqa: E402 — vive junto a este fichero
 import vectores_paso3  # noqa: E402 — vive junto a este fichero
@@ -1218,6 +1219,7 @@ def main() -> int:
 
     bisync, config_file, model, pairing = cargar(prdrive)
     from common import catalog, conflicts, historial, kdbx, llavero, results, store, update   # noqa: PLC0415
+    from ui import conflict_editor   # noqa: PLC0415
     datos = {
         "_generado_por": "herramientas/vectores.py",
         "_no_editar": "Se regenera desde el prdrive citado en 'prdrive'.",
@@ -1266,6 +1268,8 @@ def main() -> int:
         "catalogo": vectores_catalogo(catalog, model, store),
         "resultados": vectores_resultados(results, model, store),
         "conflictos": vectores_conflictos(conflicts, model, store),
+        # Resolver un conflicto (ui/conflict_editor.py), sin «Combinar»: en su fichero.
+        "resolver_conflictos": vectores_conflictos_editor.vectores(conflict_editor, conflicts, model),
         # La pasada y el volumen (paso 3), en su propio fichero.
         "paso3": vectores_paso3.vectores(model, bisync, CONFIG),
         # El llavero (la base de KeePassXC), también en su fichero.
