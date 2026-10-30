@@ -137,6 +137,15 @@ object Rclone {
                     acabado = true
                     return finalDe(estado)
                 }
+                // «Parar la pasada»: lo mismo que una interrupción, pero pedido
+                // para este hilo y mirado aquí, entre dos esperas, sin cortar nada
+                // a medias (una interrupción también corta la E/S de fichero).
+                if (hiloAParar === Thread.currentThread()) {
+                    hiloAParar = null
+                    val (parada, final) = pararYEsperar(id)
+                    acabado = true
+                    throw Cancelada(parada, final)
+                }
                 try {
                     Thread.sleep(esperaMs)
                     esperaMs = minOf(esperaMs * 2, cadaMs)
@@ -150,6 +159,26 @@ object Rclone {
         } finally {
             if (!acabado) pararYEsperar(id)
         }
+    }
+
+    /** El hilo cuyo trabajo hay que parar en cuanto se mire ([pedirParada]). */
+    @Volatile
+    private var hiloAParar: Thread? = null
+
+    /**
+     * Pide que el trabajo que corre (o corra) en [hilo] se pare en cuanto
+     * [trabajo] lo mire, como si se interrumpiera: `job/stop`, esperar a que
+     * suelte la pareja y [Cancelada]. Es para un hilo, no para «el trabajo en
+     * marcha»: las pasadas del llavero en segundo plano van por otro hilo y no
+     * se cortan nunca (AGENTS.md, «El llavero»).
+     */
+    fun pedirParada(hilo: Thread) {
+        hiloAParar = hilo
+    }
+
+    /** Retira lo que pidió [pedirParada] para [hilo], si aún no se ha cumplido. */
+    fun olvidarParada(hilo: Thread) {
+        if (hiloAParar === hilo) hiloAParar = null
     }
 
     /**

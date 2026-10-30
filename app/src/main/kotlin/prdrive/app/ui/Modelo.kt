@@ -22,6 +22,7 @@ import prdrive.app.documentos.VolumenProvider
 import prdrive.app.llavero.Avisos
 import prdrive.app.llavero.LlaveroApp
 import prdrive.app.rclone.Adaptadores
+import prdrive.app.rclone.Rclone
 import prdrive.engine.Bisync
 import prdrive.engine.Catalogo
 import prdrive.engine.Compartidas
@@ -192,6 +193,35 @@ class Modelo(app: Application) : AndroidViewModel(app) {
      */
     data class Apertura(val base: Uri, val llave: Uri?)
 
+    /** Lo que se está sincronizando ahora: las parejas por orden y cómo han ido las ya pasadas. */
+    data class EnCurso(val orden: List<String>, val hechas: Map<String, Pasada.Resultado> = emptyMap()) {
+        /** La que está pasando, o `null` entre dos (o al acabar). */
+        val ahora: String? get() = orden.firstOrNull { it !in hechas }
+    }
+
+    /** La pasada de «Sincronizar» en marcha, pareja a pareja; `null` si no hay. */
+    var enCurso by mutableStateOf<EnCurso?>(null)
+        private set
+
+    /** Si lo que está en marcha se puede parar ahora: una pasada de «Sincronizar», fuera del llavero. */
+    var sePuedeParar by mutableStateOf(false)
+        private set
+
+    /** El hilo que hace el trabajo de ahora ([trabajo]), para pedirle a rclone que lo pare. */
+    @Volatile
+    private var hiloDelTrabajo: Thread? = null
+
+    /** Si se ha pedido parar: no se pasa ninguna pareja más. */
+    @Volatile
+    private var parando = false
+
+    /** Si está pasando el llavero, que no se corta nunca. */
+    @Volatile
+    private var enElLlavero = false
+
+    /** Para que pedir parar y empezar el llavero no se crucen: el llavero no se corta nunca. */
+    private val cerrojoDeParar = Any()
+
     init {
         if (sembrado) trabajo("Preparando…") { refrescar() }
     }
@@ -210,7 +240,7 @@ class Modelo(app: Application) : AndroidViewModel(app) {
      * nueva no se instala (instalarse cierra la app y lo cortaría), y con ella
      * instalándose no empieza nada.
      */
-    private fun trabajo(que: String, bloque: () -> Unit) {
+    private fun trabajo(que: String, parable: Boolean = false, bloque: () -> Unit) {
         if (ocupado != null) return
         if (!Actualizador.empezarTrabajo()) {
             error = "Se está instalando la versión nueva de prdrive y la app se cerrará en un momento. " +
@@ -219,9 +249,21 @@ class Modelo(app: Application) : AndroidViewModel(app) {
         }
         ocupado = que
         error = null
+        sePuedeParar = parable
         viewModelScope.launch {
             try {
-                runInterruptible(Dispatchers.IO) { bloque() }
+                runInterruptible(Dispatchers.IO) {
+                    hiloDelTrabajo = Thread.currentThread()
+                    try {
+                        bloque()
+                    } finally {
+                        synchronized(cerrojoDeParar) {
+                            hiloDelTrabajo = null
+                            Rclone.olvidarParada(Thread.currentThread())
+                            parando = false
+                        }
+                    }
+                }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -234,9 +276,29 @@ class Modelo(app: Application) : AndroidViewModel(app) {
             } finally {
                 ocupado = null
                 progreso = null
+                sePuedeParar = false
+                enCurso = null
                 Actualizador.acabarTrabajo(contexto)
             }
         }
+    }
+
+    /**
+     * «Parar la pasada»: rclone para la pareja que está pasando y espera a que
+     * la suelte ([Rclone.pedirParada]), y no se pasa ninguna más. Lo cortado no
+     * se apunta, como un Ctrl+C en el escritorio; si era una bisync a medias,
+     * sus listados se apartan y la pasada siguiente pide rehacer la referencia,
+     * que no borra nada. El llavero no se corta nunca: mientras pasa, no se puede.
+     */
+    fun parar() {
+        synchronized(cerrojoDeParar) {
+            val hilo = hiloDelTrabajo ?: return
+            if (!sePuedeParar || parando || enElLlavero) return
+            parando = true
+            Rclone.pedirParada(hilo)
+        }
+        sePuedeParar = false
+        ocupado = PARANDO
     }
 
     private fun decir(linea: String) {
@@ -432,7 +494,7 @@ class Modelo(app: Application) : AndroidViewModel(app) {
      * el llavero: como `sync.py` con un nombre.
      */
     fun sincronizar(solo: String? = null) {
-        trabajo(if (solo == null) "Sincronizando…" else "Sincronizando «$solo»…") {
+        trabajo(if (solo == null) "Sincronizando…" else "Sincronizando «$solo»…", parable = true) {
             val v = Prdrive.iniciarRclone(contexto)
             val config = config()
             val ctx = Pasada.Contexto(keepLogs = config.keepLogs, accesoCompartido = Prdrive.accesoCompartido())
@@ -441,22 +503,50 @@ class Modelo(app: Application) : AndroidViewModel(app) {
             // compartida puede estar a medio llenar, y una pasada normal vería
             // borrados y los llevaría al remoto. Solo la pasa «Terminar de mover».
             val entradas = Compartidas.leer(v.compartidas)
+            val parejas = config.delUsuario.filter { solo == null || it.name == solo }
+            val conLlavero = solo == null && config.parejaLlavero != null
+            enCurso = EnCurso(parejas.map { it.name } + if (conLlavero) listOf(LLAVERO) else emptyList())
             try {
-                for (p in config.delUsuario) {
-                    if (solo != null && p.name != solo) continue
+                for (p in parejas) {
+                    if (parando) break
                     if (entradas[p.name]?.estado == Compartidas.Estado.ENTRANDO) {
                         decir("[${p.name}] A medio mover: se pasa con «Terminar de mover».")
+                        enCurso = enCurso?.let { it.copy(hechas = it.hechas + (p.name to Pasada.Resultado(p.name, Pasada.SALTADA, emptyList()))) }
                         continue
                     }
-                    val r = Pasada.pasarOFallar(
-                        v, p, Adaptadores.pasada, Adaptadores.opciones, ctx,
-                        { progreso = Progreso.de(p.name, it) }, ::decir,
-                    )
+                    val r = try {
+                        Pasada.pasarOFallar(
+                            v, p, Adaptadores.pasada, Adaptadores.opciones, ctx,
+                            { progreso = Progreso.de(p.name, it) }, ::decir,
+                        )
+                    } catch (_: Rclone.Cancelada) {
+                        // «Parar la pasada»: cortada, y no se apunta.
+                        decir("[${p.name}] Parada: no se apunta, y la siguiente sigue donde se quedó.")
+                        break
+                    }
                     resultados = resultados + (p.name to r)
+                    enCurso = enCurso?.let { it.copy(hechas = it.hechas + (p.name to r)) }
                 }
                 // El llavero, el último, como `sync.py` sin nombres: no sale
-                // entre las parejas, pero «Sincronizar» lo pasa.
-                if (solo == null && config.parejaLlavero != null) pasarLlavero()
+                // entre las parejas, pero «Sincronizar» lo pasa. No se corta: desde
+                // aquí ya no se puede parar.
+                val llavero = synchronized(cerrojoDeParar) {
+                    if (parando || !conLlavero) {
+                        false
+                    } else {
+                        enElLlavero = true
+                        Rclone.olvidarParada(Thread.currentThread())
+                        true
+                    }
+                }
+                if (llavero) {
+                    sePuedeParar = false
+                    try {
+                        pasarLlavero()
+                    } finally {
+                        enElLlavero = false
+                    }
+                }
             } finally {
                 filas = filasDe(v, config)
                 releerLlavero()
@@ -698,6 +788,9 @@ class Modelo(app: Application) : AndroidViewModel(app) {
 
     companion object {
         const val MAX_LINEAS = 200
+
+        /** Lo que se dice mientras rclone suelta la pareja que se ha parado. */
+        const val PARANDO = "Parando: se espera a que rclone suelte la pareja…"
 
         /** Lo que se dice cuando la carpeta elegida no es una que la app pueda usar. */
         const val SIN_RUTA_COMPARTIDA =

@@ -59,6 +59,7 @@ import prdrive.app.ui.piezas.Tamano
 import prdrive.app.ui.piezas.Tarjeta
 import prdrive.app.ui.piezas.Tono
 import prdrive.app.ui.piezas.TonoAviso
+import prdrive.engine.LLAVERO
 import prdrive.engine.MODES
 
 /**
@@ -87,6 +88,7 @@ fun Inicio(m: Modelo, ir: (Destino) -> Unit, aSeccion: (Seccion) -> Unit) {
             verticalArrangement = Arrangement.spacedBy(20.dp),
         ) {
             EstadoGeneral(m, cosas) { conRed { m.sincronizar() } }
+            m.enCurso?.takeIf { it.orden.size > 1 }?.let { EstaPasada(it) }
             if (cosas.isNotEmpty()) {
                 Tarjeta {
                     cosas.forEachIndexed { i, cosa ->
@@ -185,8 +187,14 @@ private fun EstadoGeneral(m: Modelo, cosas: List<Revisar>, sincronizar: () -> Un
         when {
             ocupado != null -> {
                 Chip("en marcha", tono = Tono.EN_MARCHA)
+                val curso = m.enCurso
+                val titulo = if (curso != null && curso.orden.size > 1 && ocupado != Modelo.PARANDO) {
+                    "Sincronizando ${minOf(curso.hechas.size + 1, curso.orden.size)} de ${curso.orden.size}"
+                } else {
+                    ocupado
+                }
                 Text(
-                    ocupado,
+                    titulo,
                     style = letra.titulo,
                     color = c.ink,
                     modifier = Modifier.testTag("ocupado").semantics { heading() },
@@ -226,15 +234,61 @@ private fun EstadoGeneral(m: Modelo, cosas: List<Revisar>, sincronizar: () -> Un
                 )
             }
         }
-        Boton(
-            "Sincronizar ahora",
-            sincronizar,
-            Modifier.testTag("sincronizar"),
-            peso = Peso.PRINCIPAL,
-            icono = Icono.SYNC,
-            ancho = true,
-            ocupado = ocupado != null,
-        )
+        if (m.sePuedeParar || ocupado == Modelo.PARANDO) {
+            // En marcha, la acción es pararla: sincronizar otra vez no haría nada.
+            Boton(
+                "Parar la pasada",
+                m::parar,
+                Modifier.testTag("parar"),
+                peso = Peso.CONTORNO,
+                icono = Icono.PAUSA,
+                ancho = true,
+                ocupado = ocupado == Modelo.PARANDO,
+            )
+            Text(
+                "Parar espera a que rclone suelte la pareja. Si se queda a medias, la próxima te pedirá rehacer la " +
+                    "referencia, que no borra nada.",
+                style = letra.pista,
+            )
+        } else {
+            Boton(
+                "Sincronizar ahora",
+                sincronizar,
+                Modifier.testTag("sincronizar"),
+                peso = Peso.PRINCIPAL,
+                icono = Icono.SYNC,
+                ancho = true,
+                ocupado = ocupado != null,
+            )
+        }
+    }
+}
+
+/** «Esta pasada»: las parejas de la pasada en marcha, por orden, cada una con cómo va. */
+@Composable
+private fun EstaPasada(curso: Modelo.EnCurso) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Rotulo("Esta pasada")
+        Tarjeta {
+            curso.orden.forEachIndexed { i, nombre ->
+                if (i > 0) Separador()
+                val hecha = curso.hechas[nombre]
+                val (tono, palabra) = when {
+                    hecha?.ok == true -> Tono.OK to "hecha"
+                    hecha?.saltada == true -> Tono.NEUTRO to "saltada"
+                    hecha != null -> Tono.PELIGRO to "falló"
+                    nombre == curso.ahora -> Tono.EN_MARCHA to "en marcha"
+                    nombre == LLAVERO -> Tono.APAGADO to "al final"
+                    else -> Tono.APAGADO to "en espera"
+                }
+                Fila(
+                    if (nombre == LLAVERO) "El llavero" else nombre,
+                    Modifier.testTag("en-curso-$nombre"),
+                    icono = if (nombre == LLAVERO) Icono.LLAVE else Icono.PAREJAS,
+                    extremo = { Chip(palabra, tono = tono) },
+                )
+            }
+        }
     }
 }
 
