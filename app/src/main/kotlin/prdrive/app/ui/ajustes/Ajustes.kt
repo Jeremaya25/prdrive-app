@@ -1,11 +1,13 @@
 package prdrive.app.ui.ajustes
 
 import android.Manifest
+import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
+import android.provider.DocumentsContract
 import android.provider.Settings
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -31,6 +33,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import prdrive.app.Actualizador
 import prdrive.app.Prdrive
+import prdrive.app.documentos.VolumenProvider
 import prdrive.app.rclone.Rclone
 import prdrive.app.ui.Cabecera
 import prdrive.app.ui.Letra
@@ -41,6 +44,7 @@ import prdrive.app.ui.conRedLocal
 import prdrive.app.ui.darPermisoCompartido
 import prdrive.app.ui.piezas.Boton
 import prdrive.app.ui.piezas.Chip
+import prdrive.app.ui.piezas.Fila
 import prdrive.app.ui.piezas.Icono
 import prdrive.app.ui.piezas.Peso
 import prdrive.app.ui.piezas.Rotulo
@@ -160,7 +164,36 @@ fun Ajustes(m: Modelo, faltaRedLocal: (Context) -> Boolean = Prdrive::faltaRedLo
                 }
             }
             Bloque("Actualizaciones") { Actualizaciones() }
+            Bloque("Volumen") {
+                Tarjeta {
+                    Fila(
+                        "Ver en Archivos",
+                        Modifier.testTag("ver-en-archivos"),
+                        alPulsar = { verEnArchivos(contexto, m) },
+                        icono = Icono.CARPETA,
+                        pista = "Las carpetas de las parejas, en la app de Archivos del teléfono.",
+                    )
+                }
+            }
         }
+    }
+}
+
+/**
+ * Abre el volumen en la app de Archivos: la raíz que publica
+ * [VolumenProvider] (sin `.prdrive/`), con el tipo de una raíz, que es lo que
+ * abre la app de documentos del sistema. Si ningún teléfono la abre así, se dice
+ * dónde está.
+ */
+private fun verEnArchivos(contexto: Context, m: Modelo) {
+    val raiz = DocumentsContract.buildRootUri(VolumenProvider.AUTORIDAD, VolumenProvider.ID_RAIZ)
+    val ver = Intent(Intent.ACTION_VIEW)
+        .setDataAndType(raiz, DocumentsContract.Root.MIME_TYPE_ITEM)
+        .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    try {
+        contexto.startActivity(ver)
+    } catch (_: ActivityNotFoundException) {
+        m.avisar("No encuentro la app de Archivos. Ábrela tú: el volumen sale como «prdrive» en su menú.")
     }
 }
 

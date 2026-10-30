@@ -1,6 +1,19 @@
 package prdrive.app
 
+import android.app.Activity
+import android.app.Instrumentation
+import android.content.Intent
+import android.provider.DocumentsContract
 import androidx.activity.ComponentActivity
+import androidx.compose.ui.test.performScrollTo
+import androidx.test.espresso.intent.Intents
+import androidx.test.espresso.intent.Intents.intended
+import androidx.test.espresso.intent.Intents.intending
+import androidx.test.espresso.intent.matcher.IntentMatchers.hasAction
+import androidx.test.espresso.intent.matcher.IntentMatchers.hasData
+import androidx.test.espresso.intent.matcher.IntentMatchers.hasType
+import org.hamcrest.Matchers.allOf
+import prdrive.app.documentos.VolumenProvider
 import androidx.activity.compose.setContent
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.hasAnyAncestor
@@ -46,6 +59,31 @@ class AjustesTest {
             compose.onNodeWithTag(Seccion.AJUSTES.etiqueta).performClick()
             compose.waitUntil(10_000) { hay("pantalla-ajustes") }
             assertTrue("no está en Ajustes", hay("buscar-version"))
+        }
+    }
+
+    /** «Ver en Archivos» abre la raíz del volumen en la app de Archivos del sistema. */
+    @Test
+    fun ver_en_archivos_abre_el_volumen() {
+        Banco.volumen(Banco.pareja("uno"))
+        Intents.init()
+        try {
+            intending(hasAction(Intent.ACTION_VIEW)).respondWith(Instrumentation.ActivityResult(Activity.RESULT_OK, null))
+            ActivityScenario.launch(MainActivity::class.java).use {
+                compose.waitUntil(30_000) { hay("pantalla-inicio") }
+                compose.onNodeWithTag(Seccion.AJUSTES.etiqueta).performClick()
+                compose.waitUntil(10_000) { hay("ver-en-archivos") }
+                compose.onNodeWithTag("ver-en-archivos").performScrollTo().performClick()
+                intended(
+                    allOf(
+                        hasAction(Intent.ACTION_VIEW),
+                        hasData(DocumentsContract.buildRootUri(VolumenProvider.AUTORIDAD, VolumenProvider.ID_RAIZ)),
+                        hasType(DocumentsContract.Root.MIME_TYPE_ITEM),
+                    ),
+                )
+            }
+        } finally {
+            Intents.release()
         }
     }
 
