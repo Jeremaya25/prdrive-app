@@ -196,7 +196,8 @@ fun FilaDeAviso(
 
 /**
  * Una casilla de marcar: la fila entera se toca (`toggleable`), y la caja de
- * 18 dp lleva el glifo `OK` cuando está marcada.
+ * 18 dp lleva el glifo `OK` cuando está marcada. [contenido] va debajo del texto
+ * (el modo y las rutas de una pareja, al emparejar).
  */
 @Composable
 fun Casilla(
@@ -206,6 +207,7 @@ fun Casilla(
     modifier: Modifier = Modifier,
     pista: String? = null,
     activa: Boolean = true,
+    contenido: @Composable ColumnScope.() -> Unit = {},
 ) {
     val c = Paleta.actual
     val forma = RoundedCornerShape(Tokens.radioSm)
@@ -237,6 +239,7 @@ fun Casilla(
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(texto, style = Letra.actual.nombre, color = if (activa) c.ink else c.disabled)
             if (pista != null) Text(pista, style = Letra.actual.pista)
+            contenido()
         }
     }
 }

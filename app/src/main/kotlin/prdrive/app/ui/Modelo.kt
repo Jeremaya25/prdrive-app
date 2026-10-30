@@ -256,6 +256,13 @@ class Modelo(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    /** «Volver» desde el código leído: se olvida, con su clave, y se vuelve a la bienvenida. */
+    fun olvidarCodigo() {
+        if (ocupado != null) return
+        carga = null
+        error = null
+    }
+
     fun avisar(mensaje: String) {
         error = mensaje
     }

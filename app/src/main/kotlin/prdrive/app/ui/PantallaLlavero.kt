@@ -9,23 +9,10 @@ import android.net.Uri
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -34,18 +21,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import prdrive.app.Estado
-import prdrive.app.llavero.Avisos
+import prdrive.app.ui.piezas.Casilla
 import prdrive.engine.LLAVERO_LLAVE
 import prdrive.engine.LLAVERO_LOCAL
 import prdrive.engine.Store
@@ -294,26 +276,22 @@ internal fun CasillaDelLlavero(m: Modelo) {
             emptyList()
         }
     }
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Checkbox(
-            checked = m.conLlavero,
-            onCheckedChange = { si -> if (si && interna) elegir.launch(arrayOf("*/*")) else m.elegirLlavero(si) },
-            modifier = Modifier.testTag("elegir-llavero"),
-        )
-        Column {
-            Text("El llavero", fontWeight = FontWeight.SemiBold)
-            Text("${tabla["base"] ?: ""}: ${TextosLlavero.QUE_ES}", style = MaterialTheme.typography.bodySmall)
-            if (interna) {
-                Text(
-                    "Va sin contraseña: al marcarlo, elige su fichero llave, que se copia dentro de la app.",
-                    style = MaterialTheme.typography.bodySmall,
-                )
-            }
-            if (m.conLlavero) {
-                avisos.forEach {
-                    Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.tertiary)
-                }
-            }
+    Casilla(
+        "El llavero",
+        m.conLlavero,
+        { si -> if (si && interna) elegir.launch(arrayOf("*/*")) else m.elegirLlavero(si) },
+        Modifier.testTag("elegir-llavero").padding(horizontal = 16.dp),
+        pista = "${tabla["base"] ?: ""}: ${TextosLlavero.QUE_ES}",
+        activa = m.ocupado == null,
+    ) {
+        if (interna) {
+            Text(
+                "Va sin contraseña: al marcarlo, elige su fichero llave, que se copia dentro de la app.",
+                style = Letra.actual.pista,
+            )
+        }
+        if (m.conLlavero) {
+            avisos.forEach { Text(it, style = Letra.actual.pista, color = Paleta.actual.warnInk) }
         }
     }
 }

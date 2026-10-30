@@ -10,6 +10,7 @@ import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
@@ -103,10 +104,11 @@ class PuntaAPuntaTest {
         }
         ActivityScenario.launch(MainActivity::class.java).use {
             // 1. El código: pegado, leído y conectado.
+            compose.onNodeWithText("Pegar el texto del código").performClick()
             compose.onNodeWithTag("carga").performTextInput(carga)
             compose.onNodeWithTag("usarTexto").performScrollTo().performClick()
             captura("1-codigo")
-            compose.onNodeWithTag("conectar").performScrollTo().performClick()
+            compose.onNodeWithTag("conectar").performClick()
 
             // 2. Las parejas del catálogo, todas marcadas.
             esperar("instalar")
@@ -120,7 +122,7 @@ class PuntaAPuntaTest {
             // «Ir a la principal» sale también si algo ha fallado: que no.
             errorEnPantalla()?.let { fail("la pantalla dice: $it") }
             compose.onNodeWithTag("aviso-espejos").assertExists()
-            compose.waitUntilAtLeastOneExists(hasText("notas: OK") and hasAnyAncestor(hasTestTag("resultado-notas")), 5000)
+            compose.waitUntilAtLeastOneExists(dice("resultado-notas", "hecha"), 5000)
             captura("3-inicio")
             assertEquals("escrito en el PC\n", File(v.raiz, "sync-data/notas/del-pc.txt").readText())
             assertTrue("el espejo no se inicializa", !File(v.raiz, "sync-data/fotos/foto.txt").exists())
@@ -186,9 +188,10 @@ class PuntaAPuntaTest {
                 .grantRuntimePermission(contexto.packageName, android.Manifest.permission.POST_NOTIFICATIONS)
         }
         ActivityScenario.launch(MainActivity::class.java).use {
+            compose.onNodeWithText("Pegar el texto del código").performClick()
             compose.onNodeWithTag("carga").performTextInput(carga)
             compose.onNodeWithTag("usarTexto").performScrollTo().performClick()
-            compose.onNodeWithTag("conectar").performScrollTo().performClick()
+            compose.onNodeWithTag("conectar").performClick()
 
             // La casilla sale porque el catálogo lleva `[keychain]`, y sale
             // desmarcada: el llavero se pide, no se impone.
@@ -200,7 +203,7 @@ class PuntaAPuntaTest {
 
             esperar("empezar", 180)
             errorEnPantalla()?.let { fail("la pantalla dice: $it") }
-            compose.waitUntilAtLeastOneExists(dice("resultado-$LLAVERO", "$LLAVERO: OK"), 30_000)
+            compose.waitUntilAtLeastOneExists(dice("resultado-$LLAVERO", "hecha"), 30_000)
             captura("5-llavero-al-emparejar")
 
             // Los bytes del servidor, tal cual, en `.keychain/`.
@@ -249,16 +252,17 @@ class PuntaAPuntaTest {
         val destino = File(android.os.Environment.getExternalStorageDirectory(), "Documents/prdrive-e2e-${System.nanoTime()}")
         try {
             ActivityScenario.launch(MainActivity::class.java).use {
+                compose.onNodeWithText("Pegar el texto del código").performClick()
                 compose.onNodeWithTag("carga").performTextInput(carga)
                 compose.onNodeWithTag("usarTexto").performScrollTo().performClick()
-                compose.onNodeWithTag("conectar").performScrollTo().performClick()
+                compose.onNodeWithTag("conectar").performClick()
 
                 esperar("instalar")
                 compose.onNodeWithTag("elegir-vault").assertExists()
                 compose.onNodeWithTag("instalar").performClick()
                 esperar("empezar", 180)
                 errorEnPantalla()?.let { fail("la pantalla dice: $it") }
-                compose.waitUntilAtLeastOneExists(dice("resultado-vault", "vault: OK"), 30_000)
+                compose.waitUntilAtLeastOneExists(dice("resultado-vault", "hecha"), 30_000)
                 assertEquals("una nota del vault\n", File(v.raiz, "vault/nota.md").readText())
                 compose.onNodeWithTag("empezar").performClick()
                 esperar("sincronizar")

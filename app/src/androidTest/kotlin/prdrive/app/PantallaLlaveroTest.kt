@@ -17,6 +17,7 @@ import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
@@ -134,10 +135,11 @@ class PantallaLlaveroTest {
 
     /** Del código a «Ir a la pantalla principal», con «El llavero» marcado. */
     private fun emparejarConLlavero() {
+        compose.onNodeWithText("Pegar el texto del código").performClick()
         compose.onNodeWithTag("carga").performTextInput(cargaDelQr())
         compose.onNodeWithTag("usarTexto").performScrollTo().performClick()
         esperar("conectar")
-        compose.onNodeWithTag("conectar").performScrollTo().performClick()
+        compose.onNodeWithTag("conectar").performClick()
         esperar("elegir-llavero")
         compose.onNodeWithTag("elegir-llavero").assertIsOff()
         compose.onNodeWithTag("elegir-llavero").performClick()
@@ -145,7 +147,7 @@ class PantallaLlaveroTest {
         compose.onNodeWithTag("instalar").performClick()
         esperar("empezar", 180)
         compose.onNodeWithTag("error").assertDoesNotExist()
-        esperar("resultado-$LLAVERO", "$LLAVERO: OK")
+        esperar("resultado-$LLAVERO", "hecha")
     }
 
     /** La base en el remoto, para que una pasada la traiga. */
@@ -378,7 +380,7 @@ class PantallaLlaveroTest {
                 .respondWith(ActivityResult(Activity.RESULT_OK, Intent().setData(android.net.Uri.fromFile(llave))))
             ActivityScenario.launch(MainActivity::class.java).use {
                 emparejarConLlavero()
-                esperar("resultado-todo", "todo: OK")
+                esperar("resultado-todo", "hecha")
             }
         } finally {
             Intents.release()
