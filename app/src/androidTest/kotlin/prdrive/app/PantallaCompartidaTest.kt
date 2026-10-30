@@ -245,7 +245,9 @@ class PantallaCompartidaTest {
      */
     @Test
     fun mover_pide_el_permiso_antes_de_elegir_la_carpeta() {
-        org.junit.Assume.assumeTrue("antes de Android 11 no se ofrece mover", android.os.Build.VERSION.SDK_INT >= 30)
+        // Antes de Android 11 no se ofrece mover. Un `return` y no `assumeTrue`: AGP
+        // cuenta un test saltado como fallido.
+        if (android.os.Build.VERSION.SDK_INT < 30) return
         Banco.volumen(Banco.pareja("vault", local = "vault"))
         var permitido = false
         ActivityScenario.launch(ComponentActivity::class.java).use { escena ->

@@ -15,7 +15,6 @@ import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
-import org.junit.Assume.assumeTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -57,7 +56,9 @@ class AjustesTest {
      */
     @Test
     fun el_permiso_de_red_local_se_ve_dado_o_por_dar() {
-        assumeTrue("la red local pide permiso desde Android 17", android.os.Build.VERSION.SDK_INT >= 37)
+        // Antes de Android 17 no hay permiso de red local que enseñar. Un `return` y no
+        // `assumeTrue`: el motor de tests de AGP cuenta un test saltado como fallido.
+        if (android.os.Build.VERSION.SDK_INT < 37) return
         Banco.volumen(Banco.pareja("uno"))
         var falta = true
         ActivityScenario.launch(ComponentActivity::class.java).use { escena ->
