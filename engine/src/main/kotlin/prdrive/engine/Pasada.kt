@@ -26,9 +26,15 @@ import java.time.format.DateTimeFormatter
  * Lo que el llavero hace distinto (resincronizarse solo, repetir sus frenos,
  * volver a apuntar una base) está aparte, en [PasadaLlavero].
  *
- * Lo que NO hay del escritorio: el parte de la flota, el diario de pasadas, la
- * medida de si la pasada movió algo y `--force`, que es de una persona desde
- * «Reparación».
+ * El diario de pasadas ([Historial]) se escribe donde `sync.py` llama a
+ * `record_result()`, junto a [Resultados], con su mismo criterio: ni un
+ * simulacro ni una pareja saltada. Una diferencia, a propósito: los bytes que
+ * movió la pasada. En el escritorio salen de la última línea de estadística del
+ * log de rclone; aquí no hay tal línea (el progreso sale de `core/stats`), y se
+ * toma el último `bytes` que llegó por `alProgreso`.
+ *
+ * Lo que NO hay del escritorio: el parte de la flota, la medida de si la pasada
+ * movió algo y `--force`, que es de una persona desde «Reparación».
  */
 object Pasada {
 
@@ -812,10 +818,13 @@ object Pasada {
     }
 
     /**
-     * Hace la pasada de una pareja (`_pasar_pareja()`), apunta el resultado y
-     * los conflictos, y guarda el log si falla.
+     * Hace la pasada de una pareja (`_pasar_pareja()`), apunta el resultado (en
+     * `last_run.json` y en el diario, [Historial]) y los conflictos, y guarda el
+     * log si falla.
      *
      * @param opciones las de `options/info`, para traducir la orden.
+     * @param alProgreso lo que llega de `core/stats` mientras corre rclone. De
+     *   aquí sale también lo que movió la pasada, para el diario.
      * @param decir por dónde va contando lo que pasa, línea a línea.
      */
     fun pasar(
@@ -833,9 +842,28 @@ object Pasada {
         val tag = if (ctx.simulacro) " [DRY-RUN]" else ""
         cuenta("=== ${pareja.name} (${pareja.mode.name})$tag ===")
 
+        // `historial.Reloj()` al empezar `_pasar_pareja()`: cuándo empezó la pareja,
+        // para apuntar su inicio y cuánto duró.
+        val relojDiario = Historial.Reloj(reloj)
+        // Los bytes que movió la pasada, para el diario. Diferencia con el
+        // escritorio, a propósito: allí salen de la última línea de estadística
+        // del log (`progress.final_del_log()`), y aquí el log no la lleva (el
+        // progreso es de `core/stats`). Cuenta lo mismo, los bytes del trabajo
+        // hasta ahora, así que vale el último `bytes` que llegó: `null` si no
+        // llegó ninguno (rclone no llegó a correr, o no dio progreso).
+        var transferido: Long? = null
+        val conBytes: (Map<String, Any?>) -> Unit = { estadistica ->
+            (estadistica["bytes"] as? Number)?.toLong()?.takeIf { it >= 0 }?.let { transferido = it }
+            alProgreso(estadistica)
+        }
+
+        // `record_result()`: ni un simulacro ni una pareja saltada son un resultado.
         fun acabar(codigo: Int, log: File? = null, explicacion: String? = null, resync: Boolean = false,
                    conflictos: List<Conflictos.Conflicto> = emptyList()): Resultado {
-            if (!ctx.simulacro && codigo != SALTADA) Resultados.apuntar(volumen.state, pareja.name, codigo, log, reloj)
+            if (!ctx.simulacro && codigo != SALTADA) {
+                Resultados.apuntar(volumen.state, pareja.name, codigo, log, reloj)
+                Historial.apuntar(volumen.state, Historial.pasada(pareja.name, codigo, relojDiario, transferido))
+            }
             return Resultado(pareja.name, codigo, lineas, log, explicacion, conflictos, resync)
         }
 
@@ -894,7 +922,7 @@ object Pasada {
                 simulacro = simulacro, resync = resync, sello = ctx.sello, resyncMode = ctx.resyncMode,
             )
             try {
-                rclone.ejecutar(llamadaDe(tramos, opciones), alProgreso)
+                rclone.ejecutar(llamadaDe(tramos, opciones), conBytes)
             } catch (e: OrdenInvalida) {
                 explicacionDeLaOrden = e.explicacion
                 Final(false, e.message ?: "", "Error: ${e.message}")
@@ -973,7 +1001,9 @@ object Pasada {
      * [pasar] como la llama `run_all()`: un error de E/S a mitad de una pareja
      * (el `OSError` del escritorio: una carpeta que no se puede leer, un log que
      * no se puede guardar) no se lleva las demás. Esa pareja cuenta como
-     * fallida, con su línea, y se apunta (salvo en un simulacro).
+     * fallida, con su línea, y se apunta (salvo en un simulacro), también en el
+     * diario: sin reloj, es decir con la hora de ahora y sin duración ni bytes,
+     * como el `record_result(ctx, pair, rc, None)` de `run_all()`.
      */
     fun pasarOFallar(
         volumen: Volumen,
@@ -989,7 +1019,10 @@ object Pasada {
     } catch (e: IOException) {
         val linea = "[${pareja.name}] FALLÓ: ${e.message ?: e}"
         decir(linea)
-        if (!ctx.simulacro) Resultados.apuntar(volumen.state, pareja.name, FALLO, null, reloj)
+        if (!ctx.simulacro) {
+            Resultados.apuntar(volumen.state, pareja.name, FALLO, null, reloj)
+            Historial.apuntar(volumen.state, Historial.pasada(pareja.name, FALLO, sello = reloj))
+        }
         Resultado(pareja.name, FALLO, listOf(linea))
     }
 }

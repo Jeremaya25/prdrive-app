@@ -341,6 +341,129 @@ class PasadaTest {
         Pasada.pasar(v, config.pairs[0], RcloneFalso(), opcionesDeLaPasada,
             Pasada.Contexto(simulacro = true, resyncAprobado = true))
         assertFalse(Resultados.rutaEstado(v.state).exists())
+        assertFalse(Historial.ruta(v.state).exists(), "ni en el diario de pasadas")
+    }
+
+    // --- el diario de pasadas --------------------------------------------------
+
+    @Test
+    fun `una pasada apunta una linea en el diario con su inicio, su duracion y los bytes que movio`() {
+        val (v, config) = volumen(notas)
+        val rclone = RcloneFalso()
+        rclone.progreso.addAll(listOf(mapOf("bytes" to 100L, "totalBytes" to 900L), mapOf("bytes" to 2048L, "totalBytes" to 2048L)))
+        var n = 0
+        val sellos = listOf("2026-10-01 10:00:00", "2026-10-01 10:00:07")
+        val r = Pasada.pasar(
+            v, config.pairs[0], rclone, opcionesDeLaPasada, Pasada.Contexto(resyncAprobado = true),
+            reloj = { sellos[n++ % sellos.size] },
+        )
+        assertEquals(0, r.codigo)
+        val p = Historial.leer(v.state).single()
+        assertEquals("notas", p.pareja)
+        assertEquals(sellos[0], p.inicio, "el inicio es el de cuando empezó la pareja")
+        assertEquals(0, p.codigo.toInt())
+        val duracion = p.segundos
+        assertTrue(duracion != null && duracion >= 0.0 && duracion < 60.0, "duró $duracion")
+        assertEquals(2048, p.transferido!!.toInt(), "el último bytes que llegó por el progreso")
+        assertEquals(1, Historial.ruta(v.state).readLines().size)
+    }
+
+    @Test
+    fun `una pasada que no recibe progreso apunta sin bytes`() {
+        val (v, config) = volumen(notas)
+        Pasada.pasar(v, config.pairs[0], RcloneFalso(), opcionesDeLaPasada, Pasada.Contexto(resyncAprobado = true))
+        val p = Historial.leer(v.state).single()
+        assertNull(p.transferido)
+        assertNotNull(p.segundos)
+    }
+
+    @Test
+    fun `el progreso de la pasada sigue llegando a quien lo pidio`() {
+        val (v, config) = volumen(notas)
+        val rclone = RcloneFalso()
+        rclone.progreso.add(mapOf("bytes" to 5L))
+        val vistos = ArrayList<Map<String, Any?>>()
+        Pasada.pasar(
+            v, config.pairs[0], rclone, opcionesDeLaPasada, Pasada.Contexto(resyncAprobado = true),
+            alProgreso = { vistos.add(it) },
+        )
+        assertEquals(listOf(mapOf<String, Any?>("bytes" to 5L)), vistos)
+    }
+
+    @Test
+    fun `una pasada que falla tambien consta en el diario, con su codigo`() {
+        val (v, config) = volumen(notas)
+        val rclone = RcloneFalso(Pasada.Final(false, "bisync aborted", "ERROR : prior lock file found: /x.lck\n"))
+        rclone.progreso.add(mapOf("bytes" to 7L))
+        Pasada.pasar(v, config.pairs[0], rclone, opcionesDeLaPasada, Pasada.Contexto(resyncAprobado = true))
+        val p = Historial.leer(v.state).single()
+        assertEquals(Pasada.FALLO, p.codigo.toInt())
+        assertEquals(7, p.transferido!!.toInt())
+    }
+
+    @Test
+    fun `dos pasadas dejan dos lineas, una por pasada`() {
+        val (v, config) = volumen(notas)
+        val ctx = Pasada.Contexto(resyncAprobado = true)
+        Pasada.pasar(v, config.pairs[0], RcloneFalso(), opcionesDeLaPasada, ctx)
+        Pasada.pasar(v, config.pairs[0], RcloneFalso(Pasada.Final(false, "x", "ERROR : x\n")), opcionesDeLaPasada, ctx)
+        assertEquals(listOf(0, Pasada.FALLO), Historial.leer(v.state).map { it.codigo.toInt() })
+    }
+
+    @Test
+    fun `una pareja saltada no consta en el diario`() {
+        val (v, config) = volumen(notas)
+        val r = Pasada.pasar(v, config.pairs[0], RcloneFalso(), opcionesDeLaPasada)
+        assertEquals(Pasada.SALTADA, r.codigo)
+        assertFalse(Historial.ruta(v.state).exists(), "una saltada no es un resultado")
+    }
+
+    @Test
+    fun `una pasada que aborta antes de llamar a rclone consta en el diario sin bytes`() {
+        val (v, config) = volumen(notas + mapOf("mode" to "up-mirror"))
+        val rclone = RcloneFalso()
+        val r = Pasada.pasar(v, config.pairs[0], rclone, opcionesDeLaPasada)
+        assertEquals(Pasada.ABORTO, r.codigo)
+        assertTrue(rclone.llamadas.isEmpty())
+        val p = Historial.leer(v.state).single()
+        assertEquals(Pasada.ABORTO, p.codigo.toInt())
+        assertNull(p.transferido)
+        assertNotNull(p.segundos, "con reloj: la pareja ya había empezado")
+    }
+
+    @Test
+    fun `una pareja que se corta por un error de E_S consta en el diario sin duracion`() {
+        val (v, config) = volumen(notas)
+        val cortada = object : Pasada.Rclone {
+            override fun ejecutar(llamada: Pasada.Llamada, alProgreso: (Map<String, Any?>) -> Unit): Pasada.Final =
+                throw java.io.IOException("disco")
+            override fun mkdir(destino: String): Pasada.Final = Pasada.Final(true, "", "")
+        }
+        val r = Pasada.pasarOFallar(
+            v, config.pairs[0], cortada, opcionesDeLaPasada, Pasada.Contexto(resyncAprobado = true),
+            reloj = { "2026-10-01 10:00:00" },
+        )
+        assertEquals(Pasada.FALLO, r.codigo)
+        val p = Historial.leer(v.state).single()
+        assertEquals(Pasada.FALLO, p.codigo.toInt())
+        assertEquals("2026-10-01 10:00:00", p.inicio)
+        assertNull(p.segundos, "sin reloj no hay duración, y un cero sería inventado")
+        assertNull(p.transferido)
+    }
+
+    @Test
+    fun `un simulacro cortado por un error de E_S tampoco consta en el diario`() {
+        val (v, config) = volumen(notas)
+        val cortada = object : Pasada.Rclone {
+            override fun ejecutar(llamada: Pasada.Llamada, alProgreso: (Map<String, Any?>) -> Unit): Pasada.Final =
+                throw java.io.IOException("disco")
+            override fun mkdir(destino: String): Pasada.Final = Pasada.Final(true, "", "")
+        }
+        Pasada.pasarOFallar(
+            v, config.pairs[0], cortada, opcionesDeLaPasada, Pasada.Contexto(simulacro = true, resyncAprobado = true),
+        )
+        assertFalse(Historial.ruta(v.state).exists())
+        assertFalse(Resultados.rutaEstado(v.state).exists())
     }
 
     // --- una pareja en una carpeta compartida ----------------------------------
