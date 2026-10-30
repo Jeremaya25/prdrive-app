@@ -57,19 +57,28 @@ import prdrive.app.ui.rutaCorta
  * que Android recree la actividad al volver del selector, y no lleva nada que
  * no pueda acabar en disco. [tienePermiso] es [Prdrive.permisoCompartido]; un
  * test pasa otro, porque quitar ese permiso con `appops` mata el proceso.
+ * [conRed] es el de `Secciones`: el de esta pantalla se iría con ella, y la
+ * respuesta de Android a la pregunta de la red local no llegaría a nadie.
  */
 @Composable
-fun Mover(m: Modelo, nombre: String, volver: () -> Unit, tienePermiso: () -> Boolean = Prdrive::permisoCompartido) {
+fun Mover(
+    m: Modelo,
+    nombre: String,
+    volver: () -> Unit,
+    conRed: ((() -> Unit) -> Unit)? = null,
+    tienePermiso: () -> Boolean = Prdrive::permisoCompartido,
+    elegida: Uri? = null,
+) {
     val contexto = LocalContext.current
     val c = Paleta.actual
-    val conRed = conRedLocal()
+    val red = conRed ?: conRedLocal()
     // El permiso se da en los ajustes de Android: al volver, se mira otra vez.
     var permiso by remember { mutableStateOf(tienePermiso()) }
     LifecycleResumeEffect(Unit) {
         permiso = tienePermiso()
         onPauseOrDispose {}
     }
-    var arbol by rememberSaveable { mutableStateOf<Uri?>(null) }
+    var arbol by rememberSaveable { mutableStateOf(elegida) }
     val elegir = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { if (it != null) arbol = it }
     val carpeta = arbol?.let(Compartir::rutaDeArbol)
     Column(
@@ -153,8 +162,13 @@ fun Mover(m: Modelo, nombre: String, volver: () -> Unit, tienePermiso: () -> Boo
                 "Mover «$nombre»",
                 {
                     val elegido = arbol ?: return@Boton
-                    conRed { m.moverACompartida(nombre, elegido) }
-                    volver()
+                    // A la ficha, cuando la mudanza ya ha empezado: si Android pregunta antes
+                    // por la red local, la respuesta va a quien la pidió ([conRed], de
+                    // `Secciones`), que sigue ahí aunque esta pantalla se haya ido.
+                    red {
+                        m.moverACompartida(nombre, elegido)
+                        volver()
+                    }
                 },
                 Modifier.testTag("mover-ya"),
                 peso = Peso.PRINCIPAL,

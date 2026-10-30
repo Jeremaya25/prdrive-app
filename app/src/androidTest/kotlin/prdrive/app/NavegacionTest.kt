@@ -8,9 +8,14 @@ import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.getBoundsInRoot
+import androidx.compose.ui.test.getUnclippedBoundsInRoot
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.unit.height
 import androidx.compose.ui.test.performScrollTo
 import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.ViewModelProvider
 import androidx.test.core.app.ActivityScenario
 import androidx.test.espresso.Espresso
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -20,6 +25,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import prdrive.app.ui.Modelo
 import prdrive.app.ui.Seccion
 
 /**
@@ -135,6 +141,44 @@ class NavegacionTest {
             compose.waitUntil(120_000) { compose.onAllNodes(hasTestTag("ocupado")).fetchSemanticsNodes().isEmpty() }
             compose.onNodeWithTag("sincronizar-uno").assertIsEnabled()
         }
+    }
+
+    /**
+     * Con la letra del sistema a 2 y un error largo, lo de arriba (el error)
+     * no se come la pantalla: la sección sigue teniendo casi todo el alto, y el
+     * error se puede cerrar.
+     */
+    @Test
+    fun con_letra_grande_un_error_largo_no_tapa_la_seccion_y_se_cierra() {
+        Banco.volumen(Banco.pareja("uno"))
+        shell("settings put system font_scale 2.0")
+        try {
+            ActivityScenario.launch(MainActivity::class.java).use { escena ->
+                esperarALaFila("uno")
+                compose.waitUntil(30_000) { compose.onAllNodes(hasTestTag("ocupado")).fetchSemanticsNodes().isEmpty() }
+                val largo = List(4) { "Esto es un error muy largo que rclone podría contar sobre la conexión con el remoto." }
+                    .joinToString(" ") + "\n\n" + Prdrive.SIN_RED_LOCAL
+                escena.onActivity { ViewModelProvider(it)[Modelo::class.java].avisar(largo) }
+                esperarA("error")
+                val raiz = compose.onRoot().getUnclippedBoundsInRoot()
+                val seccion = compose.onNodeWithTag("pantalla-inicio").getBoundsInRoot()
+                assertTrue(
+                    "la sección se queda con ${seccion.height} de ${raiz.height}",
+                    seccion.height >= raiz.height * 0.35f,
+                )
+                compose.onNodeWithTag("cerrar-error").performScrollTo().performClick()
+                compose.waitUntil(10_000) { compose.onAllNodes(hasTestTag("error")).fetchSemanticsNodes().isEmpty() }
+            }
+        } finally {
+            shell("settings put system font_scale 1.0")
+        }
+    }
+
+    /** Una orden del shell, leída hasta el final (si no, puede no haber acabado). */
+    private fun shell(orden: String) {
+        val salida = InstrumentationRegistry.getInstrumentation().uiAutomation.executeShellCommand(orden)
+        java.io.FileInputStream(salida.fileDescriptor).use { it.readBytes() }
+        salida.close()
     }
 
     private fun Lifecycle.State.isAtMost(otro: Lifecycle.State) = this <= otro

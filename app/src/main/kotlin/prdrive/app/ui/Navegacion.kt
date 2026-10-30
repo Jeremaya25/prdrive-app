@@ -34,6 +34,12 @@ import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import prdrive.app.ui.piezas.Tamano
+import prdrive.app.ui.piezas.Peso
+import prdrive.app.ui.piezas.Boton
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
@@ -294,7 +300,7 @@ fun Secciones(m: Modelo) {
                 when (val d = pila.cima) {
                     is Destino.Ficha -> Ficha(m, d.pareja, pila::ir, { pila.atras() }, etiquetaVolver = pila.seccion.titulo)
                     is Destino.Log -> LogDePareja(m, d.pareja) { pila.atras() }
-                    is Destino.Mover -> Mover(m, d.pareja, volver = { pila.atras() })
+                    is Destino.Mover -> Mover(m, d.pareja, volver = { pila.atras() }, conRed = conRed)
                     null -> when (pila.seccion) {
                         Seccion.INICIO -> Inicio(m, pila::ir, pila::cambiar)
                         Seccion.PAREJAS -> Parejas(m, pila::ir)
@@ -319,8 +325,15 @@ private fun ArribaDeTodo(m: Modelo, enInicio: Boolean, faltaRed: Boolean, pedirR
     val ocupado = m.ocupado
     val error = m.error
     if ((ocupado == null || enInicio) && error == null && !(faltaRed && enInicio)) return
+    // Con tope y desplazable: con la letra grande y un error largo se comería la
+    // pantalla entera, y la sección (con su botón) quedaría sin sitio.
+    val tope = (LocalConfiguration.current.screenHeightDp * 0.4f).dp
     Column(
-        Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 4.dp),
+        Modifier
+            .fillMaxWidth()
+            .heightIn(max = tope)
+            .verticalScroll(rememberScrollState())
+            .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 4.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         if (ocupado != null && !enInicio) {
@@ -333,7 +346,15 @@ private fun ArribaDeTodo(m: Modelo, enInicio: Boolean, faltaRed: Boolean, pedirR
             // El primer párrafo es lo que ha pasado; lo demás, lo que se puede hacer.
             val titulo = error.substringBefore(PARRAFO)
             val resto = error.substringAfter(PARRAFO, "").takeIf { it.isNotBlank() }
-            Aviso(titulo, Modifier.testTag("error"), tono = TonoAviso.PELIGRO, cuerpo = resto)
+            Aviso(titulo, Modifier.testTag("error"), tono = TonoAviso.PELIGRO, cuerpo = resto) {
+                Boton(
+                    "Cerrar",
+                    m::descartarError,
+                    Modifier.testTag("cerrar-error"),
+                    peso = Peso.SILENCIOSO,
+                    tamano = Tamano.PEQUENO,
+                )
+            }
         }
         // Solo en Inicio: en todas las pantallas se comería la mitad de cada una, y
         // Ajustes ya tiene su fila. Lo que necesita la red lo pide al pulsarse.

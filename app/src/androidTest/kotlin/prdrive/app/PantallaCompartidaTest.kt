@@ -269,6 +269,47 @@ class PantallaCompartidaTest {
         }
     }
 
+    /**
+     * «Mover «X»» no vuelve a la ficha hasta que la acción se ha hecho: si Android
+     * pregunta antes por la red local, la respuesta llega a quien la pidió, que
+     * es `Secciones` y no esta pantalla (que se iría con su lanzador, y la
+     * mudanza no empezaría nunca). Aquí la pregunta se finge: el `conRed` guarda
+     * la acción sin hacerla, como mientras Android pregunta.
+     */
+    @Test
+    fun mover_no_vuelve_antes_de_que_la_accion_se_haga() {
+        if (android.os.Build.VERSION.SDK_INT < 30) return
+        Banco.volumen(Banco.pareja("vault", local = "vault"))
+        var pendiente: (() -> Unit)? = null
+        var vueltas = 0
+        val arbol = android.provider.DocumentsContract.buildTreeDocumentUri(
+            "com.android.externalstorage.documents", "primary:Documents/prdrive-prueba-mover",
+        )
+        ActivityScenario.launch(ComponentActivity::class.java).use { escena ->
+            escena.onActivity { actividad ->
+                val modelo = ViewModelProvider(actividad)[Modelo::class.java]
+                actividad.setContent {
+                    Tema {
+                        Mover(
+                            modelo, "vault",
+                            volver = { vueltas++ },
+                            conRed = { accion -> pendiente = accion },
+                            tienePermiso = { true },
+                            elegida = arbol,
+                        )
+                    }
+                }
+            }
+            compose.waitUntil(10_000) { hay("mover-ya") }
+            compose.waitUntil(10_000) {
+                compose.onAllNodes(hasTestTag("mover-ya") and isEnabled()).fetchSemanticsNodes().isNotEmpty()
+            }
+            compose.onNodeWithTag("mover-ya").performScrollTo().performClick()
+            assertNotNull("la acción no ha ido a quien pregunta", pendiente)
+            assertEquals("ha vuelto antes de mover", 0, vueltas)
+        }
+    }
+
     /** «Sincronizar esta pareja» (en su ficha) pasa esa y ninguna más, ni el llavero. */
     @Test
     fun sincronizar_una_pareja_no_pasa_las_demas() {

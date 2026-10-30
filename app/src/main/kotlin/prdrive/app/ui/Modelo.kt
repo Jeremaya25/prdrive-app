@@ -348,6 +348,11 @@ class Modelo(app: Application) : AndroidViewModel(app) {
         error = null
     }
 
+    /** «Cerrar» en el aviso del error: ya se ha leído. */
+    fun descartarError() {
+        error = null
+    }
+
     fun avisar(mensaje: String) {
         error = mensaje
     }
