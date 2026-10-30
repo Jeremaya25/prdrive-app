@@ -63,7 +63,7 @@ class MudanzaEnAndroidTest {
         if (::destino.isInitialized) destino.deleteRecursively()
     }
 
-    private fun entorno(): Mudanza.Entorno = Compartir.entorno(Banco.contexto, true, {}) { dicho.add(it) }
+    private fun entorno(): Mudanza.Entorno = Compartir.entorno(Banco.contexto, true, {}, decir = { dicho.add(it) })
 
     private fun contado(hecho: Mudanza.Hecho): String =
         "motivo: ${hecho.motivo}\n" + dicho.joinToString("\n") + "\n" +

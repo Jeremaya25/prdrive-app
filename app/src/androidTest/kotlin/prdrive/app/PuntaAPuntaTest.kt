@@ -272,7 +272,7 @@ class PuntaAPuntaTest {
 
                 // La mudanza: lo que hace la fila tras elegir la carpeta.
                 val dicho = ArrayList<String>()
-                val hecho = Mudanza.entrar(v, "vault", destino, Compartir.entorno(contexto, true, {}) { dicho.add(it) })
+                val hecho = Mudanza.entrar(v, "vault", destino, Compartir.entorno(contexto, true, {}, decir = { dicho.add(it) }))
                 assertTrue("${hecho.motivo}\n" + dicho.joinToString("\n"), hecho.ok)
                 assertEquals("una nota del vault\n", File(destino, "nota.md").readText())
                 assertTrue("la copia privada sigue ahí", !File(v.raiz, "vault").exists())

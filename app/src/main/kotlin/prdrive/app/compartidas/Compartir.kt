@@ -161,6 +161,7 @@ object Compartir {
         keepLogs: Boolean,
         alProgreso: (Map<String, Any?>) -> Unit,
         decir: (String) -> Unit,
+        alPaso: (Mudanza.Paso) -> Unit = {},
     ): Mudanza.Entorno = Mudanza.Entorno(
         rclone = Adaptadores.pasada,
         opciones = Adaptadores.opciones,
@@ -169,5 +170,6 @@ object Compartir {
         recargar = { Prdrive.recargarRclone(contexto) },
         alProgreso = alProgreso,
         decir = decir,
+        alPaso = alPaso,
     )
 }

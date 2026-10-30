@@ -16,6 +16,8 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
@@ -166,6 +168,19 @@ class PiezasTest {
         val fila = compose.onNodeWithTag("fila").getUnclippedBoundsInRoot()
         assertTrue("el chip (${chip.right}) se sale de la fila (${fila.right})", chip.right <= fila.right)
         assertTrue("el chip no tiene ancho", chip.right > chip.left)
+    }
+
+    @Test
+    fun los_pasos_de_la_mudanza_se_marcan_por_donde_va() {
+        compose.setContent {
+            Tema { prdrive.app.ui.parejas.PasosDeLaMudanza(prdrive.engine.Mudanza.PASOS_ENTRAR, prdrive.engine.Mudanza.Paso.BAJAR) }
+        }
+        val dice = { paso: String, texto: String ->
+            compose.onAllNodes(hasTestTag("paso-$paso") and hasText(texto, substring = true)).fetchSemanticsNodes().isNotEmpty()
+        }
+        assertTrue("las fechas no salen hechas", dice("FECHAS", "hecho"))
+        assertTrue("el --resync no sale en marcha", dice("BAJAR", "en marcha"))
+        assertTrue("borrar no sale en espera", dice("BORRAR", "en espera"))
     }
 
     @Test

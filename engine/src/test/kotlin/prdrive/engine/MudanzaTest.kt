@@ -115,6 +115,32 @@ class MudanzaTest {
         }
     }
 
+    // --- los pasos -------------------------------------------------------
+
+    @Test
+    fun `mover y volver dicen sus pasos en orden, para que la ficha los marque`() {
+        val (v, _) = volumen()
+        val destino = destino()
+        val pasos = ArrayList<Mudanza.Paso>()
+        val e = entorno(RcloneFalso()).copy(alPaso = { pasos.add(it) })
+
+        assertTrue(Mudanza.entrar(v, "vault", destino, e).ok)
+        assertEquals(
+            listOf(
+                Mudanza.Paso.FECHAS, Mudanza.Paso.PASADA_NORMAL, Mudanza.Paso.APARTAR,
+                Mudanza.Paso.BAJAR, Mudanza.Paso.LLEVAR, Mudanza.Paso.BORRAR,
+            ),
+            pasos,
+        )
+        assertEquals(pasos, Mudanza.PASOS_ENTRAR, "la lista que enseña la ficha es la de verdad")
+
+        pasos.clear()
+        assertTrue(Mudanza.salir(v, "vault", true, e).ok)
+        // El rclone de mentira no deja referencia, y sin ella «Volver» se salta su pasada normal.
+        assertEquals(listOf(Mudanza.Paso.APARTAR, Mudanza.Paso.BAJAR), pasos)
+        assertEquals(Mudanza.PASOS_SALIR.filter { it in pasos }, pasos, "en el orden de la lista que enseña la ficha")
+    }
+
     // --- mover -------------------------------------------------------------
 
     @Test

@@ -160,6 +160,12 @@ class Modelo(app: Application) : AndroidViewModel(app) {
     var mudando by mutableStateOf<String?>(null)
         private set
 
+    /** Los pasos de la mudanza en marcha ([mudando]), por orden, y el que se está dando. */
+    var pasosMudanza by mutableStateOf<List<Mudanza.Paso>>(emptyList())
+        private set
+    var pasoMudanza by mutableStateOf<Mudanza.Paso?>(null)
+        private set
+
     /** Las parejas del catálogo (de su copia, sin red) que este teléfono no usa. */
     var sinUsar by mutableStateOf<List<String>>(emptyList())
         private set
@@ -767,7 +773,7 @@ class Modelo(app: Application) : AndroidViewModel(app) {
             error = SIN_RUTA_COMPARTIDA
             return
         }
-        mudanza("Moviendo $nombre a ${carpeta.name}…", nombre) { v, e -> Mudanza.entrar(v, nombre, carpeta, e) }
+        mudanza("Moviendo $nombre a ${carpeta.name}…", nombre, Mudanza.PASOS_ENTRAR) { v, e -> Mudanza.entrar(v, nombre, carpeta, e) }
     }
 
     /** «Terminar de mover»: acaba la mudanza de [nombre] que quedó a medias ([Mudanza.terminar]). */
@@ -777,7 +783,7 @@ class Modelo(app: Application) : AndroidViewModel(app) {
             error = Prdrive.SIN_PERMISO_COMPARTIDO
             return
         }
-        mudanza("Terminando de mover $nombre…", nombre) { v, e -> Mudanza.terminar(v, nombre, e) }
+        mudanza("Terminando de mover $nombre…", nombre, Mudanza.PASOS_TERMINAR) { v, e -> Mudanza.terminar(v, nombre, e) }
     }
 
     /**
@@ -787,7 +793,7 @@ class Modelo(app: Application) : AndroidViewModel(app) {
      */
     fun volverAlVolumen(nombre: String) {
         if (ocupado != null) return
-        mudanza("Devolviendo $nombre al volumen…", nombre) { v, e ->
+        mudanza("Devolviendo $nombre al volumen…", nombre, Mudanza.PASOS_SALIR) { v, e ->
             Mudanza.salir(v, nombre, Prdrive.permisoCompartido(), e)
         }
     }
@@ -799,13 +805,22 @@ class Modelo(app: Application) : AndroidViewModel(app) {
      * que ha hecho se apuntan como las demás ([resultados]); si se ha parado,
      * [error] dice por qué y qué hacer. Las filas se releen pase lo que pase.
      */
-    private fun mudanza(que: String, nombre: String, hacer: (Volumen, Mudanza.Entorno) -> Mudanza.Hecho) {
+    private fun mudanza(
+        que: String,
+        nombre: String,
+        pasos: List<Mudanza.Paso>,
+        hacer: (Volumen, Mudanza.Entorno) -> Mudanza.Hecho,
+    ) {
         trabajo(que) {
             val v = Prdrive.iniciarRclone(contexto)
             lineas = emptyList()
             mudando = nombre
             try {
-                val entorno = Compartir.entorno(contexto, config().keepLogs, { progreso = Progreso.de(nombre, it) }, ::decir)
+                pasosMudanza = pasos
+                pasoMudanza = null
+                val entorno = Compartir.entorno(
+                    contexto, config().keepLogs, { progreso = Progreso.de(nombre, it) }, ::decir,
+                ) { pasoMudanza = it }
                 val hecho = LlaveroApp.enExclusiva { hacer(v, entorno) }
                 for (r in hecho.pasadas) resultados = resultados + (r.pareja to r)
                 error = hecho.motivo

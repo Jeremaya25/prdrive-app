@@ -46,6 +46,7 @@ import prdrive.app.ui.inicio.iconoDelModo
 import prdrive.app.ui.piezas.Aviso
 import prdrive.app.ui.piezas.Boton
 import prdrive.app.ui.piezas.Chip
+import prdrive.app.ui.piezas.Fila
 import prdrive.app.ui.piezas.FilaDeAviso
 import prdrive.app.ui.piezas.Glifo
 import prdrive.app.ui.piezas.Icono
@@ -56,8 +57,10 @@ import prdrive.app.ui.piezas.Rotulo
 import prdrive.app.ui.piezas.Separador
 import prdrive.app.ui.piezas.Tamano
 import prdrive.app.ui.piezas.Tarjeta
+import prdrive.app.ui.piezas.Tono
 import prdrive.app.ui.piezas.TonoAviso
 import prdrive.app.ui.rutaCorta
+import prdrive.engine.Mudanza
 import prdrive.engine.Pasada
 
 /**
@@ -122,10 +125,19 @@ fun Ficha(
                     ancho = true,
                     activo = libre && !f.entrando,
                 )
-                // Mientras se mueve (o vuelve al volumen), cómo va: la barra y lo que va contando.
+                // Mientras se mueve (o vuelve al volumen), cómo va: sus pasos, la barra y lo que va contando.
                 if (m.mudando == nombre) {
+                    PasosDeLaMudanza(m.pasosMudanza, m.pasoMudanza)
                     val p = m.progreso
                     Progreso(p?.fraccion, texto = p?.let { "${it.ficheros} de ${it.totalFicheros} ficheros" })
+                    if (m.pasosMudanza != Mudanza.PASOS_SALIR) {
+                        Aviso(
+                            "Si se corta, no se pierde nada",
+                            tono = TonoAviso.INFO,
+                            cuerpo = "La pareja se queda «a medio mover» y no se sincroniza con las demás hasta que " +
+                                "pulses «Terminar de mover», que sigue donde se quedó.",
+                        )
+                    }
                     if (m.lineas.isNotEmpty()) Registro(m.lineas.takeLast(LINEAS_MUDANZA))
                 }
             }
@@ -143,6 +155,42 @@ fun Ficha(
             }
         }
     }
+}
+
+/**
+ * Los pasos de una mudanza en marcha ([Mudanza.Paso]), cada uno con hecho, en
+ * marcha o en espera: el lienzo «Moviendo la pareja». [ahora] es el que se está
+ * dando; los de antes, hechos.
+ */
+@Composable
+internal fun PasosDeLaMudanza(pasos: List<Mudanza.Paso>, ahora: Mudanza.Paso?) {
+    if (pasos.isEmpty()) return
+    val volviendo = pasos == Mudanza.PASOS_SALIR
+    val i = ahora?.let { pasos.indexOf(it) } ?: -1
+    Tarjeta {
+        pasos.forEachIndexed { n, paso ->
+            if (n > 0) Separador()
+            val (titulo, detalle) = textoDelPaso(paso, volviendo)
+            val (tono, palabra) = when {
+                n < i -> Tono.OK to "hecho"
+                n == i -> Tono.EN_MARCHA to "en marcha"
+                else -> Tono.APAGADO to "en espera"
+            }
+            Fila(titulo, Modifier.testTag("paso-${paso.name}"), detalle = detalle, extremo = { Chip(palabra, tono = tono) })
+        }
+    }
+}
+
+/** El título y la explicación de cada paso, como en el lienzo. */
+private fun textoDelPaso(paso: Mudanza.Paso, volviendo: Boolean): Pair<String, String> = when (paso) {
+    Mudanza.Paso.FECHAS -> "Probar las fechas" to "bisync decide por ellas: si no se conservan, no se mueve nada."
+    Mudanza.Paso.PASADA_NORMAL -> "Pasada normal" to "El remoto se queda con lo último."
+    Mudanza.Paso.APARTAR -> "Apartar la referencia" to "Desde aquí, un corte no puede borrar en el remoto."
+    Mudanza.Paso.BAJAR ->
+        (if (volviendo) "Bajar todo a la carpeta de la app" else "Bajar todo a la carpeta") to
+            "Con --resync; si hay duda, gana el remoto."
+    Mudanza.Paso.LLEVAR -> "Llevar lo que solo tenía la app" to "Lo que los filtros dejan fuera, con su fecha."
+    Mudanza.Paso.BORRAR -> "Borrar la copia de la app" to "Solo cuando todo está en los dos sitios."
 }
 
 /** Cuántas líneas de lo que cuenta una mudanza se ven en la ficha mientras dura. */
