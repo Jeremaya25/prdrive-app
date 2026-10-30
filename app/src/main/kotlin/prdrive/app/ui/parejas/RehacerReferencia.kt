@@ -55,9 +55,11 @@ fun RehacerReferencia(m: Modelo, f: Estado.Fila, conRed: (() -> Unit) -> Unit, a
                     .clip(RoundedCornerShape(4.dp))
                     .background(c.sunken)
                     .padding(horizontal = 12.dp, vertical = 10.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
-                f.pideResync.forEach { Text(it, style = Letra.actual.texto, color = c.ink2) }
+                enPalabras(f.pideResync).forEach { Text(it, style = Letra.actual.texto, color = c.ink) }
+                // Lo que dice el motor, tal cual: es lo que se busca si algo no cuadra.
+                f.pideResync.forEach { Text(it, style = Letra.actual.mono, color = c.ink3) }
             }
         }
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -76,6 +78,24 @@ fun RehacerReferencia(m: Modelo, f: Estado.Fila, conRed: (() -> Unit) -> Unit, a
         }
     }
 }
+
+/**
+ * Por qué pide rehacer la referencia, en palabras: las razones del motor
+ * (`Bisync.resyncReasons`, «estado fresh: …», «filtros changed: …») son de
+ * diagnóstico. Lo que no se reconoce no se traduce: queda la razón tal cual.
+ */
+internal fun enPalabras(razones: List<String>): List<String> = razones.mapNotNull { r ->
+    when {
+        r.startsWith("estado fresh") -> "Todavía no se ha sincronizado nunca en este teléfono."
+        r.startsWith("estado broken") && ".lst-err" in r ->
+            "La última pasada se paró a medias y apartó sus listados. Sin ellos, bisync no sabe qué se " +
+                "borró desde entonces, y prefiere no adivinarlo."
+        r.startsWith("estado broken") -> "Sus listados no están enteros, y bisync no se fía de ellos."
+        r.startsWith("filtros new") -> "Sus filtros son nuevos: bisync necesita una referencia hecha con ellos."
+        r.startsWith("filtros changed") -> "Sus filtros han cambiado desde la última referencia."
+        else -> null
+    }
+}.distinct()
 
 /** Una línea de lo que va a pasar, con su glifo. */
 @Composable

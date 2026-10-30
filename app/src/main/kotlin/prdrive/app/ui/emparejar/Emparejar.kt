@@ -469,14 +469,16 @@ private fun PrimeraPasada(m: Modelo) {
         if (espejos.isNotEmpty()) {
             // El aviso del instalador (`_paso_inicializar`), con lo que aquí se hace
             // en vez de `--dry-run`, que el teléfono no tiene.
+            val uno = espejos.size == 1
             Aviso(
-                if (espejos.size == 1) "«${espejos.single()}» no se inicializa aquí" else "Los espejos no se inicializan aquí",
+                if (uno) "«${espejos.single()}» no se inicializa aquí" else "Los espejos no se inicializan aquí",
                 Modifier.padding(horizontal = 16.dp).testTag("aviso-espejos"),
                 tono = TonoAviso.AVISO,
-                cuerpo = "No se inicializan aquí: ${espejos.joinToString(", ")}. Son espejos: borran en el otro lado lo " +
-                    "que no esté en el origen, y lanzarlos con las carpetas locales recién creadas propagaría ese vacío. " +
-                    "Por eso la carpeta de un espejo de subida no se crea: hasta que la crees tú con lo que quieres " +
-                    "subir, sus pasadas se paran en vez de vaciar el remoto.",
+                cuerpo = (if (uno) "Es un espejo: borra" else "No se inicializan aquí: ${espejos.joinToString(", ")}. Son espejos: borran") +
+                    " en el otro lado lo que no esté en el origen, y lanzar" + (if (uno) "lo" else "los") +
+                    " con las carpetas del teléfono recién creadas propagaría ese vacío. Por eso la carpeta de un " +
+                    "espejo de subida no se crea: hasta que la crees tú con lo que quieres subir, sus pasadas se " +
+                    "paran en vez de vaciar el remoto.",
             )
         }
         EstadoDelPaso(m)

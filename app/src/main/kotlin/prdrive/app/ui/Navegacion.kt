@@ -318,7 +318,7 @@ fun Secciones(m: Modelo) {
 private fun ArribaDeTodo(m: Modelo, enInicio: Boolean, faltaRed: Boolean, pedirRed: () -> Unit) {
     val ocupado = m.ocupado
     val error = m.error
-    if ((ocupado == null || enInicio) && error == null && !faltaRed) return
+    if ((ocupado == null || enInicio) && error == null && !(faltaRed && enInicio)) return
     Column(
         Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 4.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -335,7 +335,9 @@ private fun ArribaDeTodo(m: Modelo, enInicio: Boolean, faltaRed: Boolean, pedirR
             val resto = error.substringAfter(PARRAFO, "").takeIf { it.isNotBlank() }
             Aviso(titulo, Modifier.testTag("error"), tono = TonoAviso.PELIGRO, cuerpo = resto)
         }
-        if (faltaRed) AvisoRedLocal(pedirRed)
+        // Solo en Inicio: en todas las pantallas se comería la mitad de cada una, y
+        // Ajustes ya tiene su fila. Lo que necesita la red lo pide al pulsarse.
+        if (faltaRed && enInicio) AvisoRedLocal(pedirRed)
     }
 }
 

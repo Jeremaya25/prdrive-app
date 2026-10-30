@@ -67,7 +67,8 @@ internal fun AvisoRedLocal(pedir: () -> Unit, modifier: Modifier = Modifier) {
         "Falta el permiso de red local",
         modifier,
         tono = TonoAviso.AVISO,
-        cuerpo = Prdrive.SIN_RED_LOCAL,
+        cuerpo = "Sin él, la app no llega a un servidor de tu casa (un NAS en 192.168…, un PC en 10…). " +
+            "Si tu remoto está en internet, no hace falta.",
     ) {
         Boton("Dar permiso", pedir, peso = Peso.CONTORNO, tamano = Tamano.PEQUENO, sobreAmbar = true)
         // Si ya se negó dos veces, Android no vuelve a preguntar: quedan los ajustes.

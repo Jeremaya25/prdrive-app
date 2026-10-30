@@ -222,12 +222,14 @@ fun Casilla(
             .fillMaxWidth()
             .heightIn(min = 48.dp)
             .toggleable(value = marcada, enabled = activa, role = Role.Checkbox, onValueChange = alCambiar)
-            .padding(vertical = 8.dp),
+            .padding(vertical = 12.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalAlignment = Alignment.CenterVertically,
+        // La caja, a la altura de la primera línea del texto (15/20): con pista
+        // o contenido debajo, centrada quedaría en medio de nada.
+        verticalAlignment = Alignment.Top,
     ) {
         Box(
-            Modifier.size(18.dp).clip(forma).background(fondo).border(1.dp, borde, forma),
+            Modifier.padding(top = 1.dp).size(18.dp).clip(forma).background(fondo).border(1.dp, borde, forma),
             contentAlignment = Alignment.Center,
         ) {
             if (marcada) {
