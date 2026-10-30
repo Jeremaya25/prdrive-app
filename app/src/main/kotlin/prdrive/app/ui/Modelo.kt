@@ -150,6 +150,18 @@ class Modelo(app: Application) : AndroidViewModel(app) {
         private set
 
     /**
+     * Si [filas] ya se ha leído alguna vez. Tras morir el proceso, Android
+     * restaura la ficha de una pareja antes: hasta entonces, que no está en
+     * [filas] no quiere decir que no esté en el teléfono.
+     */
+    var filasLeidas by mutableStateOf(false)
+        private set
+
+    /** Dónde está el catálogo de parejas en el remoto («nas:/prdrive-catalog/remote.toml»), para Ajustes. */
+    var rutaCatalogo by mutableStateOf<String?>(null)
+        private set
+
+    /**
      * El remoto de las parejas y su tipo, como lo dice Inicio debajo de «Este
      * teléfono» («nas · sftp»); con varios, todos. `null` hasta que se lee.
      */
@@ -268,7 +280,18 @@ class Modelo(app: Application) : AndroidViewModel(app) {
     }
 
     init {
-        if (sembrado) trabajo("Preparando…") { refrescar() }
+        if (sembrado) preparar()
+    }
+
+    /** La primera lectura de todo. Aunque falle (y lo diga el error), ya se ha intentado: la ficha deja de esperar. */
+    private fun preparar() {
+        trabajo("Preparando…") {
+            try {
+                refrescar()
+            } finally {
+                filasLeidas = true
+            }
+        }
     }
 
     /**
@@ -473,7 +496,7 @@ class Modelo(app: Application) : AndroidViewModel(app) {
     /** Del primer arranque a la pantalla principal. */
     fun empezar() {
         sembrado = volumen.sembrado
-        if (sembrado) trabajo("Preparando…") { refrescar() }
+        if (sembrado) preparar()
     }
 
     // --- principal --------------------------------------------------------------
@@ -498,10 +521,6 @@ class Modelo(app: Application) : AndroidViewModel(app) {
             null
         }
     }
-
-    /** Dónde está el catálogo de parejas en el remoto («nas:/prdrive-catalog/remote.toml»), para Ajustes. */
-    var rutaCatalogo by mutableStateOf<String?>(null)
-        private set
 
     /** «nas · sftp»: el `remoteName` de las parejas y el tipo de su sección en el `rclone.conf`. */
     private fun remotoDe(v: Volumen, config: Config): String? {

@@ -98,6 +98,10 @@ fun Ficha(
             .verticalScroll(rememberScrollState()),
     ) {
         Cabecera(nombre, volver = volver, etiquetaVolver = etiquetaVolver)
+        if (f == null && !m.filasLeidas) {
+            Progreso(null, Modifier.padding(horizontal = 16.dp).testTag("leyendo-filas"), texto = "Leyendo cómo está…")
+            return@Column
+        }
         if (f == null) {
             Text(
                 "Esta pareja ya no está en este teléfono.",

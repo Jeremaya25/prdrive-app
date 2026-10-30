@@ -1,5 +1,7 @@
 package prdrive.app
 
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
@@ -9,6 +11,7 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.hasAnyChild
 import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.getBoundsInRoot
@@ -34,6 +37,8 @@ import prdrive.app.ui.Destino
 import prdrive.app.ui.Modelo
 import prdrive.app.ui.Pila
 import prdrive.app.ui.Seccion
+import prdrive.app.ui.Tema
+import prdrive.app.ui.parejas.Ficha
 
 /**
  * NavegacionTest.kt — Las cuatro secciones de abajo y la pila de pantallas: que
@@ -224,6 +229,34 @@ class NavegacionTest {
             }
         } finally {
             shell("settings put system font_scale 1.0")
+        }
+    }
+
+    /**
+     * Tras morir el proceso, Android restaura la ficha antes de que el modelo
+     * haya leído las filas: hasta entonces espera, y no dice que la pareja ya
+     * no está. Una que de verdad no está, sí lo dice.
+     */
+    @Test
+    fun la_ficha_no_dice_que_la_pareja_no_esta_antes_de_leer_las_filas() {
+        // Sin sembrar, el modelo no lee las filas: es el momento de antes de leerlas.
+        Prdrive.volumen(Banco.contexto).raiz.deleteRecursively()
+        val noEsta = hasText("ya no está", substring = true)
+        ActivityScenario.launch(ComponentActivity::class.java).use { escena ->
+            escena.onActivity { a ->
+                val modelo = ViewModelProvider(a)[Modelo::class.java]
+                a.setContent { Tema { Ficha(modelo, "uno", {}, {}) } }
+            }
+            esperarA("leyendo-filas")
+            assertTrue("dice que no está", compose.onAllNodes(noEsta).fetchSemanticsNodes().isEmpty())
+        }
+        Banco.volumen(Banco.pareja("otra"))
+        ActivityScenario.launch(ComponentActivity::class.java).use { escena ->
+            escena.onActivity { a ->
+                val modelo = ViewModelProvider(a)[Modelo::class.java]
+                a.setContent { Tema { Ficha(modelo, "uno", {}, {}) } }
+            }
+            compose.waitUntil(30_000) { compose.onAllNodes(noEsta).fetchSemanticsNodes().isNotEmpty() }
         }
     }
 
