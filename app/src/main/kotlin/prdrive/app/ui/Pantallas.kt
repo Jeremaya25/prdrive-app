@@ -88,7 +88,7 @@ import prdrive.engine.Pasada
 @Composable
 fun PrdriveApp(modelo: Modelo) {
     Tema {
-        if (modelo.sembrado) Principal(modelo) else PrimerArranque(modelo)
+        if (modelo.sembrado) Secciones(modelo) else PrimerArranque(modelo)
     }
 }
 
@@ -419,15 +419,13 @@ private fun Resumen(nombre: String, r: Pasada.Resultado) {
 // --- principal -------------------------------------------------------------------
 
 @Composable
-private fun Principal(m: Modelo) {
+internal fun Principal(m: Modelo) {
     val contexto = LocalContext.current
     var log by remember { mutableStateOf<Estado.Fila?>(null) }
     var faltaRed by remember { mutableStateOf(Prdrive.faltaRedLocal(contexto)) }
-    // Al volver de los ajustes de la app, el permiso puede haber cambiado; y
-    // al volver de la app de KeePass, la fila del llavero.
+    // Al volver de los ajustes de la app, el permiso puede haber cambiado.
     LifecycleResumeEffect(Unit) {
         faltaRed = Prdrive.faltaRedLocal(contexto)
-        m.alVolver()
         onPauseOrDispose {}
     }
     val conRed = conRedLocal { faltaRed = Prdrive.faltaRedLocal(contexto) }
@@ -496,8 +494,6 @@ private fun Principal(m: Modelo) {
             cerrar = { moviendo = null },
         )
     }
-    m.avisoLlavero?.let { AvisoAntesDeAbrir(it, m::cerrarAvisoLlavero) }
-    AbrirLaBase(m)
 }
 
 /** Abre una página en el navegador. */
