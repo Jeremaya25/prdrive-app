@@ -6,6 +6,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import prdrive.app.llavero.Disparos
+import prdrive.app.segundoplano.SegundoPlano
 import prdrive.app.ui.Modelo
 import prdrive.app.ui.PrdriveApp
 
@@ -36,6 +37,8 @@ class MainActivity : ComponentActivity() {
         val modelo = modelo
         setContent { PrdriveApp(modelo) }
         Disparos.siPendiente(this)
+        // «Sincronizar sola»: si va, que su trabajo esté (una reinstalación lo borra).
+        SegundoPlano.asegurar(this)
     }
 
     /** Al abrirse, la app pregunta si hay versión nueva ([Actualizador]). */

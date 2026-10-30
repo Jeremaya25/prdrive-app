@@ -23,6 +23,7 @@ import prdrive.app.llavero.Avisos
 import prdrive.app.llavero.LlaveroApp
 import prdrive.app.rclone.Adaptadores
 import prdrive.app.rclone.Rclone
+import prdrive.app.segundoplano.SegundoPlano
 import prdrive.engine.Bisync
 import prdrive.engine.Catalogo
 import prdrive.engine.Compartidas
@@ -221,6 +222,28 @@ class Modelo(app: Application) : AndroidViewModel(app) {
 
     /** Para que pedir parar y empezar el llavero no se crucen: el llavero no se corta nunca. */
     private val cerrojoDeParar = Any()
+
+    /** «Sincronizar sola»: si va y con qué condiciones (del teléfono, no del config). */
+    var sola by mutableStateOf(SegundoPlano.leer(app))
+        private set
+
+    /** Cada cuántos minutos, según el `[daemon]` del config. */
+    var intervaloSola by mutableStateOf(SegundoPlano.POR_DEFECTO_MIN)
+        private set
+
+    /** Cuándo toca la próxima vuelta (milisegundos de época), si está programada. */
+    var proximaSola by mutableStateOf<Long?>(null)
+        private set
+
+    /** Cambia los ajustes de «Sincronizar sola» y programa (o quita) su trabajo. */
+    fun cambiarSola(a: SegundoPlano.Ajustes) {
+        sola = a
+        val minutos = intervaloSola
+        viewModelScope.launch(Dispatchers.IO) {
+            SegundoPlano.guardar(contexto, a, minutos)
+            proximaSola = if (a.activo) SegundoPlano.proxima(contexto) else null
+        }
+    }
 
     init {
         if (sembrado) trabajo("Preparando…") { refrescar() }
@@ -427,6 +450,8 @@ class Modelo(app: Application) : AndroidViewModel(app) {
         llavero = Estado.llavero(v, config, Prdrive.faltaRedLocal(contexto))
         remoto = remotoDe(v, config)
         sinUsar = Catalogo.cached(v.state)?.names?.filter { it !in config.names }.orEmpty()
+        intervaloSola = SegundoPlano.intervalo(config)
+        proximaSola = if (sola.activo) SegundoPlano.proxima(contexto) else null
         rutaCatalogo = try {
             @Suppress("UNCHECKED_CAST")
             val defaults = loadRaw(v.config.readText(Charsets.UTF_8))["defaults"] as? Map<String, Any?> ?: emptyMap()
@@ -478,6 +503,7 @@ class Modelo(app: Application) : AndroidViewModel(app) {
             try {
                 filas = filasDe(volumen, config())
                 releerLlavero()
+                proximaSola = if (sola.activo) SegundoPlano.proxima(contexto) else null
             } catch (e: Exception) {
                 // Un config a medio escribir: la próxima vez.
                 android.util.Log.w("Modelo", "Releyendo las filas", e)

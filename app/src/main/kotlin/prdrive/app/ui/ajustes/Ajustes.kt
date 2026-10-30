@@ -35,6 +35,7 @@ import prdrive.app.Actualizador
 import prdrive.app.Prdrive
 import prdrive.app.documentos.VolumenProvider
 import prdrive.app.rclone.Rclone
+import prdrive.app.segundoplano.SegundoPlano
 import prdrive.app.ui.Cabecera
 import prdrive.app.ui.Letra
 import prdrive.app.ui.Modelo
@@ -43,6 +44,7 @@ import prdrive.app.ui.conAvisos
 import prdrive.app.ui.conRedLocal
 import prdrive.app.ui.darPermisoCompartido
 import prdrive.app.ui.piezas.Boton
+import prdrive.app.ui.piezas.Casilla
 import prdrive.app.ui.piezas.Chip
 import prdrive.app.ui.piezas.Fila
 import prdrive.app.ui.piezas.Icono
@@ -86,6 +88,40 @@ fun Ajustes(m: Modelo, faltaRedLocal: (Context) -> Boolean = Prdrive::faltaRedLo
             Modifier.padding(start = 16.dp, end = 16.dp, bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp),
         ) {
+            Bloque("Sincronizar sola") {
+                val a = m.sola
+                Tarjeta {
+                    Column(Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
+                        Casilla(
+                            "En segundo plano",
+                            a.activo,
+                            { m.cambiarSola(a.copy(activo = it)) },
+                            Modifier.testTag("segundo-plano"),
+                            pista = "Las parejas y el llavero, sin abrir la app, ${SegundoPlano.cadaCuanto(m.intervaloSola)} " +
+                                "(lo dice el [daemon] del config).",
+                        )
+                        Casilla(
+                            "Solo con wifi",
+                            a.soloWifi,
+                            { m.cambiarSola(a.copy(soloWifi = it)) },
+                            Modifier.testTag("solo-wifi"),
+                            activa = a.activo,
+                        )
+                        Casilla(
+                            "Solo mientras carga",
+                            a.soloCargando,
+                            { m.cambiarSola(a.copy(soloCargando = it)) },
+                            Modifier.testTag("solo-cargando"),
+                            activa = a.activo,
+                        )
+                        Text(
+                            "El teléfono elige el momento exacto para ahorrar batería. «Sincronizar ahora» va siempre al momento.",
+                            style = Letra.actual.pista,
+                            modifier = Modifier.padding(bottom = 12.dp),
+                        )
+                    }
+                }
+            }
             Bloque("Remoto") {
                 Tarjeta {
                     Dato("Remoto", m.remoto ?: "—")

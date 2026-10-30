@@ -13,7 +13,11 @@ import androidx.test.espresso.intent.matcher.IntentMatchers.hasAction
 import androidx.test.espresso.intent.matcher.IntentMatchers.hasData
 import androidx.test.espresso.intent.matcher.IntentMatchers.hasType
 import org.hamcrest.Matchers.allOf
+import androidx.work.WorkManager
+import androidx.work.testing.SynchronousExecutor
+import androidx.work.testing.WorkManagerTestInitHelper
 import prdrive.app.documentos.VolumenProvider
+import prdrive.app.segundoplano.SegundoPlano
 import androidx.activity.compose.setContent
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.hasAnyAncestor
@@ -59,6 +63,35 @@ class AjustesTest {
             compose.onNodeWithTag(Seccion.AJUSTES.etiqueta).performClick()
             compose.waitUntil(10_000) { hay("pantalla-ajustes") }
             assertTrue("no está en Ajustes", hay("buscar-version"))
+        }
+    }
+
+    /** «En segundo plano» programa el trabajo de «Sincronizar sola», e Inicio dice cada cuánto. */
+    @Test
+    fun sincronizar_sola_se_activa_en_ajustes_e_inicio_lo_dice() {
+        WorkManagerTestInitHelper.initializeTestWorkManager(
+            Banco.contexto,
+            androidx.work.Configuration.Builder().setExecutor(SynchronousExecutor()).build(),
+        )
+        SegundoPlano.guardar(Banco.contexto, SegundoPlano.Ajustes(), intervaloMin = 60)
+        Banco.volumen(Banco.pareja("uno"))
+        try {
+            ActivityScenario.launch(MainActivity::class.java).use {
+                compose.waitUntil(30_000) { hay("pantalla-inicio") }
+                assertFalse(hay("proxima"))
+                compose.onNodeWithTag(Seccion.AJUSTES.etiqueta).performClick()
+                compose.waitUntil(10_000) { hay("segundo-plano") }
+                compose.onNodeWithTag("segundo-plano").performClick()
+                compose.waitUntil(10_000) { SegundoPlano.leer(Banco.contexto).activo }
+                compose.waitUntil(10_000) {
+                    WorkManager.getInstance(Banco.contexto).getWorkInfosForUniqueWork(SegundoPlano.NOMBRE).get()
+                        .any { !it.state.isFinished }
+                }
+                compose.onNodeWithTag(Seccion.INICIO.etiqueta).performClick()
+                compose.waitUntil(10_000) { hay("proxima") }
+            }
+        } finally {
+            SegundoPlano.guardar(Banco.contexto, SegundoPlano.Ajustes(), intervaloMin = 60)
         }
     }
 

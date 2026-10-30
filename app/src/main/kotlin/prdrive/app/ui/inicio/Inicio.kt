@@ -15,8 +15,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
@@ -32,6 +34,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import prdrive.app.Actualizador
 import prdrive.app.Estado
+import prdrive.app.segundoplano.SegundoPlano
 import prdrive.app.ui.Destino
 import prdrive.app.ui.Letra
 import prdrive.app.ui.Modelo
@@ -47,6 +50,7 @@ import prdrive.app.ui.piezas.Boton
 import prdrive.app.ui.piezas.Chip
 import prdrive.app.ui.piezas.Fila
 import prdrive.app.ui.piezas.FilaDeAviso
+import prdrive.app.ui.piezas.Glifo
 import prdrive.app.ui.piezas.Icono
 import prdrive.app.ui.piezas.Insignia
 import prdrive.app.ui.piezas.LineaDeEstado
@@ -89,6 +93,7 @@ fun Inicio(m: Modelo, ir: (Destino) -> Unit, aSeccion: (Seccion) -> Unit) {
         ) {
             EstadoGeneral(m, cosas) { conRed { m.sincronizar() } }
             m.enCurso?.takeIf { it.orden.size > 1 }?.let { EstaPasada(it) }
+            if (m.sola.activo && m.ocupado == null) Sola(m)
             if (cosas.isNotEmpty()) {
                 Tarjeta {
                     cosas.forEachIndexed { i, cosa ->
@@ -261,6 +266,31 @@ private fun EstadoGeneral(m: Modelo, cosas: List<Revisar>, sincronizar: () -> Un
                 ocupado = ocupado != null,
             )
         }
+    }
+}
+
+/** «Sola cada hora, con wifi. La próxima, en 55 min.»: cuándo vuelve a sincronizar sin abrir la app. */
+@Composable
+private fun Sola(m: Modelo) {
+    val a = m.sola
+    val condiciones = listOfNotNull(if (a.soloWifi) "con wifi" else null, if (a.soloCargando) "mientras carga" else null)
+    val proxima = m.proximaSola?.let { (it - System.currentTimeMillis()) / 60_000 }?.takeIf { it >= 0 }?.let {
+        when {
+            it < 1 -> " La próxima, en un momento."
+            it < 60 -> " La próxima, en $it min."
+            else -> " La próxima, en ${it / 60} h."
+        }
+    } ?: ""
+    Row(
+        Modifier.fillMaxWidth().padding(horizontal = 4.dp).testTag("proxima"),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        CompositionLocalProvider(LocalContentColor provides Paleta.actual.ink3) { Glifo(Icono.CLOCK) }
+        Text(
+            "Sola ${SegundoPlano.cadaCuanto(m.intervaloSola)}" +
+                (if (condiciones.isEmpty()) "" else ", " + condiciones.joinToString(" y ")) + "." + proxima,
+            style = Letra.actual.pista,
+        )
     }
 }
 
