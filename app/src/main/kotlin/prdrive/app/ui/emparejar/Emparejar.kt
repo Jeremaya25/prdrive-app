@@ -4,6 +4,8 @@ import android.text.format.Formatter
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -92,7 +94,9 @@ fun Emparejar(m: Modelo) {
         }
     }
     Scaffold(containerColor = Paleta.actual.paper) { margen ->
-        Column(Modifier.padding(margen).fillMaxSize()) {
+        // Con el teclado abierto (pegar el código), lo que se desplaza y la franja
+        // de abajo acaban donde empieza el teclado: sin esto quedarían debajo.
+        Column(Modifier.padding(margen).consumeWindowInsets(margen).imePadding().fillMaxSize()) {
             when (m.paso) {
                 Modelo.Paso.CODIGO -> if (m.carga == null) Bienvenida(m) else CodigoLeido(m)
                 Modelo.Paso.PAREJAS -> ElegirParejas(m)

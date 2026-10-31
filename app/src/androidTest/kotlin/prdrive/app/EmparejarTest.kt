@@ -1,6 +1,8 @@
 package prdrive.app
 
 import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithTag
@@ -15,6 +17,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import java.io.File
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -59,6 +62,35 @@ class EmparejarTest {
 
     private fun esperarA(etiqueta: String, segundos: Long = 30) {
         compose.waitUntil(segundos * 1000) { compose.onAllNodes(hasTestTag(etiqueta)).fetchSemanticsNodes().isNotEmpty() }
+    }
+
+    /**
+     * Con el teclado abierto para pegar el código, «Usar este texto» se puede
+     * llevar a la vista por encima del teclado: lo que se desplaza acaba donde
+     * empieza el teclado, no debajo. Si el emulador no enseña el teclado, no hay
+     * nada que mirar.
+     */
+    @Test
+    fun con_el_teclado_abierto_usar_este_texto_queda_por_encima() {
+        ActivityScenario.launch(MainActivity::class.java).use { escena ->
+            compose.onNodeWithText("Pegar el texto del código").performClick()
+            compose.onNodeWithTag("carga").performClick()
+            var teclado = 0
+            var alto = 0
+            val hasta = System.currentTimeMillis() + 5_000
+            while (teclado == 0 && System.currentTimeMillis() < hasta) {
+                escena.onActivity {
+                    val raiz = it.window.decorView
+                    alto = raiz.height
+                    teclado = ViewCompat.getRootWindowInsets(raiz)?.getInsets(WindowInsetsCompat.Type.ime())?.bottom ?: 0
+                }
+                compose.waitForIdle()
+            }
+            if (teclado == 0) return
+            compose.waitForIdle()
+            val boton = compose.onNodeWithTag("usarTexto").performScrollTo().fetchSemanticsNode().boundsInWindow
+            assertTrue("«Usar este texto» acaba en ${boton.bottom} y el teclado empieza en ${alto - teclado}", boton.bottom <= alto - teclado)
+        }
     }
 
     @Test
