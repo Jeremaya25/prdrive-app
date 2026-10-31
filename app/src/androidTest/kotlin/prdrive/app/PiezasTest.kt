@@ -43,7 +43,9 @@ import prdrive.app.ui.piezas.Casilla
 import prdrive.app.ui.piezas.Chip
 import prdrive.app.ui.piezas.Fila
 import prdrive.app.ui.piezas.Hoja
+import prdrive.app.ui.piezas.Icono
 import prdrive.app.ui.piezas.Insignia
+import prdrive.app.ui.piezas.LineaDeEstado
 import prdrive.app.ui.piezas.Marca
 import prdrive.app.ui.piezas.Peso
 import prdrive.app.ui.piezas.Tamano
@@ -168,6 +170,37 @@ class PiezasTest {
         val fila = compose.onNodeWithTag("fila").getUnclippedBoundsInRoot()
         assertTrue("el chip (${chip.right}) se sale de la fila (${fila.right})", chip.right <= fila.right)
         assertTrue("el chip no tiene ancho", chip.right > chip.left)
+    }
+
+    /**
+     * Con la letra a 2, una línea de estado con su acción no aprieta el texto en
+     * una columna estrecha al lado del botón: la acción baja, y el texto se queda
+     * con casi todo el ancho.
+     */
+    @Test
+    fun una_linea_de_estado_con_letra_grande_deja_ancho_al_texto() {
+        compose.setContent {
+            val base = LocalDensity.current
+            CompositionLocalProvider(LocalDensity provides Density(base.density, fontScale = 2f)) {
+                Tema {
+                    Box(Modifier.width(360.dp)) {
+                        LineaDeEstado(
+                            Icono.CANDADO,
+                            "personal.kdbx, con cambios que aún no han subido.",
+                            Modifier.testTag("linea"),
+                            accion = "Instalar ahora",
+                            aviso = true,
+                            etiquetaAccion = "accion",
+                        )
+                    }
+                }
+            }
+        }
+        val texto = compose.onNodeWithText("personal.kdbx", substring = true, useUnmergedTree = true).getUnclippedBoundsInRoot()
+        val linea = compose.onNodeWithTag("linea").getUnclippedBoundsInRoot()
+        val ancho = texto.right - texto.left
+        assertTrue("el texto tiene $ancho de ${linea.right - linea.left}", ancho >= (linea.right - linea.left) * 0.6f)
+        compose.onNodeWithTag("accion", useUnmergedTree = true).assertIsDisplayed()
     }
 
     @Test

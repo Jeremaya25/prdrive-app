@@ -32,6 +32,7 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
@@ -233,27 +234,10 @@ fun LineaDeEstado(
 ) {
     val c = Paleta.actual
     val forma = RoundedCornerShape(Tokens.radioMd)
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .heightIn(min = 52.dp)
-            .clip(forma)
-            .background(if (aviso) c.warnSoft else c.surface)
-            .border(1.dp, if (aviso) c.warnLine else c.line, forma)
-            .padding(start = 12.dp, end = 8.dp, top = 6.dp, bottom = 6.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        if (aviso) {
-            Box(Modifier.size(18.dp).clip(CircleShape).background(c.warn), contentAlignment = Alignment.Center) {
-                CompositionLocalProvider(LocalContentColor provides c.onWarn) {
-                    Glifo(if (icono == Icono.WARN) Icono.ALERT else icono, tamano = 12.dp)
-                }
-            }
-        } else {
-            CompositionLocalProvider(LocalContentColor provides c.ink3) { Glifo(icono) }
-        }
-        Text(texto, style = Letra.actual.texto, color = if (aviso) c.ink else c.ink2, modifier = Modifier.weight(1f))
+    // Con la letra muy grande, la acción al lado dejaría el texto en una columna
+    // estrecha, una palabra por línea: baja debajo, a la derecha.
+    val apilada = accion != null && LocalDensity.current.fontScale >= LETRA_GRANDE
+    val boton: @Composable () -> Unit = {
         if (accion != null) {
             Boton(
                 accion,
@@ -266,7 +250,40 @@ fun LineaDeEstado(
             )
         }
     }
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .heightIn(min = 52.dp)
+            .clip(forma)
+            .background(if (aviso) c.warnSoft else c.surface)
+            .border(1.dp, if (aviso) c.warnLine else c.line, forma)
+            .padding(start = 12.dp, end = 8.dp, top = 6.dp, bottom = 6.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.End,
+    ) {
+        Row(
+            Modifier.fillMaxWidth().heightIn(min = 40.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            if (aviso) {
+                Box(Modifier.size(18.dp).clip(CircleShape).background(c.warn), contentAlignment = Alignment.Center) {
+                    CompositionLocalProvider(LocalContentColor provides c.onWarn) {
+                        Glifo(if (icono == Icono.WARN) Icono.ALERT else icono, tamano = 12.dp)
+                    }
+                }
+            } else {
+                CompositionLocalProvider(LocalContentColor provides c.ink3) { Glifo(icono) }
+            }
+            Text(texto, style = Letra.actual.texto, color = if (aviso) c.ink else c.ink2, modifier = Modifier.weight(1f))
+            if (!apilada) boton()
+        }
+        if (apilada) boton()
+    }
 }
+
+/** La escala de letra del sistema a partir de la cual una acción baja debajo de su texto. */
+private const val LETRA_GRANDE = 1.5f
 
 /**
  * La barra de progreso de 6 dp sobre `sunken`, con [texto] en monoespaciada
