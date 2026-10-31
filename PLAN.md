@@ -340,11 +340,11 @@ simulacro»):
 - Las últimas pasadas en la ficha, del diario (`historial.py`).
 - Los pasos de la mudanza, marcados mientras se mueve.
 - Ver en Archivos (Ajustes).
+- Resolver conflictos desde la ficha (`ResolverConflictos.kt`, espejo de
+  `ui/conflict_editor.py`), salvo los del llavero, que se combinan en el PC.
 
 Falta:
 
-- Resolver conflictos: hoy se detectan y se avisan (`Conflictos.kt`), y falta
-  la pantalla que elige una versión.
 - Elegir y cambiar la carpeta de una pareja, añadirla desde el catálogo y
   quitarla del teléfono (#25 y la parte grande de #24): esperan a que el
   catálogo diga qué es de cada dispositivo (prdrive#196).

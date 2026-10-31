@@ -45,6 +45,9 @@ engine/       Kotlin puro (JVM), SIN una línea de Android
 ├── Historial.kt   espejo de common/historial.py: el diario de pasadas
 │               (state/historial.jsonl), que apunta la pasada junto a Resultados
 ├── Conflictos.kt  espejo de common/conflicts.py: los perdedores de bisync
+├── ResolverConflictos.kt  espejo de la parte de ui/conflict_editor.py que
+│               decide y ejecuta: quedarse con una versión, en local (sin
+│               «Combinar», que pide keepassxc-cli)
 ├── Kdbx.kt     espejo de common/kdbx.py: si una base del llavero está entera,
 │               sin clave (firmas, cabecera y bloques)
 ├── Llavero.kt  la parte pura de common/llavero.py: el LEEME, las bases rotas,
@@ -108,8 +111,8 @@ app/          Android: solo dibuja y llama
 │                     opción) y Hoja (la hoja inferior)
 ├── ui/inicio/        Inicio, y Revisar: lo que cuenta como «cosas que revisar»
 ├── ui/parejas/       Parejas, la Ficha de una pareja (con sus últimas pasadas),
-│                     su Log, la hoja de RehacerReferencia, el Simulacro y Mover
-│                     a una carpeta compartida
+│                     su Log, la hoja de RehacerReferencia, el Simulacro,
+│                     Conflictos (resolverlos) y Mover a una carpeta compartida
 ├── ui/llavero/       SeccionLlavero: estado, abrir, cómo funciona, traer y quitar
 ├── ui/emparejar/     Emparejar en cuatro pasos
 ├── ui/ajustes/       Ajustes: el remoto, los permisos y las actualizaciones
@@ -135,7 +138,9 @@ app/          Android: solo dibuja y llama
                   (RevisarTest), los ajustes (AjustesTest), parar una pasada
                   (PararTest), sincronizar sola (SincronizarSolaTest), el
                   simulacro (SimulacroEnAndroidTest), el diario de pasadas
-                  (HistorialEnAndroidTest), las capturas de las pantallas
+                  (HistorialEnAndroidTest), resolver un conflicto
+                  (ConflictosEnAndroidTest), atrás al emparejar
+                  (EmparejarTest), las capturas de las pantallas
                   (CapturasTest, solo si se piden), el llavero
                   (el alta, el proveedor, los trabajos y la pantalla), las
                   carpetas compartidas (FechasCompartidasTest, CompartirTest,
@@ -151,6 +156,8 @@ herramientas/
 ├── vectores_actualizacion.py  su parte de common/update.py, con el
 │                      repositorio de la app y la respuesta de GitHub guardada
 ├── vectores_historial.py  su parte de common/historial.py: el diario de pasadas
+├── vectores_conflictos_editor.py  su parte de ui/conflict_editor.py: las
+│                      etiquetas, los planes y lo que hacen en un disco de verdad
 ├── punta_a_punta.py   el servidor (con el llavero y su base) y la carga del QR
 │                      de PuntaAPuntaTest
 └── diseno.py          los colores, el fondo de la ventana y los glifos desde
@@ -881,6 +888,18 @@ que no se ven en el código:
 - **El diario** (`state/historial.jsonl`, `Historial.kt`) es el del escritorio,
   byte a byte, y se escribe junto a `Resultados.apuntar`. La ficha enseña las
   últimas pasadas de la pareja y desde cuándo falla.
+- **Resolver un conflicto** (`ui/parejas/Conflictos.kt`) es el guion de
+  `tk_conflicts.py`: se piensa el plan (`ResolverConflictos.planConservar`), se
+  enseñan sus consecuencias en una hoja y solo si se dice que sí se ejecuta;
+  después se vuelven a mirar los conflictos y se pasa la pareja, que lleva el
+  resultado al remoto. Se elige por versión, no por lado (`plan_lado()` es
+  `plan_conservar()` de la única de ese lado), y «Quedarme con las dos», la de
+  fábrica, es no tocarlo. Se ejecuta sin ninguna llamada a rclone a la vez
+  (`Adaptadores.sinPasadas`), para que una pasada de fondo no liste la carpeta a
+  medio renombrar. El llavero no se resuelve aquí: elegir pierde lo guardado en
+  la otra versión, y se combina en el PC («El llavero»). Borrar las copias cuenta
+  para el 25 % de `max-delete`: en una pareja de pocos ficheros, la pasada de
+  después para en el freno, como en el escritorio.
 
 ## Convenios
 
