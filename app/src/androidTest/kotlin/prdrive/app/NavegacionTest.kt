@@ -186,6 +186,22 @@ class NavegacionTest {
         }
     }
 
+    /**
+     * Atrás desde Inicio manda la app al fondo sin cerrarla, también en Android
+     * 11 o antes (desde el 12 es lo que hace Android): cerrarla se llevaría el
+     * modelo, y con él la pasada en marcha.
+     */
+    @Test
+    fun atras_desde_inicio_manda_la_app_al_fondo_sin_cerrarla() {
+        Banco.volumen(Banco.pareja("uno"))
+        ActivityScenario.launch(MainActivity::class.java).use { escena ->
+            esperarA("pantalla-inicio")
+            Espresso.pressBackUnconditionally()
+            compose.waitUntil(10_000) { escena.state.isAtMost(Lifecycle.State.CREATED) }
+            assertEquals(Lifecycle.State.CREATED, escena.state)
+        }
+    }
+
     /** Un doble toque en una fila abre su ficha una vez: atrás vuelve a la lista, no a otra ficha igual. */
     @Test
     fun ir_dos_veces_a_la_misma_pantalla_no_la_apila_dos_veces() {

@@ -2,6 +2,7 @@ package prdrive.app
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.addCallback
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
@@ -35,6 +36,13 @@ class MainActivity : ComponentActivity() {
         // filas que lee el `init` llegaban antes y la principal salía sin
         // parejas (`PrincipalTest`).
         val modelo = modelo
+        // Atrás sin nada que hacer en la app (Inicio, la bienvenida) la manda al
+        // fondo, como hace Android desde el 12 con la actividad raíz de una tarea
+        // abierta desde el lanzador. Hasta el 11, o si no es esa raíz, la
+        // cerraría, y con la actividad se iría el modelo y la pasada que
+        // estuviera en marcha. Las pantallas registran lo suyo después, así que
+        // va antes que esto.
+        onBackPressedDispatcher.addCallback(this) { moveTaskToBack(true) }
         setContent { PrdriveApp(modelo) }
         Disparos.siPendiente(this)
         // «Sincronizar sola»: si va, que su trabajo esté (una reinstalación lo borra).

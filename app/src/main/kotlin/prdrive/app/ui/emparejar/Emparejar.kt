@@ -82,11 +82,14 @@ import prdrive.engine.Pasada
  */
 @Composable
 fun Emparejar(m: Modelo) {
-    // Atrás vuelve un paso, como «Volver»; desde la bienvenida, y en la primera
-    // pasada (que sigue aunque la app se vaya al fondo), es de Android.
+    // Atrás vuelve un paso, como «Volver», y mientras se conecta no hace nada (el
+    // paso cambia un momento antes de acabar). Desde la bienvenida y en la primera
+    // pasada es de Android: la app se va al fondo y la pasada sigue (MainActivity).
     val enPareja = m.paso == Modelo.Paso.PAREJAS
-    BackHandler(enabled = m.ocupado == null && (enPareja || (m.paso == Modelo.Paso.CODIGO && m.carga != null))) {
-        if (enPareja) m.volverAlCodigo() else m.olvidarCodigo()
+    BackHandler(enabled = enPareja || (m.paso == Modelo.Paso.CODIGO && m.carga != null)) {
+        if (m.ocupado == null) {
+            if (enPareja) m.volverAlCodigo() else m.olvidarCodigo()
+        }
     }
     Scaffold(containerColor = Paleta.actual.paper) { margen ->
         Column(Modifier.padding(margen).fillMaxSize()) {

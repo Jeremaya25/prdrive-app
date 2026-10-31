@@ -70,6 +70,8 @@ class EmparejarTest {
             esperarA("conectar")
             compose.onNodeWithTag("conectar").performClick()
             esperarA("instalar", 60)
+            // El paso cambia un momento antes de que acabe de conectar; mientras, atrás no hace nada.
+            compose.waitUntil(30_000) { compose.onAllNodes(hasTestTag("ocupado")).fetchSemanticsNodes().isEmpty() }
 
             Espresso.pressBack()
             esperarA("conectar")
