@@ -9,7 +9,9 @@ import java.io.File
 
 /**
  * Un rclone de mentira: apunta lo que le piden (también los `mkdir`) y
- * contesta, por orden, lo que haya en [cola]; acabada la cola, [final].
+ * contesta, por orden, lo que haya en [cola]; acabada la cola, [final]. En cada
+ * llamada da por el progreso lo que haya en [progreso] (lo que `core/stats`
+ * daría mientras corre).
  */
 internal class RcloneFalso(
     var final: Pasada.Final = Pasada.Final(true, "", "INFO : Bisync successful\n"),
@@ -17,9 +19,11 @@ internal class RcloneFalso(
 ) : Pasada.Rclone {
     val llamadas = ArrayList<Pasada.Llamada>()
     val mkdirs = ArrayList<String>()
+    val progreso = ArrayList<Map<String, Any?>>()
     private val pendientes = ArrayDeque(cola.toList())
     override fun ejecutar(llamada: Pasada.Llamada, alProgreso: (Map<String, Any?>) -> Unit): Pasada.Final {
         llamadas.add(llamada)
+        progreso.forEach(alProgreso)
         return pendientes.removeFirstOrNull() ?: final
     }
 

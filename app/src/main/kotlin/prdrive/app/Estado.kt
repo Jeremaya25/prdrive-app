@@ -10,6 +10,7 @@ import prdrive.engine.Compartidas
 import prdrive.engine.Config
 import prdrive.engine.ConfigError
 import prdrive.engine.Conflictos
+import prdrive.engine.Historial
 import prdrive.engine.LLAVERO
 import prdrive.engine.LLAVERO_LLAVE
 import prdrive.engine.Llavero
@@ -53,6 +54,20 @@ object Estado {
         val problemaCompartida: String? = null,
         /** Si se ofrece «Mover a una carpeta compartida…». */
         val sePuedeCompartir: Boolean = false,
+        /** Su carpeta en el remoto (`remote_path`), tal como la dice el config. */
+        val remoto: String = "",
+        /**
+         * Por qué no se ofrece moverla a una carpeta compartida
+         * ([Compartidas.problemaPareja]), si el teléfono podría y la pareja no
+         * vive ya en una: para decirlo en vez de no ofrecerlo sin más (#24).
+         */
+        val porQueNoSeComparte: String? = null,
+        /** Sus últimas pasadas según el diario ([Historial]), la más reciente primero. */
+        val ultimas: List<Historial.Pasada> = emptyList(),
+        /** La racha de fallos en la que está, si la última pasada falló ([Historial.racha]). */
+        val racha: Historial.Racha? = null,
+        /** Si guarda versiones (`versions`): lo que una pasada borra o pisa va a `.prversions/`. */
+        val guardaVersiones: Boolean = false,
     )
 
     /**
@@ -72,8 +87,11 @@ object Estado {
         val buenas = Resultados.ultimasBuenas(v.state, config.names)
         val fallos = Resultados.fallos(v.state, v.logs, config).associateBy { it.pareja }
         val conflictos = Conflictos.cargar(config, v.raiz, v.state)
+        // El diario se lee una vez para todas (`historial.rachas()` hace lo mismo).
+        val diario = Historial.leer(v.state).groupBy { it.pareja }
         return config.delUsuario.map { p ->
             val fallo = fallos[p.name]
+            val noSeComparte = if (conCompartir && p.name !in entradas) Compartidas.problemaPareja(config, p.name) else null
             Fila(
                 nombre = p.name,
                 modo = p.mode.name,
@@ -87,11 +105,18 @@ object Estado {
                 entrando = entradas[p.name]?.estado == Compartidas.Estado.ENTRANDO,
                 sinAcceso = if (p.carpetaExterna != null) acceso(p) else null,
                 problemaCompartida = p.problemaCompartida,
-                sePuedeCompartir = conCompartir && p.name !in entradas &&
-                    Compartidas.problemaPareja(config, p.name) == null,
+                sePuedeCompartir = conCompartir && p.name !in entradas && noSeComparte == null,
+                remoto = p.remotePath,
+                porQueNoSeComparte = noSeComparte,
+                ultimas = diario[p.name].orEmpty().takeLast(ULTIMAS).reversed(),
+                racha = diario[p.name]?.let(Historial::racha),
+                guardaVersiones = p.versions,
             )
         }
     }
+
+    /** Cuántas pasadas del diario enseña la ficha de una pareja. */
+    const val ULTIMAS = 5
 
     private fun razonesResync(v: Volumen, p: Pareja): List<String> {
         if (!p.isBisync) return emptyList()

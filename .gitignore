@@ -53,3 +53,6 @@ rclone/build/
 # Los ajustes de Claude Code de cada máquina (los compartidos están en
 # .claude/settings.json). .worktreeinclude lo copia a los worktrees nuevos.
 .claude/settings.local.json
+
+# Lo que Python compila al ejecutar los hooks y las herramientas.
+__pycache__/

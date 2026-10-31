@@ -42,7 +42,12 @@ engine/       Kotlin puro (JVM), SIN una línea de Android
 │               qué ruta valen, si el `rclone.conf` la lleva y si las fechas de
 │               una carpeta sirven. No refleja a prdrive: es del teléfono
 ├── Resultados.kt  espejo de common/results.py: state/last_run.json
+├── Historial.kt   espejo de common/historial.py: el diario de pasadas
+│               (state/historial.jsonl), que apunta la pasada junto a Resultados
 ├── Conflictos.kt  espejo de common/conflicts.py: los perdedores de bisync
+├── ResolverConflictos.kt  espejo de la parte de ui/conflict_editor.py que
+│               decide y ejecuta: quedarse con una versión, en local (sin
+│               «Combinar», que pide keepassxc-cli)
 ├── Kdbx.kt     espejo de common/kdbx.py: si una base del llavero está entera,
 │               sin clave (firmas, cabecera y bloques)
 ├── Llavero.kt  la parte pura de common/llavero.py: el LEEME, las bases rotas,
@@ -57,9 +62,12 @@ engine/       Kotlin puro (JVM), SIN una línea de Android
 │               se pasa, y la traducción de la orden a parámetros del RPC
 ├── PasadaLlavero.kt  lo que sync.py hace distinto con el llavero: repetir un
 │               freno, crear la carpeta remota y reapuntar la base
+├── Simulacro.kt  el log de una pasada con --dry-run leído como un plan (qué se
+│               copia, hacia dónde, y qué se borra). No refleja a prdrive: el
+│               escritorio enseña el log tal cual
 ├── Mudanza.kt  mover una pareja a una carpeta compartida, terminar de moverla y
-│               devolverla al volumen: la secuencia entera, contra un `Rclone`
-│               que se pasa. Tampoco refleja a prdrive
+│               devolverla al volumen: la secuencia entera y sus pasos, contra
+│               un `Rclone` que se pasa. Tampoco refleja a prdrive
 ├── Volumen.kt  espejo de install/: la carpeta del volumen, su .prdrive/ y lo
 │               que se escribe al emparejar
 └── Actualizacion.kt  espejo de common/update.py: la última release, la caché
@@ -70,6 +78,9 @@ rclone/
 │               y no a prdrive (escribe oraculo_rclone.json)
 ├── construir.sh   gomobile bind -> rclone/build/rclone.aar (no se versiona)
 app/          Android: solo dibuja y llama
+├── diseno/           el sistema de diseño «prdrive»: tokens.json (byte a byte el
+│                     del sistema) e iconos.json (sus 30 glifos). De aquí salen
+│                     tema/Tokens.kt, res/values*/fondo.xml y res/drawable/pd_*
 ├── Prdrive.kt        dónde vive el volumen, cómo arranca rclone y el permiso
 │                     de red local
 ├── Instalador.kt     el primer arranque sin pantallas (espejo del orden de
@@ -82,10 +93,31 @@ app/          Android: solo dibuja y llama
 ├── compartidas/      Compartir: lo que la app pone para «Las carpetas compartidas»
 │                     (el permiso, la carpeta que elige la persona, la prueba de
 │                     fechas y el `Mudanza.Entorno`)
-├── ui/               Modelo (el ViewModel), Pantallas (Compose), PantallaLlavero
-│                     (la fila del llavero y su casilla), Tema (claro u oscuro,
-│                     como diga el teléfono) y Escaner (el de códigos de Play
-│                     services)
+├── segundoplano/     «Sincronizar sola»: SegundoPlano (los ajustes, cada cuánto
+│                     según el `[daemon]` y una vuelta entera) y TrabajoParejas,
+│                     el trabajo periódico de WorkManager
+├── ui/               Modelo (el ViewModel), Pantallas (la raíz: emparejar o las
+│                     secciones), Navegacion (las cuatro secciones de abajo, la
+│                     pila de pantallas y lo que va arriba de todas), Permisos
+│                     (la red local y el acceso a todos los archivos),
+│                     PantallaLlavero (lo del llavero que usan varias: sus
+│                     textos, abrir la base, la casilla al emparejar), Tema (los
+│                     colores, la letra y las formas del sistema de diseño,
+│                     claro u oscuro como diga el teléfono) y Escaner (el de
+│                     códigos de Play services)
+├── ui/piezas/        las piezas del sistema de diseño: Marca, Iconos (los 30
+│                     glifos), Botones, Estados (chip, aviso, línea de estado,
+│                     progreso, registro), Listas (tarjeta, fila, casilla,
+│                     opción) y Hoja (la hoja inferior)
+├── ui/inicio/        Inicio, y Revisar: lo que cuenta como «cosas que revisar»
+├── ui/parejas/       Parejas, la Ficha de una pareja (con sus últimas pasadas),
+│                     su Log, la hoja de RehacerReferencia, el Simulacro,
+│                     Conflictos (resolverlos) y Mover a una carpeta compartida
+├── ui/llavero/       SeccionLlavero: estado, abrir, cómo funciona, traer y quitar
+├── ui/emparejar/     Emparejar en cuatro pasos
+├── ui/ajustes/       Ajustes: el remoto, los permisos y las actualizaciones
+├── tema/Tokens.kt    los colores, espacios y radios del sistema de diseño
+│                     (generado por herramientas/diseno.py: no se edita)
 ├── llavero/          el llavero en la app («El llavero»): LlaveroApp (la pasada
 │                     y su cerrojo), TrabajoLlavero y Disparos (WorkManager) y
 │                     Avisos (las notificaciones)
@@ -100,7 +132,16 @@ app/          Android: solo dibuja y llama
 └── androidTest/  el spike contra rclone de verdad, la pasada entera, el
                   proveedor, los vectores del motor otra vez en Android
                   (MotorEnAndroidTest), lo que el actualizador mira de un APK
-                  (ActualizadorTest), el modo oscuro (TemaTest), el llavero
+                  (ActualizadorTest), el modo oscuro y los colores del
+                  sistema (TemaTest), las piezas (PiezasTest), las secciones y
+                  el botón atrás (NavegacionTest), lo que hay que revisar
+                  (RevisarTest), los ajustes (AjustesTest), parar una pasada
+                  (PararTest), sincronizar sola (SincronizarSolaTest), el
+                  simulacro (SimulacroEnAndroidTest), el diario de pasadas
+                  (HistorialEnAndroidTest), resolver un conflicto
+                  (ConflictosEnAndroidTest), atrás al emparejar
+                  (EmparejarTest), las capturas de las pantallas
+                  (CapturasTest, solo si se piden), el llavero
                   (el alta, el proveedor, los trabajos y la pantalla), las
                   carpetas compartidas (FechasCompartidasTest, CompartirTest,
                   MudanzaEnAndroidTest y la pantalla, PantallaCompartidaTest)
@@ -114,8 +155,13 @@ herramientas/
 │                      frenos y el alta
 ├── vectores_actualizacion.py  su parte de common/update.py, con el
 │                      repositorio de la app y la respuesta de GitHub guardada
-└── punta_a_punta.py   el servidor (con el llavero y su base) y la carga del QR
-                       de PuntaAPuntaTest
+├── vectores_historial.py  su parte de common/historial.py: el diario de pasadas
+├── vectores_conflictos_editor.py  su parte de ui/conflict_editor.py: las
+│                      etiquetas, los planes y lo que hacen en un disco de verdad
+├── punta_a_punta.py   el servidor (con el llavero y su base) y la carga del QR
+│                      de PuntaAPuntaTest
+└── diseno.py          los colores, el fondo de la ventana y los glifos desde
+                       app/diseno/ (--comprobar: si están al día, como en el CI)
 .github/
 ├── workflows/engine.yml   el motor, en cada push
 ├── workflows/apk.yml      el APK de release sin firmar, en los PR que lo tocan
@@ -275,6 +321,9 @@ instalar):
 ./gradlew :app:connectedDebugAndroidTest \
     -Pandroid.testInstrumentationRunnerArguments.class=prdrive.app.RcloneSpikeTest
 ```
+
+Una clase, o un método (`…class=prdrive.app.PiezasTest#la_marca_dice_su_estado`):
+con varias separadas por comas solo pasa la primera.
 
 Gradle guarda la configuración entre órdenes (`org.gradle.configuration-cache`
 en `gradle.properties`): lo que se escriba en un `build.gradle.kts` dentro de
@@ -811,6 +860,47 @@ nombre de sesión, un corte tras la entrada que `terminar` acaba, y sin permiso)
 y de punta a punta contra el servidor SFTP (`PuntaAPuntaTest`). Con Obsidian de
 verdad está **sin probar**: la lista de lo que falta, en `PLAN.md` §5.
 
+## Sincronizar sola, parar y el simulacro
+
+Lo que el rediseño añadió a las pasadas (`PLAN.md` §6, fase 5). Las decisiones
+que no se ven en el código:
+
+- **Sincronizar sola** (`segundoplano/`) es un trabajo periódico de
+  WorkManager con nombre fijo, que pasa las parejas y el llavero el último, como
+  «Sincronizar». Cada cuánto y qué parejas lo dice el `[daemon]` del config
+  (`interval_minutes`, 60 si no dice nada, y nunca menos de 15, que es el mínimo
+  de WorkManager; `pairs`, o todas), igual que el servicio del escritorio. Si va
+  y con qué condiciones (solo con wifi, de fábrica; solo mientras carga) es del
+  teléfono, en sus preferencias: el config sale de un catálogo compartido. Como
+  el trabajo del llavero, una pasada en marcha no se corta (`withContext`, no
+  `runInterruptible`), con ella no se instala una versión nueva, se salta una
+  pareja `entrando` y no hace ningún `--resync` (lo aprueba alguien que ha leído
+  por qué). Lo que falla no se reintenta: la vuelta siguiente llega sola.
+- **Parar la pasada** es `job/stop` y esperar (`Rclone.pedirParada`, con el
+  hilo del trabajo), y no se pasa ninguna pareja más. Lo cortado no se apunta, y
+  una bisync parada aparta sus listados («Ojo con estas cosas de rclone»). Solo
+  se para lo que lanza la pantalla; el llavero, nunca (`enElLlavero`).
+- **El simulacro** es la pasada con `--dry-run` (`Pasada.Contexto.simulacro`):
+  no se apunta ni en `state/` ni en el diario, su log se lee y se tira, y
+  `Simulacro.kt` lo cuenta como un plan. Si la pareja pide rehacer la
+  referencia, simula el `--resync`, y el botón de la pantalla no lo hace: eso va
+  por su hoja.
+- **El diario** (`state/historial.jsonl`, `Historial.kt`) es el del escritorio,
+  byte a byte, y se escribe junto a `Resultados.apuntar`. La ficha enseña las
+  últimas pasadas de la pareja y desde cuándo falla.
+- **Resolver un conflicto** (`ui/parejas/Conflictos.kt`) es el guion de
+  `tk_conflicts.py`: se piensa el plan (`ResolverConflictos.planConservar`), se
+  enseñan sus consecuencias en una hoja y solo si se dice que sí se ejecuta;
+  después se vuelven a mirar los conflictos y se pasa la pareja, que lleva el
+  resultado al remoto. Se elige por versión, no por lado (`plan_lado()` es
+  `plan_conservar()` de la única de ese lado), y «Quedarme con las dos», la de
+  fábrica, es no tocarlo. Se ejecuta sin ninguna llamada a rclone a la vez
+  (`Adaptadores.sinPasadas`), para que una pasada de fondo no liste la carpeta a
+  medio renombrar. El llavero no se resuelve aquí: elegir pierde lo guardado en
+  la otra versión, y se combina en el PC («El llavero»). Borrar las copias cuenta
+  para el 25 % de `max-delete`: en una pareja de pocos ficheros, la pasada de
+  después para en el freno, como en el escritorio.
+
 ## Convenios
 
 - Comentarios, KDoc y texto para el usuario en **español**. Igual que prdrive.
@@ -824,10 +914,15 @@ verdad está **sin probar**: la lista de lo que falta, en `PLAN.md` §5.
   (`una_pasada_que_falla_guarda_el_log_y_lo_explica`): el `.dex` de minSdk 26 no
   admite espacios en los nombres de método.
 - **En las pantallas no se escribe ningún color**: todo sale de
-  `MaterialTheme.colorScheme`. Es lo que hace que el modo oscuro salga solo
-  (`ui/Tema.kt`, que sigue al del teléfono); un `Color(0xFF…)` se vería igual
-  en los dos modos. El único color escrito es el fondo de la ventana
-  (`res/values*/tema.xml`), y `TemaTest` comprueba que es el de Compose.
+  `MaterialTheme.colorScheme` o de `Paleta.actual` (lo que Material no sabe
+  nombrar: `ink-3`, los fondos suaves de cada estado, la marca). Es lo que hace
+  que el modo oscuro salga solo (`ui/Tema.kt`, que sigue al del teléfono); un
+  `Color(0xFF…)` se vería igual en los dos modos. Los valores son los del
+  sistema de diseño «prdrive» (`app/diseno/tokens.json`), y solo están en
+  `tema/Tokens.kt`, que escribe `python herramientas/diseno.py` y no se edita a
+  mano; el fondo de la ventana (`res/values*/fondo.xml`) sale del mismo sitio,
+  y `TemaTest` comprueba que es el de Compose. Para cambiar un color, se cambia
+  el sistema y se copia otra vez (la cabecera de `diseno.py` dice cómo).
 
 ## Ojo con Android
 
@@ -875,6 +970,19 @@ verdad está **sin probar**: la lista de lo que falta, en `PLAN.md` §5.
   `Permission denied` hasta con el permiso. El permiso se da en un test con
   `appops set prdrive.app MANAGE_EXTERNAL_STORAGE allow`, leyendo la salida del
   shell hasta el final antes de mirar `Environment.isExternalStorageManager()`.
+- **La biblioteca de Java es la de la API 26, no la del JDK 17.** El motor
+  compila contra el JDK 17, y lo que este tiene y Android no (`BigInteger.TWO`,
+  que no llega hasta la API 33; `readAllBytes`, `List.of`…) compila y en el
+  teléfono hace que la clase no cargue. `BigInteger.TWO` en `Conflictos` tumbaba
+  toda pasada de Android 8 a 12 sin que lo viera ningún test en API 37:
+  `hooks/reglas.py` avisa de los conocidos, y la batería se pasa también en el
+  emulador de API 30.
+- **Quitar un permiso en un test mata el proceso.** `appops set … deny` (el de
+  «acceso a todos los archivos») y `revokeRuntimePermission` hacen que Android
+  cierre la app, y en `androidTest` su proceso es el del test: la pasada se corta
+  con un `<failure>` vacío y sin pasar los tests que quedaban. Darlo, sí se
+  puede. Por eso las pantallas que miran un permiso lo reciben como función
+  (`Mover(tienePermiso)`, `Ajustes(faltaRedLocal)`), y su test lo finge.
 - **Los tests de Compose en API 37** necesitan Espresso 3.7 (el que trae
   `ui-test` busca `InputManager.getInstance`, que ya no existe) y las reglas
   `junit4.v2` (las otras están obsoletas, y los avisos son errores).

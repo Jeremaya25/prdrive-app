@@ -162,7 +162,9 @@ object Conflictos {
         val numero: BigInteger = BigInteger.ZERO,
     )
 
-    private val UNO_O_DOS = setOf(BigInteger.ONE, BigInteger.TWO)
+    // `valueOf(2)` y no `BigInteger.TWO`, que es de Java 9 y en Android no
+    // llega hasta la API 33: antes, la clase no cargaba y no había pasada.
+    private val UNO_O_DOS = setOf(BigInteger.ONE, BigInteger.valueOf(2))
 
     /**
      * Un fichero con más de una versión en disco: [original] es el nombre de

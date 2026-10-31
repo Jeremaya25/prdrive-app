@@ -8,9 +8,12 @@ En `engine/src/main` (AGENTS.md, «Reglas que no se cruzan» y «Ojo con Android
 - ni `\\d`, `\\w`, `\\s` (ni sus mayúsculas) ni `(?U)` en una expresión regular:
   en el teléfono son las de ICU, Unicode, y `(?U)` no existe;
 - ni `String.format` ni `"…".format(…)`: usa las cifras del idioma del teléfono.
+- nada de la biblioteca de Java posterior a Java 8 que Android no tenga en la
+  API 26 (`BigInteger.TWO`, `readAllBytes`, `List.of`…): compila contra el JDK
+  17 y la clase no carga en el teléfono.
 
 En las pantallas (`app/src/main/…/ui/`, AGENTS.md, «Convenios»): ningún color
-escrito, todo de `MaterialTheme.colorScheme`.
+escrito, todo de `MaterialTheme.colorScheme` o de `Paleta.actual`.
 
 Solo mira las líneas que la herramienta acaba de introducir: en un Edit, las de
 `new_string` que no estaban en `old_string`; en un Write, las que no están en la
@@ -31,6 +34,14 @@ import sys
 
 ANDROID = re.compile(r"^\s*import\s+androidx?\.|\bandroidx?\.[a-z]\w*\.")
 FORMAT = re.compile(r"\bString\.format\s*\(|\"\s*\.format\s*\(")
+# Lo de la biblioteca de Java posterior a Java 8 que Android no tiene en la API 26
+# (minSdk): el motor compila contra el JDK 17, que sí lo tiene, y el fallo solo
+# sale en el teléfono (`BigInteger.TWO` tumbaba toda pasada en Android 8 a 12).
+JAVA_NUEVO = re.compile(
+    r"\bBigInteger\.(TWO|sqrt)\b|\.readAllBytes\s*\(|\.transferTo\s*\(|\bFiles\.(readString|writeString)\b"
+    r"|\bPath\.of\s*\(|\b(List|Set|Map)\.(of|copyOf|entry)\s*\(|\.orElseThrow\s*\(\s*\)"
+    r"|\bCharacter\.toString\s*\(\s*[a-z]|\bnullInputStream\b|\brequireNonNullElse\b|\bto(Seconds|Millis|Nanos)Part\b"
+)
 CLASES = re.compile(r"\\{1,2}[dDwWsS]|\(\?[a-zA-Z]*U[a-zA-Z]*\)")
 COLOR = re.compile(
     r"\bColor\(\s*(0x|[0-9]|red\s*=|alpha\s*=)"
@@ -54,12 +65,19 @@ REGLAS_MOTOR = [
         "String.format usa las cifras del idioma del teléfono (AGENTS.md, «Ojo con "
         "Android»): nada que acabe en un fichero o en un mensaje comparado pasa por él.",
     ),
+    (
+        JAVA_NUEVO,
+        "Eso es de la biblioteca de Java posterior a Java 8, y Android no lo tiene en "
+        "la API 26 (minSdk): compila, pero en el teléfono la clase no carga (AGENTS.md, "
+        "«Ojo con Android»). Usa lo de Kotlin o lo de Java 8 (BigInteger.valueOf(2), "
+        "readBytes(), listOf…).",
+    ),
 ]
 REGLAS_PANTALLA = [
     (
         COLOR,
         "En las pantallas no se escribe ningún color: todo sale de "
-        "MaterialTheme.colorScheme (AGENTS.md, «Convenios»).",
+        "MaterialTheme.colorScheme o de Paleta.actual (AGENTS.md, «Convenios»).",
     ),
 ]
 

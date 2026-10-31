@@ -8,6 +8,7 @@ import android.provider.DocumentsContract
 import android.service.notification.StatusBarNotification
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertIsOff
@@ -17,8 +18,10 @@ import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTextInput
 import androidx.core.app.NotificationCompat
 import androidx.lifecycle.Lifecycle
@@ -134,10 +137,12 @@ class PantallaLlaveroTest {
 
     /** Del código a «Ir a la pantalla principal», con «El llavero» marcado. */
     private fun emparejarConLlavero() {
+        compose.onNodeWithText("Pegar el texto del código").performClick()
         compose.onNodeWithTag("carga").performTextInput(cargaDelQr())
-        compose.onNodeWithTag("usarTexto").performScrollTo().performClick()
+        // Con el teclado entrando la pantalla aún se mueve: el toque va por la acción del botón, no por su sitio.
+        compose.onNodeWithTag("usarTexto").performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
         esperar("conectar")
-        compose.onNodeWithTag("conectar").performScrollTo().performClick()
+        compose.onNodeWithTag("conectar").performClick()
         esperar("elegir-llavero")
         compose.onNodeWithTag("elegir-llavero").assertIsOff()
         compose.onNodeWithTag("elegir-llavero").performClick()
@@ -145,7 +150,7 @@ class PantallaLlaveroTest {
         compose.onNodeWithTag("instalar").performClick()
         esperar("empezar", 180)
         compose.onNodeWithTag("error").assertDoesNotExist()
-        esperar("resultado-$LLAVERO", "$LLAVERO: OK")
+        esperar("resultado-$LLAVERO", "hecha")
     }
 
     /** La base en el remoto, para que una pasada la traiga. */
@@ -178,6 +183,12 @@ class PantallaLlaveroTest {
         } catch (e: androidx.compose.ui.test.ComposeTimeoutException) {
             throw AssertionError("no aparece «$tag»; en pantalla: ${textos()}", e)
         }
+    }
+
+    /** La sección Llavero, donde están traerlo, quitarlo y lo que lo pone en ámbar. */
+    private fun irAlLlavero() {
+        compose.onNodeWithTag("seccion-llavero").performClick()
+        esperar("pantalla-llavero")
     }
 
     /** Espera a que no quede nada en marcha. */
@@ -232,6 +243,7 @@ class PantallaLlaveroTest {
             libre()
             esperar("fila-llavero", "al día")
             assertArrayEquals(bytes, baseLocal(v).readBytes())
+            irAlLlavero()
             compose.onNodeWithTag("llavero-ambar").assertDoesNotExist()
 
             // La base cambia en el teléfono (lo que haría la app de KeePass):
@@ -242,7 +254,7 @@ class PantallaLlaveroTest {
             assertTrue(base.setLastModified(hora))
             assertTrue(LlaveroApp.pendiente(contexto))
             volver(escena)
-            esperar("fila-llavero", "con cambios que aún no han subido")
+            esperar("llavero-estado", "con cambios que aún no han subido")
             compose.onNodeWithTag("llavero-ambar").assertDoesNotExist()
 
             // Un guardado que llegó cortado: en ámbar, con su motivo.
@@ -281,6 +293,7 @@ class PantallaLlaveroTest {
         try {
             intending(hasAction(Intent.ACTION_VIEW)).respondWith(ActivityResult(Activity.RESULT_OK, null))
             ActivityScenario.launch(MainActivity::class.java).use {
+                irAlLlavero()
                 esperar("llavero-ambar", "falta su fichero llave")
                 compose.onNodeWithTag("abrir-llavero").performClick()
                 // Antes de abrir, el aviso; y no se abre hasta que se cierra.
@@ -297,6 +310,22 @@ class PantallaLlaveroTest {
     }
 
     // --- traerlo y quitarlo -------------------------------------------------------
+
+    /** Girar el teléfono con la confirmación de «Traer el llavero» delante no la cierra. */
+    @Test
+    fun recrear_la_actividad_no_cierra_la_confirmacion_de_traer() {
+        val (w, _) = Banco.volumen(Banco.pareja("notas"), catalogo = true)
+        catalogo(mapOf("base" to "personal.kdbx"))
+        Catalogo.pull(Adaptadores.catalogo(Prdrive.temporal(contexto)), loadRaw(w.config.readText()), w.state)
+        ActivityScenario.launch(MainActivity::class.java).use { escena ->
+            irAlLlavero()
+            esperar("traer-llavero")
+            compose.onNodeWithTag("traer-llavero").performClick()
+            esperar("confirmar-traer")
+            escena.recreate()
+            esperar("confirmar-traer")
+        }
+    }
 
     @Test
     fun traer_el_llavero_lo_activa_y_lo_baja() {
@@ -322,20 +351,22 @@ class PantallaLlaveroTest {
         Catalogo.pull(Adaptadores.catalogo(Prdrive.temporal(contexto)), loadRaw(w.config.readText()), w.state)
         val otra = baseEnElRemoto()
         ActivityScenario.launch(MainActivity::class.java).use {
+            irAlLlavero()
             esperar("traer-llavero")
             assertNull(w.leerConfig().llavero)
             compose.onNodeWithTag("traer-llavero").performClick()
             esperar("confirmar-traer")
             compose.onNodeWithTag("confirmar-traer").performClick()
-            esperar("fila-llavero", "al día", 120)
+            esperar("llavero-estado", "al día", 120)
             compose.onNodeWithTag("error").assertDoesNotExist()
             assertArrayEquals(otra, baseLocal(w).readBytes())
             assertNotNull(w.leerConfig().parejaLlavero)
 
             // 3. Y quitarlo: el config lo pierde, la base se queda, y la fila
             //    vuelve a ofrecer traerlo.
-            compose.onNodeWithTag("menu-llavero").performClick()
+            // Sin menú: el botón está en la sección, al final.
             esperar("quitar-llavero")
+            compose.onNodeWithTag("quitar-llavero").performScrollTo()
             compose.onNodeWithTag("quitar-llavero").performClick()
             esperar("confirmar-quitar")
             compose.onNodeWithTag("confirmar-quitar").performClick()
@@ -368,7 +399,7 @@ class PantallaLlaveroTest {
                 .respondWith(ActivityResult(Activity.RESULT_OK, Intent().setData(android.net.Uri.fromFile(llave))))
             ActivityScenario.launch(MainActivity::class.java).use {
                 emparejarConLlavero()
-                esperar("resultado-todo", "todo: OK")
+                esperar("resultado-todo", "hecha")
             }
         } finally {
             Intents.release()
@@ -421,6 +452,28 @@ class PantallaLlaveroTest {
                     ),
                 )
                 compose.onNodeWithTag("aviso-llavero").assertDoesNotExist()
+                compose.onNodeWithTag("error").assertDoesNotExist()
+            }
+        } finally {
+            Intents.release()
+        }
+    }
+
+    /** «Abrir llavero» de la sección Llavero hace lo mismo que el de Inicio: trae la base y la abre. */
+    @Test
+    fun abrir_llavero_desde_su_seccion_abre_la_base() {
+        val (v, _) = Banco.volumen(Banco.pareja("notas"), llavero = "personal.kdbx")
+        val bytes = baseEnElRemoto()
+        Intents.init()
+        try {
+            intending(hasAction(Intent.ACTION_VIEW)).respondWith(ActivityResult(Activity.RESULT_OK, null))
+            ActivityScenario.launch(MainActivity::class.java).use {
+                irAlLlavero()
+                esperar("abrir-llavero")
+                compose.onNodeWithTag("abrir-llavero").performClick()
+                compose.waitUntil(120_000) { vistas().isNotEmpty() }
+                assertArrayEquals("no ha traído la base antes de abrirla", bytes, baseLocal(v).readBytes())
+                intended(allOf(hasAction(Intent.ACTION_VIEW), hasData(documento("personal.kdbx")), hasType("application/x-kdbx")))
                 compose.onNodeWithTag("error").assertDoesNotExist()
             }
         } finally {

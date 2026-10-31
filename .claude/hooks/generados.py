@@ -5,7 +5,8 @@ genera.
 Los valores esperados del motor salen de prdrive y de rclone, no de quien
 escribe el test (AGENTS.md, «Los valores esperados no se escriben a mano»), el
 wrapper de Gradle se cambia con su tarea porque fija la suma SHA-256 de la
-distribución (AGENTS.md, «Órdenes»), y la clave de la firma no entra nunca en el
+distribución (AGENTS.md, «Órdenes»), los colores y los glifos salen del sistema
+de diseño (`herramientas/diseno.py`), y la clave de la firma no entra nunca en el
 repositorio (AGENTS.md, «Versiones y releases»).
 
 Lee de la entrada estándar el JSON del hook y, si la herramienta va a escribir
@@ -38,6 +39,10 @@ WRAPPER = (
     "--gradle-distribution-sha256-sum=<la suma>` y otra vez `./gradlew :wrapper`. "
     "AGENTS.md, «Órdenes»."
 )
+DISENO = (
+    "Se genera desde el sistema de diseño: cambia `app/diseno/` y ejecuta "
+    "`python herramientas/diseno.py`."
+)
 CLAVE = (
     "La clave de la firma vive en el entorno `release` y en una copia fuera del "
     "repositorio, nunca aquí. AGENTS.md, «Versiones y releases»."
@@ -51,6 +56,13 @@ EXACTOS = {
     "gradle/wrapper/gradle-wrapper.jar": WRAPPER,
     "gradlew": WRAPPER,
     "gradlew.bat": WRAPPER,
+    "app/src/main/kotlin/prdrive/app/tema/Tokens.kt": DISENO,
+    "app/src/main/res/values/fondo.xml": DISENO,
+    "app/src/main/res/values-night/fondo.xml": DISENO,
+}
+# Lo que empieza así se genera: los glifos del sistema de diseño.
+PREFIJOS = {
+    "app/src/main/res/drawable/pd_": DISENO,
 }
 EXTENSIONES_CLAVE = (".p12", ".jks", ".keystore")
 
@@ -73,6 +85,9 @@ def motivo(rel: str) -> str | None:
     clave = rel.lower() if os.name == "nt" else rel
     for exacto, porque in EXACTOS.items():
         if clave == (exacto.lower() if os.name == "nt" else exacto):
+            return porque
+    for prefijo, porque in PREFIJOS.items():
+        if clave.startswith(prefijo.lower() if os.name == "nt" else prefijo):
             return porque
     if PurePosixPath(clave).suffix.lower() in EXTENSIONES_CLAVE:
         return CLAVE

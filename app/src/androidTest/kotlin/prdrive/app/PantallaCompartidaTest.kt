@@ -1,11 +1,19 @@
 package prdrive.app
 
 import android.os.Environment
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
 import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.isEnabled
 import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
+import androidx.lifecycle.Lifecycle
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.lifecycle.ViewModelProvider
@@ -21,6 +29,8 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import prdrive.app.ui.Modelo
+import prdrive.app.ui.Tema
+import prdrive.app.ui.parejas.Mover
 import prdrive.engine.Compartidas
 import prdrive.engine.Resultados
 import prdrive.engine.Volumen
@@ -88,6 +98,7 @@ class PantallaCompartidaTest {
     fun una_pareja_compartida_dice_donde_vive_y_ofrece_volver() {
         volumenCon(Compartidas.Estado.LISTA)
         abrir().use {
+            Banco.abrirFicha(compose, "vault")
             assertTrue("no dice dónde vive", hay("donde-vault"))
             assertTrue("no ofrece volver", hay("volver-vault"))
             assertFalse("ofrece mover una que ya está movida", hay("mover-vault"))
@@ -99,6 +110,7 @@ class PantallaCompartidaTest {
     fun una_pareja_a_medio_mover_ofrece_terminar_y_no_el_resync() {
         volumenCon(Compartidas.Estado.ENTRANDO)
         abrir().use {
+            Banco.abrirFicha(compose, "vault")
             assertTrue("no ofrece terminar", hay("terminar-vault"))
             assertFalse("ofrece el --resync a una que está a medio mover", hay("resync-vault"))
             assertFalse("ofrece mover una que está a medio mover", hay("mover-vault"))
@@ -114,6 +126,7 @@ class PantallaCompartidaTest {
         val dentro = File(v.raiz, "vault").path
         Compartidas.escribir(v.compartidas, mapOf("vault" to Compartidas.Entrada(dentro, Compartidas.Estado.ENTRANDO)))
         abrir().use {
+            Banco.abrirFicha(compose, "vault")
             assertTrue("no ofrece terminar", hay("terminar-vault"))
             assertTrue("no ofrece volver con la entrada rota", hay("volver-vault"))
             assertFalse(hay("resync-vault"))
@@ -126,11 +139,12 @@ class PantallaCompartidaTest {
     fun una_pareja_que_se_puede_mover_lo_ofrece_y_una_anidada_no() {
         Banco.volumen(Banco.pareja("vault", local = "vault"), Banco.pareja("notas"))
         abrir().use {
-            compose.waitUntil(30_000) { hay("fila-notas") }
+            Banco.abrirFicha(compose, "vault")
             assertTrue("no ofrece mover una de primer nivel", hay("mover-vault"))
-            assertFalse("ofrece mover una anidada", hay("mover-notas"))
             assertFalse(hay("volver-vault"))
             assertFalse(hay("donde-vault"))
+            Banco.abrirFicha(compose, "notas")
+            assertFalse("ofrece mover una anidada", hay("mover-notas"))
         }
     }
 
@@ -169,6 +183,7 @@ class PantallaCompartidaTest {
             // espera a la línea con la que el modelo cuenta que la salta.
             compose.waitUntil(60_000) { modelo!!.lineas.any { "[vault] A medio mover" in it } }
             compose.waitUntil(60_000) { !hay("ocupado") }
+            Banco.abrirFicha(compose, "vault")
             assertTrue("la fila dejó de ofrecer terminar", hay("terminar-vault"))
             assertFalse("pasó la pareja a medio mover", hay("resync-vault"))
             val apuntado = Resultados.rutaEstado(v.state)
@@ -177,6 +192,136 @@ class PantallaCompartidaTest {
                 !apuntado.exists() || "vault" !in apuntado.readText(),
             )
             assertNull("hay un resultado de la pareja", modelo!!.resultados["vault"])
+        }
+    }
+
+    /** #24, la parte pequeña: una pareja que no se puede mover dice por qué, en vez de no ofrecerlo sin más. */
+    @Test
+    fun una_pareja_anidada_dice_por_que_no_se_mueve() {
+        val (v, config) = Banco.volumen(Banco.pareja("notas"))
+        val anidada = Estado.filas(v, config, conCompartir = true).single()
+        assertNotNull("no dice por qué no se mueve", anidada.porQueNoSeComparte)
+        assertFalse(anidada.sePuedeCompartir)
+        val (v2, config2) = Banco.volumen(Banco.pareja("notas", local = "vault"))
+        val suelta = Estado.filas(v2, config2, conCompartir = true).single()
+        assertNull(suelta.porQueNoSeComparte)
+        assertTrue(suelta.sePuedeCompartir)
+    }
+
+    @Test
+    fun una_pareja_anidada_lo_dice_en_su_ficha() {
+        Banco.volumen(Banco.pareja("notas"))
+        ActivityScenario.launch(MainActivity::class.java).use {
+            Banco.abrirFicha(compose, "notas")
+            assertTrue("no dice por qué no se puede mover", hay("no-compartir-notas"))
+            assertFalse(hay("mover-notas"))
+        }
+    }
+
+    /** Rehacer la referencia se confirma en una hoja que dice qué va a pasar; «Ahora no» no pasa nada. */
+    @Test
+    fun el_resync_se_confirma_en_una_hoja() {
+        Banco.volumen(Banco.pareja("vault", local = "vault"))
+        ActivityScenario.launch(MainActivity::class.java).use { escena ->
+            var modelo: Modelo? = null
+            escena.onActivity { modelo = ViewModelProvider(it)[Modelo::class.java] }
+            // Sin listados, una bisync pide --resync.
+            Banco.abrirFicha(compose, "vault")
+            compose.waitUntil(10_000) { hay("resync-vault") }
+            compose.onNodeWithTag("resync-vault").performClick()
+            compose.waitUntil(10_000) { hay("confirmar-resync") }
+            compose.onNodeWithText("Ahora no").performClick()
+            compose.waitUntil(10_000) { !hay("confirmar-resync") }
+            assertNull("hizo una pasada", modelo!!.resultados["vault"])
+            assertTrue(hay("resync-vault"))
+        }
+    }
+
+    /**
+     * Sin el permiso de acceso a todos los archivos no se puede elegir carpeta;
+     * con él, sí, y se nota al volver a la app (de los ajustes de Android, donde
+     * se da). El permiso se finge: quitarlo de verdad con `appops` mata el
+     * proceso de la app, que es también el del test.
+     */
+    @Test
+    fun mover_pide_el_permiso_antes_de_elegir_la_carpeta() {
+        // Antes de Android 11 no se ofrece mover. Un `return` y no `assumeTrue`: AGP
+        // cuenta un test saltado como fallido.
+        if (android.os.Build.VERSION.SDK_INT < 30) return
+        Banco.volumen(Banco.pareja("vault", local = "vault"))
+        var permitido = false
+        ActivityScenario.launch(ComponentActivity::class.java).use { escena ->
+            escena.onActivity { actividad ->
+                val modelo = ViewModelProvider(actividad)[Modelo::class.java]
+                actividad.setContent { Tema { Mover(modelo, "vault", volver = {}, tienePermiso = { permitido }) } }
+            }
+            compose.waitUntil(10_000) { hay("pantalla-mover-vault") }
+            assertTrue("no ofrece dar el permiso", hay("dar-permiso"))
+            compose.onNodeWithTag("elegir-carpeta").performScrollTo().assertIsNotEnabled()
+            permitido = true
+            escena.moveToState(Lifecycle.State.STARTED)
+            escena.moveToState(Lifecycle.State.RESUMED)
+            compose.waitUntil(10_000) {
+                compose.onAllNodes(hasTestTag("elegir-carpeta") and isEnabled()).fetchSemanticsNodes().isNotEmpty()
+            }
+            compose.onNodeWithTag("elegir-carpeta").assertIsEnabled()
+            assertFalse("sigue pidiendo el permiso", hay("dar-permiso"))
+        }
+    }
+
+    /**
+     * «Mover «X»» no vuelve a la ficha hasta que la acción se ha hecho: si Android
+     * pregunta antes por la red local, la respuesta llega a quien la pidió, que
+     * es `Secciones` y no esta pantalla (que se iría con su lanzador, y la
+     * mudanza no empezaría nunca). Aquí la pregunta se finge: el `conRed` guarda
+     * la acción sin hacerla, como mientras Android pregunta.
+     */
+    @Test
+    fun mover_no_vuelve_antes_de_que_la_accion_se_haga() {
+        if (android.os.Build.VERSION.SDK_INT < 30) return
+        Banco.volumen(Banco.pareja("vault", local = "vault"))
+        var pendiente: (() -> Unit)? = null
+        var vueltas = 0
+        val arbol = android.provider.DocumentsContract.buildTreeDocumentUri(
+            "com.android.externalstorage.documents", "primary:Documents/prdrive-prueba-mover",
+        )
+        ActivityScenario.launch(ComponentActivity::class.java).use { escena ->
+            escena.onActivity { actividad ->
+                val modelo = ViewModelProvider(actividad)[Modelo::class.java]
+                actividad.setContent {
+                    Tema {
+                        Mover(
+                            modelo, "vault",
+                            volver = { vueltas++ },
+                            conRed = { accion -> pendiente = accion },
+                            tienePermiso = { true },
+                            elegida = arbol,
+                        )
+                    }
+                }
+            }
+            compose.waitUntil(10_000) { hay("mover-ya") }
+            compose.waitUntil(10_000) {
+                compose.onAllNodes(hasTestTag("mover-ya") and isEnabled()).fetchSemanticsNodes().isNotEmpty()
+            }
+            compose.onNodeWithTag("mover-ya").performScrollTo().performClick()
+            assertNotNull("la acción no ha ido a quien pregunta", pendiente)
+            assertEquals("ha vuelto antes de mover", 0, vueltas)
+        }
+    }
+
+    /** «Sincronizar esta pareja» (en su ficha) pasa esa y ninguna más, ni el llavero. */
+    @Test
+    fun sincronizar_una_pareja_no_pasa_las_demas() {
+        Banco.volumen(Banco.pareja("uno"), Banco.pareja("dos"))
+        ActivityScenario.launch(MainActivity::class.java).use { escena ->
+            var modelo: Modelo? = null
+            escena.onActivity { modelo = ViewModelProvider(it)[Modelo::class.java] }
+            compose.waitUntil(30_000) { hay("fila-uno") && !hay("ocupado") }
+            escena.onActivity { modelo!!.sincronizar(solo = "uno") }
+            compose.waitUntil(60_000) { modelo!!.resultados.containsKey("uno") }
+            compose.waitUntil(60_000) { !hay("ocupado") }
+            assertNull("pasó también «dos»", modelo!!.resultados["dos"])
         }
     }
 }

@@ -54,6 +54,23 @@ object Mudanza {
     const val RESYNC_MODE = "path2"
 
     /**
+     * Los pasos de una mudanza, en el orden en que se dan, para enseñar por
+     * dónde va: probar las fechas, la pasada normal, apartar los listados, bajar
+     * todo a la carpeta (el `--resync`), llevar lo que solo tenía la copia y
+     * borrarla. [Entorno.alPaso] dice cuándo empieza cada uno.
+     */
+    enum class Paso { FECHAS, PASADA_NORMAL, APARTAR, BAJAR, LLEVAR, BORRAR }
+
+    /** Los pasos de [entrar], que acaba con los de [terminar]. */
+    val PASOS_ENTRAR = listOf(Paso.FECHAS, Paso.PASADA_NORMAL, Paso.APARTAR, Paso.BAJAR, Paso.LLEVAR, Paso.BORRAR)
+
+    /** Los pasos de [terminar]. */
+    val PASOS_TERMINAR = listOf(Paso.BAJAR, Paso.LLEVAR, Paso.BORRAR)
+
+    /** Los pasos de [salir]: la pasada normal solo si se puede hacer. */
+    val PASOS_SALIR = listOf(Paso.PASADA_NORMAL, Paso.APARTAR, Paso.BAJAR)
+
+    /**
      * Lo que la mudanza necesita de fuera: quién habla con rclone y cómo se
      * traducen las órdenes ([rclone], [opciones]), el contexto de las pasadas
      * ([ctx], con [Pasada.Contexto.accesoCompartido]: sin él, la pasada de una
@@ -69,6 +86,8 @@ object Mudanza {
         val recargar: () -> Unit,
         val alProgreso: (Map<String, Any?>) -> Unit = {},
         val decir: (String) -> Unit = {},
+        /** Cuando empieza cada paso ([Paso]), para que la ficha los marque. */
+        val alPaso: (Paso) -> Unit = {},
     )
 
     /**
@@ -137,6 +156,7 @@ object Mudanza {
                 creada = true
             }
 
+            e.alPaso(Paso.FECHAS)
             e.probarFechas(carpeta)?.let {
                 throw Parada(
                     "La prueba de fechas en '$ruta' no ha salido bien: $it. Sin fechas fiables bisync no " +
@@ -144,6 +164,7 @@ object Mudanza {
                 )
             }
 
+            e.alPaso(Paso.PASADA_NORMAL)
             val antes = pasadaNormal(volumen, pareja, e).also { pasadas.add(it) }
             if (!antes.ok) {
                 throw Parada(
@@ -153,6 +174,7 @@ object Mudanza {
                 )
             }
 
+            e.alPaso(Paso.APARTAR)
             e.decir("[$nombre] Se apartan los listados: hasta que acabe la mudanza, la pareja pide --resync.")
             paso({
                 "No se han podido apartar los listados de '$nombre' ($it), y sin eso un corte a medio " +
@@ -254,6 +276,7 @@ object Mudanza {
 
             // Un --resync; o, si una vez anterior se cortó después de él, una
             // pasada normal (ya hay baseline, y no hace falta otro).
+            e.alPaso(Paso.BAJAR)
             val conBaseline = Bisync.pairState(volumen.workdir(pareja)).hasBaseline
             val r = resync(volumen, pareja, e).also { pasadas.add(it) }
             if (!r.ok) {
@@ -268,6 +291,7 @@ object Mudanza {
             // Lo que solo tiene la copia privada (lo que los filtros dejan fuera,
             // `.prversions/`, lo escrito en el último momento) no está en el
             // remoto ni en la carpeta: se lleva allí antes de borrarla.
+            e.alPaso(Paso.LLEVAR)
             val privada = carpetaPrivada(volumen, pareja)
             val llevados = paso({
                 "El --resync ha ido bien, pero no se ha podido llevar a ${entrada.ruta} lo que solo tenía " +
@@ -282,6 +306,7 @@ object Mudanza {
                         "sincroniza, como $VERSIONS_DIR/) se han llevado a ${entrada.ruta}, con su fecha.",
                 )
             }
+            e.alPaso(Paso.BORRAR)
             e.decir("[$nombre] Lo de la copia del volumen ya está en el remoto y en ${entrada.ruta}: se borra $privada.")
             paso({
                 "El --resync ha ido bien, pero no se ha podido borrar la copia del volumen ($it). " +
@@ -348,6 +373,7 @@ object Mudanza {
                     else -> null
                 }
                 if (noEntera == null) {
+                    e.alPaso(Paso.PASADA_NORMAL)
                     val antes = pasadaNormal(volumen, pareja, e).also { pasadas.add(it) }
                     if (!antes.ok) {
                         throw Parada(
@@ -377,6 +403,7 @@ object Mudanza {
                 }
             }
 
+            e.alPaso(Paso.APARTAR)
             e.decir("[$nombre] Se apartan los listados: hasta que acabe la vuelta, la pareja pide --resync.")
             paso({
                 "No se han podido apartar los listados de '$nombre' ($it), y sin eso un corte a medio " +
@@ -405,6 +432,7 @@ object Mudanza {
             }
             e.decir("[$nombre] La pareja vuelve a vivir en el volumen.")
 
+            e.alPaso(Paso.BAJAR)
             val r = resync(volumen, parejaDe(config.conCompartidas(quedan, volumen.raiz), nombre), e)
                 .also { pasadas.add(it) }
             if (!r.ok) {

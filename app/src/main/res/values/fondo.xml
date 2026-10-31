@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Generado por herramientas/diseno.py desde app/diseno/tokens.json: no lo edites a mano.
+     El «paper» del sistema de diseño: el fondo de la ventana, que se ve antes
+     de que Compose dibuje (tema.xml). TemaTest comprueba que es el de Compose. -->
+<resources>
+    <color name="fondo">#FFFAF9F7</color>
+</resources>

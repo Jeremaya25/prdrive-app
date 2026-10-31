@@ -1,6 +1,7 @@
 package prdrive.app
 
 import androidx.compose.ui.semantics.getOrNull
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertIsOff
@@ -10,8 +11,10 @@ import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTextInput
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -103,10 +106,12 @@ class PuntaAPuntaTest {
         }
         ActivityScenario.launch(MainActivity::class.java).use {
             // 1. El código: pegado, leído y conectado.
+            compose.onNodeWithText("Pegar el texto del código").performClick()
             compose.onNodeWithTag("carga").performTextInput(carga)
-            compose.onNodeWithTag("usarTexto").performScrollTo().performClick()
+            // Con el teclado entrando la pantalla aún se mueve: el toque va por la acción del botón, no por su sitio.
+            compose.onNodeWithTag("usarTexto").performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
             captura("1-codigo")
-            compose.onNodeWithTag("conectar").performScrollTo().performClick()
+            compose.onNodeWithTag("conectar").performClick()
 
             // 2. Las parejas del catálogo, todas marcadas.
             esperar("instalar")
@@ -120,7 +125,7 @@ class PuntaAPuntaTest {
             // «Ir a la principal» sale también si algo ha fallado: que no.
             errorEnPantalla()?.let { fail("la pantalla dice: $it") }
             compose.onNodeWithTag("aviso-espejos").assertExists()
-            compose.waitUntilAtLeastOneExists(hasText("notas: OK") and hasAnyAncestor(hasTestTag("resultado-notas")), 5000)
+            compose.waitUntilAtLeastOneExists(dice("resultado-notas", "hecha"), 5000)
             captura("3-inicio")
             assertEquals("escrito en el PC\n", File(v.raiz, "sync-data/notas/del-pc.txt").readText())
             assertTrue("el espejo no se inicializa", !File(v.raiz, "sync-data/fotos/foto.txt").exists())
@@ -142,12 +147,14 @@ class PuntaAPuntaTest {
             assertTrue("no ha llegado al servidor: $stat", stat["item"] != null)
 
             // La fila dice que está al día, sin fallos ni resync pendiente. Un
-            // fallo de la pasada no es un error de la pantalla: se ve en la fila.
-            compose.waitUntilAtLeastOneExists(hasText("Al día", substring = true) and hasAnyAncestor(hasTestTag("fila-notas")), 5000)
+            // fallo de la pasada no es un error de la pantalla: se ve en el chip
+            // de su fila en Inicio («al día», «falló») y en su ficha.
+            compose.waitUntilAtLeastOneExists(dice("fila-notas", "al día"), 5000)
             for (pareja in listOf("notas", "fotos")) {
-                val fallos = compose.onAllNodes(hasText("Falló", substring = true) and hasAnyAncestor(hasTestTag("fila-$pareja")))
+                val fallos = compose.onAllNodes(dice("fila-$pareja", "falló"))
                 assertTrue("la pasada de $pareja ha fallado", fallos.fetchSemanticsNodes().isEmpty())
             }
+            Banco.abrirFicha(compose, "notas")
             compose.onAllNodes(hasTestTag("resync-notas")).fetchSemanticsNodes().let {
                 assertTrue("sigue pidiendo resync", it.isEmpty())
             }
@@ -184,9 +191,11 @@ class PuntaAPuntaTest {
                 .grantRuntimePermission(contexto.packageName, android.Manifest.permission.POST_NOTIFICATIONS)
         }
         ActivityScenario.launch(MainActivity::class.java).use {
+            compose.onNodeWithText("Pegar el texto del código").performClick()
             compose.onNodeWithTag("carga").performTextInput(carga)
-            compose.onNodeWithTag("usarTexto").performScrollTo().performClick()
-            compose.onNodeWithTag("conectar").performScrollTo().performClick()
+            // Con el teclado entrando la pantalla aún se mueve: el toque va por la acción del botón, no por su sitio.
+            compose.onNodeWithTag("usarTexto").performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
+            compose.onNodeWithTag("conectar").performClick()
 
             // La casilla sale porque el catálogo lleva `[keychain]`, y sale
             // desmarcada: el llavero se pide, no se impone.
@@ -198,7 +207,7 @@ class PuntaAPuntaTest {
 
             esperar("empezar", 180)
             errorEnPantalla()?.let { fail("la pantalla dice: $it") }
-            compose.waitUntilAtLeastOneExists(dice("resultado-$LLAVERO", "$LLAVERO: OK"), 30_000)
+            compose.waitUntilAtLeastOneExists(dice("resultado-$LLAVERO", "hecha"), 30_000)
             captura("5-llavero-al-emparejar")
 
             // Los bytes del servidor, tal cual, en `.keychain/`.
@@ -211,6 +220,10 @@ class PuntaAPuntaTest {
             compose.onNodeWithTag("empezar").performClick()
             compose.waitUntilAtLeastOneExists(dice("fila-llavero", "al día"), 60_000)
             compose.onNodeWithTag("error").assertDoesNotExist()
+            // Lo que lo pondría en ámbar se ve en su sección.
+            compose.onNodeWithTag("seccion-llavero").performClick()
+            esperar("pantalla-llavero", 10)
+            compose.waitUntilAtLeastOneExists(dice("llavero-estado", "al día"), 10_000)
             compose.onNodeWithTag("llavero-ambar").assertDoesNotExist()
         }
     }
@@ -243,31 +256,36 @@ class PuntaAPuntaTest {
         val destino = File(android.os.Environment.getExternalStorageDirectory(), "Documents/prdrive-e2e-${System.nanoTime()}")
         try {
             ActivityScenario.launch(MainActivity::class.java).use {
+                compose.onNodeWithText("Pegar el texto del código").performClick()
                 compose.onNodeWithTag("carga").performTextInput(carga)
-                compose.onNodeWithTag("usarTexto").performScrollTo().performClick()
-                compose.onNodeWithTag("conectar").performScrollTo().performClick()
+                // Con el teclado entrando la pantalla aún se mueve: el toque va por la acción del botón, no por su sitio.
+                compose.onNodeWithTag("usarTexto").performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
+                compose.onNodeWithTag("conectar").performClick()
 
                 esperar("instalar")
                 compose.onNodeWithTag("elegir-vault").assertExists()
                 compose.onNodeWithTag("instalar").performClick()
                 esperar("empezar", 180)
                 errorEnPantalla()?.let { fail("la pantalla dice: $it") }
-                compose.waitUntilAtLeastOneExists(dice("resultado-vault", "vault: OK"), 30_000)
+                compose.waitUntilAtLeastOneExists(dice("resultado-vault", "hecha"), 30_000)
                 assertEquals("una nota del vault\n", File(v.raiz, "vault/nota.md").readText())
                 compose.onNodeWithTag("empezar").performClick()
                 esperar("sincronizar")
                 esperar("fila-vault", 30)
+                Banco.abrirFicha(compose, "vault")
                 compose.onNodeWithTag("donde-vault").assertDoesNotExist()
 
                 // La mudanza: lo que hace la fila tras elegir la carpeta.
                 val dicho = ArrayList<String>()
-                val hecho = Mudanza.entrar(v, "vault", destino, Compartir.entorno(contexto, true, {}) { dicho.add(it) })
+                val hecho = Mudanza.entrar(v, "vault", destino, Compartir.entorno(contexto, true, {}, decir = { dicho.add(it) }))
                 assertTrue("${hecho.motivo}\n" + dicho.joinToString("\n"), hecho.ok)
                 assertEquals("una nota del vault\n", File(destino, "nota.md").readText())
                 assertTrue("la copia privada sigue ahí", !File(v.raiz, "vault").exists())
 
                 // Lo que Obsidian crea en la carpeta compartida.
                 File(destino, "de-obsidian.md").writeText("escrito en Obsidian\n")
+                compose.onNodeWithTag("seccion-inicio").performClick()
+                esperar("sincronizar")
                 compose.onNodeWithTag("sincronizar").performClick()
                 compose.waitUntil(180_000) { compose.onAllNodes(hasTestTag("ocupado")).fetchSemanticsNodes().isEmpty() }
                 compose.onNodeWithTag("error").assertDoesNotExist()
@@ -279,11 +297,12 @@ class PuntaAPuntaTest {
                 val nota = Rclone.rpc("operations/stat", mapOf("fs" to "nas:/copia/vault", "remote" to "nota.md"))
                 assertTrue("el servidor ha perdido la nota: $nota", nota["item"] != null)
 
-                // La fila dice dónde vive, y que la pasada fue bien.
-                compose.waitUntilAtLeastOneExists(hasTestTag("donde-vault"), 5000)
-                compose.waitUntilAtLeastOneExists(hasText("Al día", substring = true) and hasAnyAncestor(hasTestTag("fila-vault")), 5000)
-                val fallos = compose.onAllNodes(hasText("Falló", substring = true) and hasAnyAncestor(hasTestTag("fila-vault")))
+                // Su chip en Inicio dice que la pasada fue bien, y su ficha, dónde vive.
+                compose.waitUntilAtLeastOneExists(dice("fila-vault", "al día"), 5000)
+                val fallos = compose.onAllNodes(dice("fila-vault", "falló"))
                 assertTrue("la pasada de vault ha fallado", fallos.fetchSemanticsNodes().isEmpty())
+                Banco.abrirFicha(compose, "vault")
+                compose.waitUntilAtLeastOneExists(hasTestTag("donde-vault"), 5000)
             }
         } finally {
             destino.deleteRecursively()

@@ -1,5 +1,9 @@
 package prdrive.app
 
+import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.junit4.ComposeTestRule
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.performClick
 import androidx.test.platform.app.InstrumentationRegistry
 import java.io.File
 import org.junit.AssumptionViolatedException
@@ -99,6 +103,18 @@ object Banco {
     private fun bytes(caso: Map<String, Any?>): ByteArray {
         val hexa = caso["hex"].toString()
         return ByteArray(hexa.length / 2) { hexa.substring(2 * it, 2 * it + 2).toInt(16).toByte() }
+    }
+
+    /**
+     * Abre la ficha de la pareja [nombre]: la sección Parejas (desde su raíz) y
+     * su fila, y espera a que esté delante. Las filas se leen al abrir la app:
+     * se espera también a que estén.
+     */
+    fun abrirFicha(compose: ComposeTestRule, nombre: String) {
+        compose.onNodeWithTag("seccion-parejas").performClick()
+        compose.waitUntil(30_000) { compose.onAllNodes(hasTestTag("fila-$nombre")).fetchSemanticsNodes().isNotEmpty() }
+        compose.onNodeWithTag("fila-$nombre").performClick()
+        compose.waitUntil(10_000) { compose.onAllNodes(hasTestTag("pantalla-pareja-$nombre")).fetchSemanticsNodes().isNotEmpty() }
     }
 
     /** Una pareja cuyo remoto es una carpeta de [remoto]. */

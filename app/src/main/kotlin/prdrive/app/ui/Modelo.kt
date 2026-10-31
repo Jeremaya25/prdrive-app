@@ -22,6 +22,9 @@ import prdrive.app.documentos.VolumenProvider
 import prdrive.app.llavero.Avisos
 import prdrive.app.llavero.LlaveroApp
 import prdrive.app.rclone.Adaptadores
+import prdrive.app.rclone.Rclone
+import prdrive.app.segundoplano.SegundoPlano
+import prdrive.engine.Bisync
 import prdrive.engine.Catalogo
 import prdrive.engine.Compartidas
 import prdrive.engine.Config
@@ -33,11 +36,12 @@ import prdrive.engine.LLAVERO_LOCAL
 import prdrive.engine.Mudanza
 import prdrive.engine.Pairing
 import prdrive.engine.Pasada
+import prdrive.engine.ResolverConflictos
 import prdrive.engine.Volumen
 import prdrive.engine.loadRaw
 
 /**
- * Modelo.kt — El estado de las dos pantallas y lo que hacen sus botones.
+ * Modelo.kt — El estado de las pantallas y lo que hacen sus botones.
  *
  * Todo lo que habla con rclone o con el disco bloquea, así que va fuera del
  * hilo de la pantalla, y de uno en uno: [ocupado] dice qué se está haciendo, y
@@ -146,6 +150,55 @@ class Modelo(app: Application) : AndroidViewModel(app) {
     var filas by mutableStateOf<List<Estado.Fila>>(emptyList())
         private set
 
+    /**
+     * Si [filas] ya se ha leído alguna vez. Tras morir el proceso, Android
+     * restaura la ficha de una pareja antes: hasta entonces, que no está en
+     * [filas] no quiere decir que no esté en el teléfono.
+     */
+    var filasLeidas by mutableStateOf(false)
+        private set
+
+    /** Dónde está el catálogo de parejas en el remoto («nas:/prdrive-catalog/remote.toml»), para Ajustes. */
+    var rutaCatalogo by mutableStateOf<String?>(null)
+        private set
+
+    /**
+     * El remoto de las parejas y su tipo, como lo dice Inicio debajo de «Este
+     * teléfono» («nas · sftp»); con varios, todos. `null` hasta que se lee.
+     */
+    var remoto by mutableStateOf<String?>(null)
+        private set
+
+    /** La pareja que se está moviendo (o devolviendo al volumen), si hay una: su ficha enseña cómo va. */
+    var mudando by mutableStateOf<String?>(null)
+        private set
+
+    /** Los pasos de la mudanza en marcha ([mudando]), por orden, y el que se está dando. */
+    var pasosMudanza by mutableStateOf<List<Mudanza.Paso>>(emptyList())
+        private set
+    var pasoMudanza by mutableStateOf<Mudanza.Paso?>(null)
+        private set
+
+    /** Lo que dijo el último simulacro: de qué pareja, el plan, y si acabó bien (si no, por qué). */
+    data class ResultadoSimulacro(
+        val pareja: String,
+        val plan: prdrive.engine.Simulacro.Plan,
+        val ok: Boolean,
+        val explicacion: String? = null,
+        val resync: Boolean = false,
+        /** El modo de la pareja, que dice hacia dónde copia un espejo y en qué lado borra. */
+        val modo: String = "bisync",
+        /** Su `--max-delete` efectivo, si lo lleva: el tope de lo que la pasada borraría. */
+        val tope: String? = null,
+    )
+
+    var simulacro by mutableStateOf<ResultadoSimulacro?>(null)
+        private set
+
+    /** Las parejas del catálogo (de su copia, sin red) que este teléfono no usa. */
+    var sinUsar by mutableStateOf<List<String>>(emptyList())
+        private set
+
     /** La fila del llavero; `null` si no lo lleva ni se puede traer. */
     var llavero by mutableStateOf<Estado.FilaLlavero?>(null)
         private set
@@ -176,8 +229,70 @@ class Modelo(app: Application) : AndroidViewModel(app) {
      */
     data class Apertura(val base: Uri, val llave: Uri?)
 
+    /** Lo que se está sincronizando ahora: las parejas por orden y cómo han ido las ya pasadas. */
+    data class EnCurso(val orden: List<String>, val hechas: Map<String, Pasada.Resultado> = emptyMap()) {
+        /** La que está pasando, o `null` entre dos (o al acabar). */
+        val ahora: String? get() = orden.firstOrNull { it !in hechas }
+    }
+
+    /** La pasada de «Sincronizar» en marcha, pareja a pareja; `null` si no hay. */
+    var enCurso by mutableStateOf<EnCurso?>(null)
+        private set
+
+    /** Si lo que está en marcha se puede parar ahora: una pasada de «Sincronizar», fuera del llavero. */
+    var sePuedeParar by mutableStateOf(false)
+        private set
+
+    /** El hilo que hace el trabajo de ahora ([trabajo]), para pedirle a rclone que lo pare. */
+    @Volatile
+    private var hiloDelTrabajo: Thread? = null
+
+    /** Si se ha pedido parar: no se pasa ninguna pareja más. */
+    @Volatile
+    private var parando = false
+
+    /** Si está pasando el llavero, que no se corta nunca. */
+    @Volatile
+    private var enElLlavero = false
+
+    /** Para que pedir parar y empezar el llavero no se crucen: el llavero no se corta nunca. */
+    private val cerrojoDeParar = Any()
+
+    /** «Sincronizar sola»: si va y con qué condiciones (del teléfono, no del config). */
+    var sola by mutableStateOf(SegundoPlano.leer(app))
+        private set
+
+    /** Cada cuántos minutos, según el `[daemon]` del config. */
+    var intervaloSola by mutableStateOf(SegundoPlano.POR_DEFECTO_MIN)
+        private set
+
+    /** Cuándo toca la próxima vuelta (milisegundos de época), si está programada. */
+    var proximaSola by mutableStateOf<Long?>(null)
+        private set
+
+    /** Cambia los ajustes de «Sincronizar sola» y programa (o quita) su trabajo. */
+    fun cambiarSola(a: SegundoPlano.Ajustes) {
+        sola = a
+        val minutos = intervaloSola
+        viewModelScope.launch(Dispatchers.IO) {
+            SegundoPlano.guardar(contexto, a, minutos)
+            proximaSola = if (a.activo) SegundoPlano.proxima(contexto) else null
+        }
+    }
+
     init {
-        if (sembrado) trabajo("Preparando…") { refrescar() }
+        if (sembrado) preparar()
+    }
+
+    /** La primera lectura de todo. Aunque falle (y lo diga el error), ya se ha intentado: la ficha deja de esperar. */
+    private fun preparar() {
+        trabajo("Preparando…") {
+            try {
+                refrescar()
+            } finally {
+                filasLeidas = true
+            }
+        }
     }
 
     /**
@@ -194,7 +309,7 @@ class Modelo(app: Application) : AndroidViewModel(app) {
      * nueva no se instala (instalarse cierra la app y lo cortaría), y con ella
      * instalándose no empieza nada.
      */
-    private fun trabajo(que: String, bloque: () -> Unit) {
+    private fun trabajo(que: String, parable: Boolean = false, bloque: () -> Unit) {
         if (ocupado != null) return
         if (!Actualizador.empezarTrabajo()) {
             error = "Se está instalando la versión nueva de prdrive y la app se cerrará en un momento. " +
@@ -203,9 +318,21 @@ class Modelo(app: Application) : AndroidViewModel(app) {
         }
         ocupado = que
         error = null
+        sePuedeParar = parable
         viewModelScope.launch {
             try {
-                runInterruptible(Dispatchers.IO) { bloque() }
+                runInterruptible(Dispatchers.IO) {
+                    hiloDelTrabajo = Thread.currentThread()
+                    try {
+                        bloque()
+                    } finally {
+                        synchronized(cerrojoDeParar) {
+                            hiloDelTrabajo = null
+                            Rclone.olvidarParada(Thread.currentThread())
+                            parando = false
+                        }
+                    }
+                }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -218,9 +345,29 @@ class Modelo(app: Application) : AndroidViewModel(app) {
             } finally {
                 ocupado = null
                 progreso = null
+                sePuedeParar = false
+                enCurso = null
                 Actualizador.acabarTrabajo(contexto)
             }
         }
+    }
+
+    /**
+     * «Parar la pasada»: rclone para la pareja que está pasando y espera a que
+     * la suelte ([Rclone.pedirParada]), y no se pasa ninguna más. Lo cortado no
+     * se apunta, como un Ctrl+C en el escritorio; si era una bisync a medias,
+     * sus listados se apartan y la pasada siguiente pide rehacer la referencia,
+     * que no borra nada. El llavero no se corta nunca: mientras pasa, no se puede.
+     */
+    fun parar() {
+        synchronized(cerrojoDeParar) {
+            val hilo = hiloDelTrabajo ?: return
+            if (!sePuedeParar || parando || enElLlavero) return
+            parando = true
+            Rclone.pedirParada(hilo)
+        }
+        sePuedeParar = false
+        ocupado = PARANDO
     }
 
     private fun decir(linea: String) {
@@ -238,6 +385,28 @@ class Modelo(app: Application) : AndroidViewModel(app) {
             error = e.message
             null
         }
+    }
+
+    /** «Volver» desde el código leído: se olvida, con su clave, y se vuelve a la bienvenida. */
+    fun olvidarCodigo() {
+        if (ocupado != null) return
+        carga = null
+        error = null
+    }
+
+    /**
+     * «Volver» desde elegir las parejas: al código leído, que sigue en memoria.
+     * La conexión ya escrita se queda; conectar otra vez la reescribe.
+     */
+    fun volverAlCodigo() {
+        if (ocupado != null || paso != Paso.PAREJAS) return
+        error = null
+        paso = Paso.CODIGO
+    }
+
+    /** «Cerrar» en el aviso del error: ya se ha leído. */
+    fun descartarError() {
+        error = null
     }
 
     fun avisar(mensaje: String) {
@@ -328,7 +497,7 @@ class Modelo(app: Application) : AndroidViewModel(app) {
     /** Del primer arranque a la pantalla principal. */
     fun empezar() {
         sembrado = volumen.sembrado
-        if (sembrado) trabajo("Preparando…") { refrescar() }
+        if (sembrado) preparar()
     }
 
     // --- principal --------------------------------------------------------------
@@ -340,6 +509,30 @@ class Modelo(app: Application) : AndroidViewModel(app) {
         val config = config()
         filas = filasDe(v, config)
         llavero = Estado.llavero(v, config, Prdrive.faltaRedLocal(contexto))
+        remoto = remotoDe(v, config)
+        sinUsar = Catalogo.cached(v.state)?.names?.filter { it !in config.names }.orEmpty()
+        intervaloSola = SegundoPlano.intervalo(config)
+        proximaSola = if (sola.activo) SegundoPlano.proxima(contexto) else null
+        rutaCatalogo = try {
+            @Suppress("UNCHECKED_CAST")
+            val defaults = loadRaw(v.config.readText(Charsets.UTF_8))["defaults"] as? Map<String, Any?> ?: emptyMap()
+            val remote = defaults["catalog_remote"] ?: defaults["remote"] ?: ""
+            "$remote:${defaults["catalog_path"] ?: prdrive.engine.DEFAULT_CATALOG_PATH}"
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    /** «nas · sftp»: el `remoteName` de las parejas y el tipo de su sección en el `rclone.conf`. */
+    private fun remotoDe(v: Volumen, config: Config): String? {
+        val tipos = try {
+            Bisync.tiposDeRemote(v.leerRcloneConf())
+        } catch (_: java.io.IOException) {
+            emptyMap()
+        }
+        val nombres = config.delUsuario.map { it.remoteName }.distinct()
+        if (nombres.isEmpty()) return null
+        return nombres.joinToString(", ") { n -> tipos[n]?.tipo?.let { "$n · $it" } ?: n }
     }
 
     /**
@@ -367,6 +560,7 @@ class Modelo(app: Application) : AndroidViewModel(app) {
             try {
                 filas = filasDe(volumen, config())
                 releerLlavero()
+                proximaSola = if (sola.activo) SegundoPlano.proxima(contexto) else null
             } catch (e: Exception) {
                 // Un config a medio escribir: la próxima vez.
                 android.util.Log.w("Modelo", "Releyendo las filas", e)
@@ -378,36 +572,112 @@ class Modelo(app: Application) : AndroidViewModel(app) {
      * Pasa todas las parejas, una detrás de otra, como `run_all()`: un error de
      * una no se lleva las demás ([Pasada.pasarOFallar]), y las filas se
      * refrescan pase lo que pase.
+     *
+     * Con [solo], solo esa pareja («Sincronizar esta pareja», en su ficha), sin
+     * el llavero: como `sync.py` con un nombre.
      */
-    fun sincronizar() {
-        trabajo("Sincronizando…") {
-            val v = Prdrive.iniciarRclone(contexto)
-            val config = config()
-            val ctx = Pasada.Contexto(keepLogs = config.keepLogs, accesoCompartido = Prdrive.accesoCompartido())
+    fun sincronizar(solo: String? = null) {
+        trabajo(if (solo == null) "Sincronizando…" else "Sincronizando «$solo»…", parable = true) {
             lineas = emptyList()
-            // Una pareja a medio mover no se pasa con las demás: su carpeta
-            // compartida puede estar a medio llenar, y una pasada normal vería
-            // borrados y los llevaría al remoto. Solo la pasa «Terminar de mover».
-            val entradas = Compartidas.leer(v.compartidas)
-            try {
-                for (p in config.delUsuario) {
-                    if (entradas[p.name]?.estado == Compartidas.Estado.ENTRANDO) {
-                        decir("[${p.name}] A medio mover: se pasa con «Terminar de mover».")
-                        continue
+            pasarParejas(solo)
+        }
+    }
+
+    /**
+     * «Aplicar y sincronizar» en los conflictos de [nombre]: cada plan
+     * confirmado se ejecuta ([ResolverConflictos.ResolvePlan.execute]), los
+     * conflictos se vuelven a mirar, como `tk_conflicts.resolver()` con
+     * `escanear=True`, y si se ha resuelto alguno, la pareja se sincroniza para
+     * llevarlo al remoto. Lo que no se puede hacer se dice y no para lo demás.
+     *
+     * Se ejecuta sin ninguna llamada a rclone a la vez ([Adaptadores.sinPasadas]):
+     * una pasada de fondo no lista la carpeta a medio renombrar.
+     */
+    fun resolver(nombre: String, planes: List<ResolverConflictos.ResolvePlan>) {
+        trabajo("Resolviendo los conflictos de «$nombre»…", parable = true) {
+            val v = Prdrive.iniciarRclone(contexto)
+            lineas = emptyList()
+            val fallos = ArrayList<String>()
+            var hechos = 0
+            Adaptadores.sinPasadas {
+                for (plan in planes) {
+                    try {
+                        plan.execute().forEach { decir("[$nombre] $it") }
+                        hechos++
+                    } catch (e: ResolverConflictos.ResolucionImposible) {
+                        fallos += e.message.orEmpty()
                     }
-                    val r = Pasada.pasarOFallar(
+                }
+                Conflictos.refrescar(config(), v.raiz, v.state)
+            }
+            filas = filasDe(v, config())
+            if (hechos > 0) pasarParejas(nombre)
+            if (fallos.isNotEmpty()) {
+                error = (if (fallos.size == 1) "Un conflicto no se ha podido resolver" else "${fallos.size} conflictos no se han podido resolver") +
+                    PARRAFO + fallos.joinToString(PARRAFO)
+            }
+        }
+    }
+
+    /** Cómo lee la app la hora de un fichero al resolver un conflicto: con sus ns, como el motor. */
+    val entornoConflictos = ResolverConflictos.Entorno(hora = Prdrive::hora)
+
+    /** Lo de dentro de [sincronizar]: las parejas (o [solo]) y, sin [solo], el llavero. */
+    private fun pasarParejas(solo: String?) {
+        val v = Prdrive.iniciarRclone(contexto)
+        val config = config()
+        val ctx = Pasada.Contexto(keepLogs = config.keepLogs, accesoCompartido = Prdrive.accesoCompartido())
+        // Una pareja a medio mover no se pasa con las demás: su carpeta
+        // compartida puede estar a medio llenar, y una pasada normal vería
+        // borrados y los llevaría al remoto. Solo la pasa «Terminar de mover».
+        val entradas = Compartidas.leer(v.compartidas)
+        val parejas = config.delUsuario.filter { solo == null || it.name == solo }
+        val conLlavero = solo == null && config.parejaLlavero != null
+        enCurso = EnCurso(parejas.map { it.name } + if (conLlavero) listOf(LLAVERO) else emptyList())
+        try {
+            for (p in parejas) {
+                if (parando) break
+                if (entradas[p.name]?.estado == Compartidas.Estado.ENTRANDO) {
+                    decir("[${p.name}] A medio mover: se pasa con «Terminar de mover».")
+                    enCurso = enCurso?.let { it.copy(hechas = it.hechas + (p.name to Pasada.Resultado(p.name, Pasada.SALTADA, emptyList()))) }
+                    continue
+                }
+                val r = try {
+                    Pasada.pasarOFallar(
                         v, p, Adaptadores.pasada, Adaptadores.opciones, ctx,
                         { progreso = Progreso.de(p.name, it) }, ::decir,
                     )
-                    resultados = resultados + (p.name to r)
+                } catch (_: Rclone.Cancelada) {
+                    // «Parar la pasada»: cortada, y no se apunta.
+                    decir("[${p.name}] Parada: no se apunta, y la siguiente sigue donde se quedó.")
+                    break
                 }
-                // El llavero, el último, como `sync.py` sin nombres: no sale
-                // entre las parejas, pero «Sincronizar» lo pasa.
-                if (config.parejaLlavero != null) pasarLlavero()
-            } finally {
-                filas = filasDe(v, config)
-                releerLlavero()
+                resultados = resultados + (p.name to r)
+                enCurso = enCurso?.let { it.copy(hechas = it.hechas + (p.name to r)) }
             }
+            // El llavero, el último, como `sync.py` sin nombres: no sale
+            // entre las parejas, pero «Sincronizar» lo pasa. No se corta: desde
+            // aquí ya no se puede parar.
+            val llavero = synchronized(cerrojoDeParar) {
+                if (parando || !conLlavero) {
+                    false
+                } else {
+                    enElLlavero = true
+                    Rclone.olvidarParada(Thread.currentThread())
+                    true
+                }
+            }
+            if (llavero) {
+                sePuedeParar = false
+                try {
+                    pasarLlavero()
+                } finally {
+                    enElLlavero = false
+                }
+            }
+        } finally {
+            filas = filasDe(v, config)
+            releerLlavero()
         }
     }
 
@@ -550,6 +820,37 @@ class Modelo(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    /**
+     * «Hacer un simulacro…»: la pasada de [nombre] con `--dry-run`, que no
+     * escribe nada ni se apunta, leída como un plan ([prdrive.engine.Simulacro]).
+     * Si la pareja pide rehacer la referencia, se simula eso, que es lo que
+     * haría la pasada siguiente una vez aprobado.
+     */
+    fun simular(nombre: String) {
+        trabajo("Haciendo el simulacro de «$nombre»…") {
+            val v = Prdrive.iniciarRclone(contexto)
+            val config = config()
+            val p = config.pairs.first { it.name == nombre }
+            val resync = filas.firstOrNull { it.nombre == nombre }?.pideResync?.isNotEmpty() == true
+            lineas = emptyList()
+            simulacro = null
+            val r = Pasada.pasarOFallar(
+                v, p, Adaptadores.pasada, Adaptadores.opciones,
+                Pasada.Contexto(
+                    simulacro = true, keepLogs = true, resyncAprobado = resync,
+                    accesoCompartido = Prdrive.accesoCompartido(),
+                ),
+                { progreso = Progreso.de(p.name, it) }, ::decir,
+            )
+            // El log del simulacro se lee y se tira: no es el de ninguna pasada.
+            val texto = r.log?.let { log -> Estado.leer(log).also { log.delete() } }.orEmpty()
+            simulacro = ResultadoSimulacro(
+                nombre, prdrive.engine.Simulacro.leer(texto), r.ok, r.explicacion, resync,
+                modo = p.mode.name, tope = p.flags["max-delete"]?.toString(),
+            )
+        }
+    }
+
     /** Pasa una pareja con su `--resync` aprobado: lo pide quien ha leído por qué. */
     fun aprobarResync(nombre: String) {
         trabajo("Rehaciendo la referencia de $nombre…") {
@@ -593,7 +894,7 @@ class Modelo(app: Application) : AndroidViewModel(app) {
             error = SIN_RUTA_COMPARTIDA
             return
         }
-        mudanza("Moviendo $nombre a ${carpeta.name}…", nombre) { v, e -> Mudanza.entrar(v, nombre, carpeta, e) }
+        mudanza("Moviendo $nombre a ${carpeta.name}…", nombre, Mudanza.PASOS_ENTRAR) { v, e -> Mudanza.entrar(v, nombre, carpeta, e) }
     }
 
     /** «Terminar de mover»: acaba la mudanza de [nombre] que quedó a medias ([Mudanza.terminar]). */
@@ -603,7 +904,7 @@ class Modelo(app: Application) : AndroidViewModel(app) {
             error = Prdrive.SIN_PERMISO_COMPARTIDO
             return
         }
-        mudanza("Terminando de mover $nombre…", nombre) { v, e -> Mudanza.terminar(v, nombre, e) }
+        mudanza("Terminando de mover $nombre…", nombre, Mudanza.PASOS_TERMINAR) { v, e -> Mudanza.terminar(v, nombre, e) }
     }
 
     /**
@@ -613,7 +914,7 @@ class Modelo(app: Application) : AndroidViewModel(app) {
      */
     fun volverAlVolumen(nombre: String) {
         if (ocupado != null) return
-        mudanza("Devolviendo $nombre al volumen…", nombre) { v, e ->
+        mudanza("Devolviendo $nombre al volumen…", nombre, Mudanza.PASOS_SALIR) { v, e ->
             Mudanza.salir(v, nombre, Prdrive.permisoCompartido(), e)
         }
     }
@@ -625,16 +926,27 @@ class Modelo(app: Application) : AndroidViewModel(app) {
      * que ha hecho se apuntan como las demás ([resultados]); si se ha parado,
      * [error] dice por qué y qué hacer. Las filas se releen pase lo que pase.
      */
-    private fun mudanza(que: String, nombre: String, hacer: (Volumen, Mudanza.Entorno) -> Mudanza.Hecho) {
+    private fun mudanza(
+        que: String,
+        nombre: String,
+        pasos: List<Mudanza.Paso>,
+        hacer: (Volumen, Mudanza.Entorno) -> Mudanza.Hecho,
+    ) {
         trabajo(que) {
             val v = Prdrive.iniciarRclone(contexto)
             lineas = emptyList()
+            mudando = nombre
             try {
-                val entorno = Compartir.entorno(contexto, config().keepLogs, { progreso = Progreso.de(nombre, it) }, ::decir)
+                pasosMudanza = pasos
+                pasoMudanza = null
+                val entorno = Compartir.entorno(
+                    contexto, config().keepLogs, { progreso = Progreso.de(nombre, it) }, ::decir,
+                ) { pasoMudanza = it }
                 val hecho = LlaveroApp.enExclusiva { hacer(v, entorno) }
                 for (r in hecho.pasadas) resultados = resultados + (r.pareja to r)
                 error = hecho.motivo
             } finally {
+                mudando = null
                 filas = filasDe(v, config())
                 releerLlavero()
             }
@@ -643,6 +955,9 @@ class Modelo(app: Application) : AndroidViewModel(app) {
 
     companion object {
         const val MAX_LINEAS = 200
+
+        /** Lo que se dice mientras rclone suelta la pareja que se ha parado. */
+        const val PARANDO = "Parando: se espera a que rclone suelte la pareja…"
 
         /** Lo que se dice cuando la carpeta elegida no es una que la app pueda usar. */
         const val SIN_RUTA_COMPARTIDA =

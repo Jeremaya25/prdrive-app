@@ -25,6 +25,13 @@ object Adaptadores {
      */
     private val unaPasada = Any()
 
+    /**
+     * [bloque] sin ninguna llamada a rclone a la vez: para lo que cambia los
+     * ficheros de una pareja por su cuenta (resolver un conflicto), que una
+     * pasada de fondo no liste la carpeta a medio cambiar.
+     */
+    fun <T> sinPasadas(bloque: () -> T): T = synchronized(unaPasada) { bloque() }
+
     /** La pasada de una pareja ([Pasada.Rclone]) contra la biblioteca. */
     val pasada: Pasada.Rclone = object : Pasada.Rclone {
         override fun ejecutar(llamada: Pasada.Llamada, alProgreso: (Map<String, Any?>) -> Unit): Pasada.Final =
