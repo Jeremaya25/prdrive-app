@@ -8,6 +8,7 @@ import android.provider.DocumentsContract
 import android.service.notification.StatusBarNotification
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertIsOff
@@ -20,6 +21,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTextInput
 import androidx.core.app.NotificationCompat
 import androidx.lifecycle.Lifecycle
@@ -137,7 +139,8 @@ class PantallaLlaveroTest {
     private fun emparejarConLlavero() {
         compose.onNodeWithText("Pegar el texto del código").performClick()
         compose.onNodeWithTag("carga").performTextInput(cargaDelQr())
-        compose.onNodeWithTag("usarTexto").performScrollTo().performClick()
+        // Con el teclado entrando la pantalla aún se mueve: el toque va por la acción del botón, no por su sitio.
+        compose.onNodeWithTag("usarTexto").performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
         esperar("conectar")
         compose.onNodeWithTag("conectar").performClick()
         esperar("elegir-llavero")

@@ -1,6 +1,7 @@
 package prdrive.app
 
 import androidx.compose.ui.semantics.getOrNull
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertIsOff
@@ -13,6 +14,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTextInput
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -106,7 +108,8 @@ class PuntaAPuntaTest {
             // 1. El código: pegado, leído y conectado.
             compose.onNodeWithText("Pegar el texto del código").performClick()
             compose.onNodeWithTag("carga").performTextInput(carga)
-            compose.onNodeWithTag("usarTexto").performScrollTo().performClick()
+            // Con el teclado entrando la pantalla aún se mueve: el toque va por la acción del botón, no por su sitio.
+            compose.onNodeWithTag("usarTexto").performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
             captura("1-codigo")
             compose.onNodeWithTag("conectar").performClick()
 
@@ -190,7 +193,8 @@ class PuntaAPuntaTest {
         ActivityScenario.launch(MainActivity::class.java).use {
             compose.onNodeWithText("Pegar el texto del código").performClick()
             compose.onNodeWithTag("carga").performTextInput(carga)
-            compose.onNodeWithTag("usarTexto").performScrollTo().performClick()
+            // Con el teclado entrando la pantalla aún se mueve: el toque va por la acción del botón, no por su sitio.
+            compose.onNodeWithTag("usarTexto").performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
             compose.onNodeWithTag("conectar").performClick()
 
             // La casilla sale porque el catálogo lleva `[keychain]`, y sale
@@ -254,7 +258,8 @@ class PuntaAPuntaTest {
             ActivityScenario.launch(MainActivity::class.java).use {
                 compose.onNodeWithText("Pegar el texto del código").performClick()
                 compose.onNodeWithTag("carga").performTextInput(carga)
-                compose.onNodeWithTag("usarTexto").performScrollTo().performClick()
+                // Con el teclado entrando la pantalla aún se mueve: el toque va por la acción del botón, no por su sitio.
+                compose.onNodeWithTag("usarTexto").performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
                 compose.onNodeWithTag("conectar").performClick()
 
                 esperar("instalar")

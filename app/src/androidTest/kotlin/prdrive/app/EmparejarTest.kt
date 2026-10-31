@@ -1,5 +1,6 @@
 package prdrive.app
 
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
@@ -9,6 +10,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTextInput
 import androidx.lifecycle.Lifecycle
 import androidx.test.core.app.ActivityScenario
@@ -98,7 +100,8 @@ class EmparejarTest {
         ActivityScenario.launch(MainActivity::class.java).use { escena ->
             compose.onNodeWithText("Pegar el texto del código").performClick()
             compose.onNodeWithTag("carga").performTextInput(carga())
-            compose.onNodeWithTag("usarTexto").performScrollTo().performClick()
+            // Con el teclado entrando la pantalla aún se mueve: el toque va por la acción del botón, no por su sitio.
+            compose.onNodeWithTag("usarTexto").performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
             esperarA("conectar")
             compose.onNodeWithTag("conectar").performClick()
             esperarA("instalar", 60)
