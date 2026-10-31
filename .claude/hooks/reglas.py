@@ -13,7 +13,7 @@ En `engine/src/main` (AGENTS.md, «Reglas que no se cruzan» y «Ojo con Android
   17 y la clase no carga en el teléfono.
 
 En las pantallas (`app/src/main/…/ui/`, AGENTS.md, «Convenios»): ningún color
-escrito, todo de `MaterialTheme.colorScheme`.
+escrito, todo de `MaterialTheme.colorScheme` o de `Paleta.actual`.
 
 Solo mira las líneas que la herramienta acaba de introducir: en un Edit, las de
 `new_string` que no estaban en `old_string`; en un Write, las que no están en la
@@ -77,7 +77,7 @@ REGLAS_PANTALLA = [
     (
         COLOR,
         "En las pantallas no se escribe ningún color: todo sale de "
-        "MaterialTheme.colorScheme (AGENTS.md, «Convenios»).",
+        "MaterialTheme.colorScheme o de Paleta.actual (AGENTS.md, «Convenios»).",
     ),
 ]
 
