@@ -148,7 +148,7 @@ fun Ficha(
                     if (m.lineas.isNotEmpty()) Registro(m.lineas.takeLast(LINEAS_MUDANZA))
                 }
             }
-            Arreglos(m, f, libre) { rehaciendo = true }
+            Arreglos(m, f, libre, rehacer = { rehaciendo = true }, resolver = { ir(Destino.Conflictos(nombre)) })
             Bloque("Cómo se sincroniza") { ComoSeSincroniza(f, libre) { ir(Destino.Simulacro(nombre)) } }
             Bloque("Dónde vive en este teléfono") { DondeVive(m, f, libre, ir, conRed) }
             if (f.ultimas.isNotEmpty()) Bloque("Últimas pasadas") { UltimasPasadas(f) }
@@ -247,10 +247,11 @@ private fun Bloque(titulo: String, contenido: @Composable ColumnScope.() -> Unit
 
 /**
  * Lo que hay que arreglar, si hay algo: el último fallo, rehacer la referencia
- * (que abre su hoja, [rehacer]) y los ficheros en conflicto.
+ * (que abre su hoja, [rehacer]) y los ficheros en conflicto (que se resuelven en
+ * su pantalla, [resolver]).
  */
 @Composable
-private fun Arreglos(m: Modelo, f: Estado.Fila, libre: Boolean, rehacer: () -> Unit) {
+private fun Arreglos(m: Modelo, f: Estado.Fila, libre: Boolean, rehacer: () -> Unit, resolver: () -> Unit) {
     val fallo = f.fallo
     val pideResync = f.pideResync.isNotEmpty() && m.resultados[f.nombre]?.ok != true && !f.entrando
     if (fallo == null && !pideResync && f.conflictos.isEmpty()) return
@@ -295,6 +296,14 @@ private fun Arreglos(m: Modelo, f: Estado.Fila, libre: Boolean, rehacer: () -> U
                         Text("y ${n - Pasada.CONFLICTS_SHOWN} más", style = Letra.actual.pista)
                     }
                 }
+                Separador()
+                Boton(
+                    if (n == 1) "Resolverlo…" else "Resolverlos…",
+                    resolver,
+                    Modifier.padding(horizontal = 4.dp, vertical = 4.dp).testTag("resolver-${f.nombre}"),
+                    peso = Peso.SILENCIOSO,
+                    activo = libre && !f.entrando,
+                )
             }
         }
     }

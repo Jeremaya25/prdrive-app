@@ -66,6 +66,8 @@ object Estado {
         val ultimas: List<Historial.Pasada> = emptyList(),
         /** La racha de fallos en la que está, si la última pasada falló ([Historial.racha]). */
         val racha: Historial.Racha? = null,
+        /** Si guarda versiones (`versions`): lo que una pasada borra o pisa va a `.prversions/`. */
+        val guardaVersiones: Boolean = false,
     )
 
     /**
@@ -108,6 +110,7 @@ object Estado {
                 porQueNoSeComparte = noSeComparte,
                 ultimas = diario[p.name].orEmpty().takeLast(ULTIMAS).reversed(),
                 racha = diario[p.name]?.let(Historial::racha),
+                guardaVersiones = p.versions,
             )
         }
     }

@@ -36,6 +36,7 @@ import prdrive.engine.LLAVERO_LOCAL
 import prdrive.engine.Mudanza
 import prdrive.engine.Pairing
 import prdrive.engine.Pasada
+import prdrive.engine.ResolverConflictos
 import prdrive.engine.Volumen
 import prdrive.engine.loadRaw
 
@@ -577,62 +578,106 @@ class Modelo(app: Application) : AndroidViewModel(app) {
      */
     fun sincronizar(solo: String? = null) {
         trabajo(if (solo == null) "Sincronizando…" else "Sincronizando «$solo»…", parable = true) {
-            val v = Prdrive.iniciarRclone(contexto)
-            val config = config()
-            val ctx = Pasada.Contexto(keepLogs = config.keepLogs, accesoCompartido = Prdrive.accesoCompartido())
             lineas = emptyList()
-            // Una pareja a medio mover no se pasa con las demás: su carpeta
-            // compartida puede estar a medio llenar, y una pasada normal vería
-            // borrados y los llevaría al remoto. Solo la pasa «Terminar de mover».
-            val entradas = Compartidas.leer(v.compartidas)
-            val parejas = config.delUsuario.filter { solo == null || it.name == solo }
-            val conLlavero = solo == null && config.parejaLlavero != null
-            enCurso = EnCurso(parejas.map { it.name } + if (conLlavero) listOf(LLAVERO) else emptyList())
-            try {
-                for (p in parejas) {
-                    if (parando) break
-                    if (entradas[p.name]?.estado == Compartidas.Estado.ENTRANDO) {
-                        decir("[${p.name}] A medio mover: se pasa con «Terminar de mover».")
-                        enCurso = enCurso?.let { it.copy(hechas = it.hechas + (p.name to Pasada.Resultado(p.name, Pasada.SALTADA, emptyList()))) }
-                        continue
-                    }
-                    val r = try {
-                        Pasada.pasarOFallar(
-                            v, p, Adaptadores.pasada, Adaptadores.opciones, ctx,
-                            { progreso = Progreso.de(p.name, it) }, ::decir,
-                        )
-                    } catch (_: Rclone.Cancelada) {
-                        // «Parar la pasada»: cortada, y no se apunta.
-                        decir("[${p.name}] Parada: no se apunta, y la siguiente sigue donde se quedó.")
-                        break
-                    }
-                    resultados = resultados + (p.name to r)
-                    enCurso = enCurso?.let { it.copy(hechas = it.hechas + (p.name to r)) }
-                }
-                // El llavero, el último, como `sync.py` sin nombres: no sale
-                // entre las parejas, pero «Sincronizar» lo pasa. No se corta: desde
-                // aquí ya no se puede parar.
-                val llavero = synchronized(cerrojoDeParar) {
-                    if (parando || !conLlavero) {
-                        false
-                    } else {
-                        enElLlavero = true
-                        Rclone.olvidarParada(Thread.currentThread())
-                        true
-                    }
-                }
-                if (llavero) {
-                    sePuedeParar = false
+            pasarParejas(solo)
+        }
+    }
+
+    /**
+     * «Aplicar y sincronizar» en los conflictos de [nombre]: cada plan
+     * confirmado se ejecuta ([ResolverConflictos.ResolvePlan.execute]), los
+     * conflictos se vuelven a mirar, como `tk_conflicts.resolver()` con
+     * `escanear=True`, y si se ha resuelto alguno, la pareja se sincroniza para
+     * llevarlo al remoto. Lo que no se puede hacer se dice y no para lo demás.
+     *
+     * Se ejecuta sin ninguna llamada a rclone a la vez ([Adaptadores.sinPasadas]):
+     * una pasada de fondo no lista la carpeta a medio renombrar.
+     */
+    fun resolver(nombre: String, planes: List<ResolverConflictos.ResolvePlan>) {
+        trabajo("Resolviendo los conflictos de «$nombre»…", parable = true) {
+            val v = Prdrive.iniciarRclone(contexto)
+            lineas = emptyList()
+            val fallos = ArrayList<String>()
+            var hechos = 0
+            Adaptadores.sinPasadas {
+                for (plan in planes) {
                     try {
-                        pasarLlavero()
-                    } finally {
-                        enElLlavero = false
+                        plan.execute().forEach { decir("[$nombre] $it") }
+                        hechos++
+                    } catch (e: ResolverConflictos.ResolucionImposible) {
+                        fallos += e.message.orEmpty()
                     }
                 }
-            } finally {
-                filas = filasDe(v, config)
-                releerLlavero()
+                Conflictos.refrescar(config(), v.raiz, v.state)
             }
+            filas = filasDe(v, config())
+            if (hechos > 0) pasarParejas(nombre)
+            if (fallos.isNotEmpty()) {
+                error = (if (fallos.size == 1) "Un conflicto no se ha podido resolver" else "${fallos.size} conflictos no se han podido resolver") +
+                    PARRAFO + fallos.joinToString(PARRAFO)
+            }
+        }
+    }
+
+    /** Cómo lee la app la hora de un fichero al resolver un conflicto: con sus ns, como el motor. */
+    val entornoConflictos = ResolverConflictos.Entorno(hora = Prdrive::hora)
+
+    /** Lo de dentro de [sincronizar]: las parejas (o [solo]) y, sin [solo], el llavero. */
+    private fun pasarParejas(solo: String?) {
+        val v = Prdrive.iniciarRclone(contexto)
+        val config = config()
+        val ctx = Pasada.Contexto(keepLogs = config.keepLogs, accesoCompartido = Prdrive.accesoCompartido())
+        // Una pareja a medio mover no se pasa con las demás: su carpeta
+        // compartida puede estar a medio llenar, y una pasada normal vería
+        // borrados y los llevaría al remoto. Solo la pasa «Terminar de mover».
+        val entradas = Compartidas.leer(v.compartidas)
+        val parejas = config.delUsuario.filter { solo == null || it.name == solo }
+        val conLlavero = solo == null && config.parejaLlavero != null
+        enCurso = EnCurso(parejas.map { it.name } + if (conLlavero) listOf(LLAVERO) else emptyList())
+        try {
+            for (p in parejas) {
+                if (parando) break
+                if (entradas[p.name]?.estado == Compartidas.Estado.ENTRANDO) {
+                    decir("[${p.name}] A medio mover: se pasa con «Terminar de mover».")
+                    enCurso = enCurso?.let { it.copy(hechas = it.hechas + (p.name to Pasada.Resultado(p.name, Pasada.SALTADA, emptyList()))) }
+                    continue
+                }
+                val r = try {
+                    Pasada.pasarOFallar(
+                        v, p, Adaptadores.pasada, Adaptadores.opciones, ctx,
+                        { progreso = Progreso.de(p.name, it) }, ::decir,
+                    )
+                } catch (_: Rclone.Cancelada) {
+                    // «Parar la pasada»: cortada, y no se apunta.
+                    decir("[${p.name}] Parada: no se apunta, y la siguiente sigue donde se quedó.")
+                    break
+                }
+                resultados = resultados + (p.name to r)
+                enCurso = enCurso?.let { it.copy(hechas = it.hechas + (p.name to r)) }
+            }
+            // El llavero, el último, como `sync.py` sin nombres: no sale
+            // entre las parejas, pero «Sincronizar» lo pasa. No se corta: desde
+            // aquí ya no se puede parar.
+            val llavero = synchronized(cerrojoDeParar) {
+                if (parando || !conLlavero) {
+                    false
+                } else {
+                    enElLlavero = true
+                    Rclone.olvidarParada(Thread.currentThread())
+                    true
+                }
+            }
+            if (llavero) {
+                sePuedeParar = false
+                try {
+                    pasarLlavero()
+                } finally {
+                    enElLlavero = false
+                }
+            }
+        } finally {
+            filas = filasDe(v, config)
+            releerLlavero()
         }
     }
 

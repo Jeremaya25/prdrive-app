@@ -66,6 +66,7 @@ import prdrive.app.ui.parejas.LogDePareja
 import prdrive.app.ui.parejas.Mover
 import prdrive.app.ui.parejas.Parejas
 import prdrive.app.ui.parejas.Simulacro
+import prdrive.app.ui.parejas.ResolverLosConflictos
 import prdrive.app.ui.piezas.Aviso
 import prdrive.app.ui.piezas.Glifo
 import prdrive.app.ui.piezas.Icono
@@ -96,6 +97,7 @@ sealed interface Destino {
     data class Log(val pareja: String) : Destino
     data class Mover(val pareja: String) : Destino
     data class Simulacro(val pareja: String) : Destino
+    data class Conflictos(val pareja: String) : Destino
 }
 
 /** La sección elegida y lo que tiene encima, de abajo arriba. */
@@ -158,6 +160,7 @@ class Pila(seccion: Seccion = Seccion.INICIO, encima: List<Destino> = emptyList(
             is Destino.Log -> "log:${d.pareja}"
             is Destino.Mover -> "mover:${d.pareja}"
             is Destino.Simulacro -> "simulacro:${d.pareja}"
+            is Destino.Conflictos -> "conflictos:${d.pareja}"
         }
 
         private fun decodificar(texto: String): Destino? {
@@ -167,6 +170,7 @@ class Pila(seccion: Seccion = Seccion.INICIO, encima: List<Destino> = emptyList(
                 "log" -> Destino.Log(pareja)
                 "mover" -> Destino.Mover(pareja)
                 "simulacro" -> Destino.Simulacro(pareja)
+                "conflictos" -> Destino.Conflictos(pareja)
                 else -> null
             }
         }
@@ -346,6 +350,7 @@ private fun Pantalla(m: Modelo, pila: Pila, conRed: (() -> Unit) -> Unit, conPer
         is Destino.Log -> LogDePareja(m, d.pareja) { pila.atras() }
         is Destino.Mover -> Mover(m, d.pareja, volver = { pila.atras() }, conRed = conRed)
         is Destino.Simulacro -> Simulacro(m, d.pareja, volver = { pila.atras() }, conRed = conRed)
+        is Destino.Conflictos -> ResolverLosConflictos(m, d.pareja, volver = { pila.atras() }, conRed = conRed)
         null -> when (pila.seccion) {
             Seccion.INICIO -> Inicio(m, pila::ir, pila::cambiar)
             Seccion.PAREJAS -> Parejas(m, pila::ir)
@@ -403,4 +408,5 @@ private fun ArribaDeTodo(m: Modelo, enInicio: Boolean, faltaRed: Boolean, pedirR
 }
 
 /** Lo que separa dos párrafos de un error ([Modelo.error]). */
-private const val PARRAFO = "\n\n"
+/** Lo que separa el título de un error de su explicación (el primer párrafo es el título). */
+internal const val PARRAFO = "\n\n"
