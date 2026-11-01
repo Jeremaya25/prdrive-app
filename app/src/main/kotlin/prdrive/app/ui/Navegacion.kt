@@ -61,6 +61,7 @@ import prdrive.app.Prdrive
 import prdrive.app.ui.ajustes.Ajustes
 import prdrive.app.ui.inicio.Inicio
 import prdrive.app.ui.llavero.SeccionLlavero
+import prdrive.app.ui.parejas.AnadirPareja
 import prdrive.app.ui.parejas.Ficha
 import prdrive.app.ui.parejas.LogDePareja
 import prdrive.app.ui.parejas.Mover
@@ -75,8 +76,9 @@ import prdrive.app.ui.piezas.TonoAviso
 /**
  * Navegacion.kt — Las cuatro secciones de abajo (Inicio, Parejas, Llavero y
  * Ajustes) y la pila de pantallas que se abren encima de una sección (la ficha
- * de una pareja, su log, moverla). Es propia, sin la biblioteca de navegación:
- * son cuatro raíces y tres destinos, y así no entra una dependencia nueva.
+ * de una pareja, su log, moverla, añadirla). Es propia, sin la biblioteca de
+ * navegación: son cuatro raíces y unos pocos destinos, y así no entra una
+ * dependencia nueva.
  *
  * El botón atrás del sistema saca la pantalla de encima; sin nada encima y
  * fuera de Inicio, vuelve a Inicio; y en Inicio, es de Android: sale de la app.
@@ -98,6 +100,9 @@ sealed interface Destino {
     data class Mover(val pareja: String) : Destino
     data class Simulacro(val pareja: String) : Destino
     data class Conflictos(val pareja: String) : Destino
+
+    /** Añadir a este teléfono una pareja del catálogo. */
+    data class Anadir(val pareja: String) : Destino
 }
 
 /** La sección elegida y lo que tiene encima, de abajo arriba. */
@@ -161,6 +166,7 @@ class Pila(seccion: Seccion = Seccion.INICIO, encima: List<Destino> = emptyList(
             is Destino.Mover -> "mover:${d.pareja}"
             is Destino.Simulacro -> "simulacro:${d.pareja}"
             is Destino.Conflictos -> "conflictos:${d.pareja}"
+            is Destino.Anadir -> "anadir:${d.pareja}"
         }
 
         private fun decodificar(texto: String): Destino? {
@@ -171,6 +177,7 @@ class Pila(seccion: Seccion = Seccion.INICIO, encima: List<Destino> = emptyList(
                 "mover" -> Destino.Mover(pareja)
                 "simulacro" -> Destino.Simulacro(pareja)
                 "conflictos" -> Destino.Conflictos(pareja)
+                "anadir" -> Destino.Anadir(pareja)
                 else -> null
             }
         }
@@ -351,6 +358,15 @@ private fun Pantalla(m: Modelo, pila: Pila, conRed: (() -> Unit) -> Unit, conPer
         is Destino.Mover -> Mover(m, d.pareja, volver = { pila.atras() }, conRed = conRed)
         is Destino.Simulacro -> Simulacro(m, d.pareja, volver = { pila.atras() }, conRed = conRed)
         is Destino.Conflictos -> ResolverLosConflictos(m, d.pareja, volver = { pila.atras() }, conRed = conRed)
+        is Destino.Anadir -> AnadirPareja(
+            m, d.pareja,
+            volver = { pila.atras() },
+            aSuFicha = {
+                pila.atras()
+                pila.ir(Destino.Ficha(d.pareja))
+            },
+            conRed = conRed,
+        )
         null -> when (pila.seccion) {
             Seccion.INICIO -> Inicio(m, pila::ir, pila::cambiar)
             Seccion.PAREJAS -> Parejas(m, pila::ir)

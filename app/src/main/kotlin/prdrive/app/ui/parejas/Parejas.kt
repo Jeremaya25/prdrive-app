@@ -16,12 +16,16 @@ import prdrive.app.ui.Cabecera
 import prdrive.app.ui.Destino
 import prdrive.app.ui.Letra
 import prdrive.app.ui.Modelo
+import prdrive.app.ui.conRedLocal
 import prdrive.app.ui.flecha
 import prdrive.app.ui.haceCuanto
 import prdrive.app.ui.inicio.estadoDe
 import prdrive.app.ui.inicio.iconoDelModo
+import prdrive.app.ui.piezas.Boton
 import prdrive.app.ui.piezas.Chip
 import prdrive.app.ui.piezas.Fila
+import prdrive.app.ui.piezas.Icono
+import prdrive.app.ui.piezas.Peso
 import prdrive.app.ui.piezas.Rotulo
 import prdrive.app.ui.piezas.Separador
 import prdrive.app.ui.piezas.Tarjeta
@@ -30,12 +34,16 @@ import prdrive.app.ui.rutaCorta
 
 /**
  * Parejas.kt — La sección Parejas: las del teléfono, una fila por pareja con
- * sus dos carpetas, su modo y su estado, que lleva a su ficha; y debajo, las del
- * catálogo que este teléfono no usa, en cursiva y con «no se usa aquí» (no se
- * limitan a ponerse grises). «Añadir…» llega con la fase 5 (#25).
+ * sus dos carpetas, su modo y su estado, que lleva a su ficha (y desde ella se
+ * quita); y debajo, las del catálogo que este teléfono no usa, en cursiva y con
+ * «no se usa aquí» (no se limitan a ponerse grises), que llevan a añadirlas
+ * ([AnadirPareja]). De esas solo se dice el remoto: la carpeta del teléfono se
+ * elige al añadirla (prdrive#196). Al final, volver a leer el catálogo del
+ * remoto, que si no solo se lee al emparejar.
  */
 @Composable
 fun Parejas(m: Modelo, ir: (Destino) -> Unit) {
+    val conRed = conRedLocal()
     val n = m.filas.size
     val total = n + m.sinUsar.size
     Column(
@@ -80,18 +88,33 @@ fun Parejas(m: Modelo, ir: (Destino) -> Unit) {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Rotulo("Del catálogo, sin usar aquí")
                     Tarjeta {
-                        m.sinUsar.forEachIndexed { i, nombre ->
+                        m.sinUsar.forEachIndexed { i, s ->
                             if (i > 0) Separador()
                             Fila(
-                                nombre,
-                                Modifier.testTag("sin-usar-$nombre"),
+                                s.nombre,
+                                Modifier.testTag("sin-usar-${s.nombre}"),
+                                alPulsar = { ir(Destino.Anadir(s.nombre)) },
+                                icono = iconoDelModo(s.modo),
+                                detalle = s.remoto,
+                                detalleMono = true,
+                                pista = palabraDelModo(s.modo),
                                 cursiva = true,
                                 extremo = { Chip("no se usa aquí", tono = Tono.APAGADO) },
                             )
                         }
                     }
+                    Text("Toca una para añadirla a este teléfono.", style = Letra.actual.pista)
                 }
             }
+            Boton(
+                "Volver a leer el catálogo",
+                { conRed { m.releerCatalogo() } },
+                Modifier.testTag("releer-catalogo"),
+                peso = Peso.SILENCIOSO,
+                icono = Icono.RELOAD,
+                ancho = true,
+                activo = m.ocupado == null,
+            )
         }
     }
 }
