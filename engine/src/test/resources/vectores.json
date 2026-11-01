@@ -17276,6 +17276,19 @@
           "name": "rara",
           "local": "../fuera",
           "remote_path": "/copia/rara"
+        },
+        {
+          "name": "programa",
+          "local": ".prdrive/keys",
+          "remote_path": "/copia/programa"
+        },
+        {
+          "name": "peligrosa",
+          "local": "peligrosa",
+          "remote_path": "/copia/peligrosa",
+          "extra_flags": [
+            "--resync"
+          ]
         }
       ]
     },
@@ -17381,6 +17394,100 @@
             "remote_path": "/copia/notas"
           }
         ]
+      },
+      "con_una_de_aqui": {
+        "defaults": {
+          "device_remote": "disp",
+          "remote": "nas",
+          "catalog_path": "/prdrive-catalog/remote.toml"
+        },
+        "daemon": {
+          "pairs": [
+            "notas"
+          ],
+          "interval_minutes": 15
+        },
+        "pair": [
+          {
+            "name": "notas",
+            "local": "notas",
+            "remote_path": "/copia/notas"
+          },
+          {
+            "name": "subida",
+            "local": "salida",
+            "remote_path": "/copia/salida",
+            "mode": "up"
+          },
+          {
+            "name": "solo-aqui",
+            "local": "aqui",
+            "remote_path": "/copia/aqui"
+          }
+        ]
+      },
+      "daemon_sin_pairs": {
+        "defaults": {
+          "device_remote": "disp",
+          "remote": "nas",
+          "catalog_path": "/prdrive-catalog/remote.toml"
+        },
+        "daemon": {
+          "interval_minutes": 15
+        },
+        "pair": [
+          {
+            "name": "notas",
+            "local": "notas",
+            "remote_path": "/copia/notas"
+          },
+          {
+            "name": "subida",
+            "local": "salida",
+            "remote_path": "/copia/salida",
+            "mode": "up"
+          }
+        ]
+      },
+      "sin_parejas": {
+        "defaults": {
+          "device_remote": "disp",
+          "remote": "nas",
+          "catalog_path": "/prdrive-catalog/remote.toml"
+        }
+      },
+      "pair_tabla": {
+        "defaults": {
+          "device_remote": "disp",
+          "remote": "nas",
+          "catalog_path": "/prdrive-catalog/remote.toml"
+        },
+        "pair": {
+          "name": "notas",
+          "local": "notas",
+          "remote_path": "/copia/notas"
+        }
+      },
+      "pair_con_un_numero": {
+        "defaults": {
+          "device_remote": "disp",
+          "remote": "nas",
+          "catalog_path": "/prdrive-catalog/remote.toml"
+        },
+        "pair": [
+          1,
+          {
+            "name": "notas",
+            "local": "notas",
+            "remote_path": "/copia/notas"
+          },
+          {
+            "name": "subida",
+            "local": "salida",
+            "remote_path": "/copia/salida",
+            "mode": "up"
+          }
+        ]
       }
     },
     "mirror_modes": [
@@ -17395,9 +17502,24 @@
       "down-mirror": "Modo 'down-mirror': es un espejo, BORRA en el dispositivo lo que no esté en el origen. Pruébalo antes con --dry-run.",
       "inventado": null
     },
+    "avisos_espejo_partidos": {
+      "bisync": null,
+      "up": null,
+      "down": null,
+      "up-mirror": [
+        "Modo 'up-mirror': es un espejo",
+        "BORRA en el remoto lo que no esté en el origen. Pruébalo antes con --dry-run."
+      ],
+      "down-mirror": [
+        "Modo 'down-mirror': es un espejo",
+        "BORRA en el dispositivo lo que no esté en el origen. Pruébalo antes con --dry-run."
+      ],
+      "inventado": null
+    },
     "enable": [
       {
         "caso": "bisync con lo que se copia tal cual",
+        "config": "dispositivo",
         "nombre": "fotos",
         "carpeta": null,
         "catalogo": true,
@@ -17452,6 +17574,7 @@
       },
       {
         "caso": "bisync con la carpeta elegida",
+        "config": "dispositivo",
         "nombre": "fotos",
         "carpeta": "Fotos/2026",
         "catalogo": true,
@@ -17506,6 +17629,7 @@
       },
       {
         "caso": "bisync en la raíz",
+        "config": "dispositivo",
         "nombre": "fotos",
         "carpeta": ".",
         "catalogo": true,
@@ -17560,6 +17684,7 @@
       },
       {
         "caso": "de bajada",
+        "config": "dispositivo",
         "nombre": "musica",
         "carpeta": null,
         "catalogo": true,
@@ -17607,6 +17732,7 @@
       },
       {
         "caso": "espejo de subida",
+        "config": "dispositivo",
         "nombre": "espejo-sube",
         "carpeta": null,
         "catalogo": true,
@@ -17656,6 +17782,7 @@
       },
       {
         "caso": "espejo de bajada",
+        "config": "dispositivo",
         "nombre": "espejo-baja",
         "carpeta": null,
         "catalogo": true,
@@ -17705,6 +17832,7 @@
       },
       {
         "caso": "sin local en el catálogo",
+        "config": "dispositivo",
         "nombre": "sin-local",
         "carpeta": null,
         "catalogo": true,
@@ -17712,6 +17840,7 @@
       },
       {
         "caso": "sin local, con la carpeta elegida",
+        "config": "dispositivo",
         "nombre": "sin-local",
         "carpeta": "otra",
         "catalogo": true,
@@ -17759,20 +17888,47 @@
       },
       {
         "caso": "una carpeta que sale del dispositivo",
+        "config": "dispositivo",
         "nombre": "rara",
         "carpeta": null,
         "catalogo": true,
         "error": "[rara] local = \"../fuera\" sale del dispositivo (lleva un '..' o una letra de unidad): la pareja sincronizaría carpetas del ordenador. Pon una carpeta de dentro del dispositivo, con la ruta relativa a su raíz."
       },
       {
+        "caso": "una carpeta en la del programa",
+        "config": "dispositivo",
+        "nombre": "programa",
+        "carpeta": null,
+        "catalogo": true,
+        "error": "[programa] local = \".prdrive/keys\" cae en «.prdrive»: es la carpeta del programa, con su clave. Pon otra carpeta de dentro del dispositivo."
+      },
+      {
+        "caso": "un flag que no se puede llevar",
+        "config": "dispositivo",
+        "nombre": "peligrosa",
+        "carpeta": null,
+        "catalogo": true,
+        "error": "[peligrosa] extra_flags: '--resync' no se admite: es --resync de sync.py, que además pregunta antes. Quítalo del config."
+      },
+      {
         "caso": "una que no está en el catálogo",
+        "config": "dispositivo",
         "nombre": "inventada",
         "carpeta": null,
         "catalogo": true,
         "error": "El catálogo no tiene ninguna pareja llamada 'inventada'. Créala primero ahí y luego elígela aquí."
       },
       {
+        "caso": "una de aquí que el catálogo no tiene",
+        "config": "con_una_de_aqui",
+        "nombre": "solo-aqui",
+        "carpeta": null,
+        "catalogo": true,
+        "error": "El catálogo no tiene ninguna pareja llamada 'solo-aqui'. Créala primero ahí y luego elígela aquí."
+      },
+      {
         "caso": "sin catálogo",
+        "config": "dispositivo",
         "nombre": "fotos",
         "carpeta": null,
         "catalogo": false,
@@ -17780,10 +17936,73 @@
       },
       {
         "caso": "una que ya está aquí",
+        "config": "dispositivo",
         "nombre": "notas",
         "carpeta": null,
         "catalogo": true,
         "error": "'notas' ya está en este dispositivo."
+      },
+      {
+        "caso": "un dispositivo sin parejas",
+        "config": "sin_parejas",
+        "nombre": "fotos",
+        "carpeta": null,
+        "catalogo": true,
+        "plan": {
+          "raw": {
+            "defaults": {
+              "device_remote": "disp",
+              "remote": "nas",
+              "catalog_path": "/prdrive-catalog/remote.toml"
+            },
+            "pair": [
+              {
+                "name": "fotos",
+                "local": "sync-data/fotos",
+                "remote_path": "/copia/fotos",
+                "include": [
+                  "*.jpg"
+                ],
+                "flags": {
+                  "max-delete": 5
+                },
+                "versions": true
+              }
+            ]
+          },
+          "consequences": [
+            "Se empieza a usar 'fotos' en este dispositivo, tal y como está en el catálogo.",
+            "La ruta local 'sync-data/fotos' se creará en la primera pasada si todavía no existe.",
+            "Al ser bisync, la primera pasada pedirá un --resync para fijar la referencia (compara ambos lados; no borra por diferencias)."
+          ],
+          "warnings": [],
+          "shelve": [],
+          "borrar_filtros": []
+        }
+      },
+      {
+        "caso": "un pair que es una tabla",
+        "config": "pair_tabla",
+        "nombre": "fotos",
+        "carpeta": null,
+        "catalogo": true,
+        "rompe": "AttributeError"
+      },
+      {
+        "caso": "un pair que es una tabla, y una que no está en el catálogo",
+        "config": "pair_tabla",
+        "nombre": "inventada",
+        "carpeta": null,
+        "catalogo": true,
+        "error": "El catálogo no tiene ninguna pareja llamada 'inventada'. Créala primero ahí y luego elígela aquí."
+      },
+      {
+        "caso": "un pair con algo que no es una tabla",
+        "config": "pair_con_un_numero",
+        "nombre": "fotos",
+        "carpeta": null,
+        "catalogo": true,
+        "rompe": "AttributeError"
       }
     ],
     "remove": [
@@ -18175,6 +18394,81 @@
         }
       },
       {
+        "caso": "un daemon sin pairs",
+        "config": "daemon_sin_pairs",
+        "nombre": "notas",
+        "limpiar": false,
+        "en_disco": [],
+        "plan": {
+          "raw": {
+            "defaults": {
+              "device_remote": "disp",
+              "remote": "nas",
+              "catalog_path": "/prdrive-catalog/remote.toml"
+            },
+            "daemon": {
+              "interval_minutes": 15
+            },
+            "pair": [
+              {
+                "name": "subida",
+                "local": "salida",
+                "remote_path": "/copia/salida",
+                "mode": "up"
+              }
+            ]
+          },
+          "consequences": [
+            "Se quita 'notas' de este dispositivo. Sus datos NO se tocan, ni aquí ni en el remoto: solo deja de sincronizarse. Si está en el catálogo, sigue estándolo."
+          ],
+          "warnings": [],
+          "shelve": [],
+          "borrar_filtros": []
+        }
+      },
+      {
+        "caso": "un state que es un fichero, limpiando",
+        "config": "dispositivo",
+        "nombre": "notas",
+        "limpiar": true,
+        "en_disco": [
+          "state/notas",
+          "filters/notas.txt",
+          "filters/notas.txt.md5"
+        ],
+        "plan": {
+          "raw": {
+            "defaults": {
+              "device_remote": "disp",
+              "remote": "nas",
+              "catalog_path": "/prdrive-catalog/remote.toml"
+            },
+            "daemon": {
+              "pairs": [],
+              "interval_minutes": 15
+            },
+            "pair": [
+              {
+                "name": "subida",
+                "local": "salida",
+                "remote_path": "/copia/salida",
+                "mode": "up"
+              }
+            ]
+          },
+          "consequences": [
+            "Se quita 'notas' de este dispositivo. Sus datos NO se tocan, ni aquí ni en el remoto: solo deja de sincronizarse. Si está en el catálogo, sigue estándolo.",
+            "Se borrarán sus filtros generados, que son datos derivados del TOML."
+          ],
+          "warnings": [],
+          "shelve": [],
+          "borrar_filtros": [
+            "filters/notas.txt",
+            "filters/notas.txt.md5"
+          ]
+        }
+      },
+      {
         "caso": "la última",
         "config": "una",
         "nombre": "notas",
@@ -18189,6 +18483,22 @@
         "limpiar": false,
         "en_disco": [],
         "error": "No hay ninguna pareja llamada 'inventada'."
+      },
+      {
+        "caso": "un pair que es una tabla",
+        "config": "pair_tabla",
+        "nombre": "notas",
+        "limpiar": false,
+        "en_disco": [],
+        "rompe": "AttributeError"
+      },
+      {
+        "caso": "un pair con algo que no es una tabla",
+        "config": "pair_con_un_numero",
+        "nombre": "notas",
+        "limpiar": false,
+        "en_disco": [],
+        "rompe": "AttributeError"
       }
     ]
   },

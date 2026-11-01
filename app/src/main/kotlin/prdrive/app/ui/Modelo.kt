@@ -1005,8 +1005,9 @@ class Modelo(app: Application) : AndroidViewModel(app) {
      *    de fondo vería el `combine` a medio cambiar), se piensa otra vez con lo
      *    leído y se hace ([EditarParejas.anadir]).
      * 3. Si es bisync y su carpeta no tiene nada que pisar, su `--resync`, ya
-     *    aprobado, como al emparejar ([EditarParejas.PlanAnadir.resyncYa]). Si
-     *    no, la ficha lo pedirá con su hoja de siempre.
+     *    aprobado, como al emparejar ([EditarParejas.PlanAnadir.resyncYa]), y
+     *    con [Mudanza.RESYNC_MODE]: si hay duda, gana el remoto. Si no, la ficha
+     *    lo pedirá con su hoja de siempre.
      */
     fun anadir(nombre: String, carpeta: String) {
         trabajo("Añadiendo «$nombre»…") {
@@ -1048,9 +1049,12 @@ class Modelo(app: Application) : AndroidViewModel(app) {
                     val pareja = config.pairs.first { it.name == nombre }
                     val r = Pasada.pasarOFallar(
                         v, pareja, Adaptadores.pasada, Adaptadores.opciones,
+                        // Como el de la mudanza: gana el remoto. La carpeta estaba vacía
+                        // al pensarlo, pero otra app ha podido escribir en ella desde entonces.
                         Pasada.Contexto(
                             resyncAprobado = true, keepLogs = config.keepLogs,
                             accesoCompartido = Prdrive.accesoCompartido(),
+                            resyncMode = Mudanza.RESYNC_MODE,
                         ),
                         { progreso = Progreso.de(nombre, it) }, ::decir,
                     )

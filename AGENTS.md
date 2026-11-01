@@ -940,15 +940,25 @@ teléfono. Las decisiones que no se ven en el código:
   en el `rclone.conf`), una que existe y no es carpeta (o es un enlace) y una que
   dejaría sin redirección a una pareja que vive en una carpeta compartida (otra
   dentro de su carpeta de primer nivel, o la raíz entera: `Compartidas.problema`
-  con el config de después). **Lo que se avisa sin impedirlo** (#196): un espejo
-  de subida con la carpeta vacía o nueva (vacía, la pasada vaciaría el remoto;
-  sin crear, no se crea y la pasada se para), uno de bajada con ficheros (los
-  borraría) y otra pareja en la misma carpeta, dentro o alrededor.
+  con el config de después). Y dos de espejos (`problemaDelEspejo`), que prdrive
+  y #196 solo avisan: un espejo de subida con su carpeta **ya creada y vacía**
+  (la pasada solo se para si el origen no existe, en `sync.py` y aquí; vacío,
+  borra en el remoto todo lo que no está en él, con `max-delete` de único freno),
+  y un espejo de bajada que se solapa con otra pareja, en cualquier sentido (el
+  espejo borraría los ficheros de la otra que no están en su remoto, y la bisync
+  de la otra llevaría los borrados al suyo). **Lo que se avisa sin impedirlo**
+  (#196): un espejo de subida sin carpeta (no se crea, y la pasada se para hasta
+  que exista), uno de bajada con ficheros (los borraría) y otra pareja en la
+  misma carpeta, dentro o alrededor. La consecuencia de `plan_enable()` que
+  promete crear la carpeta no se enseña en un espejo de subida
+  (`EditarParejas.NO_SE_CREA`; `PLAN.md` §2).
 - **La carpeta no se crea al añadir**: la crea la primera pasada, como dice
   `plan_enable()`, salvo la de un espejo de subida, que no la crea nadie.
 - **El `--resync` inicial** de una bisync se hace al añadirla si su carpeta está
-  vacía o no existe, como al emparejar (con un lado vacío no hay nada que pisar);
-  si tiene ficheros, no: la ficha lo pide con la hoja de «Rehacer la
+  vacía o no existe, como al emparejar (con un lado vacío no hay nada que pisar),
+  y con `resync-mode = path2` como la mudanza (otra app ha podido escribir en la
+  carpeta entre pensarlo y hacerlo; si hay duda, gana el remoto); si tiene
+  ficheros, no: la ficha lo pide con la hoja de «Rehacer la
   referencia», que dice antes lo que va a pasar. Los demás modos esperan al
   siguiente «Sincronizar».
 - **El catálogo se vuelve a leer antes de añadir.** Lo que se enseña sale de su
@@ -966,7 +976,13 @@ teléfono. Las decisiones que no se ven en el código:
   `combine` y borrar sus filtros generados (datos derivados del TOML, como en
   prdrive); lo de después del config no deshace la baja, y si falla se cuenta
   (una entrada sin pareja o un upstream de más no hacen nada). Después, rclone
-  se recarga (`fscache`).
+  se recarga (`fscache`). Sin la copia `sync_config.toml.bak` de
+  `config_file.save()`: el teléfono escribe el config siempre con
+  `Volumen.escribirConfig`, que no la hace.
+- **Lo que se aparta de `pair_editor.py` a propósito**: un `pair` que no es una
+  lista de tablas es un `ConfigError` (prdrive se cae con un `AttributeError`), y
+  un `[daemon].pairs` que no es una lista no se toca al quitar (en prdrive, el
+  `in` de un texto es de subcadena y deja la lista de sus letras).
 - **Quitar no toca los datos**, ni en el teléfono ni en el remoto, y la pareja
   sigue en el catálogo. La casilla «Apartar también su referencia y borrar sus
   filtros generados» va desmarcada, como en el escritorio. No se quita la última

@@ -42,7 +42,7 @@ class EditarParejasTest {
         @Suppress("UNCHECKED_CAST")
         val raw = esperado["raw"] as Map<String, Any?>
         assertEquals(normalizar(raw), normalizar(plan.raw), "«$caso»: el config")
-        // Y en el mismo orden de claves, que es el que acaba en el TOML.
+        // Y el TOML que se escribiría con él.
         assertEquals(dumps(raw), dumps(plan.raw), "«$caso»: el TOML")
         assertEquals(Vectores.cadenas(esperado, "consequences"), plan.consequences, "«$caso»")
         assertEquals(Vectores.cadenas(esperado, "warnings"), plan.warnings, "«$caso»")
@@ -62,11 +62,21 @@ class EditarParejasTest {
         for ((modo, aviso) in Vectores.objeto(vectores, "avisos_espejo")) {
             assertEquals(aviso, EditarParejas.mirrorWarning(modo), modo)
         }
+        for ((modo, partes) in Vectores.objeto(vectores, "avisos_espejo_partidos")) {
+            assertEquals(partes, EditarParejas.avisoEspejo(modo)?.toList(), modo)
+        }
+    }
+
+    /** Lo que se espera de un caso que se niega: su mensaje, o un `ConfigError` donde prdrive se cae. */
+    private fun comprobarNegativa(caso: Map<String, Any?>, nombre: String, pensar: () -> Unit) {
+        val error = caso["error"] as String?
+        val mensaje = assertFailsWith<ConfigError>(nombre) { pensar() }.message
+        if (error != null) assertEquals(error, mensaje, nombre)
     }
 
     @Test
     fun `usar aqui una pareja del catalogo piensa lo mismo que plan_enable`() {
-        val dispositivo = Vectores.objeto(vectores, "dispositivo")
+        val configs = Vectores.objeto(vectores, "configs")
         val base = Vectores.objeto(vectores, "catalogo")
         for (caso in Vectores.objetos(vectores, "enable")) {
             val nombre = Vectores.texto(caso, "caso")
@@ -77,9 +87,9 @@ class EditarParejasTest {
                 if (it["name"] == pareja) it + ("local" to carpeta) else it
             })
             val cat = if (caso["catalogo"] == true) catalogo(raw) else null
-            val error = caso["error"] as String?
-            if (error != null) {
-                assertEquals(error, assertFailsWith<ConfigError>(nombre) { EditarParejas.planEnable(dispositivo, cat, pareja) }.message)
+            val dispositivo = Vectores.objeto(configs, Vectores.texto(caso, "config"))
+            if (caso["error"] != null || caso["rompe"] != null) {
+                comprobarNegativa(caso, nombre) { EditarParejas.planEnable(dispositivo, cat, pareja) }
             } else {
                 comprobarPlan(Vectores.objeto(caso, "plan"), EditarParejas.planEnable(dispositivo, cat, pareja), null, nombre)
             }
@@ -101,12 +111,8 @@ class EditarParejasTest {
             val raw = Vectores.objeto(configs, Vectores.texto(caso, "config"))
             val pareja = Vectores.texto(caso, "nombre")
             val limpiar = caso["limpiar"] == true
-            val error = caso["error"] as String?
-            if (error != null) {
-                assertEquals(
-                    error,
-                    assertFailsWith<ConfigError>(nombre) { EditarParejas.planRemove(raw, pareja, limpiar, state, filters) }.message,
-                )
+            if (caso["error"] != null || caso["rompe"] != null) {
+                comprobarNegativa(caso, nombre) { EditarParejas.planRemove(raw, pareja, limpiar, state, filters) }
             } else {
                 comprobarPlan(Vectores.objeto(caso, "plan"), EditarParejas.planRemove(raw, pareja, limpiar, state, filters), carpeta, nombre)
             }
@@ -263,6 +269,45 @@ class EditarParejasTest {
         assertTrue(baja.avisos.any { "espejo de bajada" in it && "1 fichero" in it }, baja.avisos.toString())
         // Y el de prdrive va también.
         assertTrue(baja.todosLosAvisos.contains(EditarParejas.mirrorWarning("down-mirror")))
+    }
+
+    @Test
+    fun `un espejo de subida con su carpeta vacia ya creada no se deja`() {
+        val v = volumen(pareja("notas", "notas"))
+        File(v.raiz, "web/sub").mkdirs()
+        val error = assertFailsWith<ConfigError> { EditarParejas.planAnadir(v, raw(v), cat, "espejo-sube", "web") }
+        assertTrue("borraría en el remoto" in error.message.orEmpty(), error.message)
+        // Sin crear, sí: la pasada se para hasta que exista.
+        EditarParejas.planAnadir(v, raw(v), cat, "espejo-sube", "otra")
+    }
+
+    @Test
+    fun `la consecuencia que promete crear la carpeta de un espejo de subida no se ensena`() {
+        val v = volumen(pareja("notas", "notas"))
+        val p = EditarParejas.planAnadir(v, raw(v), cat, "espejo-sube", "web")
+        val promesa = p.plan.consequences.single { "se creará" in it }
+        assertFalse(promesa in p.todasLasConsecuencias, p.todasLasConsecuencias.toString())
+        assertTrue(EditarParejas.NO_SE_CREA in p.todasLasConsecuencias)
+        // En los demás modos se queda la de prdrive.
+        val bisync = EditarParejas.planAnadir(v, raw(v), cat, "fotos", "fotos")
+        assertEquals(bisync.plan.consequences, bisync.todasLasConsecuencias.take(bisync.plan.consequences.size))
+    }
+
+    @Test
+    fun `un espejo de bajada que se solapa con otra pareja no se deja, ni otra que se solape con uno`() {
+        val v = volumen(pareja("notas", "datos/notas"))
+        for (carpeta in listOf(".", "datos", "datos/notas", "datos/notas/sub")) {
+            val error = assertFailsWith<ConfigError>(carpeta) { EditarParejas.planAnadir(v, raw(v), cat, "espejo-baja", carpeta) }
+            assertTrue("«espejo-baja» es un espejo de bajada" in error.message.orEmpty(), error.message)
+        }
+        EditarParejas.planAnadir(v, raw(v), cat, "espejo-baja", "datos/docs")
+        // Y al revés: una bisync dentro de un espejo de bajada que ya está.
+        val conEspejo = volumen(pareja("docs", "docs", "down-mirror"), pareja("notas", "notas"))
+        val error = assertFailsWith<ConfigError> { EditarParejas.planAnadir(conEspejo, raw(conEspejo), cat, "fotos", "docs/fotos") }
+        assertTrue("«docs» es un espejo de bajada" in error.message.orEmpty(), error.message)
+        // Un espejo de subida que se solapa solo se avisa: no borra en el teléfono.
+        val sube = EditarParejas.planAnadir(v, raw(v), cat, "espejo-sube", "datos/notas")
+        assertTrue(sube.avisos.any { "«notas» ya usa" in it }, sube.avisos.toString())
     }
 
     @Test

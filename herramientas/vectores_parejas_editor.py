@@ -65,18 +65,30 @@ CATALOGO = {
          "mode": "down-mirror"},
         {"name": "sin-local", "remote_path": "/copia/sin-local"},
         {"name": "rara", "local": "../fuera", "remote_path": "/copia/rara"},
+        {"name": "programa", "local": ".prdrive/keys", "remote_path": "/copia/programa"},
+        {"name": "peligrosa", "local": "peligrosa", "remote_path": "/copia/peligrosa",
+         "extra_flags": ["--resync"]},
     ],
 }
 
 
-# Los configs de los casos de quitar, por nombre: el del dispositivo, uno con
-# una pareja más, uno cuyo `[daemon]` solo nombra la que se quita y uno de una.
+# Los configs de los casos, por nombre: el del dispositivo, uno con una pareja
+# más, uno cuyo `[daemon]` solo nombra la que se quita, uno de una sola, uno con
+# una que el catálogo no tiene, uno sin `pairs` en el `[daemon]`, uno sin
+# ninguna pareja y dos con un `pair` que no es una lista de tablas (prdrive se
+# cae con ellos: el motor tiene que decirlo con un `ConfigError`).
 CONFIGS = {
     "dispositivo": DISPOSITIVO,
     "tres": {**DISPOSITIVO, "pair": DISPOSITIVO["pair"] + [
         {"name": "fotos", "local": "fotos", "remote_path": "/copia/fotos"}]},
     "sola_en_daemon": {**DISPOSITIVO, "daemon": {"pairs": ["notas"]}},
     "una": {**DISPOSITIVO, "pair": DISPOSITIVO["pair"][:1]},
+    "con_una_de_aqui": {**DISPOSITIVO, "pair": DISPOSITIVO["pair"] + [
+        {"name": "solo-aqui", "local": "aqui", "remote_path": "/copia/aqui"}]},
+    "daemon_sin_pairs": {**DISPOSITIVO, "daemon": {"interval_minutes": 15}},
+    "sin_parejas": {"defaults": dict(DEFAULTS)},
+    "pair_tabla": {"defaults": dict(DEFAULTS), "pair": dict(DISPOSITIVO["pair"][0])},
+    "pair_con_un_numero": {"defaults": dict(DEFAULTS), "pair": [1, *DISPOSITIVO["pair"]]},
 }
 
 
@@ -109,44 +121,57 @@ def _plan(plan, raiz: Path | None = None) -> dict:
 
 
 def _o_error(funcion, *args, **kwargs) -> dict:
-    """`{"plan": …}` si piensa el plan, o `{"error": mensaje}` si se niega."""
+    """`{"plan": …}` si piensa el plan, `{"error": mensaje}` si se niega, o
+    `{"rompe": "AttributeError"}` si prdrive se cae con otra excepción: ese no
+    tiene mensaje que copiar, y el motor tiene que dar un `ConfigError` con el
+    suyo."""
     from common.model import ConfigError   # noqa: PLC0415
     try:
         return {"plan": funcion(*args, **kwargs)}
     except ConfigError as e:
         return {"error": str(e)}
+    except Exception as e:   # noqa: BLE001 — es justo lo que se quiere apuntar
+        return {"rompe": type(e).__name__}
 
 
 def vectores_enable(editor, catalog) -> list[dict]:
     """`plan_enable()`: usar aquí una pareja del catálogo.
 
-    Cada caso dice la pareja y, si la carpeta se elige, cuál (`carpeta`): el
-    catálogo es [CATALOGO] con el `local` de esa pareja cambiado por ella. Sin
-    `catalogo`, no hay catálogo.
+    Cada caso dice el config del dispositivo ([CONFIGS]), la pareja y, si la
+    carpeta se elige, cuál (`carpeta`): el catálogo es [CATALOGO] con el `local`
+    de esa pareja cambiado por ella. Sin `catalogo`, no hay catálogo.
     """
     casos = [
-        ("bisync con lo que se copia tal cual", "fotos", None, True),
-        ("bisync con la carpeta elegida", "fotos", "Fotos/2026", True),
-        ("bisync en la raíz", "fotos", ".", True),
-        ("de bajada", "musica", None, True),
-        ("espejo de subida", "espejo-sube", None, True),
-        ("espejo de bajada", "espejo-baja", None, True),
-        ("sin local en el catálogo", "sin-local", None, True),
-        ("sin local, con la carpeta elegida", "sin-local", "otra", True),
-        ("una carpeta que sale del dispositivo", "rara", None, True),
-        ("una que no está en el catálogo", "inventada", None, True),
-        ("sin catálogo", "fotos", None, False),
-        ("una que ya está aquí", "notas", None, True),
+        ("bisync con lo que se copia tal cual", "dispositivo", "fotos", None, True),
+        ("bisync con la carpeta elegida", "dispositivo", "fotos", "Fotos/2026", True),
+        ("bisync en la raíz", "dispositivo", "fotos", ".", True),
+        ("de bajada", "dispositivo", "musica", None, True),
+        ("espejo de subida", "dispositivo", "espejo-sube", None, True),
+        ("espejo de bajada", "dispositivo", "espejo-baja", None, True),
+        ("sin local en el catálogo", "dispositivo", "sin-local", None, True),
+        ("sin local, con la carpeta elegida", "dispositivo", "sin-local", "otra", True),
+        ("una carpeta que sale del dispositivo", "dispositivo", "rara", None, True),
+        ("una carpeta en la del programa", "dispositivo", "programa", None, True),
+        ("un flag que no se puede llevar", "dispositivo", "peligrosa", None, True),
+        ("una que no está en el catálogo", "dispositivo", "inventada", None, True),
+        ("una de aquí que el catálogo no tiene", "con_una_de_aqui", "solo-aqui", None, True),
+        ("sin catálogo", "dispositivo", "fotos", None, False),
+        ("una que ya está aquí", "dispositivo", "notas", None, True),
+        ("un dispositivo sin parejas", "sin_parejas", "fotos", None, True),
+        ("un pair que es una tabla", "pair_tabla", "fotos", None, True),
+        ("un pair que es una tabla, y una que no está en el catálogo", "pair_tabla", "inventada",
+         None, True),
+        ("un pair con algo que no es una tabla", "pair_con_un_numero", "fotos", None, True),
     ]
     salida = []
-    for caso, nombre, carpeta, con_catalogo in casos:
+    for caso, config, nombre, carpeta, con_catalogo in casos:
         cat = None
         if con_catalogo:
             cat = CATALOGO if carpeta is None else _con_carpeta(CATALOGO, nombre, carpeta)
-        r = _o_error(editor.plan_enable, DISPOSITIVO, _catalogo(catalog, cat), nombre)
+        r = _o_error(editor.plan_enable, CONFIGS[config], _catalogo(catalog, cat), nombre)
         if "plan" in r:
             r = {"plan": _plan(r["plan"])}
-        salida.append({"caso": caso, "nombre": nombre, "carpeta": carpeta,
+        salida.append({"caso": caso, "config": config, "nombre": nombre, "carpeta": carpeta,
                        "catalogo": con_catalogo, **r})
     return salida
 
@@ -180,8 +205,13 @@ def vectores_remove(editor, model) -> list[dict]:
         ("la que nombra el daemon", "tres", "notas", False, []),
         ("la única que nombra el daemon", "sola_en_daemon", "notas", False, []),
         ("una que el daemon no nombra", "tres", "fotos", False, []),
+        ("un daemon sin pairs", "daemon_sin_pairs", "notas", False, []),
+        ("un state que es un fichero, limpiando", "dispositivo", "notas", True,
+         ["state/notas", *todo[2:]]),
         ("la última", "una", "notas", False, []),
         ("una que no está", "dispositivo", "inventada", False, []),
+        ("un pair que es una tabla", "pair_tabla", "notas", False, []),
+        ("un pair con algo que no es una tabla", "pair_con_un_numero", "notas", False, []),
     ]
     salida = []
     estado, filtros = model.STATE_DIR, model.FILTERS_DIR
@@ -208,6 +238,7 @@ def vectores(editor, catalog, model) -> dict:
         "configs": CONFIGS,
         "mirror_modes": list(editor.MIRROR_MODES),
         "avisos_espejo": {m: editor.mirror_warning(m) for m in [*model.MODES, "inventado"]},
+        "avisos_espejo_partidos": {m: editor.aviso_espejo(m) for m in [*model.MODES, "inventado"]},
         "enable": vectores_enable(editor, catalog),
         "remove": vectores_remove(editor, model),
     }

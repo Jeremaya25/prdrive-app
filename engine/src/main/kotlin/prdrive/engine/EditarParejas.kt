@@ -89,6 +89,22 @@ object EditarParejas {
     private fun parejasCrudas(raw: Map<String, Any?>): List<Any?> = (raw["pair"] as? List<*>).orEmpty()
 
     /**
+     * Un `pair` que no es una lista de tablas (`[[pair]]`). prdrive se cae ahí
+     * con un `AttributeError` (llama a `.get()` de cada una, o `.append()` de una
+     * tabla); el motor no puede caerse con un config mal escrito, así que lo
+     * dice con un [ConfigError].
+     */
+    private fun comprobarParejas(raw: Map<String, Any?>) {
+        val parejas = raw["pair"] ?: return
+        if (parejas !is List<*> || parejas.any { it !is Map<*, *> }) {
+            throw ConfigError(
+                "El config tiene un 'pair' que no es una lista de tablas [[pair]]: así no se sabe " +
+                    "qué parejas lleva. Arréglalo a mano antes de añadir o quitar ninguna.",
+            )
+        }
+    }
+
+    /**
      * La posición de la pareja con ese nombre (`pair_index`).
      *
      * @throws ConfigError si no hay ninguna.
@@ -120,6 +136,7 @@ object EditarParejas {
         stateDir: File,
         filtersDir: File,
     ): EditPlan {
+        comprobarParejas(raw)
         val i = pairIndex(raw, name)
         val nuevo = Volumen.copiaProfunda(raw)
         val parejas = parejasCrudas(nuevo).toMutableList()
@@ -134,6 +151,11 @@ object EditarParejas {
 
         // Si [daemon].pairs la nombraba, se cae también: el servicio intentaría
         // sincronizar una pareja que ya no existe y fallaría en cada ciclo.
+        //
+        // Solo si es una lista. Diferencia deliberada: con un texto, el `in` de
+        // Python es de subcadena y la lista que deja es la de sus letras
+        // (`pairs = "notas"` sale `["n", "o", "t", "a", "s"]`), que dejaría a
+        // «Sincronizar sola» sin ninguna pareja. Aquí no se toca.
         @Suppress("UNCHECKED_CAST")
         val daemon = nuevo["daemon"] as? MutableMap<String, Any?>
         val nombradas = daemon?.get("pairs") as? List<*>
@@ -179,6 +201,8 @@ object EditarParejas {
                 "El catálogo no tiene ninguna pareja llamada '$name'. " +
                     "Créala primero ahí y luego elígela aquí.",
             )
+        // Después del catálogo, que es lo primero que mira prdrive (y donde aún no se cae).
+        comprobarParejas(raw)
         if (parejasCrudas(raw).any { (it as? Map<*, *>)?.get("name") == name }) {
             throw ConfigError("'$name' ya está en este dispositivo.")
         }
@@ -187,8 +211,7 @@ object EditarParejas {
         nuevo["pair"] = parejasCrudas(nuevo) + Volumen.copiaProfunda(entrada)
         val consecuencias = arrayListOf(
             "Se empieza a usar '$name' en este dispositivo, tal y como está en el catálogo.",
-            "La ruta local '${strPy(entrada["local"])}' se creará en la primera pasada si " +
-                "todavía no existe.",
+            seCrearaLaCarpeta(strPy(entrada["local"])),
         )
         if (modoDe(entrada) == "bisync") {
             consecuencias.add(
@@ -205,6 +228,14 @@ object EditarParejas {
     // -----------------------------------------------------------------------
     // Lo del teléfono: la carpeta elegida (prdrive#196, adelantado)
     // -----------------------------------------------------------------------
+
+    /** Lo que dice `plan_enable()` de la carpeta de la pareja, en cualquier modo. */
+    private fun seCrearaLaCarpeta(local: String): String =
+        "La ruta local '$local' se creará en la primera pasada si todavía no existe."
+
+    /** Lo que se dice en lugar de que la carpeta de un espejo de subida se creará: no se crea. */
+    const val NO_SE_CREA =
+        "La carpeta no se crea sola: es el origen de un espejo de subida, y vacía vaciaría el remoto."
 
     /** Hasta cuántos ficheros se cuentan al mirar una carpeta: más da igual cuántos. */
     const val TOPE_FICHEROS = 1000
@@ -311,13 +342,56 @@ object EditarParejas {
         return avisos
     }
 
-    /** Lo que avisa de un espejo según cómo esté su carpeta: lo que borraría la primera pasada. */
+    /**
+     * Por qué un espejo no se puede añadir así, o `null`: lo que su primera
+     * pasada borraría en el remoto sin que nadie lo haya pedido.
+     *
+     * - **Un espejo de subida con su carpeta ya creada y vacía.** La pasada solo
+     *   se para si el origen no existe (`sync.py`, y [Pasada] igual); vacío,
+     *   `rclone sync` borra en el remoto todo lo que no está en él, con
+     *   `max-delete` de único freno.
+     * - **Un espejo de bajada que se solapa con otra pareja** (la misma carpeta,
+     *   dentro o alrededor), o cualquier pareja que se solape con uno. El espejo
+     *   borra de su carpeta lo que no está en su remoto, también los ficheros de
+     *   la otra, y la bisync de la otra lleva esos borrados a su remoto.
+     *
+     * prdrive (y #196) solo avisan; el teléfono no lo deja.
+     */
+    fun problemaDelEspejo(config: Config, pareja: Pareja, carpeta: Carpeta): String? {
+        if (pareja.mode.borraEnRemoto && carpeta.existe && carpeta.vacia) {
+            return "Es un espejo de subida y ${dicha(pareja.local)} está vacía: la primera pasada borraría en " +
+                "el remoto todo lo que no esté en ella. Pon antes en ella lo que quieres subir, o elige una " +
+                "carpeta que no exista todavía (la pasada se parará hasta que la crees)."
+        }
+        val mia = pareja.tramosLocales
+        for (otra in config.delUsuario) {
+            if (otra.name == pareja.name) continue
+            val suya = otra.tramosLocales
+            if (!dentroDe(mia, suya) && !dentroDe(suya, mia)) continue
+            val espejo = when {
+                pareja.mode.name == "down-mirror" -> pareja
+                otra.mode.name == "down-mirror" -> otra
+                else -> continue
+            }
+            val la = if (espejo === pareja) otra else pareja
+            return "«${espejo.name}» es un espejo de bajada y su carpeta se solapa con la de «${la.name}» " +
+                "(${dicha(pareja.local)} y ${dicha(otra.local)}): el espejo borraría los ficheros de «${la.name}» " +
+                "que no estén en su remoto, y la pasada de «${la.name}» los borraría también del suyo. Elige " +
+                "una carpeta aparte."
+        }
+        return null
+    }
+
+    /**
+     * Lo que avisa de un espejo según cómo esté su carpeta: lo que borraría la
+     * primera pasada. La de un espejo de subida vacía ya creada no llega aquí:
+     * no se deja ([problemaDelEspejo]).
+     */
     fun avisoDeLaCarpeta(pareja: Pareja, carpeta: Carpeta): String? = when {
-        pareja.mode.borraEnRemoto && carpeta.vacia ->
-            "Es un espejo de subida y ${dicha(pareja.local)} " +
-                (if (carpeta.existe) "está vacía" else "no existe") +
-                ": la pasada borraría en el remoto todo lo que no esté en ella. No se crea sola: pon antes " +
-                "en ella lo que quieres subir, y hasta entonces la pasada se parará."
+        pareja.mode.borraEnRemoto && !carpeta.existe ->
+            "Es un espejo de subida y ${dicha(pareja.local)} no existe: no se crea sola, y hasta que la " +
+                "crees, la pasada se parará. Créala con lo que quieres subir: vacía, la pasada borraría en el " +
+                "remoto todo lo que no esté en ella."
         pareja.mode.name == "down-mirror" && !carpeta.vacia ->
             "Es un espejo de bajada y ${dicha(pareja.local)} ya tiene ${cuantos(carpeta)}: la pasada " +
                 "borrará de ella lo que no esté en el remoto."
@@ -373,6 +447,9 @@ object EditarParejas {
      * @property apartar si hay un `state/<pareja>/` de antes que se aparta.
      * @property resyncYa si es bisync y su carpeta no tiene nada que pisar: el
      *   `--resync` se hace al añadirla, como al emparejar.
+     * @property deprdrive las consecuencias de [plan] tal como se enseñan: las
+     *   de prdrive, salvo la que promete crear la carpeta de un espejo de subida
+     *   que no existe, que no se crea ([NO_SE_CREA]).
      * @property olvidarCompartida si `compartidas.json` tiene una entrada suelta
      *   con su nombre (de una baja que no la pudo olvidar): se olvida, porque la
      *   carpeta la acaba de elegir la persona, y es una del volumen.
@@ -389,9 +466,10 @@ object EditarParejas {
         val consecuencias: List<String>,
         val avisos: List<String>,
         val olvidarCompartida: Boolean = false,
+        val deprdrive: List<String> = plan.consequences,
     ) {
         /** Todo lo que pasará, en orden: lo de prdrive y lo del teléfono. */
-        val todasLasConsecuencias: List<String> get() = plan.consequences + consecuencias
+        val todasLasConsecuencias: List<String> get() = deprdrive + consecuencias
 
         /** Todos los avisos: el de prdrive y los del teléfono. */
         val todosLosAvisos: List<String> get() = plan.warnings + avisos
@@ -435,6 +513,7 @@ object EditarParejas {
         if (carpeta.existe && !carpeta.esCarpeta) {
             throw ConfigError("${dicha(local).replaceFirstChar { it.uppercase() }} ya existe y no es una carpeta (es un fichero o un enlace). Elige otra.")
         }
+        problemaDelEspejo(despues, pareja, carpeta)?.let { throw ConfigError(it) }
         val apartar = File(v.state, nombre).isDirectory
         val resyncYa = pareja.isBisync && carpeta.vacia
         val consecuencias = ArrayList<String>()
@@ -458,7 +537,14 @@ object EditarParejas {
             )
         }
         val avisos = listOfNotNull(avisoDeLaCarpeta(pareja, carpeta)) + avisosDeOtras(antes, nombre, local)
-        return PlanAnadir(nombre, plan, local, carpeta, apartar, resyncYa, consecuencias, avisos, nombre in entradas)
+        // `plan_enable()` promete crear la carpeta en cualquier modo, y la de un
+        // espejo de subida no la crea nadie (PLAN.md §2): la pantalla no lo dice.
+        val deprdrive = if (pareja.mode.borraEnRemoto) {
+            plan.consequences.map { if (it == seCrearaLaCarpeta(local)) NO_SE_CREA else it }
+        } else {
+            plan.consequences
+        }
+        return PlanAnadir(nombre, plan, local, carpeta, apartar, resyncYa, consecuencias, avisos, nombre in entradas, deprdrive)
     }
 
     /**
@@ -550,9 +636,14 @@ object EditarParejas {
      *
      * El config va el último por lo mismo que en `EditPlan.execute()`: la
      * combinación peligrosa es «config nuevo con baseline viejo». Si algo falla
-     * antes de escribirlo, lo apartado vuelve a su sitio y el `rclone.conf` a lo
-     * que era: no queda nada a medias. Un upstream de más en el `combine` no
-     * haría nada, pero tampoco se deja.
+     * antes de escribirlo, lo apartado vuelve a su sitio, y el `rclone.conf` y
+     * `compartidas.json` a lo que eran. Lo que no se pueda devolver se queda: un
+     * baseline apartado de más pide un `--resync`, y un upstream o una entrada
+     * sin pareja no hacen nada.
+     *
+     * Sin la copia `sync_config.toml.bak` que deja `config_file.save()`: el
+     * config del teléfono se escribe siempre con [Volumen.escribirConfig], que
+     * no la hace, y el que vale es el de [p].
      *
      * @param cabecera la del `sync_config.toml` de ahora ([headerOf]), que se conserva.
      * @return lo hecho, para contarlo.
@@ -572,7 +663,15 @@ object EditarParejas {
             v.escribirConfig(p.plan.raw, cabecera)
         } catch (e: Exception) {
             devolver(movidos)
+            // Devolverlos puede fallar también: lo que quede no hace nada (arriba).
             if (v.leerRcloneConfSiSePuede() != confAntes) Store.writeText(v.rcloneConf, confAntes)
+            if (p.nombre in entradas) {
+                try {
+                    Compartidas.escribir(v.compartidas, entradas)
+                } catch (_: IOException) {
+                    // Una entrada sin pareja no redirige nada.
+                }
+            }
             throw e
         }
         hechos.add("«${p.nombre}» añadida, en ${dicha(p.local)}")
