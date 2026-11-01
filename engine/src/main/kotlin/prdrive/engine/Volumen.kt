@@ -304,7 +304,7 @@ class Volumen(val raiz: File) {
         }
 
         /** `copy.deepcopy(dict(raw))`: los mapas y las listas se copian, lo demás es inmutable. */
-        private fun copiaProfunda(raw: Map<String, Any?>): LinkedHashMap<String, Any?> {
+        internal fun copiaProfunda(raw: Map<String, Any?>): LinkedHashMap<String, Any?> {
             fun copia(valor: Any?): Any? = when (valor) {
                 is Map<*, *> -> LinkedHashMap<Any?, Any?>().also { m -> valor.forEach { (k, v) -> m[k] = copia(v) } }
                 is List<*> -> valor.map { copia(it) }
