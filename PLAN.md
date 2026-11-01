@@ -21,6 +21,11 @@ Falta:
   --resync» cada vez.
 - **La app de Archivos.** Un fichero guardado desde otra app se sincroniza en la
   pasada siguiente.
+- **Añadir y quitar parejas** (AGENTS.md, «Añadir y quitar parejas»): se
+  escribió en una sesión sin SDK de Android, así que la app la compiló el CI y
+  `ParejasEnAndroidTest` (releer el catálogo, añadir en otra carpeta con su
+  `--resync`, quitar y no poder quitar la última) **no se ha pasado todavía en
+  un emulador**. El motor sí, entero (`EditarParejasTest`).
 - **El permiso de red local** en un Android 17 de verdad, contra un NAS en
   `192.168.…`, y en uno anterior, que no lo pide.
 - **El llavero con una app de KeePass de verdad.** Probado el 23/10/2026 en el
@@ -153,6 +158,11 @@ hacerlo.
   `+ *.kdbx` sí las distingue en todos: una `X.KDBX` es base en un PC con Windows
   y no entra en la pareja. El teléfono sigue a rclone (las distingue), y los
   vectores evitan el caso para no depender del sistema.
+- **`plan_enable()` promete crear la carpeta de un espejo de subida.** Dice «La
+  ruta local '…' se creará en la primera pasada si todavía no existe» en
+  cualquier modo, y `sync.py` no crea el origen de un `up-mirror` (se niega:
+  vaciaría el remoto). El teléfono replica el texto y lo corrige con su aviso y
+  con el chip de la carpeta («nueva: créala tú»).
 - **`update.parse_version` lanza con un `²`**, aunque dice que nunca lanza:
   `str.isdigit()` lo da por cifra y `int()` no lo lee (`ValueError`). Y
   `update.check()` se cae con un `AttributeError` si GitHub contesta algo que no
@@ -345,9 +355,12 @@ simulacro»):
 
 Falta:
 
-- Elegir y cambiar la carpeta de una pareja, añadirla desde el catálogo y
-  quitarla del teléfono (#25 y la parte grande de #24): esperan a que el
-  catálogo diga qué es de cada dispositivo (prdrive#196).
+- Cambiar la carpeta de una pareja que ya se usa (#25) y la parte grande de
+  #24 (un `local` anidado, o que comparte carpeta de primer nivel, en una
+  carpeta compartida). Añadir una del catálogo eligiendo su carpeta y quitarla
+  del teléfono **ya están**, adelantando prdrive#196, que sigue abierta
+  (AGENTS.md, «Añadir y quitar parejas»): cuando se publique, regenerar los
+  vectores y mirar si los textos de `plan_enable()` han cambiado.
 - Reparación (`--force`) y Emparejar de nuevo (Ajustes): borran o rehacen
   estado, y piden su propio diseño de qué se conserva.
 - La carpeta de un espejo de subida al emparejar (§3).

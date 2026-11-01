@@ -23,6 +23,7 @@ parejas que usan tus dispositivos de escritorio con
 |---|---|
 | **Sincronizar** | Pasa las parejas del catálogo (bisync y espejos), cuenta qué se ha copiado, qué se ha borrado y qué ha fallado, y guarda el log de cada pasada. |
 | **Sincronizar sola** | Una pasada periódica en segundo plano (por defecto cada hora, nunca menos de 15 min; solo con wifi si no dices otra cosa). El intervalo y las parejas salen del `[daemon]` del config. |
+| **Añadir y quitar parejas** | Desde Parejas añades una pareja del catálogo eligiendo en qué carpeta del teléfono va, y desde su ficha la quitas: deja de sincronizarse aquí, sin tocar sus ficheros. Ver [`AGENTS.md`](AGENTS.md) («Añadir y quitar parejas»). |
 | **Simulacro** | Un `--dry-run` desde la ficha de la pareja: enseña qué se copiaría, hacia dónde y qué se borraría, sin tocar nada. |
 | **Conflictos** | Si editas el mismo fichero en dos sitios, quedan las dos versiones y la app lo avisa. Se resuelve desde la ficha, viendo antes las consecuencias. |
 | **Llavero** | La base KeePass (`.kdbx`) del `[keychain]` de prdrive, sincronizada en segundo plano y abierta en tu app de KeePass ([KeePassDX](https://github.com/Kunzisoft/KeePassDX) está probada). Ver [El llavero](#el-llavero). |
@@ -62,6 +63,7 @@ móvil…»**. En el teléfono, abre prdrive y sigue los cuatro pasos: escanear 
 pegar) el código, revisar la conexión que trae —nada se guarda todavía—, elegir
 qué parejas del catálogo sincroniza el teléfono y la primera pasada
 (`--resync`). Si quieres el llavero, marca «El llavero» al elegir las parejas.
+Después puedes añadir y quitar parejas desde la sección Parejas.
 
 > **El QR lleva la clave privada del remoto.** Enséñalo solo a tu propio
 > teléfono, y no lo fotografíes ni lo compartas. La app no lo guarda.

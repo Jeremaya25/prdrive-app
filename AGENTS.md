@@ -68,6 +68,10 @@ engine/       Kotlin puro (JVM), SIN una línea de Android
 ├── Mudanza.kt  mover una pareja a una carpeta compartida, terminar de moverla y
 │               devolverla al volumen: la secuencia entera y sus pasos, contra
 │               un `Rclone` que se pasa. Tampoco refleja a prdrive
+├── EditarParejas.kt  espejo de la parte de ui/pair_editor.py que decide qué
+│               parejas del catálogo se usan aquí (plan_enable, plan_remove), con
+│               la carpeta que elige el teléfono al añadir (prdrive#196,
+│               adelantado) y lo que se escribe al añadir y al quitar
 ├── Volumen.kt  espejo de install/: la carpeta del volumen, su .prdrive/ y lo
 │               que se escribe al emparejar
 └── Actualizacion.kt  espejo de common/update.py: la última release, la caché
@@ -112,7 +116,9 @@ app/          Android: solo dibuja y llama
 ├── ui/inicio/        Inicio, y Revisar: lo que cuenta como «cosas que revisar»
 ├── ui/parejas/       Parejas, la Ficha de una pareja (con sus últimas pasadas),
 │                     su Log, la hoja de RehacerReferencia, el Simulacro,
-│                     Conflictos (resolverlos) y Mover a una carpeta compartida
+│                     Conflictos (resolverlos), Mover a una carpeta compartida,
+│                     Anadir (una del catálogo, eligiendo su carpeta) y la hoja
+│                     de Quitar
 ├── ui/llavero/       SeccionLlavero: estado, abrir, cómo funciona, traer y quitar
 ├── ui/emparejar/     Emparejar en cuatro pasos
 ├── ui/ajustes/       Ajustes: el remoto, los permisos y las actualizaciones
@@ -140,7 +146,8 @@ app/          Android: solo dibuja y llama
                   simulacro (SimulacroEnAndroidTest), el diario de pasadas
                   (HistorialEnAndroidTest), resolver un conflicto
                   (ConflictosEnAndroidTest), atrás al emparejar
-                  (EmparejarTest), las capturas de las pantallas
+                  (EmparejarTest), añadir y quitar parejas
+                  (ParejasEnAndroidTest), las capturas de las pantallas
                   (CapturasTest, solo si se piden), el llavero
                   (el alta, el proveedor, los trabajos y la pantalla), las
                   carpetas compartidas (FechasCompartidasTest, CompartirTest,
@@ -158,6 +165,8 @@ herramientas/
 ├── vectores_historial.py  su parte de common/historial.py: el diario de pasadas
 ├── vectores_conflictos_editor.py  su parte de ui/conflict_editor.py: las
 │                      etiquetas, los planes y lo que hacen en un disco de verdad
+├── vectores_parejas_editor.py  su parte de ui/pair_editor.py: usar aquí una
+│                      pareja del catálogo y quitarla
 ├── punta_a_punta.py   el servidor (con el llavero y su base) y la carga del QR
 │                      de PuntaAPuntaTest
 └── diseno.py          los colores, el fondo de la ventana y los glifos desde
@@ -900,6 +909,81 @@ que no se ven en el código:
   la otra versión, y se combina en el PC («El llavero»). Borrar las copias cuenta
   para el 25 % de `max-delete`: en una pareja de pocos ficheros, la pasada de
   después para en el freno, como en el escritorio.
+
+## Añadir y quitar parejas
+
+Desde Parejas se añade una pareja del catálogo («Del catálogo, sin usar aquí»)
+y desde su ficha se quita del teléfono («Quitar de este teléfono…»). Es el «Usar
+aquí» y el «Quitar…» del escritorio: `EditarParejas.planEnable` y `planRemove`
+son el espejo de `plan_enable()` y `plan_remove()` (`ui/pair_editor.py`), con
+sus textos tal cual (dicen «dispositivo») y sus vectores. Lo demás es del
+teléfono. Las decisiones que no se ven en el código:
+
+- **La carpeta la elige el teléfono, adelantando prdrive#196**, que sigue
+  abierta: el catálogo describirá solo el lado remoto, y cada dispositivo elige
+  su carpeta del volumen al usar una pareja y la guarda en su `sync_config.toml`
+  (entero, sin referencias). El `local` del catálogo, si lo trae, solo es lo que
+  se sugiere (`EditarParejas.sugerencia`); la lista de las que no se usan enseña
+  el remoto y el modo, no la carpeta. El plan es el de `plan_enable()` con la
+  entrada del catálogo llevando la carpeta elegida (`conCarpeta`), que es lo que
+  hará #196, y así lo genera `vectores_parejas_editor.py`. Cuando prdrive
+  publique #196 hay que regenerar los vectores y mirar si sus textos han
+  cambiado. El catálogo no se escribe nunca desde aquí.
+- **Un `state/<pareja>/` de antes se aparta siempre** al añadir (a
+  `state/<pareja>.old-<fecha>/`), aunque fuera de la misma carpeta: la pareja
+  empieza de cero con la carpeta nueva y su `--resync`, que es lo que pide #196
+  («seguir pasando por el apartado de baseline») y nunca borra. Reaprovecharlo
+  con otra carpeta, con el mismo nombre de sesión, haría que bisync leyera como
+  borrado lo que no está en ella.
+- **Lo que no se deja**: una carpeta que `problemaLocal` rechaza (fuera del
+  volumen, `.prdrive`, `.keychain`), una con un carácter de control (acabaría
+  en el `rclone.conf`), una que existe y no es carpeta (o es un enlace) y una que
+  dejaría sin redirección a una pareja que vive en una carpeta compartida (otra
+  dentro de su carpeta de primer nivel, o la raíz entera: `Compartidas.problema`
+  con el config de después). **Lo que se avisa sin impedirlo** (#196): un espejo
+  de subida con la carpeta vacía o nueva (vacía, la pasada vaciaría el remoto;
+  sin crear, no se crea y la pasada se para), uno de bajada con ficheros (los
+  borraría) y otra pareja en la misma carpeta, dentro o alrededor.
+- **La carpeta no se crea al añadir**: la crea la primera pasada, como dice
+  `plan_enable()`, salvo la de un espejo de subida, que no la crea nadie.
+- **El `--resync` inicial** de una bisync se hace al añadirla si su carpeta está
+  vacía o no existe, como al emparejar (con un lado vacío no hay nada que pisar);
+  si tiene ficheros, no: la ficha lo pide con la hoja de «Rehacer la
+  referencia», que dice antes lo que va a pasar. Los demás modos esperan al
+  siguiente «Sincronizar».
+- **El catálogo se vuelve a leer antes de añadir.** Lo que se enseña sale de su
+  copia en `state/` (sin red, como todo lo de las pantallas); al confirmar se lee
+  el del remoto, y si la pareja ya no está o ha cambiado (salvo `local`,
+  `cambiosDelCatalogo`), se para y se dice. Y como la copia solo se leía al
+  emparejar y al traer el llavero, Parejas tiene «Volver a leer el catálogo»:
+  sin él, una pareja creada después en el PC no salía nunca.
+- **El orden de lo que se escribe** es el de `EditPlan.execute()`: el disco antes
+  y el config el último, porque lo peligroso es «config nuevo con baseline
+  viejo». Al añadir: apartar, olvidar una entrada suelta de `compartidas.json`
+  con su nombre, el `combine` del `rclone.conf` y el config; si algo falla antes
+  del config, lo apartado vuelve y el `rclone.conf` también. Al quitar: apartar
+  (si se pide), el config, y ya escrito, olvidar su carpeta compartida, el
+  `combine` y borrar sus filtros generados (datos derivados del TOML, como en
+  prdrive); lo de después del config no deshace la baja, y si falla se cuenta
+  (una entrada sin pareja o un upstream de más no hacen nada). Después, rclone
+  se recarga (`fscache`).
+- **Quitar no toca los datos**, ni en el teléfono ni en el remoto, y la pareja
+  sigue en el catálogo. La casilla «Apartar también su referencia y borrar sus
+  filtros generados» va desmarcada, como en el escritorio. No se quita la última
+  pareja (prdrive tampoco: `sync.py` no arrancaría) ni una a medio mover
+  (`entrando`). **Una que vive en una carpeta compartida** se quita sin volver
+  antes al volumen: se olvida su entrada, la carpeta compartida no se toca
+  («bórrala tú»), y su referencia se aparta siempre, porque si vuelve será
+  contra otra carpeta con el mismo nombre de sesión.
+- **Dónde corre.** Añadir y quitar reescriben el `rclone.conf` y recargan
+  rclone, así que van como mover una pareja: dentro de `Modelo.trabajo` (no se
+  instala una versión nueva a medias), de `LlaveroApp.enExclusiva` y de
+  `Adaptadores.sinPasadas` (una llamada de una pasada de fondo no ve el
+  `combine` a medio cambiar). «Sincronizar sola» lee el config en cada vuelta: la
+  siguiente ya la ve, o ya no la ve.
+- **Falta**: cambiar la carpeta de una pareja que ya se usa (#25), y las parejas
+  con `local` anidado o que comparten carpeta de primer nivel en una carpeta
+  compartida (#24).
 
 ## Convenios
 
