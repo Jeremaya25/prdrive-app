@@ -12,11 +12,10 @@ import prdrive.app.rclone.Adaptadores
 import prdrive.engine.Catalogo
 import prdrive.engine.Config
 import prdrive.engine.ConfigError
-import prdrive.engine.DEFAULT_MODE
+import prdrive.engine.EditarParejas
 import prdrive.engine.LLAVERO_LLAVE
 import prdrive.engine.LLAVERO_LOCAL
 import prdrive.engine.Llavero
-import prdrive.engine.MODES
 import prdrive.engine.Pairing
 import prdrive.engine.Pasada
 import prdrive.engine.Store
@@ -25,7 +24,6 @@ import prdrive.engine.dumpsChecked
 import prdrive.engine.headerOf
 import prdrive.engine.loadRaw
 import prdrive.engine.parseConfig
-import prdrive.engine.strPy
 
 /**
  * Instalador.kt — El primer arranque, sin pantallas: lo que hace `install/` de
@@ -35,8 +33,9 @@ import prdrive.engine.strPy
  *    clave. Es lo justo para leer el catálogo.
  * 2. [leerCatalogo]: el catálogo del remoto. Si no se lee, la conexión no va,
  *    y el motivo es el que se enseña.
- * 3. [instalar]: con las parejas elegidas, el `sync_config.toml`, el
- *    `rclone.conf` entero (con el `combine` de esas parejas) y sus carpetas.
+ * 3. [instalar]: con las parejas elegidas y la carpeta de cada una, el
+ *    `sync_config.toml`, el `rclone.conf` entero (con el `combine` de esas
+ *    parejas) y sus carpetas.
  * 4. [inicializar]: el `--resync` inicial de las bisync, como
  *    `deploy.resync_targets()`: un espejo no se inicializa, porque propagaría
  *    el vacío.
@@ -97,13 +96,22 @@ object Instalador {
      *   son los del código.
      * - La ruta del catálogo es la del código, siempre, como hace el instalador
      *   con la de su perfil: es de donde se ha leído.
-     * - La carpeta de un espejo de subida NO se crea, a diferencia de
-     *   `make_local_dirs()`: aquí «Sincronizar» pasa todas las parejas en
-     *   seguida, sin `--dry-run`, y un origen vacío vaciaría el remoto. Sin
-     *   carpeta, la pasada se para con su explicación hasta que la persona la
-     *   cree con lo que quiere subir.
+     * - La carpeta de cada pareja es la de [locales], que se ha elegido al
+     *   emparejar (prdrive#202, #196): el catálogo no la lleva. Lo que no deja
+     *   seguir ([EditarParejas.problemaAlSembrar]) se mira otra vez aquí, antes
+     *   de escribir nada.
+     * - La carpeta de un espejo de subida NO se crea (`local_dirs()` de #202
+     *   tampoco): un origen vacío vaciaría el remoto. Sin carpeta, la pasada se
+     *   para con su explicación hasta que la persona la cree con lo que quiere
+     *   subir.
      */
-    fun instalar(contexto: Context, carga: Pairing.Carga, catalogo: Catalogo.Catalog, elegidas: List<String>): Instalado {
+    fun instalar(
+        contexto: Context,
+        carga: Pairing.Carga,
+        catalogo: Catalogo.Catalog,
+        elegidas: List<String>,
+        locales: Map<String, String>,
+    ): Instalado {
         val v = Prdrive.volumen(contexto)
         val repetidas = catalogo.names.groupingBy { it }.eachCount().filterValues { it > 1 }.keys
         if (repetidas.isNotEmpty()) {
@@ -113,7 +121,8 @@ object Instalador {
             )
         }
         val (alineada, notas) = Pairing.alinearConCatalogo(carga, catalogo.raw)
-        val raw = Volumen.deviceConfig(catalogo.raw, elegidas, carga.catalogPath)
+        EditarParejas.problemaAlSembrar(v.raiz, catalogo.raw, elegidas, locales)?.let { throw ConfigError(it) }
+        val raw = Volumen.deviceConfig(catalogo.raw, elegidas, carga.catalogPath, locales)
         val config = parseConfig(raw)
         val cabecera = Volumen.deviceHeader(catalogo.endpoint, headerOf(catalogo.text))
         // Lo que puede fallar, antes de tocar el disco.
@@ -121,15 +130,11 @@ object Instalador {
         dumpsChecked(raw, cabecera)
 
         v.escribirRemoto(alineada, config)
-        val subida = elegidas.filter { MODES[modoDe(catalogo, it)]?.borraEnRemoto == true }.toSet()
-        v.crearCarpetas(catalogo.raw, elegidas.filter { it !in subida })
+        v.crearCarpetas(catalogo.raw, elegidas, locales)
         v.escribirConfig(raw, cabecera)
         Prdrive.recargarRclone(contexto)
         return Instalado(config, notas, Volumen.mirrorPairs(catalogo.raw, elegidas))
     }
-
-    private fun modoDe(catalogo: Catalogo.Catalog, nombre: String): String =
-        strPy(Catalogo.findPair(catalogo, nombre)?.get("mode") ?: DEFAULT_MODE)
 
     /** Las parejas que hay que inicializar con `--resync`, en el orden del config. */
     fun aInicializar(config: Config, catalogo: Catalogo.Catalog): List<String> {

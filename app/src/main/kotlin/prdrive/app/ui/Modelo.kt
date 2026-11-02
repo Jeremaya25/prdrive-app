@@ -120,6 +120,28 @@ class Modelo(app: Application) : AndroidViewModel(app) {
     var elegidas by mutableStateOf<Set<String>>(emptySet())
         private set
 
+    /**
+     * La carpeta de cada pareja del catálogo, como está escrita: el catálogo no
+     * la lleva (prdrive#202, #196), y empieza con la que sugiere el instalador
+     * ([Volumen.carpetaSugerida], su nombre).
+     */
+    var carpetas by mutableStateOf<Map<String, String>>(emptyMap())
+        private set
+
+    /**
+     * Lo que se ha mirado de las carpetas elegidas ([revisarCarpetas]): con qué
+     * elegidas y carpetas, lo que no deja instalar y lo que se avisa antes.
+     */
+    data class RevisionCarpetas(
+        val elegidas: Set<String>,
+        val carpetas: Map<String, String>,
+        val problema: String?,
+        val avisos: List<String>,
+    )
+
+    var revisionCarpetas by mutableStateOf<RevisionCarpetas?>(null)
+        private set
+
     /** Si al instalar se trae también el llavero (la casilla «El llavero»). */
     var conLlavero by mutableStateOf(false)
         private set
@@ -201,8 +223,9 @@ class Modelo(app: Application) : AndroidViewModel(app) {
 
     /**
      * Una pareja del catálogo que este teléfono no usa: su modo, su carpeta del
-     * remoto y la carpeta que se sugiere al añadirla ([EditarParejas.sugerencia]).
-     * No se dice su carpeta local: con prdrive#196 la elige cada dispositivo.
+     * remoto y la carpeta que se sugiere al añadirla ([Volumen.carpetaSugerida],
+     * su nombre). No se dice su carpeta local: con prdrive#202 (#196) la elige
+     * cada dispositivo, y el catálogo no la lleva.
      */
     data class SinUsar(val nombre: String, val modo: String, val remoto: String, val sugerencia: String)
 
@@ -460,6 +483,8 @@ class Modelo(app: Application) : AndroidViewModel(app) {
             catalogo = cat
             notasDelCatalogo = Pairing.alinearConCatalogo(c, cat.raw).second
             elegidas = cat.names.toSet()
+            carpetas = cat.names.associateWith { Volumen.carpetaSugerida(Catalogo.findPair(cat, it).orEmpty()) }
+            revisarCarpetas()
             // El llavero, desmarcado: es un paso opcional, como en el instalador.
             conLlavero = false
             llaveDelLlavero = null
@@ -469,6 +494,42 @@ class Modelo(app: Application) : AndroidViewModel(app) {
 
     fun elegir(nombre: String, si: Boolean) {
         elegidas = if (si) elegidas + nombre else elegidas - nombre
+        revisarCarpetas()
+    }
+
+    /** Cambia la carpeta escrita para [nombre] al emparejar. */
+    fun elegirCarpeta(nombre: String, carpeta: String) {
+        carpetas = carpetas + (nombre to carpeta)
+        revisarCarpetas()
+    }
+
+    /** Las carpetas de las elegidas como se guardan ([EditarParejas.limpiarCarpeta]). */
+    fun localesElegidas(): Map<String, String> =
+        carpetas.filterKeys { it in elegidas }.mapValues { EditarParejas.limpiarCarpeta(it.value) }
+
+    /**
+     * Mira las carpetas elegidas, fuera del hilo de la pantalla (miran el
+     * disco): lo que no deja instalar ([EditarParejas.problemaAlSembrar]) y lo
+     * que avisa el instalador de prdrive ([Volumen.avisosCarpetas]). Lo deja en
+     * [revisionCarpetas]; vale solo si sigue siendo de lo que hay elegido.
+     */
+    private fun revisarCarpetas() {
+        val cat = catalogo ?: return
+        val orden = cat.names.filter { it in elegidas }
+        val elegidasAhora = elegidas
+        val carpetasAhora = carpetas
+        val locales = localesElegidas()
+        viewModelScope.launch(Dispatchers.IO) {
+            val raiz = volumen.raiz
+            val revision = try {
+                val problema = if (orden.isEmpty()) null else EditarParejas.problemaAlSembrar(raiz, cat.raw, orden, locales)
+                val avisos = if (problema != null || orden.isEmpty()) emptyList() else Volumen.avisosCarpetas(raiz, cat.raw, orden, locales)
+                RevisionCarpetas(elegidasAhora, carpetasAhora, problema, avisos)
+            } catch (e: Exception) {
+                RevisionCarpetas(elegidasAhora, carpetasAhora, e.message ?: e.toString(), emptyList())
+            }
+            if (elegidas == elegidasAhora && carpetas == carpetasAhora) revisionCarpetas = revision
+        }
     }
 
     /** Marca o desmarca «El llavero»; con [llave], el fichero llave de uno sin contraseña. */
@@ -494,10 +555,11 @@ class Modelo(app: Application) : AndroidViewModel(app) {
         val c = carga ?: return
         val cat = catalogo ?: return
         val orden = cat.names.filter { it in elegidas }
+        val locales = localesElegidas()
         val remota = if (conLlavero) tablaLlavero(cat) else null
         val llave = llaveDelLlavero
         trabajo("Instalando…") {
-            val hecho = Instalador.instalar(contexto, c, cat, orden)
+            val hecho = Instalador.instalar(contexto, c, cat, orden, locales)
             instalado = hecho
             paso = Paso.INICIANDO
             lineas = emptyList()
@@ -922,7 +984,7 @@ class Modelo(app: Application) : AndroidViewModel(app) {
                 nombre,
                 strPy(p["mode"] ?: DEFAULT_MODE),
                 strPy(p["remote_path"] ?: ""),
-                EditarParejas.sugerencia(cat, nombre),
+                Volumen.carpetaSugerida(p),
             )
         }
     }

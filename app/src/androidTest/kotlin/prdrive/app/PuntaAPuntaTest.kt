@@ -6,6 +6,7 @@ import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsOn
+import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
@@ -113,10 +114,13 @@ class PuntaAPuntaTest {
             captura("1-codigo")
             compose.onNodeWithTag("conectar").performClick()
 
-            // 2. Las parejas del catálogo, todas marcadas.
+            // 2. Las parejas del catálogo, todas marcadas, cada una con su carpeta:
+            //    la que sugiere el instalador (su nombre). El catálogo del servidor
+            //    aún trae `local`, como uno de antes de prdrive#202, y se ignora.
             esperar("instalar")
             compose.onNodeWithTag("elegir-notas").assertExists()
             compose.onNodeWithTag("elegir-fotos").assertExists()
+            compose.onNodeWithTag("carpeta-notas").assertTextContains("notas")
             captura("2-parejas")
             compose.onNodeWithTag("instalar").performClick()
 
@@ -127,20 +131,20 @@ class PuntaAPuntaTest {
             compose.onNodeWithTag("aviso-espejos").assertExists()
             compose.waitUntilAtLeastOneExists(dice("resultado-notas", "hecha"), 5000)
             captura("3-inicio")
-            assertEquals("escrito en el PC\n", File(v.raiz, "sync-data/notas/del-pc.txt").readText())
-            assertTrue("el espejo no se inicializa", !File(v.raiz, "sync-data/fotos/foto.txt").exists())
+            assertEquals("escrito en el PC\n", File(v.raiz, "notas/del-pc.txt").readText())
+            assertTrue("el espejo no se inicializa", !File(v.raiz, "fotos/foto.txt").exists())
             compose.onNodeWithTag("empezar").performClick()
 
             // 4. La principal, y una pasada normal: sube lo nuevo del teléfono y
             //    el espejo de bajada trae lo suyo.
             esperar("sincronizar")
             esperar("fila-notas", 30)
-            File(v.raiz, "sync-data/notas/del-telefono.txt").writeText("escrito en el teléfono\n")
+            File(v.raiz, "notas/del-telefono.txt").writeText("escrito en el teléfono\n")
             compose.onNodeWithTag("sincronizar").performClick()
             compose.waitUntil(180_000) { compose.onAllNodes(hasTestTag("ocupado")).fetchSemanticsNodes().isEmpty() }
             compose.onNodeWithTag("error").assertDoesNotExist()
             captura("4-principal")
-            assertEquals("una foto\n", File(v.raiz, "sync-data/fotos/foto.txt").readText())
+            assertEquals("una foto\n", File(v.raiz, "fotos/foto.txt").readText())
 
             // En el servidor, visto con el rclone de la app.
             val stat = Rclone.rpc("operations/stat", mapOf("fs" to "nas:/copia/notas", "remote" to "del-telefono.txt"))
