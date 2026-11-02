@@ -158,11 +158,6 @@ hacerlo.
   `+ *.kdbx` sí las distingue en todos: una `X.KDBX` es base en un PC con Windows
   y no entra en la pareja. El teléfono sigue a rclone (las distingue), y los
   vectores evitan el caso para no depender del sistema.
-- **`plan_enable()` promete crear la carpeta de un espejo de subida.** Dice «La
-  ruta local '…' se creará en la primera pasada si todavía no existe» en
-  cualquier modo, y `sync.py` no crea el origen de un `up-mirror` (se niega:
-  vaciaría el remoto). El teléfono replica el texto y lo corrige con su aviso y
-  con el chip de la carpeta («nueva: créala tú»).
 - **`update.parse_version` lanza con un `²`**, aunque dice que nunca lanza:
   `str.isdigit()` lo da por cifra y `int()` no lo lee (`ValueError`). Y
   `update.check()` se cae con un `AttributeError` si GitHub contesta algo que no
@@ -208,6 +203,13 @@ hacerlo.
   mano.
 
 ## 4. Lo siguiente
+
+- **El motor a prdrive 0.8.** Está en la 0.7.7, salvo lo de #196, que sigue a la
+  0.8.4 (prdrive#202) con sus vectores aparte (`vectores_196.json`): el
+  generador de `vectores.json` no arranca contra la 0.8 (entre las dos, prdrive
+  ha cambiado `problema_valor_flag()`, `expected_prefix()` con el `{hash}` del
+  entorno, el llavero, `update.py`… y KeePassXC 2.8.0; rclone sigue en v1.75.2).
+  Al pasar, se funden los dos ficheros y `vectores_196.py` desaparece.
 
 - **La autoactualización sin abrir la app.** Sincronizar sola ya existe
   (AGENTS.md, «Sincronizar sola, parar y el simulacro»); la autoactualización
@@ -357,10 +359,12 @@ Falta:
 
 - Cambiar la carpeta de una pareja que ya se usa (#25) y la parte grande de
   #24 (un `local` anidado, o que comparte carpeta de primer nivel, en una
-  carpeta compartida). Añadir una del catálogo eligiendo su carpeta y quitarla
-  del teléfono **ya están**, adelantando prdrive#196, que sigue abierta
-  (AGENTS.md, «Añadir y quitar parejas»): cuando se publique, regenerar los
-  vectores y mirar si los textos de `plan_enable()` han cambiado.
+  carpeta compartida). Añadir una del catálogo eligiendo su carpeta, quitarla
+  del teléfono y elegir la carpeta de cada pareja al emparejar **ya están**,
+  alineados con prdrive#196 tal como lo hace el PR Jeremaya25/prdrive#202, que
+  sale con la 0.8.4 (AGENTS.md, «Añadir y quitar parejas, y la carpeta de cada
+  una»). Si #202 cambia antes de juntarse, regenerar `vectores_196.json` desde
+  su rama.
 - Reparación (`--force`) y Emparejar de nuevo (Ajustes): borran o rehacen
   estado, y piden su propio diseño de qué se conserva.
 - La carpeta de un espejo de subida al emparejar (§3).

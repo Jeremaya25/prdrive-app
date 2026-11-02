@@ -36,7 +36,10 @@ engine/       Kotlin puro (JVM), SIN una línea de Android
 │               su [remote], sin órdenes ni secretos y, a diferencia de prdrive,
 │               solo si es del mismo tipo que el QR)
 ├── Catalogo.kt la mitad que LEE de common/catalog.py: remote.toml o pairs.toml,
-│               la copia sin red y la carpeta que no es un fichero
+│               la copia sin red, la carpeta que no es un fichero y, de
+│               prdrive#202, el catálogo sin `local`
+├── Carpetas.kt espejo de common/carpetas.py (prdrive#202): con qué otra choca
+│               la carpeta de una pareja y qué arriesga un espejo en ella
 ├── Compartidas.kt  las parejas que viven en una carpeta compartida del teléfono
 │               (`.prdrive/compartidas.json`): leerlo y escribirlo, qué pareja y
 │               qué ruta valen, si el `rclone.conf` la lleva y si las fechas de
@@ -69,11 +72,12 @@ engine/       Kotlin puro (JVM), SIN una línea de Android
 │               devolverla al volumen: la secuencia entera y sus pasos, contra
 │               un `Rclone` que se pasa. Tampoco refleja a prdrive
 ├── EditarParejas.kt  espejo de la parte de ui/pair_editor.py que decide qué
-│               parejas del catálogo se usan aquí (plan_enable, plan_remove), con
-│               la carpeta que elige el teléfono al añadir (prdrive#196,
-│               adelantado) y lo que se escribe al añadir y al quitar
+│               parejas del catálogo se usan aquí (plan_enable con su carpeta, de
+│               prdrive#202, y plan_remove), lo que el teléfono no deja y lo que
+│               se escribe al añadir y al quitar
 ├── Volumen.kt  espejo de install/: la carpeta del volumen, su .prdrive/ y lo
-│               que se escribe al emparejar
+│               que se escribe al emparejar (con la carpeta de cada pareja, de
+│               prdrive#202)
 └── Actualizacion.kt  espejo de common/update.py: la última release, la caché
                 de un día, comparar versiones, y el APK de la release
 rclone/
@@ -120,7 +124,7 @@ app/          Android: solo dibuja y llama
 │                     Anadir (una del catálogo, eligiendo su carpeta) y la hoja
 │                     de Quitar
 ├── ui/llavero/       SeccionLlavero: estado, abrir, cómo funciona, traer y quitar
-├── ui/emparejar/     Emparejar en cuatro pasos
+├── ui/emparejar/     Emparejar en cuatro pasos (con la carpeta de cada pareja)
 ├── ui/ajustes/       Ajustes: el remoto, los permisos y las actualizaciones
 ├── tema/Tokens.kt    los colores, espacios y radios del sistema de diseño
 │                     (generado por herramientas/diseno.py: no se edita)
@@ -165,8 +169,10 @@ herramientas/
 ├── vectores_historial.py  su parte de common/historial.py: el diario de pasadas
 ├── vectores_conflictos_editor.py  su parte de ui/conflict_editor.py: las
 │                      etiquetas, los planes y lo que hacen en un disco de verdad
-├── vectores_parejas_editor.py  su parte de ui/pair_editor.py: usar aquí una
-│                      pareja del catálogo y quitarla
+├── vectores_parejas_editor.py  su parte de ui/pair_editor.py: quitar una pareja
+├── vectores_196.py    lo de prdrive#202 (#196, la carpeta de cada pareja), desde
+│                      su rama y aparte, en vectores_196.json («Añadir y quitar
+│                      parejas, y la carpeta de cada una»)
 ├── punta_a_punta.py   el servidor (con el llavero y su base) y la carga del QR
 │                      de PuntaAPuntaTest
 └── diseno.py          los colores, el fondo de la ventana y los glifos desde
@@ -287,6 +293,16 @@ le pregunta caso por caso y escribe `engine/src/test/resources/vectores.json`,
 con la versión y el commit de prdrive dentro. **Ningún test lleva un valor
 esperado escrito a mano.** Si añades algo al motor que refleje a Python, añade su
 caso al generador y regenera; no escribas el número.
+
+Una excepción, mientras dure: lo de prdrive#202 (la carpeta que elige cada
+dispositivo, #196) sale de la rama de ese PR, que va con la 0.8.4, en otro
+fichero, `vectores_196.json`, porque el resto del motor sigue en la 0.7.7 y su
+generador no arranca contra la 0.8 («Añadir y quitar parejas, y la carpeta de
+cada una»):
+
+```bash
+python herramientas/vectores_196.py <checkout de prdrive en la rama de #202>
+```
 
 Lo que el motor imita del propio Python (`repr()` de un float, `fnmatch`,
 `json.loads`, `strptime`, `tomllib`…) también lo contesta Python, desde
@@ -910,7 +926,7 @@ que no se ven en el código:
   para el 25 % de `max-delete`: en una pareja de pocos ficheros, la pasada de
   después para en el freno, como en el escritorio.
 
-## Añadir y quitar parejas
+## Añadir y quitar parejas, y la carpeta de cada una
 
 Desde Parejas se añade una pareja del catálogo («Del catálogo, sin usar aquí»)
 y desde su ficha se quita del teléfono («Quitar de este teléfono…»). Es el «Usar
@@ -919,66 +935,79 @@ son el espejo de `plan_enable()` y `plan_remove()` (`ui/pair_editor.py`), con
 sus textos tal cual (dicen «dispositivo») y sus vectores. Lo demás es del
 teléfono. Las decisiones que no se ven en el código:
 
-- **La carpeta la elige el teléfono, adelantando prdrive#196**, que sigue
-  abierta: el catálogo describirá solo el lado remoto, y cada dispositivo elige
-  su carpeta del volumen al usar una pareja y la guarda en su `sync_config.toml`
-  (entero, sin referencias). El `local` del catálogo, si lo trae, solo es lo que
-  se sugiere (`EditarParejas.sugerencia`); la lista de las que no se usan enseña
-  el remoto y el modo, no la carpeta. El plan es el de `plan_enable()` con la
-  entrada del catálogo llevando la carpeta elegida (`conCarpeta`), que es lo que
-  hará #196, y así lo genera `vectores_parejas_editor.py`. Cuando prdrive
-  publique #196 hay que regenerar los vectores y mirar si sus textos han
-  cambiado. El catálogo no se escribe nunca desde aquí.
-- **Un `state/<pareja>/` de antes se aparta siempre** al añadir (a
-  `state/<pareja>.old-<fecha>/`), aunque fuera de la misma carpeta: la pareja
-  empieza de cero con la carpeta nueva y su `--resync`, que es lo que pide #196
-  («seguir pasando por el apartado de baseline») y nunca borra. Reaprovecharlo
-  con otra carpeta, con el mismo nombre de sesión, haría que bisync leyera como
-  borrado lo que no está en ella.
-- **Lo que no se deja**: una carpeta que `problemaLocal` rechaza (fuera del
-  volumen, `.prdrive`, `.keychain`), una con un carácter de control (acabaría
-  en el `rclone.conf`), una que existe y no es carpeta (o es un enlace) y una que
-  dejaría sin redirección a una pareja que vive en una carpeta compartida (otra
-  dentro de su carpeta de primer nivel, o la raíz entera: `Compartidas.problema`
-  con el config de después). Y dos de espejos (`problemaDelEspejo`), que prdrive
-  y #196 solo avisan: un espejo de subida con su carpeta **ya creada y vacía**
-  (la pasada solo se para si el origen no existe, en `sync.py` y aquí; vacío,
-  borra en el remoto todo lo que no está en él, con `max-delete` de único freno),
-  y un espejo de bajada que se solapa con otra pareja, en cualquier sentido (el
-  espejo borraría los ficheros de la otra que no están en su remoto, y la bisync
-  de la otra llevaría los borrados al suyo). **Lo que se avisa sin impedirlo**
-  (#196): un espejo de subida sin carpeta (no se crea, y la pasada se para hasta
-  que exista), uno de bajada con ficheros (los borraría) y otra pareja en la
-  misma carpeta, dentro o alrededor. La consecuencia de `plan_enable()` que
-  promete crear la carpeta no se enseña en un espejo de subida
-  (`EditarParejas.NO_SE_CREA`; `PLAN.md` §2).
+- **La carpeta la elige cada dispositivo** (prdrive#196, en el PR
+  Jeremaya25/prdrive#202, que sale con la 0.8.4). El catálogo describe solo el
+  lado remoto: al leerlo se le quita el `local` (`Catalogo.sinLocal`, en `pull` y
+  `cached`), un catálogo de antes que lo traiga se lee igual y se ignora, y
+  `diffKeys` no lo compara. Cada pareja lleva su carpeta en el `sync_config.toml`
+  (entero, sin referencias), y se elige al emparejar (un campo por pareja
+  marcada) y al añadir; las dos empiezan con la que sugiere el instalador
+  (`Volumen.carpetaSugerida`: el nombre de la pareja). Lo que la elige es
+  `Volumen.deviceConfig` con sus `locales` y `EditarParejas.planEnable` con su
+  `local`, los de #202. El catálogo no se escribe nunca desde aquí.
+- **El motor está en dos versiones de prdrive.** Lo de #196 (`Carpetas.kt`, el
+  catálogo sin `local`, `plan_enable()`, `device_config()`, `local_dirs()`,
+  `carpeta_sugerida()`, `problema_carpeta()` y `avisos_carpetas()`) sigue a la
+  0.8.4, y lo demás a la 0.7.7. Sus valores esperados van aparte, en
+  `vectores_196.json` (`herramientas/vectores_196.py`, desde la rama de #202): el
+  generador de `vectores.json` no arranca contra la 0.8, que ha cambiado otras
+  funciones que el motor no refleja todavía. Lo que #202 cambia ya no sale de
+  `vectores.json`. Cuando el motor pase a la 0.8, se funden (`PLAN.md`).
+- **Un `state/<pareja>/` de antes** (una pareja que se quitó sin limpiar y
+  vuelve) se reutiliza si es de la misma carpeta, sin `--resync`, y se aparta a
+  `state/<pareja>.old-<fecha>/` si es de otra o está roto, como
+  `_baseline_sobrante()`. El prefijo que se compara es el del teléfono
+  (`Bisync.expectedPrefix`, el `combine` del `rclone.conf`, sin el `{hash}` del
+  escritorio); por eso los vectores describen el baseline por lo que es (`esta`,
+  `otra`, `rota`) y no por su nombre.
+- **Lo que se avisa** es lo de `common/carpetas.py` (`Carpetas.kt`): un espejo
+  de subida sin carpeta o vacía, uno de bajada con cosas, y dos parejas sobre los
+  mismos ficheros (la misma carpeta o una dentro de otra, sin distinguir
+  mayúsculas, como en Windows; aquí sí se distinguen, y el aviso sale de más).
+  Al emparejar se dice antes de instalar, y al añadir, con el plan.
+- **Lo que no se deja**, del teléfono: una carpeta que `problemaLocal` rechaza
+  (fuera del volumen, `.prdrive`, `.keychain`) o en blanco, una con un carácter de
+  control (acabaría en el `rclone.conf`), una que existe y no es carpeta (o es
+  un enlace) y una que dejaría sin redirección a una pareja que vive en una
+  carpeta compartida (otra dentro de su carpeta de primer nivel, o la raíz
+  entera: `Compartidas.problema` con el config de después). Y dos de espejos
+  (`EditarParejas.problemaDelEspejo`, también al emparejar con
+  `problemaAlSembrar`), que prdrive solo avisa: un espejo de subida con su
+  carpeta **ya creada y sin ningún fichero** (la pasada solo se para si el origen
+  no existe, en `sync.py` y aquí; vacío, borra en el remoto todo lo que no está
+  en él, con `max-delete` de único freno), y un espejo de bajada que se solapa
+  con otra pareja, en cualquier sentido (el espejo borraría los ficheros de la
+  otra que no están en su remoto, y la bisync de la otra llevaría los borrados
+  al suyo).
 - **La carpeta no se crea al añadir**: la crea la primera pasada, como dice
-  `plan_enable()`, salvo la de un espejo de subida, que no la crea nadie.
-- **El `--resync` inicial** de una bisync se hace al añadirla si su carpeta está
-  vacía o no existe, como al emparejar (con un lado vacío no hay nada que pisar),
-  y con `resync-mode = path2` como la mudanza (otra app ha podido escribir en la
-  carpeta entre pensarlo y hacerlo; si hay duda, gana el remoto); si tiene
-  ficheros, no: la ficha lo pide con la hoja de «Rehacer la
-  referencia», que dice antes lo que va a pasar. Los demás modos esperan al
-  siguiente «Sincronizar».
+  `plan_enable()`, salvo la de un espejo de subida, que no la crea nadie (ni el
+  instalador: `local_dirs()` se la salta).
+- **El `--resync` inicial** de una bisync que empieza de cero se hace al
+  añadirla si su carpeta está vacía o no existe, como al emparejar (con un lado
+  vacío no hay nada que pisar), y con `resync-mode = path2` como la mudanza
+  (otra app ha podido escribir en la carpeta entre pensarlo y hacerlo; si hay
+  duda, gana el remoto); si tiene ficheros, no: la ficha lo pide con la hoja de
+  «Rehacer la referencia», que dice antes lo que va a pasar. Una que reutiliza
+  su referencia no lo necesita. Los demás modos esperan al siguiente
+  «Sincronizar».
 - **El catálogo se vuelve a leer antes de añadir.** Lo que se enseña sale de su
   copia en `state/` (sin red, como todo lo de las pantallas); al confirmar se lee
-  el del remoto, y si la pareja ya no está o ha cambiado (salvo `local`,
-  `cambiosDelCatalogo`), se para y se dice. Y como la copia solo se leía al
-  emparejar y al traer el llavero, Parejas tiene «Volver a leer el catálogo»:
-  sin él, una pareja creada después en el PC no salía nunca.
+  el del remoto, y si la pareja ya no está o ha cambiado (`cambiosDelCatalogo`),
+  se para y se dice. Y como la copia solo se leía al emparejar y al traer el
+  llavero, Parejas tiene «Volver a leer el catálogo»: sin él, una pareja creada
+  después en el PC no salía nunca.
 - **El orden de lo que se escribe** es el de `EditPlan.execute()`: el disco antes
   y el config el último, porque lo peligroso es «config nuevo con baseline
-  viejo». Al añadir: apartar, olvidar una entrada suelta de `compartidas.json`
-  con su nombre, el `combine` del `rclone.conf` y el config; si algo falla antes
-  del config, lo apartado vuelve y el `rclone.conf` también. Al quitar: apartar
-  (si se pide), el config, y ya escrito, olvidar su carpeta compartida, el
-  `combine` y borrar sus filtros generados (datos derivados del TOML, como en
-  prdrive); lo de después del config no deshace la baja, y si falla se cuenta
-  (una entrada sin pareja o un upstream de más no hacen nada). Después, rclone
-  se recarga (`fscache`). Sin la copia `sync_config.toml.bak` de
-  `config_file.save()`: el teléfono escribe el config siempre con
-  `Volumen.escribirConfig`, que no la hace.
+  viejo». Al añadir: apartar (si el plan lo dice), olvidar una entrada suelta de
+  `compartidas.json` con su nombre, el `combine` del `rclone.conf` y el config;
+  si algo falla antes del config, lo apartado vuelve y el `rclone.conf` y
+  `compartidas.json` también. Al quitar: apartar (si se pide), el config, y ya
+  escrito, olvidar su carpeta compartida, el `combine` y borrar sus filtros
+  generados (datos derivados del TOML, como en prdrive); lo de después del
+  config no deshace la baja, y si falla se cuenta (una entrada sin pareja o un
+  upstream de más no hacen nada). Después, rclone se recarga (`fscache`). Sin la
+  copia `sync_config.toml.bak` de `config_file.save()`: el teléfono escribe el
+  config siempre con `Volumen.escribirConfig`, que no la hace.
 - **Lo que se aparta de `pair_editor.py` a propósito**: un `pair` que no es una
   lista de tablas es un `ConfigError` (prdrive se cae con un `AttributeError`), y
   un `[daemon].pairs` que no es una lista no se toca al quitar (en prdrive, el

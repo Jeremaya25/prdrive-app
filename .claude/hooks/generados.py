@@ -28,6 +28,12 @@ VECTORES = (
     "`python herramientas/vectores.py <ruta de prdrive>`. AGENTS.md, «Los valores "
     "esperados no se escriben a mano»."
 )
+VECTORES_196 = (
+    "Se genera desde la rama de prdrive#202 (#196, sale con la 0.8.4): añade el caso a "
+    "herramientas/vectores_196.py y regenera con "
+    "`python herramientas/vectores_196.py <checkout de prdrive en esa rama>`. AGENTS.md, "
+    "«Añadir y quitar parejas, y la carpeta de cada una»."
+)
 ORACULO = (
     "Lo escribe el código de rclone: "
     "`cd rclone/go && go run ./oraculo ../../engine/src/test/resources/oraculo_rclone.json`. "
@@ -51,6 +57,7 @@ CLAVE = (
 # Rutas relativas a la raíz del proyecto, con `/`.
 EXACTOS = {
     "engine/src/test/resources/vectores.json": VECTORES,
+    "engine/src/test/resources/vectores_196.json": VECTORES_196,
     "engine/src/test/resources/oraculo_rclone.json": ORACULO,
     "gradle/wrapper/gradle-wrapper.properties": WRAPPER,
     "gradle/wrapper/gradle-wrapper.jar": WRAPPER,
