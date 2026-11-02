@@ -964,6 +964,9 @@ teléfono. Las decisiones que no se ven en el código:
   de subida sin carpeta o vacía, uno de bajada con cosas, y dos parejas sobre los
   mismos ficheros (la misma carpeta o una dentro de otra, sin distinguir
   mayúsculas, como en Windows; aquí sí se distinguen, y el aviso sale de más).
+  Sin mayúsculas es el `casefold()` de Python (`Carpetas.casefoldPy`, que solo
+  se separa en el cheroqui), y `MotorEnAndroidTest` lo pasa también con el ICU
+  del teléfono.
   Al emparejar se dice antes de instalar, y al añadir, con el plan.
 - **Lo que no se deja**, del teléfono: una carpeta que `problemaLocal` rechaza
   (fuera del volumen, `.prdrive`, `.keychain`) o en blanco, una con un carácter de
@@ -975,7 +978,9 @@ teléfono. Las decisiones que no se ven en el código:
   `problemaAlSembrar`), que prdrive solo avisa: un espejo de subida con su
   carpeta **ya creada y sin ningún fichero** (la pasada solo se para si el origen
   no existe, en `sync.py` y aquí; vacío, borra en el remoto todo lo que no está
-  en él, con `max-delete` de único freno), y un espejo de bajada que se solapa
+  en él, con `max-delete` de único freno; en la raíz entera no cuentan
+  `.prdrive/` ni `.keychain/`, que su pasada deja fuera y con los que prdrive la
+  da por llena), y un espejo de bajada que se solapa
   con otra pareja, en cualquier sentido (el espejo borraría los ficheros de la
   otra que no están en su remoto, y la bisync de la otra llevaría los borrados
   al suyo).

@@ -22,10 +22,13 @@ class CarpetasTest {
         temporales.forEach { it.deleteRecursively() }
     }
 
-    /** Una raíz con lo que dice el caso: `x/` es una carpeta, lo demás un fichero. */
+    /**
+     * Una raíz como la de `vectores_196.py` (`_Disco`: con `.prdrive/state/`) y
+     * con lo que dice el caso: `x/` es una carpeta, lo demás un fichero.
+     */
     private fun raiz(disco: List<String>): File {
         val raiz = File(Files.createTempDirectory("prdrive-carpetas").toFile().also { temporales.add(it) }, "volumen")
-        raiz.mkdirs()
+        File(raiz, "$CARPETA_PROGRAMA/state").mkdirs()
         for (rel in disco) {
             val f = File(raiz, rel)
             if (rel.endsWith("/")) f.mkdirs() else f.apply { parentFile.mkdirs(); writeText("x") }

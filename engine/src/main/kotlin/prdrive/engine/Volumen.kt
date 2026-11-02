@@ -448,7 +448,9 @@ class Volumen(val raiz: File) {
                 val modo = MODES[strPy(if ("mode" in pareja) pareja["mode"] else DEFAULT_MODE)]
                 if (modo != null && modo.borraEnRemoto) return@mapNotNull null
                 val local = stripPy(locales?.get(nombre).orEmpty()).replace("\\", "/").trim('/')
-                local.takeIf { it.isNotEmpty() && it != "." }
+                if (local.isEmpty() || local == ".") return@mapNotNull null
+                // Como el `Path(local)` de Python: sin tramos vacíos ni `.`.
+                local.split('/').filter { it.isNotEmpty() && it != "." }.joinToString("/").ifEmpty { "." }
             }
 
         /** Las elegidas que hay que inicializar: solo las bisync (un espejo propagaría el vacío). */

@@ -360,21 +360,34 @@ object EditarParejas {
         return Volumen.problemaCarpeta(local)
     }
 
-    /** Cómo está [carpeta] en el disco ([Carpeta]), sin seguir enlaces. */
-    fun mirarCarpeta(carpeta: File): Carpeta {
+    /**
+     * Lo que la pasada de una pareja de la raíz entera nunca lleva: la carpeta
+     * del programa ([REGLA_SIN_PROGRAMA]) y la del llavero ([REGLA_SIN_LLAVERO]).
+     * Mirar la raíz sin ellas es mirar lo que de verdad sincronizaría.
+     */
+    private val FUERA_DE_LA_RAIZ = setOf(CARPETA_PROGRAMA, LLAVERO_LOCAL)
+
+    /**
+     * Cómo está [carpeta] en el disco ([Carpeta]), sin seguir enlaces. Con
+     * [raiz], es la del volumen entero, y no se cuenta lo que su pasada deja
+     * fuera ([FUERA_DE_LA_RAIZ]): la raíz siempre tiene `.prdrive/`, y sin esto
+     * un espejo de subida en ella parecería tener algo que subir.
+     */
+    fun mirarCarpeta(carpeta: File, raiz: Boolean = false): Carpeta {
         val camino = carpeta.toPath()
         if (!Files.exists(camino, LinkOption.NOFOLLOW_LINKS)) return Carpeta(existe = false, esCarpeta = false, ficheros = 0)
         if (!Files.isDirectory(camino, LinkOption.NOFOLLOW_LINKS)) return Carpeta(existe = true, esCarpeta = false, ficheros = 0)
         var n = 0
-        fun recorrer(d: Path) {
+        fun recorrer(d: Path, primerNivel: Boolean) {
             Files.newDirectoryStream(d).use { entradas ->
                 for (p in entradas) {
                     if (n > TOPE_FICHEROS) return
-                    if (Files.isDirectory(p, LinkOption.NOFOLLOW_LINKS)) recorrer(p) else n++
+                    if (primerNivel && raiz && p.fileName.toString() in FUERA_DE_LA_RAIZ) continue
+                    if (Files.isDirectory(p, LinkOption.NOFOLLOW_LINKS)) recorrer(p, false) else n++
                 }
             }
         }
-        recorrer(camino)
+        recorrer(camino, true)
         return Carpeta(existe = true, esCarpeta = true, ficheros = n)
     }
 
@@ -386,9 +399,11 @@ object EditarParejas {
      * pasada borraría en el remoto sin que nadie lo haya pedido.
      *
      * - **Un espejo de subida con su carpeta ya creada y vacía** (sin ningún
-     *   fichero, aunque tenga subcarpetas). La pasada solo se para si el origen
-     *   no existe (`sync.py`, y [Pasada] igual); vacío, `rclone sync` borra en el
-     *   remoto todo lo que no está en él, con `max-delete` de único freno.
+     *   fichero, aunque tenga subcarpetas; en la raíz entera, sin contar
+     *   `.prdrive/` ni `.keychain/`, que su pasada deja fuera). La pasada solo se
+     *   para si el origen no existe (`sync.py`, y [Pasada] igual); vacío,
+     *   `rclone sync` borra en el remoto todo lo que no está en él, con
+     *   `max-delete` de único freno.
      * - **Un espejo de bajada que se solapa con otra pareja** (la misma carpeta,
      *   dentro o alrededor, como [Carpetas.solapadas]), o cualquier pareja que se
      *   solape con uno. El espejo borra de su carpeta lo que no está en su
@@ -504,7 +519,7 @@ object EditarParejas {
         // carpetas distintas se rechazan aquí, antes de enseñar nada.
         despues.seccionCombine(v.raiz.absolutePath)
 
-        val carpeta = mirarCarpeta(pareja.carpetaEn(v.raiz))
+        val carpeta = mirarCarpeta(pareja.carpetaEn(v.raiz), raiz = pareja.esRaiz && pareja.carpetaExterna == null)
         if (carpeta.existe && !carpeta.esCarpeta) {
             throw ConfigError("${dicha(local).replaceFirstChar { it.uppercase() }} ya existe y no es una carpeta (es un fichero o un enlace). Elige otra.")
         }
@@ -543,7 +558,7 @@ object EditarParejas {
         }
         val config = parseConfig(Volumen.deviceConfig(catalogo, elegidas, "", locales))
         for (pareja in config.delUsuario) {
-            problemaDelEspejo(config, pareja, mirarCarpeta(pareja.carpetaEn(raiz)))?.let { return it }
+            problemaDelEspejo(config, pareja, mirarCarpeta(pareja.carpetaEn(raiz), raiz = pareja.esRaiz))?.let { return it }
         }
         return null
     }

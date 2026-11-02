@@ -9,6 +9,7 @@ import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.isEnabled
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithTag
@@ -66,6 +67,17 @@ class PuntaAPuntaTest {
      * Espera a que aparezca [tag]. Si antes sale un error en la pantalla, el
      * fallo lo cuenta, en vez de esperar a que se acabe el tiempo.
      */
+    /**
+     * «Instalar», cuando se enciende: espera a que se hayan mirado las carpetas
+     * de las parejas, que va fuera del hilo de la pantalla.
+     */
+    private fun instalarCuandoSePueda() {
+        compose.waitUntil(30_000) {
+            compose.onAllNodes(hasTestTag("instalar") and isEnabled()).fetchSemanticsNodes().isNotEmpty()
+        }
+        compose.onNodeWithTag("instalar").performClick()
+    }
+
     private fun esperar(tag: String, segundos: Long = 120) {
         compose.waitUntil(segundos * 1000) {
             compose.onAllNodes(hasTestTag(tag)).fetchSemanticsNodes().isNotEmpty() ||
@@ -122,7 +134,7 @@ class PuntaAPuntaTest {
             compose.onNodeWithTag("elegir-fotos").assertExists()
             compose.onNodeWithTag("carpeta-notas").assertTextContains("notas")
             captura("2-parejas")
-            compose.onNodeWithTag("instalar").performClick()
+            instalarCuandoSePueda()
 
             // 3. El --resync inicial de la bisync: trae lo del PC.
             esperar("empezar", 180)
@@ -207,7 +219,7 @@ class PuntaAPuntaTest {
             compose.onNodeWithTag("elegir-llavero").assertIsOff()
             compose.onNodeWithTag("elegir-llavero").performClick()
             compose.onNodeWithTag("elegir-llavero").assertIsOn()
-            compose.onNodeWithTag("instalar").performClick()
+            instalarCuandoSePueda()
 
             esperar("empezar", 180)
             errorEnPantalla()?.let { fail("la pantalla dice: $it") }
@@ -268,7 +280,7 @@ class PuntaAPuntaTest {
 
                 esperar("instalar")
                 compose.onNodeWithTag("elegir-vault").assertExists()
-                compose.onNodeWithTag("instalar").performClick()
+                instalarCuandoSePueda()
                 esperar("empezar", 180)
                 errorEnPantalla()?.let { fail("la pantalla dice: $it") }
                 compose.waitUntilAtLeastOneExists(dice("resultado-vault", "hecha"), 30_000)

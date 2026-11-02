@@ -162,7 +162,8 @@ def _montar(raiz: Path, ficheros: list[str]) -> None:
 # --- str.casefold() -------------------------------------------------------------
 
 def vectores_casefold() -> list[dict]:
-    textos = ["Fotos", "FOTOS/2026", "Árbol", "Straße", "ΣΑΣ", "ﬁcheros", "Ǆ", "mañana", "ÉÈÊ"]
+    textos = ["Fotos", "FOTOS/2026", "Árbol", "Straße", "ΣΑΣ", "ﬁcheros", "Ǆ", "mañana", "ÉÈÊ",
+              "ẞ", "ı", "İ", "STRAẞE", "Fıles", "İndirilenler"]
     return [{"entrada": t, "salida": t.casefold()} for t in textos]
 
 
@@ -172,6 +173,8 @@ def vectores_carpetas(carpetas, model) -> dict:
     textos = ["notas", " Notas/ ", "a\\b", "./a/./b/", ".", "", "A/B", "a /b", "a/ /b"]
     otras = {"notas": "notas", "datos": "datos/sub", "raiz": ".", "Mayus": "FOTOS"}
     locales = ["notas", "notas/dentro", "datos", "datos/sub/más", "fotos", "otra", ".", "NOTAS"]
+    # Las letras que `casefold()` pliega distinto de la mayúscula y la minúscula.
+    raras = {"a": "STRAẞE", "b": "Fıles", "c": "İndirilenler"}
     # Cada escenario de espejo: lo que hay en el disco y la carpeta que se mira.
     escenarios = [
         ("sin carpeta", [], "web"),
@@ -179,6 +182,8 @@ def vectores_carpetas(carpetas, model) -> dict:
         ("solo una subcarpeta", ["web/sub/"], "web"),
         ("con un fichero", ["web/index.html"], "web"),
         ("un fichero, no una carpeta", ["web"], "web"),
+        # La raíz entera: siempre tiene `.prdrive/` (el `_Disco` la crea).
+        ("la raíz", [], "."),
     ]
     riesgos, avisos = [], []
     for caso, disco, local in escenarios:
@@ -197,8 +202,9 @@ def vectores_carpetas(carpetas, model) -> dict:
                            "salida": carpetas.avisos("nueva", "bisync", local, raiz, otras)})
     return {
         "tramos": [{"entrada": t, "salida": list(carpetas.tramos(t))} for t in textos],
-        "solapadas": [{"otras": otras, "local": loc, "salida": carpetas.solapadas(otras, loc)}
-                      for loc in locales],
+        "solapadas": [{"otras": o, "local": loc, "salida": carpetas.solapadas(o, loc)}
+                      for o, locs in ((otras, locales), (raras, ["Straße", "files", "indirilenler", "fıles"]))
+                      for loc in locs],
         "riesgo_espejo": riesgos,
         "avisos": avisos,
     }
@@ -264,6 +270,8 @@ def vectores_enable(editor, catalog, bisync, model) -> list[dict]:
         ("bisync en una carpeta vacía", "fotos", "fotos", ["fotos/"], None),
         ("bisync en una carpeta con ficheros", "fotos", "fotos", ["fotos/a.jpg"], None),
         ("bisync en la raíz", "fotos", ".", [], None),
+        ("con espacios alrededor", "fotos", " fotos ", [], None),
+        ("espejo de subida en la raíz", "web", ".", [], None),
         ("de bajada", "musica", "musica", [], None),
         ("espejo de subida sin carpeta", "web", "web", [], None),
         ("espejo de subida vacío", "web", "web", ["web/"], None),
@@ -276,6 +284,7 @@ def vectores_enable(editor, catalog, bisync, model) -> list[dict]:
         ("un catálogo de antes, con local", "vieja", "vieja", [], None),
         ("la referencia de antes, de esta carpeta", "fotos", "fotos", ["fotos/a.jpg"], "esta"),
         ("la referencia de antes, sin su carpeta", "fotos", "fotos", [], "esta"),
+        ("la referencia de antes, con su carpeta vacía", "fotos", "fotos", ["fotos/"], "esta"),
         ("la referencia de antes, de otra carpeta", "fotos", "fotos", [], "otra"),
         ("la referencia de antes, rota", "fotos", "fotos", [], "rota"),
         ("un state vacío", "fotos", "fotos", [], "vacío"),
@@ -334,6 +343,7 @@ def vectores_deploy(deploy, remote, model) -> dict:
         "con la ruta del catálogo": (["fotos"], {"fotos": "fotos"}, "/otro/remote.toml"),
         "todas": (list(cat.names), {n: n for n in cat.names}, ""),
         "un catálogo de antes": (["vieja"], {"vieja": "otra"}, ""),
+        "rutas sin normalizar": (["notas", "fotos"], {"notas": "./Fotos//2026", "fotos": "a/./b/"}, ""),
         "la raíz": (["notas"], {"notas": "."}, ""),
         "sin daemon": (["musica"], {"musica": "musica"}, ""),
     }

@@ -28,19 +28,23 @@ import java.util.Locale
 object Carpetas {
 
     /**
-     * `str.casefold()` de Python, para comparar sin mayúsculas: lo de la letra
-     * mayúscula que se expande (`ß` → `SS`) por el texto entero y lo demás letra
-     * a letra, sin el contexto de la sigma final que aplica `lowercase()` de
-     * Java. Se separa de Python en `İ`, que allí sale `i` con su punto
-     * combinante y aquí sin él.
+     * `str.casefold()` de Python, para comparar sin mayúsculas: letra a letra,
+     * pasando por la mayúscula (así `ß` sale `ss` y la sigma final `σ`) y sin el
+     * contexto de la sigma final que aplica `lowercase()` a un texto entero. Dos
+     * letras no siguen esa regla en Python y van a mano: `ı` se queda como está y
+     * `ẞ` sale `ss`. Se separa de Python solo en el cheroqui, que no se pliega a
+     * la misma letra.
      */
     fun casefoldPy(texto: String): String {
-        val mayusculas = texto.uppercase(Locale.ROOT)
-        val salida = StringBuilder(mayusculas.length)
+        val salida = StringBuilder(texto.length)
         var i = 0
-        while (i < mayusculas.length) {
-            val cp = mayusculas.codePointAt(i)
-            salida.appendCodePoint(Character.toLowerCase(cp))
+        while (i < texto.length) {
+            val cp = texto.codePointAt(i)
+            when (cp) {
+                0x131 -> salida.appendCodePoint(cp)
+                0x1E9E -> salida.append("ss")
+                else -> salida.append(String(Character.toChars(cp)).uppercase(Locale.ROOT).lowercase(Locale.ROOT))
+            }
             i += Character.charCount(cp)
         }
         return salida.toString()
@@ -76,6 +80,9 @@ object Carpetas {
         return try {
             Files.newDirectoryStream(carpeta.toPath()).use { it.iterator().hasNext() }
         } catch (_: IOException) {
+            null
+        } catch (_: java.nio.file.DirectoryIteratorException) {
+            // La lectura que falla a medias: el `OSError` de `iterdir()`.
             null
         } catch (_: SecurityException) {
             null

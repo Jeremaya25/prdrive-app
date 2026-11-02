@@ -15,6 +15,7 @@ import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.isEnabled
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithTag
@@ -23,6 +24,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.performTextReplacement
 import androidx.core.app.NotificationCompat
 import androidx.lifecycle.Lifecycle
 import androidx.test.core.app.ActivityScenario
@@ -135,8 +137,12 @@ class PantallaLlaveroTest {
         "catalog_path = \"${File(Banco.remoto, "catalogo/remote.toml").absolutePath}\"\n" +
             "${Pairing.MARCA} = ${Pairing.FORMATO}\nremote_name = \"nas\"\n[options]\ntype = \"local\"\n"
 
-    /** Del código a «Ir a la pantalla principal», con «El llavero» marcado. */
-    private fun emparejarConLlavero() {
+    /**
+     * Del código a «Ir a la pantalla principal», con «El llavero» marcado y, si
+     * se dice, otra [carpetas] para alguna pareja: la que se sugiere es su
+     * nombre, porque el catálogo ya no la lleva (prdrive#202).
+     */
+    private fun emparejarConLlavero(carpetas: Map<String, String> = emptyMap()) {
         compose.onNodeWithText("Pegar el texto del código").performClick()
         compose.onNodeWithTag("carga").performTextInput(cargaDelQr())
         // Con el teclado entrando la pantalla aún se mueve: el toque va por la acción del botón, no por su sitio.
@@ -147,6 +153,13 @@ class PantallaLlaveroTest {
         compose.onNodeWithTag("elegir-llavero").assertIsOff()
         compose.onNodeWithTag("elegir-llavero").performClick()
         compose.onNodeWithTag("elegir-llavero").assertIsOn()
+        for ((pareja, carpeta) in carpetas) {
+            compose.onNodeWithTag("carpeta-$pareja").performScrollTo().performTextReplacement(carpeta)
+        }
+        // «Instalar» se enciende cuando se han mirado las carpetas, fuera del hilo de la pantalla.
+        compose.waitUntil(30_000) {
+            compose.onAllNodes(hasTestTag("instalar") and isEnabled()).fetchSemanticsNodes().isNotEmpty()
+        }
         compose.onNodeWithTag("instalar").performClick()
         esperar("empezar", 180)
         compose.onNodeWithTag("error").assertDoesNotExist()
@@ -398,7 +411,8 @@ class PantallaLlaveroTest {
             intending(hasAction(Intent.ACTION_OPEN_DOCUMENT))
                 .respondWith(ActivityResult(Activity.RESULT_OK, Intent().setData(android.net.Uri.fromFile(llave))))
             ActivityScenario.launch(MainActivity::class.java).use {
-                emparejarConLlavero()
+                // La raíz entera: el catálogo ya no lo dice, se elige al emparejar.
+                emparejarConLlavero(mapOf("todo" to "."))
                 esperar("resultado-todo", "hecha")
             }
         } finally {

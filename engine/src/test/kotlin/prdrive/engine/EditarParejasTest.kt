@@ -279,7 +279,8 @@ class EditarParejasTest {
     fun `un espejo avisa de lo que borraria su carpeta con los avisos de carpetas_py`() {
         val v = volumen(pareja("notas", "notas"))
         val sube = EditarParejas.planAnadir(v, raw(v), cat, "web", "web")
-        assertTrue(sube.todosLosAvisos.contains("La carpeta 'web' de 'web' ${Carpetas.riesgoEspejo("up-mirror", File(v.raiz, "web"))}."))
+        val deCarpetas = Carpetas.avisos("web", "up-mirror", "web", v.raiz, mapOf("notas" to "notas"))
+        assertTrue(deCarpetas.isNotEmpty() && sube.todosLosAvisos.containsAll(deCarpetas), sube.todosLosAvisos.toString())
         File(v.raiz, "web/index.html").apply { parentFile.mkdirs(); writeText("x") }
         assertEquals(listOf(EditarParejas.mirrorWarning("up-mirror")), EditarParejas.planAnadir(v, raw(v), cat, "web", "web").todosLosAvisos)
         val baja = EditarParejas.planAnadir(v, raw(v), cat, "docs", "web")
@@ -295,6 +296,18 @@ class EditarParejasTest {
         assertTrue("borraría en" in error.message.orEmpty(), error.message)
         // Sin crear, sí: la pasada se para hasta que exista.
         EditarParejas.planAnadir(v, raw(v), cat, "web", "otra")
+    }
+
+    @Test
+    fun `un espejo de subida en la raiz no cuenta lo que su pasada deja fuera`() {
+        // La raíz siempre tiene `.prdrive/` (y puede tener `.keychain/`), y su pasada no los lleva.
+        val v = volumen(pareja("notas", "notas"))
+        File(v.raiz, "$LLAVERO_LOCAL/base.kdbx").apply { parentFile.mkdirs(); writeText("x") }
+        assertFailsWith<ConfigError> { EditarParejas.planAnadir(v, raw(v), cat, "web", ".") }
+        assertNotNull(EditarParejas.problemaAlSembrar(v.raiz, Vectores196.seccion("catalogo_196"), listOf("web"), mapOf("web" to ".")))
+        // Con algo de verdad que subir, sí.
+        File(v.raiz, "index.html").writeText("x")
+        EditarParejas.planAnadir(v, raw(v), cat, "web", ".")
     }
 
     @Test

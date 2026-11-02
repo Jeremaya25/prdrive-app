@@ -46,10 +46,10 @@ import prdrive.engine.MODES
 
 /**
  * Anadir.kt — Añadir a este teléfono una pareja del catálogo: cómo se
- * sincroniza, la carpeta del teléfono donde va (la elige la persona, como pide
- * prdrive#196; el `local` del catálogo solo es la sugerencia), cómo está esa
- * carpeta, lo que se avisa y qué va a pasar. Nada se escribe hasta «Añadir»;
- * con la pareja ya en el teléfono, se va a su ficha.
+ * sincroniza, la carpeta del teléfono donde va (la elige la persona, como en
+ * prdrive#202: el catálogo no la lleva, y empieza con el nombre de la pareja),
+ * cómo está esa carpeta, lo que se avisa y qué va a pasar. Nada se escribe hasta
+ * «Añadir»; con la pareja ya en el teléfono, se va a su ficha.
  *
  * Lo que va a pasar lo piensa el modelo cada vez que cambia la carpeta
  * ([Modelo.pensarAnadir], con la copia del catálogo y sin red), y vuelve a

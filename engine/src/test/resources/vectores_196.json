@@ -43,6 +43,30 @@
     {
       "entrada": "ÉÈÊ",
       "salida": "éèê"
+    },
+    {
+      "entrada": "ẞ",
+      "salida": "ss"
+    },
+    {
+      "entrada": "ı",
+      "salida": "ı"
+    },
+    {
+      "entrada": "İ",
+      "salida": "i̇"
+    },
+    {
+      "entrada": "STRAẞE",
+      "salida": "strasse"
+    },
+    {
+      "entrada": "Fıles",
+      "salida": "fıles"
+    },
+    {
+      "entrada": "İndirilenler",
+      "salida": "i̇ndirilenler"
     }
   ],
   "carpetas": {
@@ -207,6 +231,46 @@
         "salida": [
           "notas",
           "raiz"
+        ]
+      },
+      {
+        "otras": {
+          "a": "STRAẞE",
+          "b": "Fıles",
+          "c": "İndirilenler"
+        },
+        "local": "Straße",
+        "salida": [
+          "a"
+        ]
+      },
+      {
+        "otras": {
+          "a": "STRAẞE",
+          "b": "Fıles",
+          "c": "İndirilenler"
+        },
+        "local": "files",
+        "salida": []
+      },
+      {
+        "otras": {
+          "a": "STRAẞE",
+          "b": "Fıles",
+          "c": "İndirilenler"
+        },
+        "local": "indirilenler",
+        "salida": []
+      },
+      {
+        "otras": {
+          "a": "STRAẞE",
+          "b": "Fıles",
+          "c": "İndirilenler"
+        },
+        "local": "fıles",
+        "salida": [
+          "b"
         ]
       }
     ],
@@ -466,6 +530,48 @@
           "web"
         ],
         "local": "web",
+        "modo": "inventado",
+        "salida": null
+      },
+      {
+        "caso": "la raíz",
+        "disco": [],
+        "local": ".",
+        "modo": "bisync",
+        "salida": null
+      },
+      {
+        "caso": "la raíz",
+        "disco": [],
+        "local": ".",
+        "modo": "up",
+        "salida": null
+      },
+      {
+        "caso": "la raíz",
+        "disco": [],
+        "local": ".",
+        "modo": "down",
+        "salida": null
+      },
+      {
+        "caso": "la raíz",
+        "disco": [],
+        "local": ".",
+        "modo": "up-mirror",
+        "salida": null
+      },
+      {
+        "caso": "la raíz",
+        "disco": [],
+        "local": ".",
+        "modo": "down-mirror",
+        "salida": "tiene cosas, y es un espejo de bajada: la primera pasada borrará de ella lo que no esté en el remoto"
+      },
+      {
+        "caso": "la raíz",
+        "disco": [],
+        "local": ".",
         "modo": "inventado",
         "salida": null
       }
@@ -1001,6 +1107,103 @@
         },
         "salida": [
           "La carpeta 'web' de 'web' ya la usa raiz (la misma, o una dentro de la otra): dos parejas sobre los mismos ficheros se pisan los borrados."
+        ]
+      },
+      {
+        "caso": "la raíz",
+        "disco": [],
+        "nombre": "web",
+        "modo": "bisync",
+        "local": ".",
+        "otras": {
+          "notas": "notas",
+          "datos": "datos/sub",
+          "raiz": ".",
+          "Mayus": "FOTOS"
+        },
+        "salida": [
+          "La carpeta '.' de 'web' ya la usa notas, datos, raiz, Mayus (la misma, o una dentro de la otra): dos parejas sobre los mismos ficheros se pisan los borrados."
+        ]
+      },
+      {
+        "caso": "la raíz",
+        "disco": [],
+        "nombre": "web",
+        "modo": "up",
+        "local": ".",
+        "otras": {
+          "notas": "notas",
+          "datos": "datos/sub",
+          "raiz": ".",
+          "Mayus": "FOTOS"
+        },
+        "salida": [
+          "La carpeta '.' de 'web' ya la usa notas, datos, raiz, Mayus (la misma, o una dentro de la otra): dos parejas sobre los mismos ficheros se pisan los borrados."
+        ]
+      },
+      {
+        "caso": "la raíz",
+        "disco": [],
+        "nombre": "web",
+        "modo": "down",
+        "local": ".",
+        "otras": {
+          "notas": "notas",
+          "datos": "datos/sub",
+          "raiz": ".",
+          "Mayus": "FOTOS"
+        },
+        "salida": [
+          "La carpeta '.' de 'web' ya la usa notas, datos, raiz, Mayus (la misma, o una dentro de la otra): dos parejas sobre los mismos ficheros se pisan los borrados."
+        ]
+      },
+      {
+        "caso": "la raíz",
+        "disco": [],
+        "nombre": "web",
+        "modo": "up-mirror",
+        "local": ".",
+        "otras": {
+          "notas": "notas",
+          "datos": "datos/sub",
+          "raiz": ".",
+          "Mayus": "FOTOS"
+        },
+        "salida": [
+          "La carpeta '.' de 'web' ya la usa notas, datos, raiz, Mayus (la misma, o una dentro de la otra): dos parejas sobre los mismos ficheros se pisan los borrados."
+        ]
+      },
+      {
+        "caso": "la raíz",
+        "disco": [],
+        "nombre": "web",
+        "modo": "down-mirror",
+        "local": ".",
+        "otras": {
+          "notas": "notas",
+          "datos": "datos/sub",
+          "raiz": ".",
+          "Mayus": "FOTOS"
+        },
+        "salida": [
+          "La carpeta '.' de 'web' tiene cosas, y es un espejo de bajada: la primera pasada borrará de ella lo que no esté en el remoto.",
+          "La carpeta '.' de 'web' ya la usa notas, datos, raiz, Mayus (la misma, o una dentro de la otra): dos parejas sobre los mismos ficheros se pisan los borrados."
+        ]
+      },
+      {
+        "caso": "la raíz",
+        "disco": [],
+        "nombre": "web",
+        "modo": "inventado",
+        "local": ".",
+        "otras": {
+          "notas": "notas",
+          "datos": "datos/sub",
+          "raiz": ".",
+          "Mayus": "FOTOS"
+        },
+        "salida": [
+          "La carpeta '.' de 'web' ya la usa notas, datos, raiz, Mayus (la misma, o una dentro de la otra): dos parejas sobre los mismos ficheros se pisan los borrados."
         ]
       },
       {
@@ -1633,6 +1836,97 @@
       }
     },
     {
+      "caso": "con espacios alrededor",
+      "nombre": "fotos",
+      "local": " fotos ",
+      "disco": [],
+      "baseline": null,
+      "plan": {
+        "raw": {
+          "defaults": {
+            "device_remote": "disp",
+            "remote": "nas",
+            "catalog_path": "/prdrive-catalog/remote.toml"
+          },
+          "pair": [
+            {
+              "name": "notas",
+              "local": "notas",
+              "remote_path": "/copia/notas"
+            },
+            {
+              "name": "subida",
+              "local": "datos/salida",
+              "remote_path": "/copia/salida",
+              "mode": "up"
+            },
+            {
+              "name": "fotos",
+              "local": "fotos",
+              "remote_path": "/copia/fotos",
+              "include": [
+                "*.jpg"
+              ],
+              "flags": {
+                "max-delete": 5
+              },
+              "versions": true
+            }
+          ]
+        },
+        "consequences": [
+          "Se empieza a usar 'fotos' en este dispositivo, como está en el catálogo, con la carpeta 'fotos'.",
+          "La carpeta 'fotos' se creará en la primera pasada.",
+          "Al ser bisync, la primera pasada pedirá un --resync para fijar la referencia (compara ambos lados; no borra por diferencias)."
+        ],
+        "warnings": [],
+        "shelve": []
+      }
+    },
+    {
+      "caso": "espejo de subida en la raíz",
+      "nombre": "web",
+      "local": ".",
+      "disco": [],
+      "baseline": null,
+      "plan": {
+        "raw": {
+          "defaults": {
+            "device_remote": "disp",
+            "remote": "nas",
+            "catalog_path": "/prdrive-catalog/remote.toml"
+          },
+          "pair": [
+            {
+              "name": "notas",
+              "local": "notas",
+              "remote_path": "/copia/notas"
+            },
+            {
+              "name": "subida",
+              "local": "datos/salida",
+              "remote_path": "/copia/salida",
+              "mode": "up"
+            },
+            {
+              "name": "web",
+              "local": ".",
+              "remote_path": "/copia/web",
+              "mode": "up-mirror"
+            }
+          ]
+        },
+        "consequences": [
+          "Se empieza a usar 'web' en este dispositivo, como está en el catálogo, con la carpeta '.'."
+        ],
+        "warnings": [
+          "Modo 'up-mirror': es un espejo, BORRA en el remoto lo que no esté en el origen. Pruébalo antes con --dry-run.",
+          "La carpeta '.' de 'web' ya la usa notas, subida (la misma, o una dentro de la otra): dos parejas sobre los mismos ficheros se pisan los borrados."
+        ],
+        "shelve": []
+      }
+    },
+    {
       "caso": "de bajada",
       "nombre": "musica",
       "local": "musica",
@@ -2179,6 +2473,55 @@
         "warnings": [
           "La carpeta 'fotos' no existe y 'fotos' tiene referencia: la pasada abortará sin crearla (vacía se leería como «se ha borrado todo»). Ponla con lo que tenía, o quita la pareja limpiando su estado y vuelve a usarla."
         ],
+        "shelve": []
+      }
+    },
+    {
+      "caso": "la referencia de antes, con su carpeta vacía",
+      "nombre": "fotos",
+      "local": "fotos",
+      "disco": [
+        "fotos/"
+      ],
+      "baseline": "esta",
+      "plan": {
+        "raw": {
+          "defaults": {
+            "device_remote": "disp",
+            "remote": "nas",
+            "catalog_path": "/prdrive-catalog/remote.toml"
+          },
+          "pair": [
+            {
+              "name": "notas",
+              "local": "notas",
+              "remote_path": "/copia/notas"
+            },
+            {
+              "name": "subida",
+              "local": "datos/salida",
+              "remote_path": "/copia/salida",
+              "mode": "up"
+            },
+            {
+              "name": "fotos",
+              "local": "fotos",
+              "remote_path": "/copia/fotos",
+              "include": [
+                "*.jpg"
+              ],
+              "flags": {
+                "max-delete": 5
+              },
+              "versions": true
+            }
+          ]
+        },
+        "consequences": [
+          "Se empieza a usar 'fotos' en este dispositivo, como está en el catálogo, con la carpeta 'fotos'.",
+          "Quedó una referencia de otra vez en state/fotos/, de esta misma carpeta, y se reutiliza: la primera pasada no hace --resync. Lo que se haya borrado desde entonces en un lado se borrará en el otro (con el freno de --max-delete)."
+        ],
+        "warnings": [],
         "shelve": []
       }
     },
@@ -2757,6 +3100,55 @@
         },
         "local_dirs": [
           "otra"
+        ]
+      },
+      {
+        "caso": "rutas sin normalizar",
+        "elegidas": [
+          "notas",
+          "fotos"
+        ],
+        "locales": {
+          "notas": "./Fotos//2026",
+          "fotos": "a/./b/"
+        },
+        "catalog_path": "",
+        "salida": {
+          "defaults": {
+            "remote": "nas",
+            "catalog_path": "/prdrive-catalog/remote.toml",
+            "device_remote": "disp"
+          },
+          "daemon": {
+            "pairs": [
+              "notas",
+              "fotos"
+            ],
+            "interval_minutes": 15
+          },
+          "pair": [
+            {
+              "name": "notas",
+              "local": "./Fotos//2026",
+              "remote_path": "/copia/notas"
+            },
+            {
+              "name": "fotos",
+              "local": "a/./b/",
+              "remote_path": "/copia/fotos",
+              "include": [
+                "*.jpg"
+              ],
+              "flags": {
+                "max-delete": 5
+              },
+              "versions": true
+            }
+          ]
+        },
+        "local_dirs": [
+          "Fotos/2026",
+          "a/b"
         ]
       },
       {
