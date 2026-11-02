@@ -1,25 +1,21 @@
 """
-vectores_parejas_editor.py — Lo que dice `ui/pair_editor.py` de prdrive al usar
-aquí una pareja del catálogo y al quitarla, para `engine/.../EditarParejas.kt`.
+vectores_parejas_editor.py — Lo que dice `ui/pair_editor.py` de prdrive al quitar
+una pareja de este dispositivo, para `engine/.../EditarParejas.kt`.
 
-`EditarParejas.kt` refleja `plan_enable()` («Usar aquí») y `plan_remove()`
-(«Quitar…»): el config que resulta, lo que se enseña antes de confirmar
-(`consequences`, `warnings`), qué baseline se aparta (`shelve`), qué filtros
-sobran (`borrar_filtros`) y lo que se niega, con su mensaje. Aquí no se escribe
-ni un resultado: lo contesta `pair_editor.py`.
+`EditarParejas.kt` refleja `plan_remove()` («Quitar…»): el config que resulta,
+lo que se enseña antes de confirmar (`consequences`), qué baseline se aparta
+(`shelve`), qué filtros sobran (`borrar_filtros`) y lo que se niega, con su
+mensaje; y el aviso de un modo espejo. Aquí no se escribe ni un resultado: lo
+contesta `pair_editor.py`.
+
+`plan_enable()` («Usar aquí») ya no sale de aquí: con prdrive#202 (#196) lleva la
+carpeta que elige cada dispositivo, y sus casos están en `vectores_196.py`.
 
 Lo importa `vectores.py` (que ya ha preparado prdrive) y mete lo que devuelve
 [vectores] en el mismo JSON, en la sección `editar_parejas`.
 
-**La carpeta elegida (prdrive#196).** El teléfono elige la carpeta de una pareja
-al añadirla, y su plan es el de `plan_enable()` con la entrada del catálogo
-llevando esa carpeta: los casos con `carpeta` son eso, la misma pareja con otro
-`local` (el test cambia el de [CATALOGO] igual), y la que no trae `local` es
-como quedará el catálogo con #196.
-
-**Compacto.** El config del dispositivo, el catálogo y los configs de quitar van
-una vez (`dispositivo`, `catalogo`, `configs`), y los casos los nombran; lo que
-dice cada plan va entero, que es lo que se compara.
+**Compacto.** Los configs de quitar van una vez (`configs`), y los casos los
+nombran; lo que dice cada plan va entero, que es lo que se compara.
 
 **Lo que mira el disco.** `plan_remove()` mira qué hay de la pareja en `state/`
 y `filters/` (`bisync.pair_state_paths()`). Cada caso lo monta en una carpeta
@@ -30,7 +26,6 @@ los ficheros de filtros que sobran van con su ruta relativa a esa carpeta, con
 
 from __future__ import annotations
 
-import copy
 import tempfile
 from pathlib import Path
 
@@ -47,66 +42,20 @@ DISPOSITIVO = {
     ],
 }
 
-# El catálogo: las del dispositivo y las que no usa, de cada modo, una con lo
-# que se copia tal cual (filtros, flags, versiones) y otra sin `local`, como
-# quedará el catálogo con #196.
-CATALOGO = {
-    "defaults": {"remote": "nas", "catalog_path": "/prdrive-catalog/remote.toml"},
-    "pair": [
-        {"name": "notas", "local": "notas", "remote_path": "/copia/notas"},
-        {"name": "subida", "local": "salida", "remote_path": "/copia/salida", "mode": "up"},
-        {"name": "fotos", "local": "sync-data/fotos", "remote_path": "/copia/fotos",
-         "include": ["*.jpg"], "flags": {"max-delete": 5}, "versions": True},
-        {"name": "musica", "local": "musica", "remote_path": "/copia/musica",
-         "mode": "down"},
-        {"name": "espejo-sube", "local": "web", "remote_path": "/copia/web",
-         "mode": "up-mirror"},
-        {"name": "espejo-baja", "local": "docs", "remote_path": "/copia/docs",
-         "mode": "down-mirror"},
-        {"name": "sin-local", "remote_path": "/copia/sin-local"},
-        {"name": "rara", "local": "../fuera", "remote_path": "/copia/rara"},
-        {"name": "programa", "local": ".prdrive/keys", "remote_path": "/copia/programa"},
-        {"name": "peligrosa", "local": "peligrosa", "remote_path": "/copia/peligrosa",
-         "extra_flags": ["--resync"]},
-    ],
-}
-
-
 # Los configs de los casos, por nombre: el del dispositivo, uno con una pareja
-# más, uno cuyo `[daemon]` solo nombra la que se quita, uno de una sola, uno con
-# una que el catálogo no tiene, uno sin `pairs` en el `[daemon]`, uno sin
-# ninguna pareja y dos con un `pair` que no es una lista de tablas (prdrive se
-# cae con ellos: el motor tiene que decirlo con un `ConfigError`).
+# más, uno cuyo `[daemon]` solo nombra la que se quita, uno de una sola, uno sin
+# `pairs` en el `[daemon]` y dos con un `pair` que no es una lista de tablas
+# (prdrive se cae con ellos: el motor tiene que decirlo con un `ConfigError`).
 CONFIGS = {
     "dispositivo": DISPOSITIVO,
     "tres": {**DISPOSITIVO, "pair": DISPOSITIVO["pair"] + [
         {"name": "fotos", "local": "fotos", "remote_path": "/copia/fotos"}]},
     "sola_en_daemon": {**DISPOSITIVO, "daemon": {"pairs": ["notas"]}},
     "una": {**DISPOSITIVO, "pair": DISPOSITIVO["pair"][:1]},
-    "con_una_de_aqui": {**DISPOSITIVO, "pair": DISPOSITIVO["pair"] + [
-        {"name": "solo-aqui", "local": "aqui", "remote_path": "/copia/aqui"}]},
     "daemon_sin_pairs": {**DISPOSITIVO, "daemon": {"interval_minutes": 15}},
-    "sin_parejas": {"defaults": dict(DEFAULTS)},
     "pair_tabla": {"defaults": dict(DEFAULTS), "pair": dict(DISPOSITIVO["pair"][0])},
     "pair_con_un_numero": {"defaults": dict(DEFAULTS), "pair": [1, *DISPOSITIVO["pair"]]},
 }
-
-
-def _catalogo(catalog, raw: dict | None):
-    """Un `Catalog` como lo deja `catalog.pull()`, o `None`."""
-    if raw is None:
-        return None
-    return catalog.Catalog(raw=raw, text="", source="remote", stamp="2026-11-01 10:00",
-                           endpoint="nas:/prdrive-catalog/remote.toml")
-
-
-def _con_carpeta(raw: dict, nombre: str, local: str) -> dict:
-    """El catálogo con la carpeta de `nombre` elegida: la misma entrada, otro `local`."""
-    nuevo = copy.deepcopy(raw)
-    for p in nuevo["pair"]:
-        if p.get("name") == nombre:
-            p["local"] = local
-    return nuevo
 
 
 def _plan(plan, raiz: Path | None = None) -> dict:
@@ -132,48 +81,6 @@ def _o_error(funcion, *args, **kwargs) -> dict:
         return {"error": str(e)}
     except Exception as e:   # noqa: BLE001 — es justo lo que se quiere apuntar
         return {"rompe": type(e).__name__}
-
-
-def vectores_enable(editor, catalog) -> list[dict]:
-    """`plan_enable()`: usar aquí una pareja del catálogo.
-
-    Cada caso dice el config del dispositivo ([CONFIGS]), la pareja y, si la
-    carpeta se elige, cuál (`carpeta`): el catálogo es [CATALOGO] con el `local`
-    de esa pareja cambiado por ella. Sin `catalogo`, no hay catálogo.
-    """
-    casos = [
-        ("bisync con lo que se copia tal cual", "dispositivo", "fotos", None, True),
-        ("bisync con la carpeta elegida", "dispositivo", "fotos", "Fotos/2026", True),
-        ("bisync en la raíz", "dispositivo", "fotos", ".", True),
-        ("de bajada", "dispositivo", "musica", None, True),
-        ("espejo de subida", "dispositivo", "espejo-sube", None, True),
-        ("espejo de bajada", "dispositivo", "espejo-baja", None, True),
-        ("sin local en el catálogo", "dispositivo", "sin-local", None, True),
-        ("sin local, con la carpeta elegida", "dispositivo", "sin-local", "otra", True),
-        ("una carpeta que sale del dispositivo", "dispositivo", "rara", None, True),
-        ("una carpeta en la del programa", "dispositivo", "programa", None, True),
-        ("un flag que no se puede llevar", "dispositivo", "peligrosa", None, True),
-        ("una que no está en el catálogo", "dispositivo", "inventada", None, True),
-        ("una de aquí que el catálogo no tiene", "con_una_de_aqui", "solo-aqui", None, True),
-        ("sin catálogo", "dispositivo", "fotos", None, False),
-        ("una que ya está aquí", "dispositivo", "notas", None, True),
-        ("un dispositivo sin parejas", "sin_parejas", "fotos", None, True),
-        ("un pair que es una tabla", "pair_tabla", "fotos", None, True),
-        ("un pair que es una tabla, y una que no está en el catálogo", "pair_tabla", "inventada",
-         None, True),
-        ("un pair con algo que no es una tabla", "pair_con_un_numero", "fotos", None, True),
-    ]
-    salida = []
-    for caso, config, nombre, carpeta, con_catalogo in casos:
-        cat = None
-        if con_catalogo:
-            cat = CATALOGO if carpeta is None else _con_carpeta(CATALOGO, nombre, carpeta)
-        r = _o_error(editor.plan_enable, CONFIGS[config], _catalogo(catalog, cat), nombre)
-        if "plan" in r:
-            r = {"plan": _plan(r["plan"])}
-        salida.append({"caso": caso, "config": config, "nombre": nombre, "carpeta": carpeta,
-                       "catalogo": con_catalogo, **r})
-    return salida
 
 
 def _montar(model, carpeta: Path, ficheros: list[str]) -> None:
@@ -233,12 +140,9 @@ def vectores_remove(editor, model) -> list[dict]:
 def vectores(editor, catalog, model) -> dict:
     """Todo lo de `pair_editor.py` que refleja `EditarParejas.kt`."""
     return {
-        "dispositivo": DISPOSITIVO,
-        "catalogo": CATALOGO,
         "configs": CONFIGS,
         "mirror_modes": list(editor.MIRROR_MODES),
         "avisos_espejo": {m: editor.mirror_warning(m) for m in [*model.MODES, "inventado"]},
         "avisos_espejo_partidos": {m: editor.aviso_espejo(m) for m in [*model.MODES, "inventado"]},
-        "enable": vectores_enable(editor, catalog),
         "remove": vectores_remove(editor, model),
     }

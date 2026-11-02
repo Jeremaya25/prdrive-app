@@ -155,12 +155,54 @@ class CatalogoTest {
         assertNotNull(Catalogo.findPair(cat, parejas.keys.first()))
         assertNull(Catalogo.findPair(cat, "no-existe"))
         assertEquals(emptyMap(), Catalogo.pairsByName(null))
-        for (caso in Vectores.objetos(catalogo, "diff_keys")) {
+    }
+
+    // --- #196 (prdrive#202, en vectores_196.json): el catálogo sin `local` ---
+
+    private val v196 = Vectores196.seccion("catalogo")
+
+    @Test
+    fun `diff_keys no compara la carpeta, que es de cada dispositivo`() {
+        assertEquals(Vectores.cadenas(v196, "del_dispositivo"), Catalogo.DEL_DISPOSITIVO)
+        for (caso in Vectores.objetos(v196, "diff_keys")) {
             @Suppress("UNCHECKED_CAST")
             val a = caso["a"] as Map<String, Any?>?
             @Suppress("UNCHECKED_CAST")
             val b = caso["b"] as Map<String, Any?>?
             assertEquals(Vectores.cadenas(caso, "salida"), Catalogo.diffKeys(a, b), "diffKeys($a, $b)")
+        }
+    }
+
+    @Test
+    fun `sin_local y con_local son los de catalog_py`() {
+        val raw = loadRaw(Vectores.texto(v196, "texto"))
+        assertEquals(normalizar(Vectores.objeto(v196, "sin_local")), normalizar(Catalogo.sinLocal(raw)))
+        assertEquals(Vectores.cadenas(v196, "con_local"), Catalogo.conLocal(raw))
+        for (caso in Vectores.objetos(v196, "raros")) {
+            val r = Vectores.objeto(caso, "raw")
+            assertEquals(normalizar(Vectores.objeto(caso, "sin_local")), normalizar(Catalogo.sinLocal(r)), "$r")
+            assertEquals(Vectores.cadenas(caso, "con_local"), Catalogo.conLocal(r), "$r")
+        }
+    }
+
+    @Test
+    fun `leer el catalogo, del remoto o de su copia, le quita la carpeta y dice quien la traia`() {
+        val texto = Vectores.texto(v196, "texto")
+        val state = Files.createTempDirectory("prdrive-catalogo-196").toFile()
+        try {
+            val rclone = Catalogo.Ejecutar { args ->
+                if (args.firstOrNull() == "cat") Catalogo.Resultado(0, texto, "") else Catalogo.Resultado(3, "", "no")
+            }
+            val leido = Catalogo.pull(rclone, null, state) { "2026-11-02 10:00" }
+            val copia = Catalogo.cached(state)!!
+            for (cat in listOf(leido, copia)) {
+                assertEquals(normalizar(Vectores.objeto(v196, "sin_local")), normalizar(cat.raw), cat.source)
+                assertEquals(Vectores.cadenas(v196, "con_local"), cat.conLocal, cat.source)
+                // El texto se queda como vino: es el del remoto.
+                assertEquals(texto, cat.text)
+            }
+        } finally {
+            state.deleteRecursively()
         }
     }
 }

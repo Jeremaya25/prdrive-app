@@ -26,6 +26,9 @@ import subprocess
 import sys
 from pathlib import Path
 
+# Lleva `local`, como un catálogo de antes de prdrive#202 (#196): el teléfono lo
+# ignora y sugiere como carpeta el nombre de cada pareja, que es lo que mira
+# `PuntaAPuntaTest` (`notas/`, `fotos/`, `vault/`).
 CATALOGO = """\
 # Catálogo de la prueba de punta a punta de prdrive-app.
 

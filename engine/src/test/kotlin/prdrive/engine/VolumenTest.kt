@@ -34,39 +34,74 @@ class VolumenTest {
     }
 
     @Test
-    fun `el config del volumen es el que escribe el instalador`() {
+    fun `las que se inicializan y las que son espejos son las del instalador`() {
         val volumen = Vectores.objeto(paso3, "volumen")
         val catalogo = Vectores.objeto(volumen, "catalogo")
         for (caso in Vectores.objetos(volumen, "casos")) {
-            val nombre = Vectores.texto(caso, "caso")
             val elegidas = Vectores.cadenas(caso, "elegidas")
-            val ruta = Vectores.texto(caso, "catalog_path")
-            assertEquals(
-                normalizar(Vectores.objeto(caso, "config")),
-                normalizar(Volumen.deviceConfig(catalogo, elegidas, ruta)),
-                "«$nombre»",
-            )
-            // Y en el mismo orden de claves, que es el que acaba en el TOML.
-            assertEquals(
-                dumps(Vectores.objeto(caso, "config")),
-                dumps(Volumen.deviceConfig(catalogo, elegidas, ruta)),
-                "«$nombre»: el TOML",
-            )
-            assertEquals(Vectores.cadenas(caso, "local_dirs"), Volumen.localDirs(catalogo, elegidas), "«$nombre»")
             assertEquals(Vectores.cadenas(caso, "resync_targets"), Volumen.resyncTargets(catalogo, elegidas))
             assertEquals(Vectores.cadenas(caso, "mirror_pairs"), Volumen.mirrorPairs(catalogo, elegidas))
         }
-        val errores = Vectores.objeto(volumen, "errores")
-        assertEquals(
-            errores["ninguna"],
-            assertFailsWith<Volumen.Companion.InstallError> { Volumen.deviceConfig(catalogo, emptyList()) }.message,
-        )
-        assertEquals(
-            errores["una que no existe"],
-            assertFailsWith<Volumen.Companion.InstallError> {
-                Volumen.deviceConfig(catalogo, listOf("notas", "inventada"))
-            }.message,
-        )
+    }
+
+    // --- #196 (prdrive#202, en vectores_196.json): la carpeta de cada pareja ---
+
+    private val deploy196 = Vectores196.seccion("deploy")
+
+    @Suppress("UNCHECKED_CAST")
+    private fun locales(caso: Map<String, Any?>): Map<String, String>? =
+        (caso["locales"] as Map<String, Any?>?)?.mapValues { it.value.toString() }
+
+    @Test
+    fun `el config del volumen es el que escribe el instalador, con la carpeta elegida de cada pareja`() {
+        val catalogo = Vectores.objeto(deploy196, "catalogo")
+        for (caso in Vectores.objetos(deploy196, "device_config")) {
+            val nombre = Vectores.texto(caso, "caso")
+            val elegidas = Vectores.cadenas(caso, "elegidas")
+            val ruta = Vectores.texto(caso, "catalog_path")
+            val error = caso["error"] as String?
+            if (error != null) {
+                assertEquals(
+                    error,
+                    assertFailsWith<Volumen.Companion.InstallError>(nombre) {
+                        Volumen.deviceConfig(catalogo, elegidas, ruta, locales(caso))
+                    }.message,
+                    "«$nombre»",
+                )
+                continue
+            }
+            val esperado = Vectores.objeto(caso, "salida")
+            val obtenido = Volumen.deviceConfig(catalogo, elegidas, ruta, locales(caso))
+            assertEquals(normalizar(esperado), normalizar(obtenido), "«$nombre»")
+            assertEquals(dumps(esperado), dumps(obtenido), "«$nombre»: el TOML")
+            assertEquals(Vectores.cadenas(caso, "local_dirs"), Volumen.localDirs(catalogo, elegidas, locales(caso)), "«$nombre»")
+        }
+    }
+
+    @Test
+    fun `la carpeta sugerida, la que no vale y los avisos son los del instalador`() {
+        for (caso in Vectores.objetos(deploy196, "carpeta_sugerida")) {
+            assertEquals(caso["salida"], Volumen.carpetaSugerida(Vectores.objeto(caso, "pareja")))
+        }
+        for (caso in Vectores.objetos(deploy196, "problema_carpeta")) {
+            assertEquals(caso["salida"], Volumen.problemaCarpeta(caso["entrada"] as String?), "«${caso["entrada"]}»")
+        }
+        val avisos = Vectores.objeto(deploy196, "avisos_carpetas")
+        val raiz = File(Files.createTempDirectory("prdrive-avisos").toFile(), "volumen")
+        try {
+            for (rel in Vectores.cadenas(avisos, "disco")) {
+                val f = File(raiz, rel)
+                if (rel.endsWith("/")) f.mkdirs() else f.apply { parentFile.mkdirs(); writeText("x") }
+            }
+            assertEquals(
+                Vectores.cadenas(avisos, "salida"),
+                Volumen.avisosCarpetas(
+                    raiz, Vectores.objeto(deploy196, "catalogo"), Vectores.cadenas(avisos, "elegidas"), locales(avisos)!!,
+                ),
+            )
+        } finally {
+            raiz.parentFile.deleteRecursively()
+        }
     }
 
     @Test

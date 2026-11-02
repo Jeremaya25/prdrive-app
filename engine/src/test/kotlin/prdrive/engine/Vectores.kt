@@ -58,3 +58,26 @@ object Vectores {
     /** Un apartado del JSON, por su nombre de primer nivel. */
     fun seccion(nombre: String): Map<String, Any?> = objeto(raiz, nombre)
 }
+
+/**
+ * `vectores_196.json`: lo de prdrive#202 (#196, la carpeta que elige cada
+ * dispositivo), que sale en la 0.8.4. Va aparte porque el resto del motor sigue
+ * en la 0.7.7 y su generador no arranca contra la 0.8 (`herramientas/vectores_196.py`).
+ */
+object Vectores196 {
+
+    /** Lo que dice el JSON, entero. */
+    val raiz: Map<String, Any?> by lazy {
+        val recurso = Vectores196::class.java.getResourceAsStream("/vectores_196.json")
+            ?: error(
+                "No hay vectores_196.json en los recursos de test. Se genera con:\n" +
+                    "    python herramientas/vectores_196.py <checkout de prdrive en la rama de #202>",
+            )
+        @Suppress("UNCHECKED_CAST")
+        leerJson(recurso.bufferedReader().use { it.readText() }) as Map<String, Any?>
+    }
+
+    /** Un apartado del JSON, por su nombre de primer nivel. */
+    fun seccion(nombre: String): Map<String, Any?> = Vectores.objeto(raiz, nombre)
+}
+

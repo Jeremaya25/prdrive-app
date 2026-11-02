@@ -186,8 +186,12 @@ def vectores_logs(sync, model) -> dict:
 
 
 def vectores_volumen(deploy, remote, model, base: dict) -> dict:
-    """`deploy.device_config()`: el config del dispositivo que sale del catálogo y
-    de las parejas elegidas, y las carpetas que hay que crear."""
+    """`deploy.resync_targets()` y `deploy.mirror_pairs()`: qué elegidas se
+    inicializan y cuáles son espejos.
+
+    `device_config()` y `local_dirs()` ya no salen de aquí: con prdrive#202 (#196)
+    llevan la carpeta que elige cada dispositivo, y sus casos están en
+    `vectores_196.py`."""
     catalogo_raw = {**base, "daemon": {"pairs": ["notas", "fotos", "subida"],
                                        "interval_minutes": 15}}
     catalogo_raw["defaults"] = {k: v for k, v in base["defaults"].items()
@@ -195,29 +199,19 @@ def vectores_volumen(deploy, remote, model, base: dict) -> dict:
     cat = remote.Catalog(catalogo_raw, "# El manual del catálogo.\n",
                          "nas:/prdrive-catalog/remote.toml")
     casos = {
-        "dos parejas": (["notas", "todo"], ""),
-        "con la ruta del catálogo": (["fotos"], "/otro/remote.toml"),
-        "ninguna del daemon": (["espejo"], ""),
-        "todas": (list(cat.names), ""),
+        "dos parejas": ["notas", "todo"],
+        "con la ruta del catálogo": ["fotos"],
+        "ninguna del daemon": ["espejo"],
+        "todas": list(cat.names),
     }
     salida = []
-    for caso, (elegidas, ruta) in casos.items():
+    for caso, elegidas in casos.items():
         salida.append({
-            "caso": caso, "elegidas": elegidas, "catalog_path": ruta,
-            "config": deploy.device_config(cat, elegidas, ruta),
-            "local_dirs": [p.as_posix() for p in deploy.local_dirs(cat, elegidas)],
+            "caso": caso, "elegidas": elegidas,
             "resync_targets": deploy.resync_targets(cat, elegidas),
             "mirror_pairs": deploy.mirror_pairs(cat, elegidas),
         })
-    errores = {}
-    for caso, elegidas in {"ninguna": [], "una que no existe": ["notas", "inventada"]}.items():
-        try:
-            deploy.device_config(cat, elegidas)
-            errores[caso] = None
-        except Exception as e:   # noqa: BLE001 — InstallError
-            errores[caso] = str(e)
-    return {"catalogo": catalogo_raw, "casos": salida, "errores": errores,
-            "app_subdir": deploy.APP_SUBDIR}
+    return {"catalogo": catalogo_raw, "casos": salida, "app_subdir": deploy.APP_SUBDIR}
 
 
 def vectores_rclone_conf(profile) -> dict:

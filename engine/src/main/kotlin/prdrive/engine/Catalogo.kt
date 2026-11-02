@@ -6,6 +6,11 @@ import java.io.File
  * Catalogo.kt — El catálogo del remoto del usuario (`remote.toml`, antes
  * `pairs.toml`), en su mitad de LEER.
  *
+ * Lo de #196 (el catálogo sin `local`: [DEL_DISPOSITIVO], [sinLocal],
+ * [conLocal] y [diffKeys] sin ella) es de la rama de prdrive#202, todavía sin
+ * juntar, y sus valores esperados van en `vectores_196.json`; lo demás, de
+ * prdrive 0.7.7.
+ *
  * Espejo de `common/catalog.py` de prdrive. `sync_config.toml` dice qué
  * sincroniza ESTE dispositivo; el catálogo (`<remote>:<catalog_path>`) dice qué
  * parejas existen y es el mismo fichero para todos. En el paso 1 la app solo lo
@@ -61,6 +66,37 @@ object Catalogo {
     /** El `stamp` de una copia local cuyos metadatos no dicen cuándo se leyó. */
     const val SIN_FECHA = "fecha desconocida"
 
+    /**
+     * Las claves de una pareja que son de cada dispositivo y no del catálogo
+     * (`DEL_DISPOSITIVO`, prdrive#202, #196). El catálogo no las lleva
+     * ([sinLocal]) y [diffKeys] no las compara: no puede haber diferencia en algo
+     * que el catálogo no tiene.
+     */
+    val DEL_DISPOSITIVO: List<String> = listOf("local")
+
+    /**
+     * Una copia del catálogo sin la carpeta local de sus parejas (`sin_local`):
+     * la elige cada dispositivo al meter la pareja (#196). Se quita al leer
+     * ([pull], [cached]), y no en cada sitio que la usaría. Un catálogo de antes
+     * se lee así sin error. No toca lo que le dan.
+     */
+    fun sinLocal(raw: Map<String, Any?>): Map<String, Any?> {
+        val salida = LinkedHashMap(raw)
+        val parejas = raw["pair"]
+        if (parejas is List<*>) {
+            salida["pair"] = parejas.map { p ->
+                if (p is Map<*, *>) p.filterKeys { it !in DEL_DISPOSITIVO } else p
+            }
+        }
+        return salida
+    }
+
+    /** Los nombres de las parejas del catálogo que aún traen `local` (`con_local`). */
+    fun conLocal(raw: Map<String, Any?>): List<String> {
+        val parejas = raw["pair"] as? List<*> ?: return emptyList()
+        return parejas.filterIsInstance<Map<*, *>>().filter { "local" in it }.map { strPy(it["name"]) }
+    }
+
     /** Lo que contesta rclone: el `subprocess.CompletedProcess` del escritorio. */
     data class Resultado(val codigo: Int, val salida: String, val error: String)
 
@@ -89,6 +125,11 @@ object Catalogo {
         val source: String,
         val stamp: String,
         val endpoint: String,
+        /**
+         * Las parejas cuyo texto aún traía `local` ([conLocal]): [raw] ya no lo
+         * lleva (#196).
+         */
+        val conLocal: List<String> = emptyList(),
     ) {
         /** Solo se podría escribir sobre lo que se acaba de leer del remoto. */
         val editable: Boolean get() = source == "remote"
@@ -302,7 +343,10 @@ object Catalogo {
             throw ConfigError(explicarCarpeta(ejecutar, donde, fallo = true) ?: e.message ?: "")
         }
         explicarCarpeta(ejecutar, donde)?.let { throw ConfigError(it) }
-        val cat = Catalog(raw = raw, text = texto, source = "remote", stamp = reloj(), endpoint = donde)
+        val cat = Catalog(
+            raw = sinLocal(raw), text = texto, source = "remote", stamp = reloj(), endpoint = donde,
+            conLocal = conLocal(raw),
+        )
         escribirCopia(cat, stateDir)
         if (donde != candidatos(where)[0]) olvidarDuplicado(stateDir)
         return cat
@@ -324,9 +368,10 @@ object Catalogo {
             return null
         }
         return Catalog(
-            raw = raw, text = texto, source = "cache",
+            raw = sinLocal(raw), text = texto, source = "cache",
             stamp = strOVacio(meta["pulled_at"]).ifEmpty { SIN_FECHA },
             endpoint = strOVacio(meta["endpoint"]).ifEmpty { endpoint() },
+            conLocal = conLocal(raw),
         )
     }
 
@@ -373,12 +418,15 @@ object Catalogo {
 
     /**
      * Las claves en que difieren dos parejas (o dos `[defaults]`), ordenadas
-     * como las ordena Python. Se comparan con su `==` ([igualesPy]).
+     * como las ordena Python. Se comparan con su `==` ([igualesPy]). Las de cada
+     * dispositivo ([DEL_DISPOSITIVO]) no cuentan: el catálogo no las tiene (#202).
      */
     fun diffKeys(a: Map<String, Any?>?, b: Map<String, Any?>?): List<String> {
         val uno = a ?: emptyMap()
         val otro = b ?: emptyMap()
-        return (uno.keys + otro.keys).filter { !igualesPy(uno[it], otro[it]) }.sortedWith(ORDEN_PY)
+        return (uno.keys + otro.keys)
+            .filter { it !in DEL_DISPOSITIVO && !igualesPy(uno[it], otro[it]) }
+            .sortedWith(ORDEN_PY)
     }
 
     /**

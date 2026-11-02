@@ -16,25 +16,19 @@ import java.nio.file.Path
  * qué va a pasar, y solo si la persona dice que sí se ejecuta, primero el disco
  * y luego el config (`EditPlan.execute()`).
  *
+ * `plan_enable()` es el de prdrive#202 (#196, todavía sin juntar): la carpeta la
+ * elige cada dispositivo al usar la pareja, el catálogo ya no la lleva, y sus
+ * valores esperados salen de esa rama (`vectores_196.json`). `plan_remove()` no
+ * cambia allí, y los suyos salen de prdrive 0.7.7 (`vectores.json`).
+ *
  * Lo que el teléfono hace distinto no refleja a prdrive, y va aparte ([planAnadir],
  * [planQuitar], [anadir], [quitar]):
  *
- * - **La carpeta la elige el teléfono.** Es prdrive#196, adelantado: el
- *   catálogo describe el lado remoto y cada dispositivo elige su carpeta del
- *   volumen al usar una pareja. El `local` del catálogo, si lo trae, solo es la
- *   sugerencia ([sugerencia]). El plan es el de `plan_enable()` con la entrada
- *   del catálogo llevando la carpeta elegida, que es lo que hará #196, y un
- *   `state/<pareja>/` de antes se aparta siempre: la pareja empieza de cero con
- *   la carpeta nueva y su `--resync` («Elegir otra carpeta al volver a activar
- *   una pareja con el mismo nombre debe seguir pasando por el apartado de
- *   baseline», #196).
- * - **Lo que se avisa** (#196): un espejo con la carpeta que borraría (la de
- *   subida vacía, la de bajada con ficheros) y otra pareja en la misma carpeta,
- *   dentro o alrededor.
  * - **Lo que no se deja**: una carpeta que rompería una pareja que vive en una
  *   carpeta compartida ([Compartidas]: la redirección es por carpeta de primer
- *   nivel), una con caracteres de control (acabaría en el `rclone.conf`) y una
- *   que no es carpeta.
+ *   nivel), una con caracteres de control (acabaría en el `rclone.conf`), una
+ *   que no es carpeta, y dos espejos que prdrive solo avisa
+ *   ([problemaDelEspejo]).
  * - **El `rclone.conf`**: el `combine` lleva un upstream por carpeta de primer
  *   nivel, así que añadir y quitar lo reescriben, como el config.
  * - **Quitar una pareja compartida** olvida su entrada de `compartidas.json`
@@ -189,13 +183,75 @@ object EditarParejas {
     }
 
     /**
-     * El plan de empezar a usar aquí una pareja del catálogo (`plan_enable`):
-     * la entrada del catálogo, tal cual, al final de las del dispositivo.
+     * Qué pasa con el baseline que dejó esta pareja otra vez (`_baseline_sobrante`):
+     * con una pareja que se quitó sin limpiar su estado y se vuelve a usar, su
+     * `state/<pareja>/` sigue ahí. Si su prefijo es el que espera la pareja con
+     * la carpeta de ahora (la misma que antes), se reutiliza y no hay
+     * `--resync`. Si es de otra carpeta, o está roto, reaprovecharlo haría que
+     * bisync leyera como borrado lo que no estaba en la de antes: se aparta y la
+     * pareja pide su `--resync`. Nunca se renombra.
      *
-     * @throws ConfigError si el catálogo no la tiene, si ya está en este
-     *   dispositivo o si el config resultante no vale.
+     * El prefijo es el del teléfono ([Bisync.expectedPrefix], el `combine` del
+     * `rclone.conf`, sin el `{hash}` que el escritorio lleva en el entorno).
+     *
+     * @return si queda un baseline que la primera pasada va a usar, y lo que hay
+     *   que apartar.
      */
-    fun planEnable(raw: Map<String, Any?>, cat: Catalogo.Catalog?, name: String): EditPlan {
+    private fun baselineSobrante(
+        consecuencias: MutableList<String>,
+        config: Config,
+        name: String,
+        stateDir: File,
+        tipos: Map<String, Bisync.TipoRemote>,
+    ): kotlin.Pair<Boolean, List<String>> {
+        val pareja = config.pairs.firstOrNull { it.name == name }
+        if (pareja == null || !pareja.isBisync || !File(stateDir, name).isDirectory) return false to emptyList()
+        val estado = Bisync.pairState(File(stateDir, pareja.workdir))
+        if (estado.status == "broken" ||
+            (!estado.prefix.isNullOrEmpty() && estado.prefix != Bisync.expectedPrefix(pareja, tipos))
+        ) {
+            consecuencias.add(
+                "Quedó una referencia de otra vez en state/$name/ que no es de esta carpeta: " +
+                    "se apartará a state/$name.old-<fecha>/ y la pareja pedirá un --resync. Es a " +
+                    "propósito: reaprovecharla haría que bisync leyera como borrado lo que no " +
+                    "estaba en la carpeta de antes.",
+            )
+            return false to listOf(name)
+        }
+        if (!estado.hasBaseline) return false to emptyList()
+        consecuencias.add(
+            "Quedó una referencia de otra vez en state/$name/, de esta misma carpeta, y se " +
+                "reutiliza: la primera pasada no hace --resync. Lo que se haya borrado desde " +
+                "entonces en un lado se borrará en el otro (con el freno de --max-delete).",
+        )
+        return true to emptyList()
+    }
+
+    /**
+     * El plan de empezar a usar aquí una pareja del catálogo, en la carpeta
+     * [local] (`plan_enable` de prdrive#202). La carpeta es de este dispositivo y
+     * el catálogo no la lleva: la entrada que se escribe es la del catálogo con
+     * ella, completa, como todas. Lo que se avisa de la carpeta (un espejo en la
+     * equivocada, otra pareja en la misma) es [Carpetas], lo mismo que al
+     * emparejar.
+     *
+     * @param local la carpeta elegida, ya relativa a la raíz del volumen.
+     * @param raiz la raíz del volumen (el `DEVICE_ROOT` de prdrive): si la
+     *   carpeta existe y qué tiene.
+     * @param stateDir `state/`, por el baseline que dejara una vez anterior.
+     * @param tipos los remotes del `rclone.conf`, para el prefijo de ese baseline.
+     * @throws ConfigError si el catálogo no la tiene, ya está aquí, falta la
+     *   carpeta o el config resultante no vale.
+     */
+    fun planEnable(
+        raw: Map<String, Any?>,
+        cat: Catalogo.Catalog?,
+        name: String,
+        local: String?,
+        raiz: File,
+        stateDir: File,
+        tipos: Map<String, Bisync.TipoRemote> = emptyMap(),
+    ): EditPlan {
         val entrada = Catalogo.findPair(cat, name)
             ?: throw ConfigError(
                 "El catálogo no tiene ninguna pareja llamada '$name'. " +
@@ -206,42 +262,63 @@ object EditarParejas {
         if (parejasCrudas(raw).any { (it as? Map<*, *>)?.get("name") == name }) {
             throw ConfigError("'$name' ya está en este dispositivo.")
         }
+        val carpeta = stripPy(if (verdad(local)) local!! else "")
+        if (carpeta.isEmpty()) throw ConfigError("Falta la carpeta de '$name' en este dispositivo.")
 
+        val nueva = LinkedHashMap<String, Any?>()
+        nueva["name"] = name
+        nueva["local"] = carpeta
+        for ((k, v) in Volumen.copiaProfunda(entrada)) {
+            if (k != "name" && k !in Catalogo.DEL_DISPOSITIVO) nueva[k] = v
+        }
+        val mode = modoDe(nueva)
         val nuevo = Volumen.copiaProfunda(raw)
-        nuevo["pair"] = parejasCrudas(nuevo) + Volumen.copiaProfunda(entrada)
+        nuevo["pair"] = parejasCrudas(nuevo) + nueva
+        val config = parseConfig(nuevo)
+
         val consecuencias = arrayListOf(
-            "Se empieza a usar '$name' en este dispositivo, tal y como está en el catálogo.",
-            seCrearaLaCarpeta(strPy(entrada["local"])),
+            "Se empieza a usar '$name' en este dispositivo, como está en el catálogo, con " +
+                "la carpeta '$carpeta'.",
         )
-        if (modoDe(entrada) == "bisync") {
+        val avisos = ArrayList<String>()
+        val (reutiliza, shelve) = baselineSobrante(consecuencias, config, name, stateDir, tipos)
+        val relativa = normalizarLocal(carpeta)
+        val existe = (if (relativa.isEmpty()) raiz else File(raiz, relativa)).exists()
+        if (reutiliza && !existe) {
+            avisos.add(
+                "La carpeta '$carpeta' no existe y '$name' tiene referencia: la pasada abortará " +
+                    "sin crearla (vacía se leería como «se ha borrado todo»). Ponla con lo que " +
+                    "tenía, o quita la pareja limpiando su estado y vuelve a usarla.",
+            )
+        } else if (mode != "up-mirror" && !existe) {
+            consecuencias.add("La carpeta '$carpeta' se creará en la primera pasada.")
+        }
+        if (mode == "bisync" && !reutiliza) {
             consecuencias.add(
                 "Al ser bisync, la primera pasada pedirá un --resync para fijar la " +
                     "referencia (compara ambos lados; no borra por diferencias).",
             )
         }
-        val avisos = listOfNotNull(mirrorWarning(modoDe(entrada)))
-
-        parseConfig(nuevo)
-        return EditPlan(nuevo, consecuencias, avisos)
+        mirrorWarning(mode)?.let { avisos.add(it) }
+        val otras = LinkedHashMap<String, String>()
+        for (p in parejasCrudas(raw)) {
+            val m = p as? Map<*, *> ?: continue
+            if (verdad(m["name"]) && "local" in m) otras[strPy(m["name"])] = strPy(m["local"])
+        }
+        avisos += Carpetas.avisos(name, strPy(mode), carpeta, raiz, otras)
+        return EditPlan(nuevo, consecuencias, avisos, shelve = shelve)
     }
 
     // -----------------------------------------------------------------------
-    // Lo del teléfono: la carpeta elegida (prdrive#196, adelantado)
+    // Lo del teléfono: la carpeta escrita, lo que no se deja y añadir
     // -----------------------------------------------------------------------
-
-    /** Lo que dice `plan_enable()` de la carpeta de la pareja, en cualquier modo. */
-    private fun seCrearaLaCarpeta(local: String): String =
-        "La ruta local '$local' se creará en la primera pasada si todavía no existe."
-
-    /** Lo que se dice en lugar de que la carpeta de un espejo de subida se creará: no se crea. */
-    const val NO_SE_CREA =
-        "La carpeta no se crea sola: es el origen de un espejo de subida, y vacía vaciaría el remoto."
 
     /** Hasta cuántos ficheros se cuentan al mirar una carpeta: más da igual cuántos. */
     const val TOPE_FICHEROS = 1000
 
     /**
-     * Cómo está la carpeta elegida para una pareja, antes de añadirla.
+     * Cómo está la carpeta elegida para una pareja, antes de añadirla: para
+     * decirlo, para saber si su `--resync` puede ir ya y para [problemaDelEspejo].
      *
      * @property existe si hay algo con ese nombre.
      * @property esCarpeta si es una carpeta (sin seguir enlaces).
@@ -259,33 +336,28 @@ object EditarParejas {
     /**
      * La carpeta escrita a mano, como la guarda el config: con `/`, sin barras
      * repetidas ni en los extremos, sin tramos `.` y sin espacios alrededor. La
-     * raíz del volumen es `.`, como la de `ruta_local_relativa()`.
+     * raíz del volumen (`.` o `/` escritos) es `.`, como la de
+     * `ruta_local_relativa()`; en blanco se queda en blanco, que es «Falta la
+     * carpeta» ([Volumen.problemaCarpeta]) y no la raíz.
      */
-    fun limpiarCarpeta(texto: String): String =
-        stripPy(texto).replace('\\', '/').split('/').filter { it.isNotEmpty() && it != "." }
+    fun limpiarCarpeta(texto: String): String {
+        val limpio = stripPy(texto)
+        if (limpio.isEmpty()) return ""
+        return limpio.replace('\\', '/').split('/').filter { it.isNotEmpty() && it != "." }
             .joinToString("/").ifEmpty { "." }
-
-    /**
-     * La carpeta que se ofrece al añadir [nombre]: la del catálogo, si la trae y
-     * vale, que es la pista de cómo la tienen los demás dispositivos; si no, una
-     * con el nombre de la pareja.
-     */
-    fun sugerencia(cat: Catalogo.Catalog?, nombre: String): String {
-        val local = Catalogo.findPair(cat, nombre)?.get("local") as? String
-        if (local != null) {
-            val limpia = limpiarCarpeta(local)
-            if (problemaTexto(limpia) == null) return limpia
-        }
-        return limpiarCarpeta(nombre)
     }
 
-    /** Por qué el texto de la carpeta no vale, mirando solo el texto; `null` si vale. */
+    /**
+     * Por qué el texto de la carpeta no vale, mirando solo el texto; `null` si
+     * vale: un carácter de control (acabaría en el `rclone.conf`), y lo de
+     * `problema_carpeta()` del instalador ([Volumen.problemaCarpeta]).
+     */
     fun problemaTexto(local: String): String? {
         if (local.any { it.isISOControl() }) {
             return "La carpeta '${local.filter { !it.isISOControl() }}' lleva algún carácter de control " +
                 "(un salto de línea, por ejemplo): acabaría escrita en el rclone.conf. Escríbela sin él."
         }
-        return problemaLocal(local)
+        return Volumen.problemaCarpeta(local)
     }
 
     /** Cómo está [carpeta] en el disco ([Carpeta]), sin seguir enlaces. */
@@ -309,53 +381,21 @@ object EditarParejas {
     /** Cómo se dice una carpeta del volumen: la raíz no se llama «.». */
     private fun dicha(local: String): String = if (local == ".") "el volumen entero" else "'$local'"
 
-    /** Si una ruta de tramos es la otra o cae dentro de ella. */
-    private fun dentroDe(a: List<String>, b: List<String>): Boolean = a.size >= b.size && a.subList(0, b.size) == b
-
-    private fun tramos(local: String): List<String> = local.split('/').filter { it.isNotEmpty() && it != "." }
-
-    /**
-     * Lo que avisa de las demás parejas del teléfono: la misma carpeta, una
-     * dentro de la otra (lo de dentro lo sincronizarían las dos).
-     */
-    fun avisosDeOtras(config: Config, nombre: String, local: String): List<String> {
-        val mia = tramos(local)
-        val avisos = ArrayList<String>()
-        for (otra in config.delUsuario) {
-            if (otra.name == nombre) continue
-            val suya = otra.tramosLocales
-            when {
-                mia == suya -> avisos.add(
-                    "La pareja «${otra.name}» ya usa ${dicha(local)}: las dos sincronizarían los mismos " +
-                        "ficheros, cada una con su carpeta del remoto.",
-                )
-                dentroDe(mia, suya) -> avisos.add(
-                    "${dicha(local).replaceFirstChar { it.uppercase() }} está dentro de la carpeta de " +
-                        "«${otra.name}» (${dicha(otra.local)}): lo de dentro lo sincronizarían las dos.",
-                )
-                dentroDe(suya, mia) -> avisos.add(
-                    "${dicha(local).replaceFirstChar { it.uppercase() }} contiene la carpeta de " +
-                        "«${otra.name}» (${dicha(otra.local)}): lo de dentro lo sincronizarían las dos.",
-                )
-            }
-        }
-        return avisos
-    }
-
     /**
      * Por qué un espejo no se puede añadir así, o `null`: lo que su primera
      * pasada borraría en el remoto sin que nadie lo haya pedido.
      *
-     * - **Un espejo de subida con su carpeta ya creada y vacía.** La pasada solo
-     *   se para si el origen no existe (`sync.py`, y [Pasada] igual); vacío,
-     *   `rclone sync` borra en el remoto todo lo que no está en él, con
-     *   `max-delete` de único freno.
+     * - **Un espejo de subida con su carpeta ya creada y vacía** (sin ningún
+     *   fichero, aunque tenga subcarpetas). La pasada solo se para si el origen
+     *   no existe (`sync.py`, y [Pasada] igual); vacío, `rclone sync` borra en el
+     *   remoto todo lo que no está en él, con `max-delete` de único freno.
      * - **Un espejo de bajada que se solapa con otra pareja** (la misma carpeta,
-     *   dentro o alrededor), o cualquier pareja que se solape con uno. El espejo
-     *   borra de su carpeta lo que no está en su remoto, también los ficheros de
-     *   la otra, y la bisync de la otra lleva esos borrados a su remoto.
+     *   dentro o alrededor, como [Carpetas.solapadas]), o cualquier pareja que se
+     *   solape con uno. El espejo borra de su carpeta lo que no está en su
+     *   remoto, también los ficheros de la otra, y la bisync de la otra lleva
+     *   esos borrados a su remoto.
      *
-     * prdrive (y #196) solo avisan; el teléfono no lo deja.
+     * prdrive#202 (`common/carpetas.py`) solo los avisa; el teléfono no los deja.
      */
     fun problemaDelEspejo(config: Config, pareja: Pareja, carpeta: Carpeta): String? {
         if (pareja.mode.borraEnRemoto && carpeta.existe && carpeta.vacia) {
@@ -363,11 +403,9 @@ object EditarParejas {
                 "el remoto todo lo que no esté en ella. Pon antes en ella lo que quieres subir, o elige una " +
                 "carpeta que no exista todavía (la pasada se parará hasta que la crees)."
         }
-        val mia = pareja.tramosLocales
         for (otra in config.delUsuario) {
             if (otra.name == pareja.name) continue
-            val suya = otra.tramosLocales
-            if (!dentroDe(mia, suya) && !dentroDe(suya, mia)) continue
+            if (Carpetas.solapadas(mapOf(otra.name to otra.local), pareja.local).isEmpty()) continue
             val espejo = when {
                 pareja.mode.name == "down-mirror" -> pareja
                 otra.mode.name == "down-mirror" -> otra
@@ -382,22 +420,6 @@ object EditarParejas {
         return null
     }
 
-    /**
-     * Lo que avisa de un espejo según cómo esté su carpeta: lo que borraría la
-     * primera pasada. La de un espejo de subida vacía ya creada no llega aquí:
-     * no se deja ([problemaDelEspejo]).
-     */
-    fun avisoDeLaCarpeta(pareja: Pareja, carpeta: Carpeta): String? = when {
-        pareja.mode.borraEnRemoto && !carpeta.existe ->
-            "Es un espejo de subida y ${dicha(pareja.local)} no existe: no se crea sola, y hasta que la " +
-                "crees, la pasada se parará. Créala con lo que quieres subir: vacía, la pasada borraría en el " +
-                "remoto todo lo que no esté en ella."
-        pareja.mode.name == "down-mirror" && !carpeta.vacia ->
-            "Es un espejo de bajada y ${dicha(pareja.local)} ya tiene ${cuantos(carpeta)}: la pasada " +
-                "borrará de ella lo que no esté en el remoto."
-        else -> null
-    }
-
     /** «1 fichero», «12 ficheros», «más de 1000 ficheros». */
     fun cuantos(carpeta: Carpeta): String = when {
         carpeta.masDe -> "más de $TOPE_FICHEROS ficheros"
@@ -406,73 +428,44 @@ object EditarParejas {
     }
 
     /**
-     * La entrada [nombre] de [cat] con su `local` puesto a [local], en su sitio
-     * si lo traía y si no detrás del nombre: lo que guardará `sync_config.toml`.
-     */
-    fun conCarpeta(cat: Catalogo.Catalog, nombre: String, local: String): Catalogo.Catalog {
-        val parejas = parejasCrudas(cat.raw).map { p ->
-            val mapa = p as? Map<*, *>
-            if (mapa == null || !verdad(mapa["name"]) || strPy(mapa["name"]) != nombre) return@map p
-            val nueva = LinkedHashMap<String, Any?>()
-            for ((k, v) in mapa) {
-                nueva[k.toString()] = if (k == "local") local else v
-                if (k == "name" && !mapa.containsKey("local")) nueva["local"] = local
-            }
-            if (!nueva.containsKey("local")) nueva["local"] = local
-            nueva
-        }
-        val raw = LinkedHashMap(cat.raw)
-        raw["pair"] = parejas
-        return cat.copy(raw = raw)
-    }
-
-    /**
-     * En qué ha cambiado la pareja [nombre] del catálogo entre dos lecturas,
-     * sin contar `local`, que la elige el teléfono: lo que se enseñó al pensar
-     * el plan y lo que hay al ejecutarlo.
+     * En qué ha cambiado la pareja [nombre] del catálogo entre dos lecturas: lo
+     * que se enseñó al pensar el plan y lo que hay al ejecutarlo. Sin `local`,
+     * que es de cada dispositivo ([Catalogo.diffKeys]).
      */
     fun cambiosDelCatalogo(antes: Catalogo.Catalog?, ahora: Catalogo.Catalog?, nombre: String): List<String> =
-        Catalogo.diffKeys(
-            Catalogo.findPair(antes, nombre)?.minus("local"),
-            Catalogo.findPair(ahora, nombre)?.minus("local"),
-        )
+        Catalogo.diffKeys(Catalogo.findPair(antes, nombre), Catalogo.findPair(ahora, nombre))
 
     /**
      * El plan de añadir [nombre] con su carpeta elegida.
      *
-     * @property plan el de `plan_enable()` con la carpeta puesta: el config, lo
-     *   que dice prdrive y su aviso de espejo.
+     * @property plan el de `plan_enable()`: el config, lo que se aparta, lo que
+     *   dice prdrive y sus avisos ([Carpetas] y el de espejo).
      * @property local la carpeta, ya limpia ([limpiarCarpeta]).
      * @property carpeta cómo está en el disco.
-     * @property apartar si hay un `state/<pareja>/` de antes que se aparta.
-     * @property resyncYa si es bisync y su carpeta no tiene nada que pisar: el
-     *   `--resync` se hace al añadirla, como al emparejar.
-     * @property deprdrive las consecuencias de [plan] tal como se enseñan: las
-     *   de prdrive, salvo la que promete crear la carpeta de un espejo de subida
-     *   que no existe, que no se crea ([NO_SE_CREA]).
+     * @property reutiliza si la pareja vuelve con una referencia de antes de esta
+     *   misma carpeta, que su primera pasada usa (sin `--resync`).
+     * @property resyncYa si es bisync, empieza de cero y su carpeta no tiene nada
+     *   que pisar: el `--resync` se hace al añadirla, como al emparejar.
+     * @property consecuencias lo que añade el teléfono a las de [plan].
      * @property olvidarCompartida si `compartidas.json` tiene una entrada suelta
      *   con su nombre (de una baja que no la pudo olvidar): se olvida, porque la
      *   carpeta la acaba de elegir la persona, y es una del volumen.
-     * @property consecuencias lo que añade el teléfono a las de [plan].
-     * @property avisos lo que avisa el teléfono, además de los de [plan].
      */
     data class PlanAnadir(
         val nombre: String,
         val plan: EditPlan,
         val local: String,
         val carpeta: Carpeta,
-        val apartar: Boolean,
+        val reutiliza: Boolean,
         val resyncYa: Boolean,
         val consecuencias: List<String>,
-        val avisos: List<String>,
         val olvidarCompartida: Boolean = false,
-        val deprdrive: List<String> = plan.consequences,
     ) {
         /** Todo lo que pasará, en orden: lo de prdrive y lo del teléfono. */
-        val todasLasConsecuencias: List<String> get() = deprdrive + consecuencias
+        val todasLasConsecuencias: List<String> get() = plan.consequences + consecuencias
 
-        /** Todos los avisos: el de prdrive y los del teléfono. */
-        val todosLosAvisos: List<String> get() = plan.warnings + avisos
+        /** Los avisos, los de prdrive. */
+        val todosLosAvisos: List<String> get() = plan.warnings
     }
 
     /**
@@ -481,13 +474,15 @@ object EditarParejas {
      *
      * @param raw el `sync_config.toml` del volumen, en bruto.
      * @throws ConfigError si no se puede: la carpeta no vale, el catálogo no la
-     *   tiene, ya está aquí, o dejaría sin carpeta a una pareja compartida.
+     *   tiene, ya está aquí, dejaría sin carpeta a una pareja compartida, o es un
+     *   espejo que borraría ([problemaDelEspejo]).
      * @throws IOException si no se puede mirar la carpeta.
      */
     fun planAnadir(v: Volumen, raw: Map<String, Any?>, cat: Catalogo.Catalog?, nombre: String, carpetaEscrita: String): PlanAnadir {
         val local = limpiarCarpeta(carpetaEscrita)
         problemaTexto(local)?.let { throw ConfigError(it) }
-        val plan = planEnable(raw, cat?.let { conCarpeta(it, nombre, local) }, nombre)
+        val tipos = Bisync.tiposDeRemote(v.leerRcloneConf())
+        val plan = planEnable(raw, cat, nombre, local, v.raiz, v.state, tipos)
 
         val entradas = Compartidas.leer(v.compartidas)
         val antes = parseConfig(raw).conCompartidas(entradas, v.raiz)
@@ -514,17 +509,13 @@ object EditarParejas {
             throw ConfigError("${dicha(local).replaceFirstChar { it.uppercase() }} ya existe y no es una carpeta (es un fichero o un enlace). Elige otra.")
         }
         problemaDelEspejo(despues, pareja, carpeta)?.let { throw ConfigError(it) }
-        val apartar = File(v.state, nombre).isDirectory
-        val resyncYa = pareja.isBisync && carpeta.vacia
+        // La que `plan_enable()` reutiliza: bisync, con `state/` y sin nada que apartar.
+        val reutiliza = pareja.isBisync && plan.shelve.isEmpty() && File(v.state, nombre).isDirectory &&
+            Bisync.pairState(v.workdir(pareja)).hasBaseline
+        val resyncYa = pareja.isBisync && !reutiliza && carpeta.vacia
         val consecuencias = ArrayList<String>()
-        if (apartar) {
-            consecuencias.add(
-                "Tiene una referencia de antes (state/$nombre/): se apartará a state/$nombre.old-<fecha>/, sin " +
-                    "borrarla, y la pareja empezará de cero con esta carpeta.",
-            )
-        }
         when {
-            !pareja.isBisync -> Unit
+            !pareja.isBisync || reutiliza -> Unit
             resyncYa -> consecuencias.add(
                 "Como ${dicha(local)} " + (if (carpeta.existe) "está vacía" else "no existe todavía") +
                     ", ese --resync se hace ya, al añadirla: con un lado vacío no hay nada que pisar, y baja lo " +
@@ -536,15 +527,25 @@ object EditarParejas {
                     "que va a pasar. Junta los dos lados y no borra nada.",
             )
         }
-        val avisos = listOfNotNull(avisoDeLaCarpeta(pareja, carpeta)) + avisosDeOtras(antes, nombre, local)
-        // `plan_enable()` promete crear la carpeta en cualquier modo, y la de un
-        // espejo de subida no la crea nadie (PLAN.md §2): la pantalla no lo dice.
-        val deprdrive = if (pareja.mode.borraEnRemoto) {
-            plan.consequences.map { if (it == seCrearaLaCarpeta(local)) NO_SE_CREA else it }
-        } else {
-            plan.consequences
+        return PlanAnadir(nombre, plan, local, carpeta, reutiliza, resyncYa, consecuencias, nombre in entradas)
+    }
+
+    /**
+     * Por qué no se puede sembrar el volumen con estas carpetas, o `null`: lo que
+     * no deja seguir al emparejar. Por pareja, la carpeta escrita
+     * ([problemaTexto]: `problema_carpeta()` del instalador y los caracteres de
+     * control); y con todas, los espejos que borrarían ([problemaDelEspejo]), en
+     * un volumen que aún no tiene nada.
+     */
+    fun problemaAlSembrar(raiz: File, catalogo: Map<String, Any?>, elegidas: List<String>, locales: Map<String, String>): String? {
+        for (nombre in elegidas) {
+            problemaTexto(stripPy(locales[nombre].orEmpty()))?.let { return "«$nombre»: $it" }
         }
-        return PlanAnadir(nombre, plan, local, carpeta, apartar, resyncYa, consecuencias, avisos, nombre in entradas, deprdrive)
+        val config = parseConfig(Volumen.deviceConfig(catalogo, elegidas, "", locales))
+        for (pareja in config.delUsuario) {
+            problemaDelEspejo(config, pareja, mirarCarpeta(pareja.carpetaEn(raiz)))?.let { return it }
+        }
+        return null
     }
 
     /**
@@ -655,7 +656,7 @@ object EditarParejas {
         val entradas = Compartidas.leer(v.compartidas)
         val confAntes = v.leerRcloneConfSiSePuede() ?: throw IOException("No he podido leer ${v.rcloneConf}")
         val hechos = ArrayList<String>()
-        val movidos = apartar(v, if (p.apartar) listOf(p.nombre) else emptyList(), hechos)
+        val movidos = apartar(v, p.plan.shelve, hechos)
         try {
             // Antes que el config: con él escrito, la entrada la redirigiría.
             if (p.nombre in entradas) Compartidas.escribir(v.compartidas, entradas - p.nombre)

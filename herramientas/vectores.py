@@ -1018,9 +1018,8 @@ def vectores_catalogo(catalog, model, store) -> dict:
                              for p in problemas],
         "escenarios": salida_escenarios,
         "pairs_by_name": catalog.pairs_by_name(leido),
-        "diff_keys": [{"a": a, "b": b, "salida": list(catalog.diff_keys(a, b))}
-                      for a, b in ((parejas[0], parejas[1]), (parejas[0], parejas[0]),
-                                   (None, parejas[1]), ({"x": 1}, {"x": 1.0}))],
+        # `diff_keys()` ya no sale de aquí: con prdrive#202 (#196) no compara
+        # `local`, y sus casos están en `vectores_196.py`.
     }
 
 

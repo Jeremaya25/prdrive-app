@@ -47,11 +47,13 @@ class EditarParejasTest {
         assertEquals(Vectores.cadenas(esperado, "consequences"), plan.consequences, "«$caso»")
         assertEquals(Vectores.cadenas(esperado, "warnings"), plan.warnings, "«$caso»")
         assertEquals(Vectores.cadenas(esperado, "shelve"), plan.shelve, "«$caso»")
-        assertEquals(
-            Vectores.cadenas(esperado, "borrar_filtros"),
-            plan.borrarFiltros.map { it.relativeTo(raiz!!).invariantSeparatorsPath },
-            "«$caso»",
-        )
+        if ("borrar_filtros" in esperado) {
+            assertEquals(
+                Vectores.cadenas(esperado, "borrar_filtros"),
+                plan.borrarFiltros.map { it.relativeTo(raiz!!).invariantSeparatorsPath },
+                "«$caso»",
+            )
+        }
     }
 
     // --- lo que dice prdrive -------------------------------------------------
@@ -74,24 +76,60 @@ class EditarParejasTest {
         if (error != null) assertEquals(error, mensaje, nombre)
     }
 
+    /** Crea en [raiz] lo que dice el caso: `x/` es una carpeta, lo demás un fichero. */
+    private fun montar(raiz: File, disco: List<String>) {
+        for (rel in disco) {
+            val f = File(raiz, rel)
+            if (rel.endsWith("/")) f.mkdirs() else f.apply { parentFile.mkdirs(); writeText("x") }
+        }
+    }
+
+    /**
+     * El baseline de otra vez que dice el caso (`esta`, `otra`, `rota` o
+     * `vacío`), como en `vectores_196.py`: `esta` con el prefijo del teléfono de
+     * la pareja en esa carpeta, que es el que espera aquí (en el escritorio lleva
+     * el `{hash}` del entorno, y por eso no viaja en el vector).
+     */
+    private fun baseline(state: File, raw: Map<String, Any?>, nombre: String, local: String, tipo: String) {
+        val workdir = File(state, nombre).apply { mkdirs() }
+        when (tipo) {
+            "vacío" -> return
+            "rota" -> File(workdir, "x.path1.lst-err").writeText("x")
+            else -> {
+                val prefijo = if (tipo == "otra") {
+                    "disp_otra_carpeta..nas_copia_otra"
+                } else {
+                    val entrada = Catalogo.findPair(cat196, nombre)!!.filterKeys { it != "name" }
+                    val conElla = raw + ("pair" to parejasDe(raw) + (mapOf("name" to nombre, "local" to local) + entrada))
+                    Bisync.expectedPrefix(parseConfig(conElla).pairs.first { it.name == nombre }, emptyMap())
+                }
+                for (sufijo in listOf(Bisync.PATH1_SUFFIX, Bisync.PATH2_SUFFIX)) File(workdir, prefijo + sufijo).writeText("x")
+            }
+        }
+    }
+
+    /** El catálogo de los casos de #196, como queda al leerlo: sin `local`. */
+    private val cat196: Catalogo.Catalog
+        get() = catalogo(Catalogo.sinLocal(Vectores196.seccion("catalogo_196")))!!
+
     @Test
-    fun `usar aqui una pareja del catalogo piensa lo mismo que plan_enable`() {
-        val configs = Vectores.objeto(vectores, "configs")
-        val base = Vectores.objeto(vectores, "catalogo")
-        for (caso in Vectores.objetos(vectores, "enable")) {
+    fun `usar aqui una pareja del catalogo, en la carpeta elegida, piensa lo mismo que plan_enable`() {
+        val dispositivo = Vectores196.seccion("dispositivo")
+        val otros = Vectores196.seccion("otros")
+        for (caso in Vectores.objetos(Vectores196.raiz, "enable")) {
             val nombre = Vectores.texto(caso, "caso")
             val pareja = Vectores.texto(caso, "nombre")
-            val carpeta = caso["carpeta"] as String?
-            // La carpeta elegida: la misma entrada con otro `local`, como en el generador.
-            val raw = if (carpeta == null) base else base + ("pair" to Vectores.objetos(base, "pair").map {
-                if (it["name"] == pareja) it + ("local" to carpeta) else it
-            })
-            val cat = if (caso["catalogo"] == true) catalogo(raw) else null
-            val dispositivo = Vectores.objeto(configs, Vectores.texto(caso, "config"))
+            val local = Vectores.texto(caso, "local")
+            val raw = (caso["config"] as String?)?.let { Vectores.objeto(otros, it) } ?: dispositivo
+            val raiz = File(temporal(), "volumen").apply { mkdirs() }
+            val state = File(raiz, "$CARPETA_PROGRAMA/state").apply { mkdirs() }
+            montar(raiz, Vectores.cadenas(caso, "disco"))
+            (caso["baseline"] as String?)?.let { baseline(state, raw, pareja, local, it) }
+            val cat = if (caso["sin_catalogo"] == true) null else cat196
             if (caso["error"] != null || caso["rompe"] != null) {
-                comprobarNegativa(caso, nombre) { EditarParejas.planEnable(dispositivo, cat, pareja) }
+                comprobarNegativa(caso, nombre) { EditarParejas.planEnable(raw, cat, pareja, local, raiz, state) }
             } else {
-                comprobarPlan(Vectores.objeto(caso, "plan"), EditarParejas.planEnable(dispositivo, cat, pareja), null, nombre)
+                comprobarPlan(Vectores.objeto(caso, "plan"), EditarParejas.planEnable(raw, cat, pareja, local, raiz, state), null, nombre)
             }
         }
     }
@@ -127,7 +165,7 @@ class EditarParejasTest {
         val carpeta = temporal()
         File(carpeta, "state/notas").mkdirs()
         EditarParejas.planRemove(raw, "notas", true, File(carpeta, "state"), File(carpeta, "filters"))
-        EditarParejas.planEnable(raw, catalogo(Vectores.objeto(vectores, "catalogo")), "musica")
+        EditarParejas.planEnable(raw, cat196, "musica", "musica", carpeta, File(carpeta, "state"))
         assertEquals(antes, dumps(raw))
         assertTrue(File(carpeta, "state/notas").isDirectory)
     }
@@ -139,20 +177,12 @@ class EditarParejasTest {
         assertEquals("Fotos/2026", EditarParejas.limpiarCarpeta("  /Fotos//2026/ "))
         assertEquals("Fotos/2026", EditarParejas.limpiarCarpeta("Fotos\\2026"))
         assertEquals("a/b", EditarParejas.limpiarCarpeta("./a/./b/."))
-        assertEquals(".", EditarParejas.limpiarCarpeta(""))
+        assertEquals("", EditarParejas.limpiarCarpeta(""))
+        assertEquals("", EditarParejas.limpiarCarpeta("   "))
         assertEquals(".", EditarParejas.limpiarCarpeta(" / "))
+        assertEquals(".", EditarParejas.limpiarCarpeta("."))
         // Los `..` se quedan, para que los rechace la regla de siempre.
         assertEquals("../fuera", EditarParejas.limpiarCarpeta("../fuera"))
-    }
-
-    @Test
-    fun `se sugiere la carpeta del catalogo si vale, y si no el nombre`() {
-        val cat = catalogo(Vectores.objeto(vectores, "catalogo"))
-        assertEquals("sync-data/fotos", EditarParejas.sugerencia(cat, "fotos"))
-        assertEquals("sin-local", EditarParejas.sugerencia(cat, "sin-local"))
-        // Una que sale del volumen no se sugiere.
-        assertEquals("rara", EditarParejas.sugerencia(cat, "rara"))
-        assertEquals("inventada", EditarParejas.sugerencia(null, "inventada"))
     }
 
     @Test
@@ -187,28 +217,16 @@ class EditarParejasTest {
     }
 
     @Test
-    fun `la carpeta elegida va en el sitio de la del catalogo, o detras del nombre`() {
-        val cat = catalogo(Vectores.objeto(vectores, "catalogo"))!!
-        val con = Catalogo.findPair(EditarParejas.conCarpeta(cat, "fotos", "F"), "fotos")!!
-        assertEquals(Catalogo.findPair(cat, "fotos")!!.keys.toList(), con.keys.toList())
-        assertEquals("F", con["local"])
-        val sin = Catalogo.findPair(EditarParejas.conCarpeta(cat, "sin-local", "otra"), "sin-local")!!
-        assertEquals(listOf("name", "local", "remote_path"), sin.keys.toList())
-        // Las demás, como estaban.
-        assertEquals(Catalogo.findPair(cat, "musica"), Catalogo.findPair(EditarParejas.conCarpeta(cat, "fotos", "F"), "musica"))
-    }
-
-    @Test
     fun `lo que cambia en el catalogo no cuenta el local`() {
-        val cat = catalogo(Vectores.objeto(vectores, "catalogo"))!!
-        val otraCarpeta = EditarParejas.conCarpeta(cat, "fotos", "otra")
-        assertEquals(emptyList(), EditarParejas.cambiosDelCatalogo(cat, otraCarpeta, "fotos"))
+        val cat = cat196
+        val conCarpeta = cat.copy(raw = cat.raw + ("pair" to Vectores.objetos(cat.raw, "pair").map {
+            if (it["name"] == "fotos") it + ("local" to "otra") else it
+        }))
+        assertEquals(emptyList(), EditarParejas.cambiosDelCatalogo(cat, conCarpeta, "fotos"))
         val otroModo = cat.copy(raw = cat.raw + ("pair" to Vectores.objetos(cat.raw, "pair").map {
             if (it["name"] == "fotos") it + ("mode" to "up") else it
         }))
         assertEquals(listOf("mode"), EditarParejas.cambiosDelCatalogo(cat, otroModo, "fotos"))
-        // Sin la pareja en uno de los dos, difieren todas las claves de la otra, menos `local`.
-        assertEquals(listOf("name", "remote_path"), EditarParejas.cambiosDelCatalogo(cat, null, "fotos").filter { it in listOf("local", "name", "remote_path") })
     }
 
     // --- añadir, en un volumen ---------------------------------------------------
@@ -230,14 +248,14 @@ class EditarParejasTest {
 
     private fun raw(v: Volumen): Map<String, Any?> = loadRaw(v.config.readText(Charsets.UTF_8))
 
-    private val cat: Catalogo.Catalog get() = catalogo(Vectores.objeto(vectores, "catalogo"))!!
+    private val cat: Catalogo.Catalog get() = cat196
 
     @Test
     fun `anadir piensa el plan de plan_enable con la carpeta elegida`() {
         val v = volumen(pareja("notas", "notas"))
         val p = EditarParejas.planAnadir(v, raw(v), cat, "fotos", " Fotos/2026/ ")
         assertEquals("Fotos/2026", p.local)
-        val esperado = EditarParejas.planEnable(raw(v), EditarParejas.conCarpeta(cat, "fotos", "Fotos/2026"), "fotos")
+        val esperado = EditarParejas.planEnable(raw(v), cat, "fotos", "Fotos/2026", v.raiz, v.state)
         assertEquals(esperado, p.plan)
         assertTrue(p.todasLasConsecuencias.containsAll(esperado.consequences))
     }
@@ -258,70 +276,53 @@ class EditarParejasTest {
     }
 
     @Test
-    fun `un espejo avisa de lo que borraria su carpeta`() {
+    fun `un espejo avisa de lo que borraria su carpeta con los avisos de carpetas_py`() {
         val v = volumen(pareja("notas", "notas"))
-        val sube = EditarParejas.planAnadir(v, raw(v), cat, "espejo-sube", "web")
-        assertTrue(sube.avisos.any { "espejo de subida" in it && "no existe" in it }, sube.avisos.toString())
+        val sube = EditarParejas.planAnadir(v, raw(v), cat, "web", "web")
+        assertTrue(sube.todosLosAvisos.contains("La carpeta 'web' de 'web' ${Carpetas.riesgoEspejo("up-mirror", File(v.raiz, "web"))}."))
         File(v.raiz, "web/index.html").apply { parentFile.mkdirs(); writeText("x") }
-        assertTrue(EditarParejas.planAnadir(v, raw(v), cat, "espejo-sube", "web").avisos.none { "espejo de subida" in it })
-        assertTrue(EditarParejas.planAnadir(v, raw(v), cat, "espejo-baja", "nueva").avisos.none { "espejo de bajada" in it })
-        val baja = EditarParejas.planAnadir(v, raw(v), cat, "espejo-baja", "web")
-        assertTrue(baja.avisos.any { "espejo de bajada" in it && "1 fichero" in it }, baja.avisos.toString())
-        // Y el de prdrive va también.
+        assertEquals(listOf(EditarParejas.mirrorWarning("up-mirror")), EditarParejas.planAnadir(v, raw(v), cat, "web", "web").todosLosAvisos)
+        val baja = EditarParejas.planAnadir(v, raw(v), cat, "docs", "web")
         assertTrue(baja.todosLosAvisos.contains(EditarParejas.mirrorWarning("down-mirror")))
+        assertTrue(baja.todosLosAvisos.any { "espejo de bajada" in it && "tiene cosas" in it }, baja.todosLosAvisos.toString())
     }
 
     @Test
     fun `un espejo de subida con su carpeta vacia ya creada no se deja`() {
         val v = volumen(pareja("notas", "notas"))
         File(v.raiz, "web/sub").mkdirs()
-        val error = assertFailsWith<ConfigError> { EditarParejas.planAnadir(v, raw(v), cat, "espejo-sube", "web") }
-        assertTrue("borraría en el remoto" in error.message.orEmpty(), error.message)
+        val error = assertFailsWith<ConfigError> { EditarParejas.planAnadir(v, raw(v), cat, "web", "web") }
+        assertTrue("borraría en" in error.message.orEmpty(), error.message)
         // Sin crear, sí: la pasada se para hasta que exista.
-        EditarParejas.planAnadir(v, raw(v), cat, "espejo-sube", "otra")
-    }
-
-    @Test
-    fun `la consecuencia que promete crear la carpeta de un espejo de subida no se ensena`() {
-        val v = volumen(pareja("notas", "notas"))
-        val p = EditarParejas.planAnadir(v, raw(v), cat, "espejo-sube", "web")
-        val promesa = p.plan.consequences.single { "se creará" in it }
-        assertFalse(promesa in p.todasLasConsecuencias, p.todasLasConsecuencias.toString())
-        assertTrue(EditarParejas.NO_SE_CREA in p.todasLasConsecuencias)
-        // En los demás modos se queda la de prdrive.
-        val bisync = EditarParejas.planAnadir(v, raw(v), cat, "fotos", "fotos")
-        assertEquals(bisync.plan.consequences, bisync.todasLasConsecuencias.take(bisync.plan.consequences.size))
+        EditarParejas.planAnadir(v, raw(v), cat, "web", "otra")
     }
 
     @Test
     fun `un espejo de bajada que se solapa con otra pareja no se deja, ni otra que se solape con uno`() {
         val v = volumen(pareja("notas", "datos/notas"))
-        for (carpeta in listOf(".", "datos", "datos/notas", "datos/notas/sub")) {
-            val error = assertFailsWith<ConfigError>(carpeta) { EditarParejas.planAnadir(v, raw(v), cat, "espejo-baja", carpeta) }
-            assertTrue("«espejo-baja» es un espejo de bajada" in error.message.orEmpty(), error.message)
+        for (carpeta in listOf(".", "datos", "datos/notas", "datos/notas/sub", "DATOS/Notas")) {
+            val error = assertFailsWith<ConfigError>(carpeta) { EditarParejas.planAnadir(v, raw(v), cat, "docs", carpeta) }
+            assertTrue("«docs» es un espejo de bajada" in error.message.orEmpty(), error.message)
         }
-        EditarParejas.planAnadir(v, raw(v), cat, "espejo-baja", "datos/docs")
+        EditarParejas.planAnadir(v, raw(v), cat, "docs", "datos/docs")
         // Y al revés: una bisync dentro de un espejo de bajada que ya está.
-        val conEspejo = volumen(pareja("docs", "docs", "down-mirror"), pareja("notas", "notas"))
-        val error = assertFailsWith<ConfigError> { EditarParejas.planAnadir(conEspejo, raw(conEspejo), cat, "fotos", "docs/fotos") }
-        assertTrue("«docs» es un espejo de bajada" in error.message.orEmpty(), error.message)
+        val conEspejo = volumen(pareja("bajada", "bajada", "down-mirror"), pareja("notas", "notas"))
+        val error = assertFailsWith<ConfigError> { EditarParejas.planAnadir(conEspejo, raw(conEspejo), cat, "fotos", "bajada/fotos") }
+        assertTrue("«bajada» es un espejo de bajada" in error.message.orEmpty(), error.message)
         // Un espejo de subida que se solapa solo se avisa: no borra en el teléfono.
-        val sube = EditarParejas.planAnadir(v, raw(v), cat, "espejo-sube", "datos/notas")
-        assertTrue(sube.avisos.any { "«notas» ya usa" in it }, sube.avisos.toString())
+        val sube = EditarParejas.planAnadir(v, raw(v), cat, "web", "datos/notas")
+        assertTrue(sube.todosLosAvisos.any { "ya la usa notas" in it }, sube.todosLosAvisos.toString())
     }
 
     @Test
-    fun `avisa de otra pareja en la misma carpeta, dentro o alrededor`() {
+    fun `avisa de otra pareja en la misma carpeta, dentro o alrededor, con los avisos de carpetas_py`() {
         val v = volumen(pareja("notas", "datos/notas"), pareja("todo", "."))
-        val misma = EditarParejas.planAnadir(v, raw(v), cat, "fotos", "datos/notas").avisos
-        assertTrue(misma.any { "«notas» ya usa" in it }, misma.toString())
-        assertTrue(misma.any { "«todo»" in it && "volumen entero" in it }, misma.toString())
-        val dentro = EditarParejas.planAnadir(v, raw(v), cat, "fotos", "datos/notas/fotos").avisos
-        assertTrue(dentro.any { "dentro de la carpeta de «notas»" in it }, dentro.toString())
-        val fuera = EditarParejas.planAnadir(v, raw(v), cat, "fotos", "datos").avisos
-        assertTrue(fuera.any { "contiene la carpeta de «notas»" in it }, fuera.toString())
-        val otra = EditarParejas.planAnadir(v, volumen(pareja("notas", "notas")).let(::raw), cat, "fotos", "fotos").avisos
-        assertTrue(otra.none { "notas" in it }, otra.toString())
+        for (carpeta in listOf("datos/notas", "datos/notas/fotos", "datos")) {
+            val avisos = EditarParejas.planAnadir(v, raw(v), cat, "fotos", carpeta).todosLosAvisos
+            assertTrue(avisos.any { "ya la usa notas, todo" in it }, avisos.toString())
+        }
+        val otra = EditarParejas.planAnadir(v, volumen(pareja("notas", "notas")).let(::raw), cat, "fotos", "fotos").todosLosAvisos
+        assertEquals(emptyList(), otra)
     }
 
     @Test
@@ -336,6 +337,7 @@ class EditarParejasTest {
         // Y lo de siempre de plan_enable.
         assertFailsWith<ConfigError> { EditarParejas.planAnadir(v, raw(v), cat, "notas", "otra") }
         assertFailsWith<ConfigError> { EditarParejas.planAnadir(v, raw(v), cat, "inventada", "otra") }
+        assertFailsWith<ConfigError> { EditarParejas.planAnadir(v, raw(v), cat, "fotos", "  ") }
     }
 
     /** Un volumen con `vault` ya en una carpeta compartida (la entrada `lista`). */
@@ -359,12 +361,13 @@ class EditarParejasTest {
     }
 
     @Test
-    fun `anadir aparta la referencia de antes, rehace el combine y escribe el config el ultimo`() {
+    fun `anadir aparta la referencia de otra carpeta, rehace el combine y escribe el config el ultimo`() {
         val v = volumen(pareja("notas", "notas"))
         File(v.state, "fotos").mkdirs()
         File(v.state, "fotos/viejo.path1.lst").writeText("x")
         val p = EditarParejas.planAnadir(v, raw(v), cat, "fotos", "Fotos")
-        assertTrue(p.apartar)
+        assertEquals(listOf("fotos"), p.plan.shelve)
+        assertTrue(p.resyncYa)
         var recargas = 0
         val hechos = EditarParejas.anadir(v, p, "# cabecera\n") { recargas++ }
         assertEquals(1, recargas)
@@ -381,9 +384,23 @@ class EditarParejasTest {
     }
 
     @Test
+    fun `volver a la misma carpeta reutiliza la referencia, sin resync`() {
+        val v = volumen(pareja("notas", "notas"))
+        baseline(v.state, raw(v), "fotos", "fotos", "esta")
+        File(v.raiz, "fotos").mkdirs()
+        val p = EditarParejas.planAnadir(v, raw(v), cat, "fotos", "fotos")
+        assertTrue(p.reutiliza)
+        assertFalse(p.resyncYa)
+        assertEquals(emptyList(), p.plan.shelve)
+        EditarParejas.anadir(v, p, "") {}
+        assertTrue(Bisync.pairState(File(v.state, "fotos")).hasBaseline)
+    }
+
+    @Test
     fun `si el config no se puede escribir, lo apartado vuelve y el rclone_conf tambien`() {
         val v = volumen(pareja("notas", "notas"))
         File(v.state, "fotos").mkdirs()
+        File(v.state, "fotos/viejo.path1.lst-err").writeText("x")
         val p = EditarParejas.planAnadir(v, raw(v), cat, "fotos", "Fotos")
         val confAntes = v.leerRcloneConf()
         val configAntes = v.config.readText()
@@ -408,6 +425,20 @@ class EditarParejasTest {
         assertEquals(emptyMap(), Compartidas.leer(v.compartidas))
         assertNull(v.leerConfig().pairs.first { it.name == "fotos" }.carpetaExterna)
         assertFalse(fuera.path in v.leerRcloneConf())
+    }
+
+    @Test
+    fun `al emparejar no se deja una carpeta que no vale ni un espejo que borraria`() {
+        val raiz = File(temporal(), "volumen").apply { mkdirs() }
+        val catalogo = Vectores196.seccion("catalogo_196")
+        assertNull(EditarParejas.problemaAlSembrar(raiz, catalogo, listOf("notas", "docs"), mapOf("notas" to "notas", "docs" to "docs")))
+        assertNotNull(EditarParejas.problemaAlSembrar(raiz, catalogo, listOf("notas"), mapOf("notas" to "")))
+        assertNotNull(EditarParejas.problemaAlSembrar(raiz, catalogo, listOf("notas"), mapOf("notas" to "a\nb")))
+        assertNotNull(EditarParejas.problemaAlSembrar(raiz, catalogo, listOf("notas"), mapOf("notas" to "../fuera")))
+        val solapa = EditarParejas.problemaAlSembrar(raiz, catalogo, listOf("notas", "docs"), mapOf("notas" to "datos/notas", "docs" to "datos"))
+        assertTrue("«docs» es un espejo de bajada" in solapa.orEmpty(), solapa)
+        File(raiz, "web").mkdirs()
+        assertNotNull(EditarParejas.problemaAlSembrar(raiz, catalogo, listOf("web"), mapOf("web" to "web")))
     }
 
     // --- quitar, en un volumen ------------------------------------------------------

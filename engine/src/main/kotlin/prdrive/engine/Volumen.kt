@@ -12,7 +12,10 @@ import java.time.format.DateTimeFormatter
  * Espejo de la parte de `install/deploy.py` de prdrive que no es copiar el
  * programa: `device_config()`, `_daemon_section()`, `device_header()`,
  * `local_dirs()`, `make_local_dirs()`, `resync_targets()`, `mirror_pairs()` y
- * `write_device_remote()`. La distribución es la misma a propósito: los
+ * `write_device_remote()`. Lo de la carpeta que elige cada dispositivo
+ * (`device_config()` y `local_dirs()` con sus `locales`, `carpeta_sugerida()`,
+ * `problema_carpeta()` y `avisos_carpetas()`) es de prdrive#202 (#196), que sale
+ * en la 0.8.4: sus valores esperados van en `vectores_196.json`. La distribución es la misma a propósito: los
  * ficheros de estado siguen siendo legibles por el programa de escritorio.
  *
  * ```
@@ -202,10 +205,13 @@ class Volumen(val raiz: File) {
         if (!Store.writeText(config, texto)) throw IOException("No he podido escribir $config")
     }
 
-    /** Crea las carpetas locales de las parejas elegidas y devuelve las que se han creado ahora. */
-    fun crearCarpetas(catalogo: Map<String, Any?>, elegidas: List<String>): List<File> {
+    /**
+     * Crea las carpetas locales de las parejas elegidas, las de [locales]
+     * ([localDirs]), y devuelve las que se han creado ahora.
+     */
+    fun crearCarpetas(catalogo: Map<String, Any?>, elegidas: List<String>, locales: Map<String, String>): List<File> {
         val creadas = ArrayList<File>()
-        for (rel in localDirs(catalogo, elegidas)) {
+        for (rel in localDirs(catalogo, elegidas, locales)) {
             val destino = File(raiz, rel)
             if (destino.isDirectory) continue
             if (!destino.mkdirs()) throw IOException("No he podido crear $destino")
@@ -226,12 +232,24 @@ class Volumen(val raiz: File) {
             parejasDe(catalogo).firstOrNull { it["name"] == nombre }
 
         /**
-         * El config crudo de ESTE volumen (`device_config()`): los `[defaults]`
-         * del catálogo con `device_remote` (desde el primer día: sin él el
-         * nombre de los listados llevaría la ruta de la app), su `[daemon]`
-         * recortado y solo las parejas elegidas. Se comprueba con [parseConfig].
+         * El config crudo de ESTE volumen (`device_config()`, el de prdrive#202):
+         * los `[defaults]` del catálogo con `device_remote` (desde el primer día:
+         * sin él el nombre de los listados llevaría la ruta de la app), su
+         * `[daemon]` recortado y solo las parejas elegidas, cada una con su
+         * carpeta de [locales]: el catálogo no la lleva (#196), y un `local` que
+         * traiga uno de antes se ignora. Se comprueba con [parseConfig].
+         *
+         * @param locales `{nombre: carpeta}` de cada pareja elegida, la que se
+         *   eligió al emparejar.
+         * @throws InstallError si falta una pareja del catálogo, no se eligió
+         *   ninguna o alguna elegida no tiene carpeta.
          */
-        fun deviceConfig(catalogo: Map<String, Any?>, elegidas: List<String>, catalogPath: String = ""): Map<String, Any?> {
+        fun deviceConfig(
+            catalogo: Map<String, Any?>,
+            elegidas: List<String>,
+            catalogPath: String = "",
+            locales: Map<String, String>? = null,
+        ): Map<String, Any?> {
             val faltan = elegidas.filter { parejaDe(catalogo, it) == null }
             if (faltan.isNotEmpty()) {
                 throw InstallError("El catálogo no tiene estas parejas: ${faltan.joinToString(", ")}.")
@@ -242,15 +260,67 @@ class Volumen(val raiz: File) {
                         "no lo acepta sync.py.",
                 )
             }
+            val sinCarpeta = elegidas.filter { stripPy(locales?.get(it).orEmpty()).isEmpty() }
+            if (sinCarpeta.isNotEmpty()) {
+                throw InstallError("Falta la carpeta de: " + sinCarpeta.joinToString(", ") + ".")
+            }
             val raw = LinkedHashMap<String, Any?>()
             val defaults = LinkedHashMap<String, Any?>(tablaDe(catalogo, "defaults") ?: emptyMap())
             if (!defaults.containsKey("device_remote")) defaults["device_remote"] = DEFAULT_DEVICE_REMOTE
             if (catalogPath.isNotEmpty()) defaults["catalog_path"] = catalogPath
             raw["defaults"] = defaults
             daemonSection(catalogo, elegidas).takeIf { it.isNotEmpty() }?.let { raw["daemon"] = it }
-            raw["pair"] = elegidas.map { LinkedHashMap(parejaDe(catalogo, it)!!) }
+            raw["pair"] = elegidas.map { nombre ->
+                val pareja = LinkedHashMap<String, Any?>()
+                pareja["name"] = nombre
+                pareja["local"] = stripPy(locales!!.getValue(nombre))
+                for ((k, v) in parejaDe(catalogo, nombre)!!) if (k != "name" && k != "local") pareja[k] = v
+                pareja
+            }
             parseConfig(raw)
             return raw
+        }
+
+        /**
+         * La carpeta con la que se rellena la de una pareja al elegirla
+         * (`carpeta_sugerida`): su nombre. El catálogo ya no dice ninguna (#196), y
+         * el nombre de una pareja ya es el de su carpeta en `state/`.
+         */
+        fun carpetaSugerida(pareja: Map<String, Any?>): String =
+            if ("name" in pareja) strPy(pareja["name"]) else ""
+
+        /**
+         * Por qué no vale la carpeta escrita para una pareja (`problema_carpeta`),
+         * o `null`: vacía, o lo que dice [problemaLocal], que es lo mismo que al
+         * leer el config que se va a escribir; aquí se dice antes, por pareja.
+         */
+        fun problemaCarpeta(local: String?): String? {
+            val texto = stripPy(if (verdad(local)) local!! else "")
+            if (texto.isEmpty()) return "Falta la carpeta."
+            return problemaLocal(texto)
+        }
+
+        /**
+         * Lo que hay que avisar de las carpetas elegidas antes de escribir el
+         * config (`avisos_carpetas`): lo mismo que avisa «Usar aquí» ([Carpetas]).
+         * Cada choque se dice una vez: cada pareja se compara solo con las de antes.
+         *
+         * @param raiz la raíz del volumen.
+         */
+        fun avisosCarpetas(
+            raiz: File,
+            catalogo: Map<String, Any?>,
+            elegidas: List<String>,
+            locales: Map<String, String>,
+        ): List<String> {
+            val salida = ArrayList<String>()
+            elegidas.forEachIndexed { i, nombre ->
+                val modo = parejaDe(catalogo, nombre)?.let { if ("mode" in it) it["mode"] else DEFAULT_MODE } ?: DEFAULT_MODE
+                val antes = LinkedHashMap<String, String>()
+                for (n in elegidas.subList(0, i)) antes[n] = locales[n].orEmpty()
+                salida += Carpetas.avisos(nombre, strPy(modo), locales[nombre].orEmpty(), raiz, antes)
+            }
+            return salida
         }
 
         /** El `[daemon]` del catálogo recortado a las parejas de este volumen. */
@@ -365,10 +435,19 @@ class Volumen(val raiz: File) {
             return avisos
         }
 
-        /** Las carpetas que necesitan las parejas elegidas; la de la raíz no cuenta. */
-        fun localDirs(catalogo: Map<String, Any?>, elegidas: List<String>): List<String> =
+        /**
+         * Las carpetas que necesitan las parejas elegidas (`local_dirs`): las de
+         * [locales], que el catálogo no lleva. La de la raíz no cuenta, ni una sin
+         * carpeta, ni la de un espejo de subida ([Modo.borraEnRemoto]): creada
+         * vacía, su primera pasada vaciaría el remoto, y sin ella la pasada aborta
+         * sin crearla.
+         */
+        fun localDirs(catalogo: Map<String, Any?>, elegidas: List<String>, locales: Map<String, String>?): List<String> =
             elegidas.mapNotNull { nombre ->
-                val local = strPy(parejaDe(catalogo, nombre)?.get("local") ?: "").replace("\\", "/").trim('/')
+                val pareja = parejaDe(catalogo, nombre).orEmpty()
+                val modo = MODES[strPy(if ("mode" in pareja) pareja["mode"] else DEFAULT_MODE)]
+                if (modo != null && modo.borraEnRemoto) return@mapNotNull null
+                val local = stripPy(locales?.get(nombre).orEmpty()).replace("\\", "/").trim('/')
                 local.takeIf { it.isNotEmpty() && it != "." }
             }
 
