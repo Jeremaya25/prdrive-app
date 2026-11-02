@@ -20,6 +20,7 @@ import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -71,7 +72,8 @@ import prdrive.engine.Pasada
  * arreglar (rehacer la referencia, sus conflictos, su último fallo), cómo se
  * sincroniza y dónde vive en este teléfono, con lo que se puede hacer con su
  * carpeta (moverla a una carpeta compartida, terminar de moverla, devolverla
- * al volumen). Es «Una pareja · detalle» del lienzo y sus tres variantes.
+ * al volumen), y al final quitarla del teléfono ([QuitarPareja]). Es «Una
+ * pareja · detalle» del lienzo y sus tres variantes.
  *
  * Con un trabajo en marcha, todo lo que cambia algo se apaga: el modelo ya
  * ignora el segundo toque, pero la pantalla no debe parecer que lo va a hacer.
@@ -91,6 +93,15 @@ fun Ficha(
     // para que girar el teléfono no la cierre.
     var rehaciendo by rememberSaveable { mutableStateOf(false) }
     if (rehaciendo && f != null) RehacerReferencia(m, f, conRed) { rehaciendo = false }
+    // Y la de quitarla del teléfono; quitada, se vuelve a donde se vino.
+    var quitando by rememberSaveable { mutableStateOf(false) }
+    if (quitando && f != null) QuitarPareja(m, f) { quitando = false }
+    LaunchedEffect(m.recienQuitada) {
+        if (m.recienQuitada == nombre) {
+            m.vista(nombre)
+            volver()
+        }
+    }
     Column(
         Modifier
             .fillMaxSize()
@@ -159,6 +170,23 @@ fun Ficha(
                     Modifier.testTag("ver-log-$nombre"),
                     icono = Icono.FILE,
                     ancho = true,
+                )
+            }
+            Bloque("En este teléfono") {
+                Text(
+                    "Quitarla solo hace que deje de sincronizarse aquí: sus ficheros se quedan, en el teléfono y en " +
+                        "el remoto, y sigue en el catálogo para volver a añadirla.",
+                    style = Letra.actual.pista,
+                    color = Paleta.actual.ink2,
+                )
+                Boton(
+                    "Quitar de este teléfono…",
+                    { quitando = true },
+                    Modifier.testTag("quitar-pareja-$nombre"),
+                    peso = Peso.PELIGRO,
+                    icono = Icono.TRASH,
+                    ancho = true,
+                    activo = libre,
                 )
             }
         }

@@ -269,11 +269,12 @@ internal fun CasillaDelLlavero(m: Modelo) {
         if (uri != null) m.elegirLlavero(true, uri)
     }
     // Lo que avisa prdrive con las parejas elegidas: una de la raíz entera.
-    val avisos = remember(cat, m.elegidas) {
+    val avisos = remember(cat, m.elegidas, m.carpetas) {
         try {
-            Volumen.avisosAlta(parseConfig(Volumen.deviceConfig(cat.raw, cat.names.filter { it in m.elegidas })))
+            val elegidas = cat.names.filter { it in m.elegidas }
+            Volumen.avisosAlta(parseConfig(Volumen.deviceConfig(cat.raw, elegidas, "", m.localesElegidas())))
         } catch (_: Exception) {
-            // Sin parejas elegidas, o un catálogo que no vale: lo dirá «Instalar».
+            // Sin parejas elegidas, sin carpeta o un catálogo que no vale: lo dirá «Instalar».
             emptyList()
         }
     }

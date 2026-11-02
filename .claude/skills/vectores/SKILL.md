@@ -16,6 +16,7 @@ mano»).
 |---|---|---|
 | `vectores.json` | `herramientas/vectores.py` (y sus `vectores_*.py`) | el checkout de prdrive |
 | `oraculo_rclone.json` | `rclone/go/oraculo` | el Go del `toolchain` de `rclone/go/go.mod` |
+| `vectores_196.json` | `herramientas/vectores_196.py` | prdrive en la rama del PR #202 (#196, sale con la 0.8.4): el resto del motor sigue en 0.7.7 |
 
 ## Pasos
 

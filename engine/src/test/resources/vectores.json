@@ -4135,55 +4135,7 @@
         "remote_path": "/copia/fotos",
         "mode": "down"
       }
-    },
-    "diff_keys": [
-      {
-        "a": {
-          "name": "a",
-          "local": "x"
-        },
-        "b": {
-          "name": "b",
-          "mode": "up"
-        },
-        "salida": [
-          "local",
-          "mode",
-          "name"
-        ]
-      },
-      {
-        "a": {
-          "name": "a",
-          "local": "x"
-        },
-        "b": {
-          "name": "a",
-          "local": "x"
-        },
-        "salida": []
-      },
-      {
-        "a": null,
-        "b": {
-          "name": "b",
-          "mode": "up"
-        },
-        "salida": [
-          "mode",
-          "name"
-        ]
-      },
-      {
-        "a": {
-          "x": 1
-        },
-        "b": {
-          "x": 1.0
-        },
-        "salida": []
-      }
-    ]
+    }
   },
   "resultados": {
     "pasos": [
@@ -17194,6 +17146,690 @@
       }
     ]
   },
+  "editar_parejas": {
+    "configs": {
+      "dispositivo": {
+        "defaults": {
+          "device_remote": "disp",
+          "remote": "nas",
+          "catalog_path": "/prdrive-catalog/remote.toml"
+        },
+        "daemon": {
+          "pairs": [
+            "notas"
+          ],
+          "interval_minutes": 15
+        },
+        "pair": [
+          {
+            "name": "notas",
+            "local": "notas",
+            "remote_path": "/copia/notas"
+          },
+          {
+            "name": "subida",
+            "local": "salida",
+            "remote_path": "/copia/salida",
+            "mode": "up"
+          }
+        ]
+      },
+      "tres": {
+        "defaults": {
+          "device_remote": "disp",
+          "remote": "nas",
+          "catalog_path": "/prdrive-catalog/remote.toml"
+        },
+        "daemon": {
+          "pairs": [
+            "notas"
+          ],
+          "interval_minutes": 15
+        },
+        "pair": [
+          {
+            "name": "notas",
+            "local": "notas",
+            "remote_path": "/copia/notas"
+          },
+          {
+            "name": "subida",
+            "local": "salida",
+            "remote_path": "/copia/salida",
+            "mode": "up"
+          },
+          {
+            "name": "fotos",
+            "local": "fotos",
+            "remote_path": "/copia/fotos"
+          }
+        ]
+      },
+      "sola_en_daemon": {
+        "defaults": {
+          "device_remote": "disp",
+          "remote": "nas",
+          "catalog_path": "/prdrive-catalog/remote.toml"
+        },
+        "daemon": {
+          "pairs": [
+            "notas"
+          ]
+        },
+        "pair": [
+          {
+            "name": "notas",
+            "local": "notas",
+            "remote_path": "/copia/notas"
+          },
+          {
+            "name": "subida",
+            "local": "salida",
+            "remote_path": "/copia/salida",
+            "mode": "up"
+          }
+        ]
+      },
+      "una": {
+        "defaults": {
+          "device_remote": "disp",
+          "remote": "nas",
+          "catalog_path": "/prdrive-catalog/remote.toml"
+        },
+        "daemon": {
+          "pairs": [
+            "notas"
+          ],
+          "interval_minutes": 15
+        },
+        "pair": [
+          {
+            "name": "notas",
+            "local": "notas",
+            "remote_path": "/copia/notas"
+          }
+        ]
+      },
+      "daemon_sin_pairs": {
+        "defaults": {
+          "device_remote": "disp",
+          "remote": "nas",
+          "catalog_path": "/prdrive-catalog/remote.toml"
+        },
+        "daemon": {
+          "interval_minutes": 15
+        },
+        "pair": [
+          {
+            "name": "notas",
+            "local": "notas",
+            "remote_path": "/copia/notas"
+          },
+          {
+            "name": "subida",
+            "local": "salida",
+            "remote_path": "/copia/salida",
+            "mode": "up"
+          }
+        ]
+      },
+      "pair_tabla": {
+        "defaults": {
+          "device_remote": "disp",
+          "remote": "nas",
+          "catalog_path": "/prdrive-catalog/remote.toml"
+        },
+        "pair": {
+          "name": "notas",
+          "local": "notas",
+          "remote_path": "/copia/notas"
+        }
+      },
+      "pair_con_un_numero": {
+        "defaults": {
+          "device_remote": "disp",
+          "remote": "nas",
+          "catalog_path": "/prdrive-catalog/remote.toml"
+        },
+        "pair": [
+          1,
+          {
+            "name": "notas",
+            "local": "notas",
+            "remote_path": "/copia/notas"
+          },
+          {
+            "name": "subida",
+            "local": "salida",
+            "remote_path": "/copia/salida",
+            "mode": "up"
+          }
+        ]
+      }
+    },
+    "mirror_modes": [
+      "up-mirror",
+      "down-mirror"
+    ],
+    "avisos_espejo": {
+      "bisync": null,
+      "up": null,
+      "down": null,
+      "up-mirror": "Modo 'up-mirror': es un espejo, BORRA en el remoto lo que no esté en el origen. Pruébalo antes con --dry-run.",
+      "down-mirror": "Modo 'down-mirror': es un espejo, BORRA en el dispositivo lo que no esté en el origen. Pruébalo antes con --dry-run.",
+      "inventado": null
+    },
+    "avisos_espejo_partidos": {
+      "bisync": null,
+      "up": null,
+      "down": null,
+      "up-mirror": [
+        "Modo 'up-mirror': es un espejo",
+        "BORRA en el remoto lo que no esté en el origen. Pruébalo antes con --dry-run."
+      ],
+      "down-mirror": [
+        "Modo 'down-mirror': es un espejo",
+        "BORRA en el dispositivo lo que no esté en el origen. Pruébalo antes con --dry-run."
+      ],
+      "inventado": null
+    },
+    "remove": [
+      {
+        "caso": "sin nada en disco",
+        "config": "dispositivo",
+        "nombre": "subida",
+        "limpiar": false,
+        "en_disco": [],
+        "plan": {
+          "raw": {
+            "defaults": {
+              "device_remote": "disp",
+              "remote": "nas",
+              "catalog_path": "/prdrive-catalog/remote.toml"
+            },
+            "daemon": {
+              "pairs": [
+                "notas"
+              ],
+              "interval_minutes": 15
+            },
+            "pair": [
+              {
+                "name": "notas",
+                "local": "notas",
+                "remote_path": "/copia/notas"
+              }
+            ]
+          },
+          "consequences": [
+            "Se quita 'subida' de este dispositivo. Sus datos NO se tocan, ni aquí ni en el remoto: solo deja de sincronizarse. Si está en el catálogo, sigue estándolo."
+          ],
+          "warnings": [],
+          "shelve": [],
+          "borrar_filtros": []
+        }
+      },
+      {
+        "caso": "sin nada en disco, limpiando",
+        "config": "dispositivo",
+        "nombre": "subida",
+        "limpiar": true,
+        "en_disco": [],
+        "plan": {
+          "raw": {
+            "defaults": {
+              "device_remote": "disp",
+              "remote": "nas",
+              "catalog_path": "/prdrive-catalog/remote.toml"
+            },
+            "daemon": {
+              "pairs": [
+                "notas"
+              ],
+              "interval_minutes": 15
+            },
+            "pair": [
+              {
+                "name": "notas",
+                "local": "notas",
+                "remote_path": "/copia/notas"
+              }
+            ]
+          },
+          "consequences": [
+            "Se quita 'subida' de este dispositivo. Sus datos NO se tocan, ni aquí ni en el remoto: solo deja de sincronizarse. Si está en el catálogo, sigue estándolo."
+          ],
+          "warnings": [],
+          "shelve": [],
+          "borrar_filtros": []
+        }
+      },
+      {
+        "caso": "con su estado, sin limpiar",
+        "config": "dispositivo",
+        "nombre": "notas",
+        "limpiar": false,
+        "en_disco": [
+          "state/notas/",
+          "state/notas/x.path1.lst",
+          "filters/notas.txt",
+          "filters/notas.txt.md5"
+        ],
+        "plan": {
+          "raw": {
+            "defaults": {
+              "device_remote": "disp",
+              "remote": "nas",
+              "catalog_path": "/prdrive-catalog/remote.toml"
+            },
+            "daemon": {
+              "pairs": [],
+              "interval_minutes": 15
+            },
+            "pair": [
+              {
+                "name": "subida",
+                "local": "salida",
+                "remote_path": "/copia/salida",
+                "mode": "up"
+              }
+            ]
+          },
+          "consequences": [
+            "Se quita 'notas' de este dispositivo. Sus datos NO se tocan, ni aquí ni en el remoto: solo deja de sincronizarse. Si está en el catálogo, sigue estándolo.",
+            "Quedará sin usar: notas, notas.txt, notas.txt.md5"
+          ],
+          "warnings": [],
+          "shelve": [],
+          "borrar_filtros": []
+        }
+      },
+      {
+        "caso": "con su estado, limpiando",
+        "config": "dispositivo",
+        "nombre": "notas",
+        "limpiar": true,
+        "en_disco": [
+          "state/notas/",
+          "state/notas/x.path1.lst",
+          "filters/notas.txt",
+          "filters/notas.txt.md5"
+        ],
+        "plan": {
+          "raw": {
+            "defaults": {
+              "device_remote": "disp",
+              "remote": "nas",
+              "catalog_path": "/prdrive-catalog/remote.toml"
+            },
+            "daemon": {
+              "pairs": [],
+              "interval_minutes": 15
+            },
+            "pair": [
+              {
+                "name": "subida",
+                "local": "salida",
+                "remote_path": "/copia/salida",
+                "mode": "up"
+              }
+            ]
+          },
+          "consequences": [
+            "Se quita 'notas' de este dispositivo. Sus datos NO se tocan, ni aquí ni en el remoto: solo deja de sincronizarse. Si está en el catálogo, sigue estándolo.",
+            "Su baseline se apartará a state/notas.old-<fecha>/; no se borra.",
+            "Se borrarán sus filtros generados, que son datos derivados del TOML."
+          ],
+          "warnings": [],
+          "shelve": [
+            "notas"
+          ],
+          "borrar_filtros": [
+            "filters/notas.txt",
+            "filters/notas.txt.md5"
+          ]
+        }
+      },
+      {
+        "caso": "solo los filtros, limpiando",
+        "config": "dispositivo",
+        "nombre": "notas",
+        "limpiar": true,
+        "en_disco": [
+          "filters/notas.txt",
+          "filters/notas.txt.md5"
+        ],
+        "plan": {
+          "raw": {
+            "defaults": {
+              "device_remote": "disp",
+              "remote": "nas",
+              "catalog_path": "/prdrive-catalog/remote.toml"
+            },
+            "daemon": {
+              "pairs": [],
+              "interval_minutes": 15
+            },
+            "pair": [
+              {
+                "name": "subida",
+                "local": "salida",
+                "remote_path": "/copia/salida",
+                "mode": "up"
+              }
+            ]
+          },
+          "consequences": [
+            "Se quita 'notas' de este dispositivo. Sus datos NO se tocan, ni aquí ni en el remoto: solo deja de sincronizarse. Si está en el catálogo, sigue estándolo.",
+            "Se borrarán sus filtros generados, que son datos derivados del TOML."
+          ],
+          "warnings": [],
+          "shelve": [],
+          "borrar_filtros": [
+            "filters/notas.txt",
+            "filters/notas.txt.md5"
+          ]
+        }
+      },
+      {
+        "caso": "solo el workdir, limpiando",
+        "config": "dispositivo",
+        "nombre": "notas",
+        "limpiar": true,
+        "en_disco": [
+          "state/notas/",
+          "state/notas/x.path1.lst"
+        ],
+        "plan": {
+          "raw": {
+            "defaults": {
+              "device_remote": "disp",
+              "remote": "nas",
+              "catalog_path": "/prdrive-catalog/remote.toml"
+            },
+            "daemon": {
+              "pairs": [],
+              "interval_minutes": 15
+            },
+            "pair": [
+              {
+                "name": "subida",
+                "local": "salida",
+                "remote_path": "/copia/salida",
+                "mode": "up"
+              }
+            ]
+          },
+          "consequences": [
+            "Se quita 'notas' de este dispositivo. Sus datos NO se tocan, ni aquí ni en el remoto: solo deja de sincronizarse. Si está en el catálogo, sigue estándolo.",
+            "Su baseline se apartará a state/notas.old-<fecha>/; no se borra."
+          ],
+          "warnings": [],
+          "shelve": [
+            "notas"
+          ],
+          "borrar_filtros": []
+        }
+      },
+      {
+        "caso": "solo el workdir, sin limpiar",
+        "config": "dispositivo",
+        "nombre": "notas",
+        "limpiar": false,
+        "en_disco": [
+          "state/notas/"
+        ],
+        "plan": {
+          "raw": {
+            "defaults": {
+              "device_remote": "disp",
+              "remote": "nas",
+              "catalog_path": "/prdrive-catalog/remote.toml"
+            },
+            "daemon": {
+              "pairs": [],
+              "interval_minutes": 15
+            },
+            "pair": [
+              {
+                "name": "subida",
+                "local": "salida",
+                "remote_path": "/copia/salida",
+                "mode": "up"
+              }
+            ]
+          },
+          "consequences": [
+            "Se quita 'notas' de este dispositivo. Sus datos NO se tocan, ni aquí ni en el remoto: solo deja de sincronizarse. Si está en el catálogo, sigue estándolo.",
+            "Quedará sin usar: notas"
+          ],
+          "warnings": [],
+          "shelve": [],
+          "borrar_filtros": []
+        }
+      },
+      {
+        "caso": "la que nombra el daemon",
+        "config": "tres",
+        "nombre": "notas",
+        "limpiar": false,
+        "en_disco": [],
+        "plan": {
+          "raw": {
+            "defaults": {
+              "device_remote": "disp",
+              "remote": "nas",
+              "catalog_path": "/prdrive-catalog/remote.toml"
+            },
+            "daemon": {
+              "pairs": [],
+              "interval_minutes": 15
+            },
+            "pair": [
+              {
+                "name": "subida",
+                "local": "salida",
+                "remote_path": "/copia/salida",
+                "mode": "up"
+              },
+              {
+                "name": "fotos",
+                "local": "fotos",
+                "remote_path": "/copia/fotos"
+              }
+            ]
+          },
+          "consequences": [
+            "Se quita 'notas' de este dispositivo. Sus datos NO se tocan, ni aquí ni en el remoto: solo deja de sincronizarse. Si está en el catálogo, sigue estándolo."
+          ],
+          "warnings": [],
+          "shelve": [],
+          "borrar_filtros": []
+        }
+      },
+      {
+        "caso": "la única que nombra el daemon",
+        "config": "sola_en_daemon",
+        "nombre": "notas",
+        "limpiar": false,
+        "en_disco": [],
+        "plan": {
+          "raw": {
+            "defaults": {
+              "device_remote": "disp",
+              "remote": "nas",
+              "catalog_path": "/prdrive-catalog/remote.toml"
+            },
+            "daemon": {
+              "pairs": []
+            },
+            "pair": [
+              {
+                "name": "subida",
+                "local": "salida",
+                "remote_path": "/copia/salida",
+                "mode": "up"
+              }
+            ]
+          },
+          "consequences": [
+            "Se quita 'notas' de este dispositivo. Sus datos NO se tocan, ni aquí ni en el remoto: solo deja de sincronizarse. Si está en el catálogo, sigue estándolo."
+          ],
+          "warnings": [],
+          "shelve": [],
+          "borrar_filtros": []
+        }
+      },
+      {
+        "caso": "una que el daemon no nombra",
+        "config": "tres",
+        "nombre": "fotos",
+        "limpiar": false,
+        "en_disco": [],
+        "plan": {
+          "raw": {
+            "defaults": {
+              "device_remote": "disp",
+              "remote": "nas",
+              "catalog_path": "/prdrive-catalog/remote.toml"
+            },
+            "daemon": {
+              "pairs": [
+                "notas"
+              ],
+              "interval_minutes": 15
+            },
+            "pair": [
+              {
+                "name": "notas",
+                "local": "notas",
+                "remote_path": "/copia/notas"
+              },
+              {
+                "name": "subida",
+                "local": "salida",
+                "remote_path": "/copia/salida",
+                "mode": "up"
+              }
+            ]
+          },
+          "consequences": [
+            "Se quita 'fotos' de este dispositivo. Sus datos NO se tocan, ni aquí ni en el remoto: solo deja de sincronizarse. Si está en el catálogo, sigue estándolo."
+          ],
+          "warnings": [],
+          "shelve": [],
+          "borrar_filtros": []
+        }
+      },
+      {
+        "caso": "un daemon sin pairs",
+        "config": "daemon_sin_pairs",
+        "nombre": "notas",
+        "limpiar": false,
+        "en_disco": [],
+        "plan": {
+          "raw": {
+            "defaults": {
+              "device_remote": "disp",
+              "remote": "nas",
+              "catalog_path": "/prdrive-catalog/remote.toml"
+            },
+            "daemon": {
+              "interval_minutes": 15
+            },
+            "pair": [
+              {
+                "name": "subida",
+                "local": "salida",
+                "remote_path": "/copia/salida",
+                "mode": "up"
+              }
+            ]
+          },
+          "consequences": [
+            "Se quita 'notas' de este dispositivo. Sus datos NO se tocan, ni aquí ni en el remoto: solo deja de sincronizarse. Si está en el catálogo, sigue estándolo."
+          ],
+          "warnings": [],
+          "shelve": [],
+          "borrar_filtros": []
+        }
+      },
+      {
+        "caso": "un state que es un fichero, limpiando",
+        "config": "dispositivo",
+        "nombre": "notas",
+        "limpiar": true,
+        "en_disco": [
+          "state/notas",
+          "filters/notas.txt",
+          "filters/notas.txt.md5"
+        ],
+        "plan": {
+          "raw": {
+            "defaults": {
+              "device_remote": "disp",
+              "remote": "nas",
+              "catalog_path": "/prdrive-catalog/remote.toml"
+            },
+            "daemon": {
+              "pairs": [],
+              "interval_minutes": 15
+            },
+            "pair": [
+              {
+                "name": "subida",
+                "local": "salida",
+                "remote_path": "/copia/salida",
+                "mode": "up"
+              }
+            ]
+          },
+          "consequences": [
+            "Se quita 'notas' de este dispositivo. Sus datos NO se tocan, ni aquí ni en el remoto: solo deja de sincronizarse. Si está en el catálogo, sigue estándolo.",
+            "Se borrarán sus filtros generados, que son datos derivados del TOML."
+          ],
+          "warnings": [],
+          "shelve": [],
+          "borrar_filtros": [
+            "filters/notas.txt",
+            "filters/notas.txt.md5"
+          ]
+        }
+      },
+      {
+        "caso": "la última",
+        "config": "una",
+        "nombre": "notas",
+        "limpiar": false,
+        "en_disco": [],
+        "error": "No se puede quitar la última pareja: el config se quedaría sin ninguna y sync.py no arrancaría."
+      },
+      {
+        "caso": "una que no está",
+        "config": "dispositivo",
+        "nombre": "inventada",
+        "limpiar": false,
+        "en_disco": [],
+        "error": "No hay ninguna pareja llamada 'inventada'."
+      },
+      {
+        "caso": "un pair que es una tabla",
+        "config": "pair_tabla",
+        "nombre": "notas",
+        "limpiar": false,
+        "en_disco": [],
+        "rompe": "AttributeError"
+      },
+      {
+        "caso": "un pair con algo que no es una tabla",
+        "config": "pair_con_un_numero",
+        "nombre": "notas",
+        "limpiar": false,
+        "en_disco": [],
+        "rompe": "AttributeError"
+      }
+    ]
+  },
   "paso3": {
     "orden": {
       "config": {
@@ -28721,43 +29357,6 @@
             "notas",
             "todo"
           ],
-          "catalog_path": "",
-          "config": {
-            "defaults": {
-              "remote": "nas",
-              "catalog_path": "/prdrive-catalog/remote.toml",
-              "exclude": [
-                "*.tmp"
-              ],
-              "flags": {
-                "transfers": 4
-              },
-              "device_remote": "disp"
-            },
-            "daemon": {
-              "pairs": [
-                "notas"
-              ],
-              "interval_minutes": 15
-            },
-            "pair": [
-              {
-                "name": "notas",
-                "local": "sync-data/notas",
-                "remote_path": "/copia/notas",
-                "versions": true,
-                "watch": true
-              },
-              {
-                "name": "todo",
-                "local": ".",
-                "remote_path": "/copia/volumen"
-              }
-            ]
-          },
-          "local_dirs": [
-            "sync-data/notas"
-          ],
           "resync_targets": [
             "notas",
             "todo"
@@ -28769,44 +29368,6 @@
           "elegidas": [
             "fotos"
           ],
-          "catalog_path": "/otro/remote.toml",
-          "config": {
-            "defaults": {
-              "remote": "nas",
-              "catalog_path": "/otro/remote.toml",
-              "exclude": [
-                "*.tmp"
-              ],
-              "flags": {
-                "transfers": 4
-              },
-              "device_remote": "disp"
-            },
-            "daemon": {
-              "pairs": [
-                "fotos"
-              ],
-              "interval_minutes": 15
-            },
-            "pair": [
-              {
-                "name": "fotos",
-                "local": "sync-data/media/fotos",
-                "remote_path": "/copia/fotos",
-                "include": [
-                  "*.jpg",
-                  "*.raw"
-                ],
-                "flags": {
-                  "max-delete": 5,
-                  "checkers": 2
-                }
-              }
-            ]
-          },
-          "local_dirs": [
-            "sync-data/media/fotos"
-          ],
           "resync_targets": [
             "fotos"
           ],
@@ -28816,35 +29377,6 @@
           "caso": "ninguna del daemon",
           "elegidas": [
             "espejo"
-          ],
-          "catalog_path": "",
-          "config": {
-            "defaults": {
-              "remote": "nas",
-              "catalog_path": "/prdrive-catalog/remote.toml",
-              "exclude": [
-                "*.tmp"
-              ],
-              "flags": {
-                "transfers": 4
-              },
-              "device_remote": "disp"
-            },
-            "daemon": {
-              "interval_minutes": 15
-            },
-            "pair": [
-              {
-                "name": "espejo",
-                "local": "sync-data/espejo",
-                "remote_path": "/copia/espejo",
-                "mode": "up-mirror",
-                "use_filters_file": false
-              }
-            ]
-          },
-          "local_dirs": [
-            "sync-data/espejo"
           ],
           "resync_targets": [],
           "mirror_pairs": [
@@ -28860,74 +29392,6 @@
             "subida",
             "espejo"
           ],
-          "catalog_path": "",
-          "config": {
-            "defaults": {
-              "remote": "nas",
-              "catalog_path": "/prdrive-catalog/remote.toml",
-              "exclude": [
-                "*.tmp"
-              ],
-              "flags": {
-                "transfers": 4
-              },
-              "device_remote": "disp"
-            },
-            "daemon": {
-              "pairs": [
-                "notas",
-                "fotos",
-                "subida"
-              ],
-              "interval_minutes": 15
-            },
-            "pair": [
-              {
-                "name": "notas",
-                "local": "sync-data/notas",
-                "remote_path": "/copia/notas",
-                "versions": true,
-                "watch": true
-              },
-              {
-                "name": "fotos",
-                "local": "sync-data/media/fotos",
-                "remote_path": "/copia/fotos",
-                "include": [
-                  "*.jpg",
-                  "*.raw"
-                ],
-                "flags": {
-                  "max-delete": 5,
-                  "checkers": 2
-                }
-              },
-              {
-                "name": "todo",
-                "local": ".",
-                "remote_path": "/copia/volumen"
-              },
-              {
-                "name": "subida",
-                "local": "sync-data/salida",
-                "remote_path": "/copia/salida",
-                "mode": "up"
-              },
-              {
-                "name": "espejo",
-                "local": "sync-data/espejo",
-                "remote_path": "/copia/espejo",
-                "mode": "up-mirror",
-                "use_filters_file": false
-              }
-            ]
-          },
-          "local_dirs": [
-            "sync-data/notas",
-            "sync-data/media/fotos",
-            "sync-data/salida",
-            "sync-data/espejo"
-          ],
           "resync_targets": [
             "notas",
             "fotos",
@@ -28938,10 +29402,6 @@
           ]
         }
       ],
-      "errores": {
-        "ninguna": "Hay que elegir al menos una pareja: un sync_config.toml sin ninguna no lo acepta sync.py.",
-        "una que no existe": "El catálogo no tiene estas parejas: inventada."
-      },
       "app_subdir": ".prdrive"
     },
     "rclone_conf": {

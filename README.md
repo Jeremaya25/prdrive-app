@@ -23,6 +23,7 @@ parejas que usan tus dispositivos de escritorio con
 |---|---|
 | **Sincronizar** | Pasa las parejas del catálogo (bisync y espejos), cuenta qué se ha copiado, qué se ha borrado y qué ha fallado, y guarda el log de cada pasada. |
 | **Sincronizar sola** | Una pasada periódica en segundo plano (por defecto cada hora, nunca menos de 15 min; solo con wifi si no dices otra cosa). El intervalo y las parejas salen del `[daemon]` del config. |
+| **Añadir y quitar parejas** | Desde Parejas añades una pareja del catálogo eligiendo en qué carpeta del teléfono va, y desde su ficha la quitas: deja de sincronizarse aquí, sin tocar sus ficheros. Ver [`AGENTS.md`](AGENTS.md) («Añadir y quitar parejas, y la carpeta de cada una»). |
 | **Simulacro** | Un `--dry-run` desde la ficha de la pareja: enseña qué se copiaría, hacia dónde y qué se borraría, sin tocar nada. |
 | **Conflictos** | Si editas el mismo fichero en dos sitios, quedan las dos versiones y la app lo avisa. Se resuelve desde la ficha, viendo antes las consecuencias. |
 | **Llavero** | La base KeePass (`.kdbx`) del `[keychain]` de prdrive, sincronizada en segundo plano y abierta en tu app de KeePass ([KeePassDX](https://github.com/Kunzisoft/KeePassDX) está probada). Ver [El llavero](#el-llavero). |
@@ -60,8 +61,10 @@ autoactualización»).
 En un dispositivo de prdrive que ya esté provisionado: **Doctor → «Emparejar un
 móvil…»**. En el teléfono, abre prdrive y sigue los cuatro pasos: escanear (o
 pegar) el código, revisar la conexión que trae —nada se guarda todavía—, elegir
-qué parejas del catálogo sincroniza el teléfono y la primera pasada
+qué parejas del catálogo sincroniza el teléfono y en qué carpeta va cada una
+(empieza con su nombre: el catálogo no la dice), y la primera pasada
 (`--resync`). Si quieres el llavero, marca «El llavero» al elegir las parejas.
+Después puedes añadir y quitar parejas desde la sección Parejas.
 
 > **El QR lleva la clave privada del remoto.** Enséñalo solo a tu propio
 > teléfono, y no lo fotografíes ni lo compartas. La app no lo guarda.
@@ -93,7 +96,8 @@ teléfono real: [`PLAN.md`](PLAN.md) §1 lista lo que falta comprobar (una parej
 contra el remoto de casa, el permiso de red local en Android 17, Keepass2Android,
 todo en arm64).
 
-El motor está alineado con **prdrive 0.7.7**, que fija **rclone v1.75.2**. Lo
+El motor está alineado con **prdrive 0.7.7**, que fija **rclone v1.75.2**, y la
+carpeta que elige cada dispositivo (#196) con la **0.8.4**, que la trae. Lo
 que aún no tiene la app (editar el catálogo, la reparación con `--force`, usar
 una SD o un USB como volumen, iPhone) está en [`PLAN.md`](PLAN.md).
 

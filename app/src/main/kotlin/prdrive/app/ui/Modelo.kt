@@ -30,6 +30,8 @@ import prdrive.engine.Compartidas
 import prdrive.engine.Config
 import prdrive.engine.ConfigError
 import prdrive.engine.Conflictos
+import prdrive.engine.DEFAULT_MODE
+import prdrive.engine.EditarParejas
 import prdrive.engine.LLAVERO
 import prdrive.engine.LLAVERO_LLAVE
 import prdrive.engine.LLAVERO_LOCAL
@@ -38,7 +40,9 @@ import prdrive.engine.Pairing
 import prdrive.engine.Pasada
 import prdrive.engine.ResolverConflictos
 import prdrive.engine.Volumen
+import prdrive.engine.headerOf
 import prdrive.engine.loadRaw
+import prdrive.engine.strPy
 
 /**
  * Modelo.kt — El estado de las pantallas y lo que hacen sus botones.
@@ -114,6 +118,28 @@ class Modelo(app: Application) : AndroidViewModel(app) {
     var notasDelCatalogo by mutableStateOf<List<String>>(emptyList())
         private set
     var elegidas by mutableStateOf<Set<String>>(emptySet())
+        private set
+
+    /**
+     * La carpeta de cada pareja del catálogo, como está escrita: el catálogo no
+     * la lleva (prdrive#202, #196), y empieza con la que sugiere el instalador
+     * ([Volumen.carpetaSugerida], su nombre).
+     */
+    var carpetas by mutableStateOf<Map<String, String>>(emptyMap())
+        private set
+
+    /**
+     * Lo que se ha mirado de las carpetas elegidas ([revisarCarpetas]): con qué
+     * elegidas y carpetas, lo que no deja instalar y lo que se avisa antes.
+     */
+    data class RevisionCarpetas(
+        val elegidas: Set<String>,
+        val carpetas: Map<String, String>,
+        val problema: String?,
+        val avisos: List<String>,
+    )
+
+    var revisionCarpetas by mutableStateOf<RevisionCarpetas?>(null)
         private set
 
     /** Si al instalar se trae también el llavero (la casilla «El llavero»). */
@@ -195,9 +221,44 @@ class Modelo(app: Application) : AndroidViewModel(app) {
     var simulacro by mutableStateOf<ResultadoSimulacro?>(null)
         private set
 
+    /**
+     * Una pareja del catálogo que este teléfono no usa: su modo, su carpeta del
+     * remoto y la carpeta que se sugiere al añadirla ([Volumen.carpetaSugerida],
+     * su nombre). No se dice su carpeta local: con prdrive#202 (#196) la elige
+     * cada dispositivo, y el catálogo no la lleva.
+     */
+    data class SinUsar(val nombre: String, val modo: String, val remoto: String, val sugerencia: String)
+
     /** Las parejas del catálogo (de su copia, sin red) que este teléfono no usa. */
-    var sinUsar by mutableStateOf<List<String>>(emptyList())
+    var sinUsar by mutableStateOf<List<SinUsar>>(emptyList())
         private set
+
+    /**
+     * Lo pensado para añadir o quitar una pareja, para enseñarlo antes de
+     * hacerlo: de qué pareja, con qué (la carpeta escrita, o si se limpia) y el
+     * plan, o por qué no se puede.
+     */
+    data class Pensado<T>(val nombre: String, val con: String, val plan: T?, val error: String?)
+
+    /** Lo pensado para añadir una pareja con su carpeta ([pensarAnadir]). */
+    var planDeAnadir by mutableStateOf<Pensado<EditarParejas.PlanAnadir>?>(null)
+        private set
+
+    /** Lo pensado para quitar una pareja ([pensarQuitar]). */
+    var planDeQuitar by mutableStateOf<Pensado<EditarParejas.PlanQuitar>?>(null)
+        private set
+
+    /** La pareja que se acaba de añadir: su pantalla lleva a su ficha, y lo quita ([vista]). */
+    var recienAnadida by mutableStateOf<String?>(null)
+        private set
+
+    /** La pareja que se acaba de quitar: su ficha vuelve atrás, y lo quita ([vista]). */
+    var recienQuitada by mutableStateOf<String?>(null)
+        private set
+
+    /** Lo último que se ha pedido pensar, para no enseñar un plan que llega tarde. */
+    @Volatile
+    private var ultimoPensado: String? = null
 
     /** La fila del llavero; `null` si no lo lleva ni se puede traer. */
     var llavero by mutableStateOf<Estado.FilaLlavero?>(null)
@@ -422,6 +483,8 @@ class Modelo(app: Application) : AndroidViewModel(app) {
             catalogo = cat
             notasDelCatalogo = Pairing.alinearConCatalogo(c, cat.raw).second
             elegidas = cat.names.toSet()
+            carpetas = cat.names.associateWith { Volumen.carpetaSugerida(Catalogo.findPair(cat, it).orEmpty()) }
+            revisarCarpetas()
             // El llavero, desmarcado: es un paso opcional, como en el instalador.
             conLlavero = false
             llaveDelLlavero = null
@@ -431,6 +494,42 @@ class Modelo(app: Application) : AndroidViewModel(app) {
 
     fun elegir(nombre: String, si: Boolean) {
         elegidas = if (si) elegidas + nombre else elegidas - nombre
+        revisarCarpetas()
+    }
+
+    /** Cambia la carpeta escrita para [nombre] al emparejar. */
+    fun elegirCarpeta(nombre: String, carpeta: String) {
+        carpetas = carpetas + (nombre to carpeta)
+        revisarCarpetas()
+    }
+
+    /** Las carpetas de las elegidas como se guardan ([EditarParejas.limpiarCarpeta]). */
+    fun localesElegidas(): Map<String, String> =
+        carpetas.filterKeys { it in elegidas }.mapValues { EditarParejas.limpiarCarpeta(it.value) }
+
+    /**
+     * Mira las carpetas elegidas, fuera del hilo de la pantalla (miran el
+     * disco): lo que no deja instalar ([EditarParejas.problemaAlSembrar]) y lo
+     * que avisa el instalador de prdrive ([Volumen.avisosCarpetas]). Lo deja en
+     * [revisionCarpetas]; vale solo si sigue siendo de lo que hay elegido.
+     */
+    private fun revisarCarpetas() {
+        val cat = catalogo ?: return
+        val orden = cat.names.filter { it in elegidas }
+        val elegidasAhora = elegidas
+        val carpetasAhora = carpetas
+        val locales = localesElegidas()
+        viewModelScope.launch(Dispatchers.IO) {
+            val raiz = volumen.raiz
+            val revision = try {
+                val problema = if (orden.isEmpty()) null else EditarParejas.problemaAlSembrar(raiz, cat.raw, orden, locales)
+                val avisos = if (problema != null || orden.isEmpty()) emptyList() else Volumen.avisosCarpetas(raiz, cat.raw, orden, locales)
+                RevisionCarpetas(elegidasAhora, carpetasAhora, problema, avisos)
+            } catch (e: Exception) {
+                RevisionCarpetas(elegidasAhora, carpetasAhora, e.message ?: e.toString(), emptyList())
+            }
+            if (elegidas == elegidasAhora && carpetas == carpetasAhora) revisionCarpetas = revision
+        }
     }
 
     /** Marca o desmarca «El llavero»; con [llave], el fichero llave de uno sin contraseña. */
@@ -456,10 +555,11 @@ class Modelo(app: Application) : AndroidViewModel(app) {
         val c = carga ?: return
         val cat = catalogo ?: return
         val orden = cat.names.filter { it in elegidas }
+        val locales = localesElegidas()
         val remota = if (conLlavero) tablaLlavero(cat) else null
         val llave = llaveDelLlavero
         trabajo("Instalando…") {
-            val hecho = Instalador.instalar(contexto, c, cat, orden)
+            val hecho = Instalador.instalar(contexto, c, cat, orden, locales)
             instalado = hecho
             paso = Paso.INICIANDO
             lineas = emptyList()
@@ -510,7 +610,7 @@ class Modelo(app: Application) : AndroidViewModel(app) {
         filas = filasDe(v, config)
         llavero = Estado.llavero(v, config, Prdrive.faltaRedLocal(contexto))
         remoto = remotoDe(v, config)
-        sinUsar = Catalogo.cached(v.state)?.names?.filter { it !in config.names }.orEmpty()
+        sinUsar = sinUsarDe(v, config)
         intervaloSola = SegundoPlano.intervalo(config)
         proximaSola = if (sola.activo) SegundoPlano.proxima(contexto) else null
         rutaCatalogo = try {
@@ -870,6 +970,199 @@ class Modelo(app: Application) : AndroidViewModel(app) {
             } finally {
                 filas = filasDe(v, config)
             }
+        }
+    }
+
+    // --- añadir y quitar parejas --------------------------------------------------
+
+    /** Las del catálogo (de su copia) que no están en [config], con lo que se enseña de cada una. */
+    private fun sinUsarDe(v: Volumen, config: Config): List<SinUsar> {
+        val cat = Catalogo.cached(v.state) ?: return emptyList()
+        return cat.names.distinct().filter { it !in config.names }.map { nombre ->
+            val p = Catalogo.findPair(cat, nombre).orEmpty()
+            SinUsar(
+                nombre,
+                strPy(p["mode"] ?: DEFAULT_MODE),
+                strPy(p["remote_path"] ?: ""),
+                Volumen.carpetaSugerida(p),
+            )
+        }
+    }
+
+    /**
+     * «Volver a leer el catálogo»: su copia en `state/` es la de la última vez
+     * que se leyó (al emparejar o al traer el llavero), y una pareja creada
+     * después en el PC no sale en «sin usar» hasta que se lee otra vez.
+     */
+    fun releerCatalogo() {
+        trabajo("Leyendo el catálogo del remoto…") {
+            val v = Prdrive.iniciarRclone(contexto)
+            try {
+                Catalogo.pull(
+                    Adaptadores.catalogo(Prdrive.temporal(contexto)),
+                    loadRaw(v.config.readText(Charsets.UTF_8)),
+                    v.state,
+                )
+            } finally {
+                sinUsar = sinUsarDe(v, config())
+                releerLlavero()
+            }
+        }
+    }
+
+    /**
+     * Piensa añadir [nombre] con la carpeta [carpeta] ([EditarParejas.planAnadir]),
+     * con la copia del catálogo y sin red, y lo deja en [planDeAnadir]. Fuera
+     * del hilo de la pantalla (mira la carpeta), y sin ser un [trabajo]: no
+     * escribe nada, y se pide cada vez que cambia lo escrito. Solo vale el
+     * último que se ha pedido.
+     */
+    fun pensarAnadir(nombre: String, carpeta: String) {
+        val clave = "anadir:$nombre:$carpeta"
+        ultimoPensado = clave
+        viewModelScope.launch(Dispatchers.IO) {
+            val pensado = try {
+                val v = volumen
+                val plan = EditarParejas.planAnadir(
+                    v, loadRaw(v.config.readText(Charsets.UTF_8)), Catalogo.cached(v.state), nombre, carpeta,
+                )
+                Pensado(nombre, carpeta, plan, null)
+            } catch (e: Exception) {
+                Pensado<EditarParejas.PlanAnadir>(nombre, carpeta, null, e.message ?: e.toString())
+            }
+            if (ultimoPensado == clave) planDeAnadir = pensado
+        }
+    }
+
+    /** Piensa quitar [nombre] ([EditarParejas.planQuitar]) y lo deja en [planDeQuitar]. */
+    fun pensarQuitar(nombre: String, limpiar: Boolean) {
+        val clave = "quitar:$nombre:$limpiar"
+        ultimoPensado = clave
+        viewModelScope.launch(Dispatchers.IO) {
+            val pensado = try {
+                val v = volumen
+                Pensado(nombre, limpiar.toString(), EditarParejas.planQuitar(v, loadRaw(v.config.readText(Charsets.UTF_8)), nombre, limpiar), null)
+            } catch (e: Exception) {
+                Pensado<EditarParejas.PlanQuitar>(nombre, limpiar.toString(), null, e.message ?: e.toString())
+            }
+            if (ultimoPensado == clave) planDeQuitar = pensado
+        }
+    }
+
+    /** La pantalla ya ha llevado a donde tocaba tras añadir o quitar [nombre]. */
+    fun vista(nombre: String) {
+        if (recienAnadida == nombre) recienAnadida = null
+        if (recienQuitada == nombre) recienQuitada = null
+    }
+
+    /**
+     * «Añadir»: [nombre] del catálogo, en la carpeta [carpeta] del volumen.
+     *
+     * 1. Se vuelve a leer el catálogo del remoto: lo enseñado salía de su copia,
+     *    y si la pareja ya no está o ha cambiado (salvo su carpeta, que es de
+     *    aquí), se para y se dice, para que se mire otra vez.
+     * 2. Con el cerrojo del llavero (reescribe el `rclone.conf` y recarga
+     *    rclone, como activar el llavero o mover una pareja) y sin ninguna
+     *    llamada a rclone a la vez ([Adaptadores.sinPasadas]: la de una pasada
+     *    de fondo vería el `combine` a medio cambiar), se piensa otra vez con lo
+     *    leído y se hace ([EditarParejas.anadir]).
+     * 3. Si es bisync y su carpeta no tiene nada que pisar, su `--resync`, ya
+     *    aprobado, como al emparejar ([EditarParejas.PlanAnadir.resyncYa]), y
+     *    con [Mudanza.RESYNC_MODE]: si hay duda, gana el remoto. Si no, la ficha
+     *    lo pedirá con su hoja de siempre.
+     */
+    fun anadir(nombre: String, carpeta: String) {
+        trabajo("Añadiendo «$nombre»…") {
+            val v = Prdrive.iniciarRclone(contexto)
+            lineas = emptyList()
+            try {
+                val visto = Catalogo.cached(v.state)
+                ocupado = "Leyendo el catálogo del remoto…"
+                val fresco = Catalogo.pull(
+                    Adaptadores.catalogo(Prdrive.temporal(contexto)),
+                    loadRaw(v.config.readText(Charsets.UTF_8)),
+                    v.state,
+                )
+                if (Catalogo.findPair(fresco, nombre) == null) {
+                    throw ConfigError("«$nombre» ya no está en el catálogo del remoto: la han quitado desde que se leyó. No se ha añadido.")
+                }
+                val cambios = EditarParejas.cambiosDelCatalogo(visto, fresco, nombre)
+                if (cambios.isNotEmpty()) {
+                    throw ConfigError(
+                        "«$nombre» ha cambiado en el catálogo del remoto desde que se leyó (cambia " +
+                            cambios.joinToString(", ") + "). No se ha añadido: mira otra vez lo que va a pasar.",
+                    )
+                }
+                ocupado = "Añadiendo «$nombre»…"
+                val plan = LlaveroApp.enExclusiva {
+                    val texto = v.config.readText(Charsets.UTF_8)
+                    val p = EditarParejas.planAnadir(v, loadRaw(texto), fresco, nombre, carpeta)
+                    Adaptadores.sinPasadas {
+                        EditarParejas.anadir(v, p, headerOf(texto)) { Prdrive.recargarRclone(contexto) }
+                    }.forEach { decir("[$nombre] $it") }
+                    p
+                }
+                resultados = resultados - nombre
+                filas = filasDe(v, config())
+                recienAnadida = nombre
+                if (plan.resyncYa) {
+                    ocupado = "Bajando «$nombre» por primera vez…"
+                    val config = config()
+                    val pareja = config.pairs.first { it.name == nombre }
+                    val r = Pasada.pasarOFallar(
+                        v, pareja, Adaptadores.pasada, Adaptadores.opciones,
+                        // Como el de la mudanza: gana el remoto. La carpeta estaba vacía
+                        // al pensarlo, pero otra app ha podido escribir en ella desde entonces.
+                        Pasada.Contexto(
+                            resyncAprobado = true, keepLogs = config.keepLogs,
+                            accesoCompartido = Prdrive.accesoCompartido(),
+                            resyncMode = Mudanza.RESYNC_MODE,
+                        ),
+                        { progreso = Progreso.de(nombre, it) }, ::decir,
+                    )
+                    resultados = resultados + (nombre to r)
+                }
+            } finally {
+                refrescarSinTapar()
+            }
+        }
+    }
+
+    /**
+     * «Quitar de este teléfono»: [nombre] deja de sincronizarse aquí
+     * ([EditarParejas.quitar]); sus datos no se tocan, ni aquí ni en el remoto.
+     * Con [limpiar], su referencia se aparta y sus filtros generados se borran.
+     * Con el cerrojo del llavero y sin pasadas a la vez, como [anadir].
+     */
+    fun quitar(nombre: String, limpiar: Boolean) {
+        trabajo("Quitando «$nombre»…") {
+            val v = Prdrive.iniciarRclone(contexto)
+            lineas = emptyList()
+            try {
+                LlaveroApp.enExclusiva {
+                    val texto = v.config.readText(Charsets.UTF_8)
+                    val p = EditarParejas.planQuitar(v, loadRaw(texto), nombre, limpiar)
+                    Adaptadores.sinPasadas {
+                        EditarParejas.quitar(v, p, headerOf(texto)) { Prdrive.recargarRclone(contexto) }
+                    }.forEach { decir("[$nombre] $it") }
+                }
+                resultados = resultados - nombre
+                recienQuitada = nombre
+            } finally {
+                refrescarSinTapar()
+            }
+        }
+    }
+
+    /**
+     * [refrescar] al acabar algo que ha podido fallar: si releer falla también,
+     * se apunta y no tapa el fallo de verdad, que es el que se enseña.
+     */
+    private fun refrescarSinTapar() {
+        try {
+            refrescar()
+        } catch (e: Exception) {
+            android.util.Log.w("Modelo", "Releyendo tras añadir o quitar", e)
         }
     }
 

@@ -46,6 +46,7 @@ import vectores_actualizacion  # noqa: E402 — vive junto a este fichero
 import vectores_conflictos_editor  # noqa: E402 — vive junto a este fichero
 import vectores_historial  # noqa: E402 — vive junto a este fichero
 import vectores_llavero  # noqa: E402 — vive junto a este fichero
+import vectores_parejas_editor  # noqa: E402 — vive junto a este fichero
 import vectores_paso3  # noqa: E402 — vive junto a este fichero
 import vectores_python  # noqa: E402 — vive junto a este fichero
 
@@ -1017,9 +1018,8 @@ def vectores_catalogo(catalog, model, store) -> dict:
                              for p in problemas],
         "escenarios": salida_escenarios,
         "pairs_by_name": catalog.pairs_by_name(leido),
-        "diff_keys": [{"a": a, "b": b, "salida": list(catalog.diff_keys(a, b))}
-                      for a, b in ((parejas[0], parejas[1]), (parejas[0], parejas[0]),
-                                   (None, parejas[1]), ({"x": 1}, {"x": 1.0}))],
+        # `diff_keys()` ya no sale de aquí: con prdrive#202 (#196) no compara
+        # `local`, y sus casos están en `vectores_196.py`.
     }
 
 
@@ -1219,7 +1219,7 @@ def main() -> int:
 
     bisync, config_file, model, pairing = cargar(prdrive)
     from common import catalog, conflicts, historial, kdbx, llavero, results, store, update   # noqa: PLC0415
-    from ui import conflict_editor   # noqa: PLC0415
+    from ui import conflict_editor, pair_editor   # noqa: PLC0415
     datos = {
         "_generado_por": "herramientas/vectores.py",
         "_no_editar": "Se regenera desde el prdrive citado en 'prdrive'.",
@@ -1270,6 +1270,8 @@ def main() -> int:
         "conflictos": vectores_conflictos(conflicts, model, store),
         # Resolver un conflicto (ui/conflict_editor.py), sin «Combinar»: en su fichero.
         "resolver_conflictos": vectores_conflictos_editor.vectores(conflict_editor, conflicts, model),
+        # Usar aquí una pareja del catálogo y quitarla (ui/pair_editor.py): en su fichero.
+        "editar_parejas": vectores_parejas_editor.vectores(pair_editor, catalog, model),
         # La pasada y el volumen (paso 3), en su propio fichero.
         "paso3": vectores_paso3.vectores(model, bisync, CONFIG),
         # El llavero (la base de KeePassXC), también en su fichero.

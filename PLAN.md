@@ -21,6 +21,11 @@ Falta:
   --resync» cada vez.
 - **La app de Archivos.** Un fichero guardado desde otra app se sincroniza en la
   pasada siguiente.
+- **Añadir y quitar parejas** (AGENTS.md, «Añadir y quitar parejas»): se
+  escribió en una sesión sin SDK de Android, así que la app la compiló el CI y
+  `ParejasEnAndroidTest` (releer el catálogo, añadir en otra carpeta con su
+  `--resync`, quitar y no poder quitar la última) **no se ha pasado todavía en
+  un emulador**. El motor sí, entero (`EditarParejasTest`).
 - **El permiso de red local** en un Android 17 de verdad, contra un NAS en
   `192.168.…`, y en uno anterior, que no lo pide.
 - **El llavero con una app de KeePass de verdad.** Probado el 23/10/2026 en el
@@ -199,6 +204,13 @@ hacerlo.
 
 ## 4. Lo siguiente
 
+- **El motor a prdrive 0.8.** Está en la 0.7.7, salvo lo de #196, que sigue a la
+  0.8.4 (prdrive#202) con sus vectores aparte (`vectores_196.json`): el
+  generador de `vectores.json` no arranca contra la 0.8 (entre las dos, prdrive
+  ha cambiado `problema_valor_flag()`, `expected_prefix()` con el `{hash}` del
+  entorno, el llavero, `update.py`… y KeePassXC 2.8.0; rclone sigue en v1.75.2).
+  Al pasar, se funden los dos ficheros y `vectores_196.py` desaparece.
+
 - **La autoactualización sin abrir la app.** Sincronizar sola ya existe
   (AGENTS.md, «Sincronizar sola, parar y el simulacro»); la autoactualización
   podría mirar y bajar desde ese mismo trabajo. Hoy solo lo hace al abrir la
@@ -345,9 +357,14 @@ simulacro»):
 
 Falta:
 
-- Elegir y cambiar la carpeta de una pareja, añadirla desde el catálogo y
-  quitarla del teléfono (#25 y la parte grande de #24): esperan a que el
-  catálogo diga qué es de cada dispositivo (prdrive#196).
+- Cambiar la carpeta de una pareja que ya se usa (#25) y la parte grande de
+  #24 (un `local` anidado, o que comparte carpeta de primer nivel, en una
+  carpeta compartida). Añadir una del catálogo eligiendo su carpeta, quitarla
+  del teléfono y elegir la carpeta de cada pareja al emparejar **ya están**,
+  alineados con prdrive#196 tal como lo hace el PR Jeremaya25/prdrive#202, que
+  sale con la 0.8.4 (AGENTS.md, «Añadir y quitar parejas, y la carpeta de cada
+  una»). Si #202 cambia antes de juntarse, regenerar `vectores_196.json` desde
+  su rama.
 - Reparación (`--force`) y Emparejar de nuevo (Ajustes): borran o rehacen
   estado, y piden su propio diseño de qué se conserva.
 - La carpeta de un espejo de subida al emparejar (§3).

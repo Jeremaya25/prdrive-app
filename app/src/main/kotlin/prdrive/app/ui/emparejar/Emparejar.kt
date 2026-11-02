@@ -39,6 +39,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
@@ -68,6 +69,7 @@ import prdrive.app.ui.piezas.Separador
 import prdrive.app.ui.piezas.Tarjeta
 import prdrive.app.ui.piezas.Tono
 import prdrive.app.ui.piezas.TonoAviso
+import prdrive.engine.EditarParejas
 import prdrive.engine.Catalogo
 import prdrive.engine.LLAVERO
 import prdrive.engine.Pasada
@@ -374,6 +376,8 @@ private fun ElegirParejas(m: Modelo) {
     // Con el llavero, las notificaciones se piden antes: avisan de lo suyo.
     val conPermiso = conAvisos()
     val n = m.elegidas.size
+    // Lo mirado de las carpetas, si es de lo que hay elegido ahora: si no, aún se está mirando.
+    val revision = m.revisionCarpetas?.takeIf { it.elegidas == m.elegidas && it.carpetas == m.carpetas }
     Paso(abajo = {
         Boton(
             (if (n == 1) "Instalar 1 pareja" else "Instalar $n parejas") + if (m.conLlavero) " y el llavero" else "",
@@ -381,7 +385,7 @@ private fun ElegirParejas(m: Modelo) {
             Modifier.testTag("instalar"),
             peso = Peso.PRINCIPAL,
             ancho = true,
-            activo = n > 0,
+            activo = n > 0 && revision != null && revision.problema == null,
             ocupado = m.ocupado != null,
         )
         Text("La primera pasada junta los dos lados sin borrar nada.", style = Letra.actual.pista)
@@ -390,7 +394,8 @@ private fun ElegirParejas(m: Modelo) {
         Indicador(2)
         Titulo(
             "Elige qué sincroniza",
-            "Cada pareja une una carpeta de este teléfono con una del remoto.",
+            "Cada pareja une una carpeta de este teléfono con una del remoto. La carpeta la eliges tú: los " +
+                "demás dispositivos pueden tenerla en otra.",
         )
         // Lo que el catálogo cambia de la conexión del código: antes de instalar,
         // que es cuando todavía se puede no seguir.
@@ -405,10 +410,12 @@ private fun ElegirParejas(m: Modelo) {
                     val p = parejas[nombre].orEmpty()
                     val modo = (p["mode"] ?: "bisync").toString()
                     val espejo = modo.endsWith("-mirror")
+                    val elegida = nombre in m.elegidas
+                    val carpeta = m.carpetas[nombre].orEmpty()
                     Column(Modifier.fillMaxWidth().background(if (espejo) c.dangerSoft else c.surface)) {
                         Casilla(
                             nombre,
-                            nombre in m.elegidas,
+                            elegida,
                             { m.elegir(nombre, it) },
                             Modifier.testTag("elegir-$nombre").padding(horizontal = 16.dp),
                             activa = libre,
@@ -421,7 +428,7 @@ private fun ElegirParejas(m: Modelo) {
                                 }
                             }
                             Text(
-                                "${p["local"] ?: ""} ${flecha(modo)} ${p["remote_path"] ?: ""}",
+                                "${if (elegida) EditarParejas.limpiarCarpeta(carpeta) else "…"} ${flecha(modo)} ${p["remote_path"] ?: ""}",
                                 style = Letra.actual.mono,
                                 color = if (espejo) c.danger else c.ink2,
                             )
@@ -434,9 +441,40 @@ private fun ElegirParejas(m: Modelo) {
                                 )
                             }
                         }
+                        // Fuera de la casilla: dentro, tocar el campo la marcaría o desmarcaría.
+                        if (elegida) {
+                            val problema = EditarParejas.problemaTexto(EditarParejas.limpiarCarpeta(carpeta))
+                            OutlinedTextField(
+                                value = carpeta,
+                                onValueChange = { m.elegirCarpeta(nombre, it) },
+                                label = { Text("Carpeta en el teléfono") },
+                                supportingText = if (problema != null) {
+                                    { Text(problema) }
+                                } else {
+                                    null
+                                },
+                                isError = problema != null,
+                                singleLine = true,
+                                enabled = libre,
+                                keyboardOptions = KeyboardOptions(autoCorrectEnabled = false, imeAction = ImeAction.Next),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(start = 46.dp, end = 16.dp, bottom = 12.dp)
+                                    .testTag("carpeta-$nombre"),
+                            )
+                        }
                     }
                 }
             }
+        }
+        // Lo que no deja instalar (un espejo que borraría) y lo que avisa prdrive
+        // antes de escribir el config: un espejo en una carpeta que lo hace
+        // peligroso y dos parejas sobre los mismos ficheros.
+        revision?.problema?.let {
+            Aviso("Así no se puede instalar", Modifier.padding(horizontal = 16.dp).testTag("problema-carpetas"), tono = TonoAviso.PELIGRO, cuerpo = it)
+        }
+        revision?.avisos?.forEach {
+            Aviso(it, Modifier.padding(horizontal = 16.dp).testTag("aviso-carpetas"), tono = TonoAviso.AVISO)
         }
         if (cat.raw["keychain"] is Map<*, *>) {
             Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {

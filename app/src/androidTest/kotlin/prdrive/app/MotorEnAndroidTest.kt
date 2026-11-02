@@ -16,6 +16,7 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import prdrive.app.llavero.Avisos
+import prdrive.engine.Carpetas
 import prdrive.engine.Catalogo
 import prdrive.engine.Resultados
 import prdrive.engine.Store
@@ -76,6 +77,14 @@ class MotorEnAndroidTest {
     private val vectores: Map<String, Any?> by lazy {
         val recurso = javaClass.getResourceAsStream("/vectores.json")
             ?: error("vectores.json no está en los recursos del test")
+        leerJson(recurso.bufferedReader().use { it.readText() }) as Map<String, Any?>
+    }
+
+    /** `vectores_196.json`: lo de prdrive#202 (#196), que va aparte (`herramientas/vectores_196.py`). */
+    @Suppress("UNCHECKED_CAST")
+    private val vectores196: Map<String, Any?> by lazy {
+        val recurso = javaClass.getResourceAsStream("/vectores_196.json")
+            ?: error("vectores_196.json no está en los recursos del test")
         leerJson(recurso.bufferedReader().use { it.readText() }) as Map<String, Any?>
     }
 
@@ -278,6 +287,27 @@ class MotorEnAndroidTest {
             estado["sello_apartado"],
             Bisync.selloApartado(LocalDateTime.of(f[0], f[1], f[2], f[3], f[4], f[5])),
         )
+    }
+
+    /**
+     * Las carpetas se comparan igual que en prdrive#202: `casefold()` y los
+     * tramos dependen de las tablas Unicode, que aquí son las de ICU.
+     */
+    @Test
+    fun las_carpetas_se_comparan_igual() {
+        @Suppress("UNCHECKED_CAST")
+        val casefold = vectores196["casefold"] as List<Map<String, Any?>>
+        for (c in casefold) {
+            assertEquals("casefold(${c["entrada"]})", c["salida"], Carpetas.casefoldPy(c["entrada"].toString()))
+        }
+        val carpetas = objeto(vectores196, "carpetas")
+        for (c in objetos(carpetas, "tramos")) {
+            assertEquals("tramos(${c["entrada"]})", cadenas(c, "salida"), Carpetas.tramos(c["entrada"]))
+        }
+        for (c in objetos(carpetas, "solapadas")) {
+            val otras = objeto(c, "otras").mapValues { it.value.toString() }
+            assertEquals("solapadas(${c["local"]})", cadenas(c, "salida"), Carpetas.solapadas(otras, c["local"].toString()))
+        }
     }
 
     @Test
